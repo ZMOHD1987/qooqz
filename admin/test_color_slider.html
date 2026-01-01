@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Slider Test</title>
+    <link rel="stylesheet" href="/admin/assets/css/admin.css">
+    <link rel="stylesheet" href="/admin/assets/css/admin-theme.css">
+    <link rel="stylesheet" href="/admin/assets/css/color-slider.css">
+    <style>
+        body {
+            padding: 20px;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+        }
+        h1, h2 {
+            color: #111827;
+        }
+        .selection-display {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border: 2px solid #3B82F6;
+            border-radius: 8px;
+        }
+        .selection-display pre {
+            margin: 10px 0 0 0;
+            padding: 10px;
+            background: #f3f4f6;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Color Slider Component Test</h1>
+    <p>This page demonstrates the color slider component with mock data.</p>
+
+    <div class="test-section">
+        <h2>Test 1: Default Color Slider</h2>
+        <div id="colorSlider1"></div>
+        <div id="selection1" class="selection-display" style="display:none;">
+            <strong>Selected Color:</strong>
+            <pre id="selectionOutput1"></pre>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Compact Style</h2>
+        <div id="colorSlider2" class="compact"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Range Style</h2>
+        <div id="colorSlider3" class="range-style"></div>
+    </div>
+
+    <script>
+        // Mock ADMIN_UI data for testing
+        window.ADMIN_UI = {
+            lang: 'en',
+            direction: 'ltr',
+            strings: {
+                color_slider_title: 'Theme Colors',
+                no_colors_available: 'No colors available',
+                color_category_primary: 'Primary',
+                color_category_secondary: 'Secondary',
+                color_category_accent: 'Accent',
+                color_category_background: 'Background',
+                color_category_text: 'Text',
+                color_category_border: 'Border',
+                color_category_other: 'Other'
+            },
+            theme: {
+                colors: [
+                    // Primary colors
+                    { id: 1, setting_key: 'primary_main', setting_name: 'Primary', color_value: '#3B82F6', category: 'primary', is_active: 1, sort_order: 1 },
+                    { id: 2, setting_key: 'primary_hover', setting_name: 'Primary Hover', color_value: '#2563EB', category: 'primary', is_active: 1, sort_order: 2 },
+                    { id: 3, setting_key: 'primary_light', setting_name: 'Primary Light', color_value: '#93C5FD', category: 'primary', is_active: 1, sort_order: 3 },
+                    
+                    // Secondary colors
+                    { id: 4, setting_key: 'secondary_main', setting_name: 'Secondary', color_value: '#10B981', category: 'secondary', is_active: 1, sort_order: 1 },
+                    { id: 5, setting_key: 'secondary_hover', setting_name: 'Secondary Hover', color_value: '#059669', category: 'secondary', is_active: 1, sort_order: 2 },
+                    
+                    // Accent colors
+                    { id: 6, setting_key: 'accent_main', setting_name: 'Accent', color_value: '#F59E0B', category: 'accent', is_active: 1, sort_order: 1 },
+                    { id: 7, setting_key: 'accent_light', setting_name: 'Accent Light', color_value: '#FCD34D', category: 'accent', is_active: 1, sort_order: 2 },
+                    
+                    // Background colors
+                    { id: 8, setting_key: 'background_main', setting_name: 'Background', color_value: '#FFFFFF', category: 'background', is_active: 1, sort_order: 1 },
+                    { id: 9, setting_key: 'background_secondary', setting_name: 'Background Secondary', color_value: '#F8FAFC', category: 'background', is_active: 1, sort_order: 2 },
+                    
+                    // Text colors
+                    { id: 10, setting_key: 'text_primary', setting_name: 'Text Primary', color_value: '#111827', category: 'text', is_active: 1, sort_order: 1 },
+                    { id: 11, setting_key: 'text_secondary', setting_name: 'Text Secondary', color_value: '#6B7280', category: 'text', is_active: 1, sort_order: 2 },
+                    
+                    // Border colors
+                    { id: 12, setting_key: 'border_main', setting_name: 'Border', color_value: '#E5E7EB', category: 'border', is_active: 1, sort_order: 1 },
+                    
+                    // Other colors
+                    { id: 13, setting_key: 'success', setting_name: 'Success', color_value: '#10B981', category: 'other', is_active: 1, sort_order: 1 },
+                    { id: 14, setting_key: 'error', setting_name: 'Error', color_value: '#EF4444', category: 'other', is_active: 1, sort_order: 2 },
+                    { id: 15, setting_key: 'warning', setting_name: 'Warning', color_value: '#F59E0B', category: 'other', is_active: 1, sort_order: 3 },
+                    { id: 16, setting_key: 'info', setting_name: 'Info', color_value: '#3B82F6', category: 'other', is_active: 1, sort_order: 4 }
+                ],
+                colors_map: {
+                    'primary': '#3B82F6',
+                    'primary-hover': '#2563EB',
+                    'secondary': '#10B981',
+                    'accent': '#F59E0B',
+                    'background': '#FFFFFF',
+                    'text-primary': '#111827'
+                }
+            }
+        };
+    </script>
+
+    <script src="/admin/assets/js/color-slider.js"></script>
+    
+    <script>
+        // Initialize color sliders after DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Test 1: Default with selection callback
+            if (window.ColorSlider) {
+                ColorSlider.render('#colorSlider1', {
+                    onSelect: function(color) {
+                        console.log('Color selected:', color);
+                        document.getElementById('selection1').style.display = 'block';
+                        document.getElementById('selectionOutput1').textContent = JSON.stringify(color, null, 2);
+                    }
+                });
+
+                // Test 2: Compact style
+                ColorSlider.render('#colorSlider2', {
+                    onSelect: function(color) {
+                        console.log('Compact - Color selected:', color);
+                    }
+                });
+
+                // Test 3: Range style
+                ColorSlider.render('#colorSlider3', {
+                    onSelect: function(color) {
+                        console.log('Range - Color selected:', color);
+                    }
+                });
+
+                console.log('Color sliders initialized successfully');
+            } else {
+                console.error('ColorSlider not loaded');
+            }
+        });
+    </script>
+</body>
+</html>
