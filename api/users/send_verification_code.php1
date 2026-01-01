@@ -1,0 +1,214 @@
+<?php
+// htdocs/api/users/send_verification_code.php
+// Create and send a new verification code for a user
+// Accepts JSON POST: {user_id, channel, ttl, return_code}
+
+header('Content-Type: application/json; charset=utf-8');
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+$logDir = __DIR__ . '/../logs';
+if (!is_dir($logDir)) @mkdir($logDir, 0755, true);
+function slog($msg) { 
+    global $logDir; 
+    @file_put_contents($logDir . '/send_verification_code.log', date('c') . ' ' . $msg . PHP_EOL, FILE_APPEND | LOCK_EX); 
+}
+
+function reply($payload, $http_status = 200) {
+    http_response_code($http_status);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($payload, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// Read input
+$raw = @file_get_contents('php://input');
+$input = $_POST;
+if ($raw && empty($input)) {
+    $ct = $_SERVER['CONTENT_TYPE'] ?? '';
+    if (stripos($ct, 'application/json') !== false) {
+        $j = @json_decode($raw, true);
+        if (is_array($j)) $input = $j;
+    } else {
+        parse_str($raw, $parsed);
+        if (is_array($parsed)) $input = array_merge($input, $parsed);
+    }
+}
+
+slog('request_input: ' . json_encode($input, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES));
+
+// Validate required fields
+$user_id = isset($input['user_id']) && $input['user_id'] !== '' ? (int)$input['user_id'] : null;
+$channel = isset($input['channel']) && $input['channel'] !== '' ? trim((string)$input['channel']) : 'whatsapp';
+$ttl = isset($input['ttl']) && is_numeric($input['ttl']) ? max(60, (int)$input['ttl']) : 900;
+$return_code = !empty($input['return_code']);
+
+if (!$user_id) {
+    slog('missing_user_id');
+    reply(['ok'=>false, 'error'=>'user_id_required'], 400);
+}
+
+require_once __DIR__ . '/../../api/config/db.php';
+$mysqli = @connectDB();
+if (!$mysqli) {
+    slog('db_connect_failed');
+    reply(['ok'=>false,'error'=>'db_connect_failed'], 500);
+}
+
+try {
+    // Check if user exists
+    $stmt = $mysqli->prepare("SELECT id, username, email, phone, is_active FROM users WHERE id = ? LIMIT 1");
+    if (!$stmt) {
+        slog('prepare_failed: ' . $mysqli->error);
+        reply(['ok'=>false,'error'=>'db_prepare_failed'], 500);
+    }
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $user = $res ? $res->fetch_assoc() : null;
+    $stmt->close();
+    
+    if (!$user) {
+        slog('user_not_found: ' . $user_id);
+        reply(['ok'=>false,'error'=>'user_not_found'], 404);
+    }
+    
+    slog('Processing user: ' . json_encode($user));
+    
+    // Mark old tokens as used (optional, but prevents multiple active tokens)
+    $update = $mysqli->prepare("UPDATE verification_tokens SET used = 1 WHERE user_id = ? AND used = 0 AND channel = ?");
+    if ($update) {
+        $update->bind_param('is', $user_id, $channel);
+        $update->execute();
+        $update->close();
+    }
+    
+    // Generate new code
+    try { 
+        $code = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT); 
+    } catch (Throwable $e) { 
+        $code = (string)mt_rand(100000, 999999); 
+    }
+    
+    $jti = bin2hex(random_bytes(12));
+    $iat = time();
+    $exp = $iat + $ttl;
+    $issued_at = gmdate('Y-m-d H:i:s', $iat);
+    $expires_at = gmdate('Y-m-d H:i:s', $exp);
+    
+    // Get user's timezone from users table
+    $user_timezone = 'UTC';
+    $tz_stmt = $mysqli->prepare("SELECT timezone FROM users WHERE id = ? LIMIT 1");
+    if ($tz_stmt) {
+        $tz_stmt->bind_param('i', $user_id);
+        $tz_stmt->execute();
+        $tz_res = $tz_stmt->get_result();
+        if ($tz_row = $tz_res->fetch_assoc()) {
+            if (!empty($tz_row['timezone'])) {
+                $user_timezone = $tz_row['timezone'];
+            }
+        }
+        $tz_stmt->close();
+    }
+    
+    // Compute local expiry
+    try {
+        $dtLocal = new DateTime('@' . $exp);
+        $dtLocal->setTimezone(new DateTimeZone($user_timezone));
+        $expires_at_local = $dtLocal->format('Y-m-d H:i:s');
+    } catch (Throwable $_) {
+        $expires_at_local = $expires_at;
+    }
+    
+    // Hash the code
+    $token_hash = password_hash($code, PASSWORD_DEFAULT);
+    
+    // Insert new verification token
+    $stmt = $mysqli->prepare("
+        INSERT INTO verification_tokens 
+        (jti, user_id, channel, token_hash, expires_at, expires_at_local, user_tz, ip, phone, issued_at, origin, issuer_user_agent, issuer_ip) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+    
+    if (!$stmt) {
+        slog('prepare_failed for insert: ' . $mysqli->error);
+        reply(['ok'=>false,'error'=>'db_prepare_failed','details'=>$mysqli->error], 500);
+    }
+    
+    $origin = 'manual_resend';
+    $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+    $ua = $_SERVER['HTTP_USER_AGENT'] ?? null;
+    $issuer_ip = $_SERVER['REMOTE_ADDR'] ?? null;
+    $phone = !empty($user['phone']) ? $user['phone'] : null;
+    
+    $stmt->bind_param(
+        'sisssssssssss',
+        $jti,
+        $user_id,
+        $channel,
+        $token_hash,
+        $expires_at,
+        $expires_at_local,
+        $user_timezone,
+        $ip,
+        $phone,
+        $issued_at,
+        $origin,
+        $ua,
+        $issuer_ip
+    );
+    
+    if (!$stmt->execute()) {
+        $err = $stmt->error;
+        $stmt->close();
+        slog('insert_failed: ' . $err);
+        reply(['ok'=>false,'error'=>'insert_failed','details'=>$err], 500);
+    }
+    
+    $token_id = $stmt->insert_id;
+    $stmt->close();
+    
+    slog("New verification token created: id=$token_id, code=$code, user_id=$user_id, channel=$channel");
+    
+    // Prepare response
+    $response = [
+        'ok' => true,
+        'user_id' => $user_id,
+        'channel' => $channel,
+        'expires_at' => $expires_at,
+        'expires_at_local' => $expires_at_local,
+        'user_tz' => $user_timezone,
+        'message' => 'Verification code created successfully'
+    ];
+    
+    // Include code in response if requested
+    if ($return_code) {
+        $response['code'] = $code;
+    }
+    
+    // Create verification link if token service is available
+    $tokenServicePath = __DIR__ . '/../lib/token_service.php';
+    if (file_exists($tokenServicePath)) {
+        require_once $tokenServicePath;
+        if (function_exists('generate_signed_token')) {
+            $payload = ['user_id'=>$user_id, 'jti'=>$jti, 'iat'=>$iat, 'exp'=>$exp, 'code'=>$code];
+            try {
+                $secret = function_exists('ts_get_secret') ? ts_get_secret() : null;
+                $token = generate_signed_token($payload, $secret ?? '');
+                $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+                $host = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? 'localhost');
+                $link = $scheme . '://' . $host . '/verify_token.html?token=' . rawurlencode($token);
+                $response['link'] = $link;
+            } catch (Throwable $e) {
+                slog('token_generation_failed: ' . $e->getMessage());
+            }
+        }
+    }
+    
+    reply($response, 200);
+    
+} catch (Throwable $e) {
+    slog('exception: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    reply(['ok'=>false,'error'=>'exception','details'=>$e->getMessage()], 500);
+}
+?>

@@ -1,0 +1,311 @@
+<?php
+// htdocs/api/users/register_user.php
+header('Content-Type: application/json; charset=utf-8');
+ini_set('display_errors', 1);
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
+
+// DB config
+require_once __DIR__ . '/../../api/config/db.php';
+
+// read input
+$raw = @file_get_contents('php://input');
+$input = $_POST;
+if ($raw && empty($input)) {
+    $ct = $_SERVER['CONTENT_TYPE'] ?? '';
+    if (stripos($ct, 'application/json') !== false) {
+        $j = @json_decode($raw, true);
+        if (is_array($j)) $input = $j;
+    } else {
+        parse_str($raw, $parsed);
+        if (is_array($parsed)) $input = array_merge($input, $parsed);
+    }
+}
+
+function reply($payload, $http_status = 200) {
+    http_response_code($http_status);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($payload, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+function log_verification_error($msg) {
+    $dir = __DIR__ . '/../logs';
+    if (!is_dir($dir)) @mkdir($dir, 0755, true);
+    @file_put_contents($dir . '/register_verification_error.log', date('c') . ' ' . $msg . PHP_EOL, FILE_APPEND | LOCK_EX);
+}
+
+// validate required fields
+$username = isset($input['username']) ? trim((string)$input['username']) : '';
+$email = isset($input['email']) ? trim((string)$input['email']) : '';
+$password_plain = isset($input['password']) ? (string)$input['password'] : '';
+
+if ($username === '' || $email === '' || $password_plain === '') {
+    reply(['ok'=>false, 'error'=>'username_email_password_required'], 400);
+}
+
+// basic validations
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    reply(['ok'=>false, 'error'=>'invalid_email'], 400);
+}
+if (mb_strlen($username) < 3 || mb_strlen($username) > 50) {
+    reply(['ok'=>false, 'error'=>'invalid_username_length'], 400);
+}
+if (mb_strlen($password_plain) < 6) {
+    reply(['ok'=>false, 'error'=>'password_too_short'], 400);
+}
+
+// optional fields
+$preferred_language = isset($input['preferred_language']) ? trim((string)$input['preferred_language']) : null;
+$country_id = isset($input['country_id']) && $input['country_id'] !== '' ? (int)$input['country_id'] : null;
+$city_id = isset($input['city_id']) && $input['city_id'] !== '' ? (int)$input['city_id'] : null;
+$phone = isset($input['phone']) ? trim((string)$input['phone']) : null;
+$role_id = isset($input['role_id']) && $input['role_id'] !== '' ? (int)$input['role_id'] : null;
+$is_active = isset($input['is_active']) ? ((int)$input['is_active'] ? 1 : 0) : 0;
+
+$ttl = isset($input['verification_ttl']) && is_numeric($input['verification_ttl']) ? max(60,(int)$input['verification_ttl']) : 900;
+$user_timezone = isset($input['user_timezone']) && $input['user_timezone'] !== '' ? trim((string)$input['user_timezone']) : 'UTC';
+try { new DateTimeZone($user_timezone); } catch (Throwable $_) { $user_timezone = 'UTC'; }
+
+$mysqli = @connectDB();
+if (!$mysqli) reply(['ok'=>false,'error'=>'db_connect_failed'], 500);
+
+try {
+    // check username uniqueness
+    $s = $mysqli->prepare("SELECT id FROM users WHERE username = ? LIMIT 1");
+    if ($s) {
+        $s->bind_param('s', $username);
+        $s->execute();
+        $r = $s->get_result();
+        if ($r && $r->fetch_assoc()) {
+            $s->close();
+            reply(['ok'=>false,'error'=>'username_taken'], 409);
+        }
+        $s->close();
+    }
+
+    // check email uniqueness
+    $s2 = $mysqli->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+    if ($s2) {
+        $s2->bind_param('s', $email);
+        $s2->execute();
+        $r2 = $s2->get_result();
+        if ($r2 && $r2->fetch_assoc()) {
+            $s2->close();
+            reply(['ok'=>false,'error'=>'email_taken'], 409);
+        }
+        $s2->close();
+    }
+
+    // check phone uniqueness
+    if ($phone !== null && $phone !== '') {
+        $s3 = $mysqli->prepare("SELECT id FROM users WHERE phone = ? LIMIT 1");
+        if ($s3) {
+            $s3->bind_param('s', $phone);
+            $s3->execute();
+            $r3 = $s3->get_result();
+            if ($r3 && $r3->fetch_assoc()) {
+                $s3->close();
+                reply(['ok'=>false,'error'=>'phone_taken'], 409);
+            }
+            $s3->close();
+        }
+    }
+
+    // hash password
+    $password_hash = password_hash($password_plain, PASSWORD_DEFAULT);
+    if ($password_hash === false) {
+        reply(['ok'=>false,'error'=>'password_hash_failed'], 500);
+    }
+
+    // insert user
+    $stmt = $mysqli->prepare("
+        INSERT INTO users
+          (username, email, password_hash, preferred_language, country_id, city_id, phone, role_id, timezone, is_active, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+    ");
+    if (!$stmt) {
+        reply(['ok'=>false,'error'=>'prepare_failed','details'=>$mysqli->error], 500);
+    }
+
+    $params = [
+        $username,
+        $email,
+        $password_hash,
+        $preferred_language,
+        $country_id,
+        $city_id,
+        $phone,
+        $role_id,
+        $user_timezone,
+        $is_active
+    ];
+    
+    $types = '';
+    foreach ($params as $p) { 
+        if (is_int($p)) {
+            $types .= 'i';
+        } else {
+            $types .= 's';
+        }
+    }
+
+    // bind for user insert
+    $bind_names = [$types];
+    for ($i = 0; $i < count($params); $i++) $bind_names[] = &$params[$i];
+    if (!call_user_func_array([$stmt, 'bind_param'], $bind_names)) {
+        reply(['ok'=>false,'error'=>'bind_failed','details'=>$stmt->error], 500);
+    }
+
+    if (!$stmt->execute()) {
+        $errno = $stmt->errno;
+        $err = $stmt->error;
+        $stmt->close();
+        if ($errno === 1062) {
+            if (stripos($err, 'username') !== false) reply(['ok'=>false,'error'=>'username_taken'], 409);
+            if (stripos($err, 'email') !== false) reply(['ok'=>false,'error'=>'email_taken'], 409);
+            reply(['ok'=>false,'error'=>'duplicate_entry','details'=>$err], 409);
+        }
+        reply(['ok'=>false,'error'=>'execute_failed','details'=>$err], 500);
+    }
+
+    $user_id = $stmt->insert_id;
+    $stmt->close();
+
+    // fetch inserted user
+    $s4 = $mysqli->prepare("SELECT id, username, email, preferred_language, country_id, city_id, phone, role_id, is_active, created_at, updated_at FROM users WHERE id = ? LIMIT 1");
+    if ($s4) {
+        $s4->bind_param('i', $user_id);
+        $s4->execute();
+        $res = $s4->get_result();
+        $user_row = $res->fetch_assoc();
+        $s4->close();
+    } else {
+        $user_row = null;
+    }
+
+    //
+    // Create initial verification token
+    //
+    try { 
+        $code = str_pad((string)random_int(0,999999), 6, '0', STR_PAD_LEFT); 
+    } catch (Throwable $e) { 
+        $code = (string)mt_rand(100000,999999); 
+    }
+    
+    $jti = bin2hex(random_bytes(12));
+    $iat = time();
+    $exp = $iat + $ttl;
+    $issued_at = gmdate('Y-m-d H:i:s', $iat);
+    $expires_at = gmdate('Y-m-d H:i:s', $exp);
+
+    // compute local expiry
+    try {
+        $dtLocal = new DateTime('@' . $exp);
+        $dtLocal->setTimezone(new DateTimeZone($user_timezone));
+        $expires_at_local = $dtLocal->format('Y-m-d H:i:s');
+    } catch (Throwable $_) {
+        $expires_at_local = $expires_at;
+    }
+
+    // hash code
+    $token_hash_for_db = password_hash($code, PASSWORD_DEFAULT);
+
+    $channel = isset($input['channel']) ? trim((string)$input['channel']) : 'whatsapp';
+    $origin = 'registration_flow';
+    $v_ip = $_SERVER['REMOTE_ADDR'] ?? null;
+    $ua = $_SERVER['HTTP_USER_AGENT'] ?? null;
+    $issuer_ip = $_SERVER['REMOTE_ADDR'] ?? null;
+    $phone_for_db = $phone ?: null;
+
+    // Insert verification token
+    $stmt_ver = $mysqli->prepare("
+        INSERT INTO verification_tokens 
+        (jti, user_id, channel, token_hash, expires_at, expires_at_local, user_tz, ip, phone, issued_at, origin, issuer_user_agent, issuer_ip) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+    
+    if ($stmt_ver) {
+        $stmt_ver->bind_param(
+            'sisssssssssss',
+            $jti,
+            $user_id,
+            $channel,
+            $token_hash_for_db,
+            $expires_at,
+            $expires_at_local,
+            $user_timezone,
+            $v_ip,
+            $phone_for_db,
+            $issued_at,
+            $origin,
+            $ua,
+            $issuer_ip
+        );
+        
+        if (!$stmt_ver->execute()) {
+            log_verification_error('insert_verification_failed: ' . $stmt_ver->error);
+        } else {
+            log_verification_error('Initial verification token created for user_id: ' . $user_id);
+        }
+        $stmt_ver->close();
+    }
+
+    //
+    // CREATE USER SESSION IMMEDIATELY - NEW CODE
+    //
+    $session_token = bin2hex(random_bytes(32)); // 64 characters
+    $session_expires = time() + (30 * 24 * 60 * 60); // 30 days from now
+    $session_expires_db = gmdate('Y-m-d H:i:s', $session_expires);
+    
+    $stmt_session = $mysqli->prepare("
+        INSERT INTO user_sessions 
+        (user_id, token, user_agent, ip, expires_at, revoked) 
+        VALUES (?, ?, ?, ?, ?, 0)
+    ");
+    
+    if ($stmt_session) {
+        $stmt_session->bind_param(
+            'issss',
+            $user_id,
+            $session_token,
+            $ua,
+            $v_ip,
+            $session_expires_db
+        );
+        
+        if (!$stmt_session->execute()) {
+            log_verification_error('Failed to create user session: ' . $stmt_session->error);
+        } else {
+            $session_id = $stmt_session->insert_id;
+            log_verification_error('User session created: session_id=' . $session_id . ' for user_id=' . $user_id);
+        }
+        $stmt_session->close();
+    }
+
+    // Respond with user info AND session token
+    $response = [
+        'ok' => true, 
+        'user_id' => $user_id, 
+        'user' => $user_row,
+        'session_token' => $session_token,  // Send session token to client
+        'session_expires' => $session_expires
+    ];
+    
+    // Only include code in debug mode for testing
+    if (!empty($input['debug_verification'])) {
+        $response['debug_code'] = $code;
+        $response['debug_expires_at'] = $expires_at;
+    }
+
+    reply($response, 201);
+
+} catch (Throwable $e) {
+    reply([
+        'ok'=>false,
+        'error'=>'exception',
+        'details'=>$e->getMessage(),
+        'file'=>$e->getFile(),
+        'line'=>$e->getLine()
+    ], 500);
+}
+?>
