@@ -2,62 +2,56 @@
 /**
  * admin/fragments/vendors.php
  *
- * Admin fragment for Vendors management with focus on:
- *  - Translations support (vendor_translations)
- *  - UI language strings loaded from /languages/admin/*.json (configurable via init.php)
- *  - Text direction (ltr/rtl) according to selected admin language (and language metadata)
- *
- * Expectations:
- *  - api/vendors.php provides endpoints used by admin/assets/js/pages/vendors.js
- *  - Language files are JSON structured like:
- *      {
- *        "name": "Arabic",
- *        "direction": "rtl",           // optional, 'rtl' or 'ltr'
- *        "strings": {
- *          "vendors_title": "المتاجر",
- *          ...
- *        }
- *      }
- *
- *  - init.php may define $langBase (relative path from document root) — default '/languages/admin'
- *
- * Security / notes:
- *  - This fragment exposes only non-sensitive session info (CURRENT_USER minimal).
- *  - Remove or reduce any debug logging you add later.
+ * Theme-integrated Vendors management fragment
+ * - Uses bootstrap_admin_ui.php for theme, colors, buttons, settings
+ * - Translations support via window.ADMIN_UI.strings
+ * - RBAC permissions via window.ADMIN_UI.user.permissions
+ * - Theme-aware UI using CSS variables
  */
-echo '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">';
-if (session_status() === PHP_SESSION_NONE) session_start();
+declare(strict_types=1);
 
-// Optional site init that may define $langBase or other admin settings
-$initPath = __DIR__ . '/includes/init.php';
-if (is_readable($initPath)) {
-    require_once $initPath;
+if (php_sapi_name() !== 'cli' && session_status() === PHP_SESSION_NONE) {
+    @session_start();
 }
-// default language folder (relative to document root)
-if (empty($langBase)) $langBase = '/languages/admin';
 
-// Normalize user from session or auth helper
-$user = [];
-if (is_readable(__DIR__ . '/../api/helpers/auth_helper.php')) {
-    require_once __DIR__ . '/../api/helpers/auth_helper.php';
-    if (function_exists('start_session_safe')) start_session_safe();
-    if (function_exists('get_authenticated_user_with_permissions')) {
-        $user = get_authenticated_user_with_permissions();
-    } else {
-        $user = $_SESSION['user'] ?? [];
+// Load bootstrap_admin_ui for theme, colors, buttons, etc.
+$adminBootstrap = realpath(__DIR__ . '/../../api/bootstrap_admin_ui.php') ?: (__DIR__ . '/../../api/bootstrap_admin_ui.php');
+$ADMIN_UI_PAYLOAD = $ADMIN_UI_PAYLOAD ?? null;
+if (is_readable($adminBootstrap)) {
+    try {
+        require_once $adminBootstrap;
+    } catch (Throwable $e) {
+        // Fallback to defaults if bootstrap fails
     }
-} else {
-    if ((empty($_SESSION['user']) || !is_array($_SESSION['user'])) && !empty($_SESSION['user_id'])) {
-        $_SESSION['user'] = [
-            'id' => (int)($_SESSION['user_id'] ?? 0),
-            'username' => $_SESSION['username'] ?? '',
-            'email' => $_SESSION['email'] ?? '',
-            'role_id' => isset($_SESSION['role_id']) ? (int)$_SESSION['role_id'] : null,
-            'preferred_language' => $_SESSION['preferred_language'] ?? null,
-            'html_direction' => $_SESSION['html_direction'] ?? null,
-        ];
-    }
-    $user = $_SESSION['user'] ?? [];
+}
+
+// Fallback defaults if bootstrap not available
+if (!isset($ADMIN_UI_PAYLOAD) || !is_array($ADMIN_UI_PAYLOAD)) {
+    $ADMIN_UI_PAYLOAD = [
+        'lang' => 'en',
+        'direction' => 'ltr',
+        'strings' => [],
+        'user' => ['id' => 0, 'username' => 'guest', 'permissions' => []],
+        'csrf_token' => $_SESSION['csrf_token'] ?? bin2hex(random_bytes(16)),
+        'theme' => ['colors' => [], 'buttons' => [], 'cards' => [], 'fonts' => [], 'designs' => []]
+    ];
+}
+
+// Ensure user structure
+if (!isset($ADMIN_UI_PAYLOAD['user']) || !is_array($ADMIN_UI_PAYLOAD['user'])) {
+    $ADMIN_UI_PAYLOAD['user'] = ['id' => 0, 'username' => 'guest', 'permissions' => []];
+}
+if (!empty($_SESSION['user_id'])) {
+    $sessionUser = [
+        'id' => (int)($_SESSION['user_id'] ?? 0),
+        'username' => $_SESSION['username'] ?? $ADMIN_UI_PAYLOAD['user']['username'] ?? 'guest',
+        'permissions' => $_SESSION['permissions'] ?? $ADMIN_UI_PAYLOAD['user']['permissions'] ?? [],
+        'role_id' => $_SESSION['role_id'] ?? null
+    ];
+    $ADMIN_UI_PAYLOAD['user'] = array_merge($ADMIN_UI_PAYLOAD['user'], $sessionUser);
+}
+
+$user = $ADMIN_UI_PAYLOAD['user'];
     if (empty($user['permissions'])) {
         if (!empty($_SESSION['permissions']) && is_array($_SESSION['permissions'])) $user['permissions'] = $_SESSION['permissions'];
         elseif (!empty($_SESSION['permissions_map']) && is_array($_SESSION['permissions_map'])) $user['permissions'] = array_keys(array_filter($_SESSION['permissions_map']));
@@ -67,92 +61,78 @@ if (is_readable(__DIR__ . '/../api/helpers/auth_helper.php')) {
 
 $isAdmin = isset($user['role_id']) && (int)$user['role_id'] === 1;
 
-// Compute available languages by scanning $langBase
-$languages_for_js = [];
-$docRoot = rtrim($_SERVER['DOCUMENT_ROOT'], '/\\');
-$langDirPath = $docRoot . rtrim($langBase, '/\\');
-if (is_dir($langDirPath)) {
-    foreach (glob($langDirPath . '/*.json') as $file) {
-        $code = pathinfo($file, PATHINFO_FILENAME);
-        $json = @file_get_contents($file);
-        $data = @json_decode($json, true);
-        if (!is_array($data)) continue;
-        $name = $data['name'] ?? strtoupper($code);
-        $direction = isset($data['direction']) ? strtolower($data['direction']) : null;
-        $strings = $data['strings'] ?? [];
-        $languages_for_js[] = [
-            'code' => $code,
-            'name' => $name,
-            'direction' => $direction,
-            'strings' => $strings,
-        ];
+// Get language and direction from ADMIN_UI
+$lang = strtolower($ADMIN_UI_PAYLOAD['lang'] ?? 'en');
+$dir = $ADMIN_UI_PAYLOAD['direction'] ?? 'ltr';
+
+// Ensure strings exists
+if (!isset($ADMIN_UI_PAYLOAD['strings']) || !is_array($ADMIN_UI_PAYLOAD['strings'])) {
+    $ADMIN_UI_PAYLOAD['strings'] = [];
+}
+
+// Helper function for strings with fallback
+function s(string $key, $default = '') {
+    global $ADMIN_UI_PAYLOAD;
+    $strings = $ADMIN_UI_PAYLOAD['strings'] ?? [];
+    return isset($strings[$key]) && is_scalar($strings[$key]) ? (string)$strings[$key] : $default;
+}
+
+// Safe escape helper
+function h($s) {
+    return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
+}
+
+// Safe JSON encode
+function safe_json($v) {
+    $s = @json_encode($v, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if ($s === false) {
+        array_walk_recursive($v, function (&$item) {
+            if (is_string($item)) $item = mb_convert_encoding($item, 'UTF-8', 'UTF-8');
+        });
+        $s = @json_encode($v, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}';
     }
-}
-if (empty($languages_for_js)) {
-    // fallback minimal English
-    $languages_for_js[] = ['code' => 'en', 'name' => 'English', 'direction' => 'ltr', 'strings' => []];
+    return $s;
 }
 
-// Determine preferred admin language
-$preferredLang = $user['preferred_language'] ?? ($languages_for_js[0]['code'] ?? 'en');
+$ADMIN_UI_JSON = safe_json($ADMIN_UI_PAYLOAD);
+$GLOBALS['ADMIN_UI'] = $ADMIN_UI_PAYLOAD;
 
-// Resolve language meta (strings, direction) for preferredLang
-function find_lang_meta(array $langs, string $code) {
-    foreach ($langs as $l) if (($l['code'] ?? '') === $code) return $l;
-    return $langs[0] ?? null;
+// CSRF Token
+$csrfToken = $ADMIN_UI_PAYLOAD['csrf_token'] ?? $_SESSION['csrf_token'] ?? '';
+if (!$csrfToken) {
+    $csrfToken = bin2hex(random_bytes(16));
+    $_SESSION['csrf_token'] = $csrfToken;
 }
-$langMeta = find_lang_meta($languages_for_js, $preferredLang);
-$langDirection = $langMeta['direction'] ?? null;
-// If direction not defined, infer RTL for common RTL codes
-if (empty($langDirection)) {
-    $rtlCodes = ['ar','he','fa','ur','ps','dv'];
-    $langDirection = in_array(strtolower($preferredLang), $rtlCodes, true) ? 'rtl' : 'ltr';
-}
-
-// helper to get a UI string key with fallback
-function ui_str(array $langs, $preferred, $key, $fallback = '') {
-    $meta = find_lang_meta($langs, $preferred);
-    if ($meta && !empty($meta['strings'][$key])) return $meta['strings'][$key];
-    // try any language that has the key
-    foreach ($langs as $l) {
-        if (!empty($l['strings'][$key])) return $l['strings'][$key];
-    }
-    return $fallback;
-}
-
-// Prepare minimal strings used in this fragment
-$S = function($k, $d='') use ($languages_for_js, $preferredLang) { return htmlspecialchars(ui_str($languages_for_js, $preferredLang, $k, $d), ENT_QUOTES | ENT_SUBSTITUTE); };
-
-// Prepare output-safe JSON blobs
-$availableLangsJson = json_encode($languages_for_js, JSON_UNESCAPED_UNICODE);
-$currentUserJson = json_encode($user ?? [], JSON_UNESCAPED_UNICODE);
-$preferredLangEscaped = htmlspecialchars($preferredLang, ENT_QUOTES | ENT_SUBSTITUTE);
-$csrfToken = '';
-if (function_exists('auth_get_csrf_token')) {
-    try { $csrfToken = auth_get_csrf_token(); } catch (Throwable $e) { $csrfToken = $_SESSION['csrf_token'] ?? ''; }
-} else {
-    if (empty($_SESSION['csrf_token'])) {
-        try { $_SESSION['csrf_token'] = bin2hex(random_bytes(32)); } catch (Throwable $e) { $_SESSION['csrf_token'] = bin2hex(openssl_random_pseudo_bytes(32)); }
-    }
-    $csrfToken = $_SESSION['csrf_token'];
-}
-
-// HTML direction attribute for container
-$dirAttr = ($langDirection === 'rtl') ? 'rtl' : 'ltr';
-$alignStyle = ($langDirection === 'rtl') ? 'direction:rtl;text-align:right;' : 'direction:ltr;text-align:left;';
 ?>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <link rel="stylesheet" href="/admin/assets/css/pages/vendors.css">
+<script>
+// Inject ADMIN_UI payload for client-side theme access
+try {
+    window.ADMIN_UI = <?php echo $ADMIN_UI_JSON; ?>;
+    window.ADMIN_LANG = window.ADMIN_UI.lang || 'en';
+    window.ADMIN_DIR = window.ADMIN_UI.direction || 'ltr';
+    window.CSRF_TOKEN = window.ADMIN_UI.csrf_token || '';
+    window.ADMIN_USER = window.ADMIN_UI.user || {};
+    window.CURRENT_USER = window.ADMIN_USER; // Legacy alias
+    window.LANG_DIRECTION = window.ADMIN_DIR;
+} catch (e) {
+    console.error('ADMIN_UI init error', e);
+    window.ADMIN_UI = {};
+    window.CSRF_TOKEN = '<?php echo h($csrfToken); ?>';
+}
+</script>
 
-<div id="adminVendors" class="admin-fragment" style="max-width:1200px;margin:18px auto;font-family:system-ui,Segoe UI,Arial,sans-serif;<?php echo $alignStyle; ?>" dir="<?php echo $dirAttr; ?>">
-  <header style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-    <h2 id="vendors_title" style="margin:0;"><?php echo $S('vendors_title','Vendors'); ?></h2>
-    <div style="margin-left:auto;color:#6b7280;"><?php echo htmlspecialchars($user['username'] ?? 'guest', ENT_QUOTES | ENT_SUBSTITUTE); ?></div>
+<div id="adminVendors" class="admin-fragment" dir="<?php echo h($dir); ?>">
+  <header>
+    <h2 id="vendors_title" data-i18n="vendors_title"><?php echo h(s('vendors_title','Vendors')); ?></h2>
+    <div><?php echo h($user['username'] ?? 'guest'); ?></div>
   </header>
 
   <!-- فلاتر البحث المتقدمة -->
-  <div class="advanced-filters" style="background:#f8fafc;padding:12px;border-radius:8px;margin-bottom:12px;border:1px solid #eef2f7;">
-    <h4 style="margin-top:0;margin-bottom:8px;"><?php echo $S('advanced_filters','Advanced Filters'); ?></h4>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;align-items:end;">
+  <div class="advanced-filters">
+    <h4 data-i18n="advanced_filters"><?php echo h(s('advanced_filters','Advanced Filters')); ?></h4>
+    <div>
       <label>
         <?php echo $S('status','Status'); ?>
         <select id="filterStatus" style="width:100%;padding:6px;border:1px solid #e6eef0;border-radius:6px;">

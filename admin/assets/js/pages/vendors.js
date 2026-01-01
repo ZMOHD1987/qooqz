@@ -1,11 +1,12 @@
 /**
  * admin/assets/js/pages/vendors.js
- * Final, polished Vendors admin UI script
- *
- * التعديلات:
- * 1. إضافة حدث لعرض/إخفاء حقل parent_vendor_id عند تفعيل is_branch
- * 2. استبدال alert() بنظام إشعارات في أعلى الصفحة
- * 3. إضافة فلترة جدول المعرضين حسب الحالة، التحقق، البلد، المدينة، الهاتف، الإيميل
+ * Theme-integrated Vendors admin UI script
+ * 
+ * Integration with bootstrap_admin_ui.php theme system:
+ * - Uses window.ADMIN_UI for theme data (colors, buttons, settings)
+ * - RBAC via window.ADMIN_UI.user.permissions
+ * - i18n via window.ADMIN_UI.strings
+ * - Themed buttons via window.ADMIN_UI.theme.buttons_map
  */
 
 (function () {
@@ -26,18 +27,26 @@
     banner: { w: 1600, h: 400, quality: 0.86 }
   };
 
-  // ---------- Runtime state ----------
-  let CSRF = window.CSRF_TOKEN || '';
-  let CURRENT = window.CURRENT_USER || {};
+  // ---------- Runtime state from window.ADMIN_UI (bootstrap_admin_ui.php) ----------
+  const ADMIN_UI = window.ADMIN_UI || {};
+  let CSRF = ADMIN_UI.csrf_token || window.CSRF_TOKEN || '';
+  let CURRENT = ADMIN_UI.user || window.CURRENT_USER || {};
+  const THEME = ADMIN_UI.theme || {};
+  const STRINGS = ADMIN_UI.strings || {};
   const LANGS = window.AVAILABLE_LANGUAGES || [{ code: 'en', name: 'English', strings: {} }];
-  const PREF_LANG = window.ADMIN_LANG || (CURRENT.preferred_language || 'en');
-  const LANG_DIRECTION = window.LANG_DIRECTION || 'ltr';
+  const PREF_LANG = ADMIN_UI.lang || window.ADMIN_LANG || (CURRENT.preferred_language || 'en');
+  const LANG_DIRECTION = ADMIN_UI.direction || window.LANG_DIRECTION || 'ltr';
   const IS_ADMIN = !!(CURRENT.role_id && Number(CURRENT.role_id) === 1);
 
   // ---------- Helpers ----------
   const $ = id => document.getElementById(id);
   const log = (...args) => { if (DEBUG) console.log('[vendors.js]', ...args); };
   function escapeHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  
+  // i18n helper using ADMIN_UI.strings
+  function t(key, fallback = '') {
+    return STRINGS[key] || fallback || key;
+  }
 
   // ---------- DOM refs ----------
   const refs = {

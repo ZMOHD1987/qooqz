@@ -1,8 +1,24 @@
 /* 
  * admin/assets/css/pages/vendors.css
- * Modern Professional Admin Dashboard with Dark Table Headers
- * Clean, Minimalist Design with High Contrast
+ * Theme-Integrated Vendors Management Dashboard
+ * Uses CSS variables from bootstrap_admin_ui.php theme system
  */
+
+/* ========== THEME VARIABLES ========== */
+/* These are populated by admin_core.js from bootstrap_admin_ui.php */
+:root {
+    /* Fallback values - will be overridden by theme */
+    --theme-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --theme-font-size: 14px;
+    --theme-line-height: 1.5;
+    --theme-text-primary: #333;
+    --theme-background: #ffffff;
+    --theme-background-secondary: #f5f7fa;
+    --theme-border: #e1e5eb;
+    --theme-primary: #3B82F6;
+    --theme-primary-hover: #2563EB;
+    --theme-card-radius: 8px;
+}
 
 /* ========== RESET & BASE STYLES ========== */
 * {
@@ -12,11 +28,11 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
-    color: #333;
-    background-color: #f5f7fa;
+    font-family: var(--theme-font-family);
+    font-size: var(--theme-font-size);
+    line-height: var(--theme-line-height);
+    color: var(--theme-text-primary);
+    background-color: var(--theme-background-secondary);
 }
 
 /* ========== MAIN CONTAINER ========== */
@@ -34,29 +50,29 @@ body {
     justify-content: space-between;
     margin-bottom: 25px;
     padding-bottom: 15px;
-    border-bottom: 2px solid #e1e5eb;
+    border-bottom: 2px solid var(--theme-border);
 }
 
 #adminVendors > header h2 {
     font-size: 24px;
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--theme-text-primary);
 }
 
 #adminVendors > header > div {
     font-size: 13px;
-    color: #666;
-    background: #f8f9fa;
+    color: var(--theme-text-secondary, #666);
+    background: var(--theme-background-secondary);
     padding: 6px 12px;
-    border-radius: 4px;
-    border: 1px solid #dee2e6;
+    border-radius: var(--theme-card-radius);
+    border: 1px solid var(--theme-border);
 }
 
 /* ========== ADVANCED FILTERS ========== */
 .advanced-filters {
-    background: #ffffff;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
+    background: var(--theme-background);
+    border: 1px solid var(--theme-border);
+    border-radius: var(--theme-card-radius);
     padding: 20px;
     margin-bottom: 25px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
@@ -65,7 +81,7 @@ body {
 .advanced-filters h4 {
     font-size: 16px;
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--theme-text-primary);
     margin-bottom: 15px;
 }
 
@@ -79,7 +95,7 @@ body {
 .advanced-filters label {
     display: block;
     font-size: 13px;
-    color: #5a6c7d;
+    color: var(--theme-text-secondary, #5a6c7d);
     margin-bottom: 5px;
     font-weight: 500;
 }
@@ -88,9 +104,9 @@ body {
 .advanced-filters input {
     width: 100%;
     padding: 8px 10px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    background: #fff;
+    border: 1px solid var(--theme-border);
+    border-radius: var(--theme-btn-radius, 4px);
+    background: var(--theme-background);
     font-size: 13px;
     transition: border-color 0.15s;
 }
@@ -98,8 +114,8 @@ body {
 .advanced-filters select:focus,
 .advanced-filters input:focus {
     outline: none;
-    border-color: #3498db;
-    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 /* ========== TOOLS BAR ========== */
@@ -116,30 +132,30 @@ body {
     min-width: 250px;
     max-width: 400px;
     padding: 8px 12px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
+    border: 1px solid var(--theme-border);
+    border-radius: var(--theme-btn-radius, 4px);
     font-size: 13px;
-    background: #fff;
+    background: var(--theme-background);
 }
 
 #vendorSearch:focus {
     outline: none;
-    border-color: #3498db;
-    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 .tools > div:last-child {
     margin-left: auto;
     font-size: 13px;
-    color: #666;
+    color: var(--theme-text-secondary, #666);
     font-weight: 500;
 }
 
-/* ========== TABLE STYLES - DARK HEADERS ========== */
+/* ========== TABLE STYLES - THEMED HEADERS ========== */
 .table-wrap {
-    background: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
+    background: var(--theme-background);
+    border: 1px solid var(--theme-border);
+    border-radius: var(--theme-card-radius);
     overflow: hidden;
     margin-bottom: 30px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
@@ -152,7 +168,7 @@ body {
 }
 
 #vendorsTable thead {
-    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    background: var(--theme-primary, linear-gradient(135deg, #2c3e50 0%, #34495e 100%));
 }
 
 #vendorsTable th {
@@ -160,27 +176,27 @@ body {
     text-align: left;
     font-weight: 600;
     font-size: 13px;
-    color: #fff;
-    border-bottom: 2px solid #1a252f;
+    color: var(--theme-background, #fff);
+    border-bottom: 2px solid var(--theme-primary-hover, #1a252f);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 #vendorsTable th:first-child {
-    border-top-left-radius: 8px;
+    border-top-left-radius: var(--theme-card-radius);
 }
 
 #vendorsTable th:last-child {
-    border-top-right-radius: 8px;
+    border-top-right-radius: var(--theme-card-radius);
 }
 
 #vendorsTable tbody tr {
-    border-bottom: 1px solid #f1f3f4;
+    border-bottom: 1px solid var(--theme-border);
     transition: background-color 0.2s;
 }
 
 #vendorsTable tbody tr:hover {
-    background-color: #f8f9fa;
+    background-color: var(--theme-background-secondary);
 }
 
 #vendorsTable tbody tr:nth-child(even) {
@@ -206,16 +222,16 @@ body {
 #vendorsTable td small {
     display: block;
     font-size: 12px;
-    color: #7f8c8d;
+    color: var(--theme-text-secondary, #7f8c8d);
     margin-top: 3px;
 }
 
-/* ========== BUTTONS IN TABLE ========== */
+/* ========== BUTTONS IN TABLE - USE THEME BUTTONS ========== */
 #vendorsTable .btn {
     padding: 5px 10px;
     margin: 2px;
     font-size: 12px;
-    border-radius: 3px;
+    border-radius: var(--theme-btn-radius, 3px);
     border: none;
     cursor: pointer;
     transition: all 0.2s;
@@ -223,37 +239,37 @@ body {
 }
 
 #vendorsTable .editBtn {
-    background: #3498db;
-    color: white;
+    background: var(--theme-primary, #3498db);
+    color: var(--theme-background, white);
 }
 
 #vendorsTable .editBtn:hover {
-    background: #2980b9;
+    background: var(--theme-primary-hover, #2980b9);
 }
 
 #vendorsTable .delBtn {
-    background: #e74c3c;
-    color: white;
+    background: var(--theme-error, #e74c3c);
+    color: var(--theme-background, white);
 }
 
 #vendorsTable .delBtn:hover {
-    background: #c0392b;
+    background: var(--theme-error-hover, #c0392b);
 }
 
 #vendorsTable .verifyBtn {
-    background: #27ae60;
-    color: white;
+    background: var(--theme-success, #27ae60);
+    color: var(--theme-background, white);
 }
 
 #vendorsTable .verifyBtn:hover {
-    background: #219653;
+    background: var(--theme-success-hover, #219653);
 }
 
 /* ========== FORM SECTION ========== */
 #vendorFormSection {
-    background: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
+    background: var(--theme-background);
+    border: 1px solid var(--theme-border);
+    border-radius: var(--theme-card-radius);
     padding: 25px;
     margin-top: 30px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
@@ -265,13 +281,13 @@ body {
     justify-content: space-between;
     margin-bottom: 20px;
     padding-bottom: 15px;
-    border-bottom: 2px solid #f1f3f4;
+    border-bottom: 2px solid var(--theme-border);
 }
 
 #vendorFormTitle {
     font-size: 18px;
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--theme-text-primary);
 }
 
 /* ========== FORM GRID ========== */
@@ -414,14 +430,14 @@ body {
     background: #fff;
 }
 
-/* ========== BUTTON STYLES ========== */
+/* ========== BUTTON STYLES - THEME INTEGRATED ========== */
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 8px 16px;
+    padding: var(--theme-btn-padding, 8px 16px);
     border: none;
-    border-radius: 4px;
+    border-radius: var(--theme-btn-radius, 4px);
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
@@ -430,8 +446,8 @@ body {
     white-space: nowrap;
     height: 36px;
     line-height: 1;
-    background: #6c757d;
-    color: white;
+    background: var(--theme-secondary, #6c757d);
+    color: var(--theme-background, white);
     border: 1px solid transparent;
 }
 
@@ -447,22 +463,22 @@ body {
 
 /* Primary Button */
 .btn.primary {
-    background: #3498db;
-    border-color: #2980b9;
+    background: var(--theme-primary, #3498db);
+    border-color: var(--theme-primary-hover, #2980b9);
 }
 
 .btn.primary:hover {
-    background: #2980b9;
+    background: var(--theme-primary-hover, #2980b9);
 }
 
 /* Danger Button */
 .btn.danger {
-    background: #e74c3c;
-    border-color: #c0392b;
+    background: var(--theme-error, #e74c3c);
+    border-color: var(--theme-error-hover, #c0392b);
 }
 
 .btn.danger:hover {
-    background: #c0392b;
+    background: var(--theme-error-hover, #c0392b);
 }
 
 /* Small Button */
