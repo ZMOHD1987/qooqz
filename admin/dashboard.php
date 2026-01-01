@@ -181,26 +181,42 @@ console.log('=== DASHBOARD: page loaded ===');
 // Initialize color slider
 (function initColorSlider() {
     console.log('=== DASHBOARD: initializing color slider ===');
-    try {
+    
+    // Helper to check if ColorSlider is ready
+    function tryInitColorSlider(attempt) {
+        attempt = attempt || 1;
+        var maxAttempts = 5;
+        
         if (window.ColorSlider && typeof window.ColorSlider.render === 'function') {
             var container = document.getElementById('colorSliderContainer');
             if (container) {
-                ColorSlider.render(container, {
-                    onSelect: function(color) {
-                        console.log('Color selected:', color);
-                        // Optionally show a notification or perform other actions
-                    }
-                });
-                console.log('Color slider initialized successfully');
+                try {
+                    ColorSlider.render(container, {
+                        onSelect: function(color) {
+                            console.log('Color selected:', color);
+                            // Optionally show a notification or perform other actions
+                        }
+                    });
+                    console.log('Color slider initialized successfully');
+                } catch (e) {
+                    console.error('Color slider initialization error', e);
+                }
             } else {
                 console.warn('Color slider container not found');
             }
+        } else if (attempt < maxAttempts) {
+            console.warn('ColorSlider not available, retrying (attempt ' + attempt + '/' + maxAttempts + ')');
+            setTimeout(function() { tryInitColorSlider(attempt + 1); }, 100);
         } else {
-            console.warn('ColorSlider not available, retrying in 100ms');
-            setTimeout(initColorSlider, 100);
+            console.error('ColorSlider failed to load after ' + maxAttempts + ' attempts');
         }
-    } catch (e) {
-        console.error('Color slider initialization error', e);
+    }
+    
+    // Use requestAnimationFrame for better timing, fallback to immediate call
+    if (typeof requestAnimationFrame !== 'undefined') {
+        requestAnimationFrame(function() { tryInitColorSlider(); });
+    } else {
+        tryInitColorSlider();
     }
 })();
 

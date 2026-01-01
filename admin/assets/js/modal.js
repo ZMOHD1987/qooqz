@@ -645,27 +645,53 @@
 
     AdminModal.show(html);
 
-    // Initialize color slider in modal after a short delay
-    setTimeout(function () {
-      try {
-        var container = document.getElementById('modalColorSlider');
-        if (container && window.ColorSlider) {
-          ColorSlider.render(container, {
-            onSelect: function (color) {
-              var btn = document.getElementById('confirmColorBtn');
-              if (btn) {
-                btn.onclick = function () {
-                  onSelect(color);
-                  AdminModal.close();
-                };
-              }
+    // Initialize color slider in modal after ensuring DOM is ready
+    if (typeof requestAnimationFrame !== 'undefined') {
+      requestAnimationFrame(function() {
+        setTimeout(function () {
+          try {
+            var container = document.getElementById('modalColorSlider');
+            if (container && window.ColorSlider) {
+              ColorSlider.render(container, {
+                onSelect: function (color) {
+                  var btn = document.getElementById('confirmColorBtn');
+                  if (btn) {
+                    btn.onclick = function () {
+                      onSelect(color);
+                      AdminModal.close();
+                    };
+                  }
+                }
+              });
             }
-          });
+          } catch (e) {
+            console.error('Failed to initialize color slider in modal', e);
+          }
+        }, 50);
+      });
+    } else {
+      // Fallback for older browsers
+      setTimeout(function () {
+        try {
+          var container = document.getElementById('modalColorSlider');
+          if (container && window.ColorSlider) {
+            ColorSlider.render(container, {
+              onSelect: function (color) {
+                var btn = document.getElementById('confirmColorBtn');
+                if (btn) {
+                  btn.onclick = function () {
+                    onSelect(color);
+                    AdminModal.close();
+                  };
+                }
+              }
+            });
+          }
+        } catch (e) {
+          console.error('Failed to initialize color slider in modal', e);
         }
-      } catch (e) {
-        console.error('Failed to initialize color slider in modal', e);
-      }
-    }, 100);
+      }, 100);
+    }
   };
 
 })();

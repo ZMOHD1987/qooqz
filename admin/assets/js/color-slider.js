@@ -62,7 +62,8 @@
     if (/^[A-Fa-f0-9]{6}$/.test(s)) return '#' + s.toUpperCase();
     if (/^[A-Fa-f0-9]{3}$/.test(s)) return '#' + s.toUpperCase();
     if (/^var\(--/.test(s)) return s;
-    return s;
+    // Return null for invalid color values instead of original string
+    return null;
   }
 
   // Get colors from ADMIN_UI
