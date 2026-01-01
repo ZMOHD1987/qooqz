@@ -1,0 +1,256 @@
+/* admin/assets/css/color-slider.css
+ * Styling for the color slider component that displays theme colors from color_settings table.
+ * Integrates with theme system using CSS variables.
+ */
+
+/* Container */
+.color-slider-container {
+  width: 100%;
+  background: var(--theme-background, #ffffff);
+  border: 1px solid var(--theme-border, #E5E7EB);
+  border-radius: var(--theme-card-radius, 8px);
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Header */
+.color-slider-header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--theme-border, #E5E7EB);
+}
+
+.color-slider-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--theme-text-primary, #111827);
+  font-family: var(--theme-font-family, system-ui, sans-serif);
+}
+
+/* Content area (scrollable) */
+.color-slider-content {
+  max-height: 600px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+}
+
+.color-slider-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.color-slider-content::-webkit-scrollbar-track {
+  background: var(--theme-background-secondary, #F8FAFC);
+  border-radius: 4px;
+}
+
+.color-slider-content::-webkit-scrollbar-thumb {
+  background: var(--theme-border, #E5E7EB);
+  border-radius: 4px;
+}
+
+.color-slider-content::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-text-secondary, #6B7280);
+}
+
+/* Category group */
+.color-category-group {
+  margin-bottom: 24px;
+}
+
+.color-category-group:last-child {
+  margin-bottom: 0;
+}
+
+.color-category-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--theme-text-secondary, #6B7280);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  padding-left: 4px;
+}
+
+/* Swatches container */
+.color-swatches-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  padding: 4px;
+}
+
+/* Individual color swatch */
+.color-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+  background: var(--theme-background-secondary, #F8FAFC);
+  border: 2px solid var(--theme-border, #E5E7EB);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.color-swatch:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: var(--theme-primary, #3B82F6);
+}
+
+.color-swatch.selected {
+  border-color: var(--theme-primary, #3B82F6);
+  background: var(--theme-background, #ffffff);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.color-swatch.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  background: var(--theme-primary, #3B82F6);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Color swatch inner (the actual color display) */
+.color-swatch-inner {
+  width: 100%;
+  height: 80px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  margin-bottom: 8px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Labels */
+.color-swatch-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--theme-text-primary, #111827);
+  text-align: center;
+  margin-bottom: 4px;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.color-swatch-value {
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  color: var(--theme-text-secondary, #6B7280);
+  text-align: center;
+  background: rgba(0, 0, 0, 0.03);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+/* Empty state */
+.color-slider-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--theme-text-secondary, #6B7280);
+  font-size: 14px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .color-swatches-container {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+  }
+
+  .color-swatch {
+    padding: 10px;
+  }
+
+  .color-swatch-inner {
+    height: 60px;
+  }
+
+  .color-slider-content {
+    max-height: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .color-swatches-container {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+  }
+
+  .color-swatch {
+    padding: 8px;
+  }
+
+  .color-swatch-inner {
+    height: 50px;
+  }
+
+  .color-swatch-label {
+    font-size: 12px;
+  }
+
+  .color-swatch-value {
+    font-size: 10px;
+  }
+}
+
+/* Range slider variant (alternative display style) */
+.color-slider-container.range-style .color-swatches-container {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 8px;
+  padding: 8px 4px;
+}
+
+.color-slider-container.range-style .color-swatch {
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.color-slider-container.range-style .color-swatches-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.color-slider-container.range-style .color-swatches-container::-webkit-scrollbar-track {
+  background: var(--theme-background-secondary, #F8FAFC);
+  border-radius: 4px;
+}
+
+.color-slider-container.range-style .color-swatches-container::-webkit-scrollbar-thumb {
+  background: var(--theme-border, #E5E7EB);
+  border-radius: 4px;
+}
+
+.color-slider-container.range-style .color-swatches-container::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-text-secondary, #6B7280);
+}
+
+/* Compact variant */
+.color-slider-container.compact .color-swatch {
+  padding: 8px;
+}
+
+.color-slider-container.compact .color-swatch-inner {
+  height: 50px;
+}
+
+.color-slider-container.compact .color-swatch-label {
+  font-size: 12px;
+}
+
+.color-slider-container.compact .color-swatch-value {
+  font-size: 10px;
+}

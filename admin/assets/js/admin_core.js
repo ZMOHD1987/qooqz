@@ -832,6 +832,28 @@
   Admin.syncThemeVarsFromAdminUI = syncThemeVarsFromAdminUI;
   Admin.generateComponentStyles = generateComponentStyles;
 
+  // Helper function to get theme colors for external use
+  Admin.getThemeColors = function () {
+    try {
+      if (!window.ADMIN_UI || !window.ADMIN_UI.theme) return [];
+      return window.ADMIN_UI.theme.colors || [];
+    } catch (e) {
+      Admin.warn('getThemeColors failed', e);
+      return [];
+    }
+  };
+
+  // Helper function to get colors map
+  Admin.getColorsMap = function () {
+    try {
+      if (!window.ADMIN_UI || !window.ADMIN_UI.theme) return {};
+      return window.ADMIN_UI.theme.colors_map || {};
+    } catch (e) {
+      Admin.warn('getColorsMap failed', e);
+      return {};
+    }
+  };
+
   Admin.log('admin_core ready');
 
 })();

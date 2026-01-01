@@ -241,6 +241,41 @@ body.sidebar-open .sidebar-backdrop { display:block; opacity:1; }
 .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 
 /* ----------------------
+   Color Slider Theme Integration
+   ---------------------- */
+/* Theme-specific color slider overrides */
+.color-slider-container {
+  background: var(--theme-background);
+  border-color: var(--theme-border);
+}
+
+.color-category-header {
+  color: var(--theme-text-secondary);
+}
+
+.color-swatch {
+  background: var(--theme-background-secondary);
+  border-color: var(--theme-border);
+}
+
+.color-swatch:hover {
+  border-color: var(--theme-primary);
+}
+
+.color-swatch.selected {
+  border-color: var(--theme-primary);
+  background: var(--theme-background);
+}
+
+.color-swatch-label {
+  color: var(--theme-text-primary);
+}
+
+.color-swatch-value {
+  color: var(--theme-text-secondary);
+}
+
+/* ----------------------
    Debug helpers (optional)
    ---------------------- */
 /* Uncomment during development */

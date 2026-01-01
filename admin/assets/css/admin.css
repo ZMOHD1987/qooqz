@@ -323,6 +323,19 @@ body.sidebar-open .sidebar-backdrop { display:block; opacity:1; }
 }
 
 /* ----------------------
+   Color Slider Base Styles
+   ---------------------- */
+/* Note: Full color slider styles are in color-slider.css.
+   These are minimal fallbacks for integration with admin theme. */
+.color-slider-container {
+  font-family: var(--theme-font-family);
+}
+
+.color-slider-container * {
+  box-sizing: border-box;
+}
+
+/* ----------------------
    Debug helpers (optional)
    ---------------------- */
 /* Uncomment during development */

@@ -133,6 +133,13 @@ $embedDrivers = !empty($_GET['embed']);
   </div>
 </section>
 
+<section class="container" style="padding:18px 0;">
+  <h2 data-i18n="theme_colors_title"><?php echo h(s('theme_colors_title','Theme Colors')); ?></h2>
+  <p class="text-muted" data-i18n="theme_colors_subtitle"><?php echo h(s('theme_colors_subtitle','Preview and manage theme colors from the database')); ?></p>
+  
+  <div id="colorSliderContainer" data-color-slider style="margin-top:16px;"></div>
+</section>
+
 <?php if ($embedDrivers && $canViewDrivers): ?>
 <meta data-page="independent_driver" data-assets-js="/admin/assets/js/pages/IndependentDriver.js"
       data-i18n-files="/languages/admin/<?php echo rawurlencode($lang); ?>.json,/languages/IndependentDriver/<?php echo rawurlencode($lang); ?>.json">
@@ -168,6 +175,32 @@ console.log('=== DASHBOARD: page loaded ===');
         }
     } catch (e) {
         console.warn('Translation apply error', e);
+    }
+})();
+
+// Initialize color slider
+(function initColorSlider() {
+    console.log('=== DASHBOARD: initializing color slider ===');
+    try {
+        if (window.ColorSlider && typeof window.ColorSlider.render === 'function') {
+            var container = document.getElementById('colorSliderContainer');
+            if (container) {
+                ColorSlider.render(container, {
+                    onSelect: function(color) {
+                        console.log('Color selected:', color);
+                        // Optionally show a notification or perform other actions
+                    }
+                });
+                console.log('Color slider initialized successfully');
+            } else {
+                console.warn('Color slider container not found');
+            }
+        } else {
+            console.warn('ColorSlider not available, retrying in 100ms');
+            setTimeout(initColorSlider, 100);
+        }
+    } catch (e) {
+        console.error('Color slider initialization error', e);
     }
 })();
 
