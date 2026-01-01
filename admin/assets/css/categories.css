@@ -1,0 +1,11 @@
+/* Basic styles for categories admin (put into your admin build) */
+body { font-family: var(--font, Arial, sans-serif); padding: 12px; background: #fff; color: #222; }
+table.table-list { width:100%; border-collapse: collapse; margin-top:12px; }
+table.table-list th, table.table-list td { border:1px solid #e2e2e2; padding:8px; text-align: left; vertical-align: middle; }
+.err { color: #b71c1c; background:#fdecea; padding:6px; margin:6px 0; }
+.ok { color: #0f5132; background:#d1e7dd; padding:6px; margin:6px 0; }
+.col-2 { display:flex; gap:18px; flex-wrap:wrap; }
+.col-2 > div { flex:1 1 320px; }
+.tabs .lang { border:1px solid #eee; padding:8px; margin-bottom:8px; background:#fafafa; }
+button { background:#0d6efd; color:white; border:none; padding:8px 12px; cursor:pointer; border-radius:4px; }
+button:hover { opacity:0.95; }

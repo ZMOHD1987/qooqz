@@ -1,0 +1,446 @@
+/* admin/assets/css/admin.css
+ *
+ * Complete responsive admin stylesheet with RTL support.
+ * - Sidebar slides from left in LTR, from right in RTL.
+ * - Sidebar pinned on wide screens (>=1100px), overlay on small screens.
+ * - Header split in three regions (left/center/right). Elements reorder for RTL.
+ * - Compact logo & avatar sizing with strong overrides to prevent layout break.
+ * - Theme values can be injected via :root variables (server or JS).
+ *
+ * Save as UTF-8 without BOM.
+ */
+
+/* =========================
+   Configurable variables
+   (override via server-injected :root or theme-vars)
+   ========================= */
+:root{
+  --color-primary: #3B82F6;
+  --color-primary-dark: #2563EB;
+  --color-accent: #F59E0B;
+  --color-bg: #FFFFFF;
+  --color-surface: #F9FAFB;
+  --color-card: #ffffff;
+  --color-text: #111827;
+  --color-muted: #6B7280;
+  --color-border: #E5E7EB;
+
+  --font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  --font-size: 14px;
+
+  --header-height: 64px;
+  --sidebar-width: 260px;
+  --breakpoint-pin: 1100px; /* >= pinned sidebar */
+  --gap: 12px;
+  --radius: 10px;
+}
+
+/* =========================
+   Base reset & typography
+   ========================= */
+* { box-sizing: border-box; }
+html,body { height:100%; margin:0; padding:0; }
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+  color: var(--color-text);
+  background: var(--color-bg);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Direction helpers (document should include dir="ltr" or dir="rtl") */
+html[dir="ltr"], html[dir="rtl"] { scroll-behavior: smooth; }
+
+/* =========================
+   Header (three regions)
+   ========================= */
+.admin-header {
+  position: sticky;
+  top: 0;
+  z-index: 1400;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  height: var(--header-height);
+  padding: 6px 14px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  flex-wrap: nowrap;
+}
+
+/* Header regions */
+.header-left, .header-center, .header-right {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0; /* allow flex children to shrink */
+}
+.header-left { flex: 0 0 auto; }
+.header-center { flex: 1 1 40%; justify-content:center; min-width:0; display:none; } /* shown at >=700px */
+.header-right { flex: 0 0 auto; }
+
+/* Brand (logo + fallback text) */
+.brand { display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; white-space:nowrap; overflow:hidden; }
+.brand-logo{
+  display:inline-block !important;
+  width:auto !important;
+  height:auto !important;
+  max-width: 150px !important;
+  max-height: calc(var(--header-height) - 16px) !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+  vertical-align: middle !important;
+}
+.brand-fallback { font-weight:700; color:var(--color-primary); font-size:1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* Toggle button (☰) */
+#sidebarToggle {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:44px; height:44px;
+  min-width:44px; min-height:44px;
+  border-radius:8px;
+  border:none;
+  background:var(--color-primary);
+  color:#fff;
+  font-size:20px;
+  cursor:pointer;
+  padding:0;
+  flex-shrink:0;
+}
+#sidebarToggle:focus { outline:3px solid rgba(59,130,246,0.18); outline-offset:2px; }
+#sidebarToggle:hover { background:var(--color-primary-dark); transform:translateY(-1px); }
+
+/* Search */
+.search-wrap { display:flex; align-items:center; gap:8px; width:100%; max-width:560px; padding:6px 12px; border-radius:999px; background:#fff; border:1px solid var(--color-border); }
+.search-input { flex:1; border:none; background:transparent; padding:6px; font-size:14px; outline:none; }
+
+/* Header right items */
+.icon-btn { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:8px; border:none; background:transparent; cursor:pointer; }
+.icon-btn:hover { background: rgba(0,0,0,0.04); }
+.notif-wrap { position:relative; }
+.badge { position:absolute; top:-6px; right:-6px; background:var(--color-accent); color:#fff; font-size:11px; padding:2px 6px; border-radius:999px; font-weight:700; }
+
+/* User area */
+.user-menu { display:flex; align-items:center; gap:8px; }
+.user-link { display:flex; align-items:center; gap:8px; text-decoration:none; color:inherit; }
+.user-info { display:none; flex-direction:column; line-height:1; white-space:nowrap; }
+.username-text { font-weight:600; font-size:14px; }
+.user-role { font-size:12px; color:var(--color-muted); }
+
+/* Avatar */
+.avatar { width:36px; height:36px; border-radius:50%; object-fit:cover; object-position:center; border:2px solid var(--color-primary); display:inline-block; }
+
+/* Header defensive rules to prevent wrapping/overflow */
+.admin-header img { display:block; max-width:100%; height:auto; }
+
+/* =========================
+   Sidebar (drawer/pinned)
+   ========================= */
+.admin-sidebar {
+  position: fixed;
+  top: var(--header-height);
+  bottom: 0;
+  left: 0; /* LTR default */
+  width: var(--sidebar-width);
+  max-width: 90%;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  padding:14px;
+  overflow:auto;
+  transform: translateX(-115%);
+  transition: transform .22s ease, visibility .22s ease;
+  z-index: 1200;
+  box-sizing: border-box;
+}
+
+/* Pinned on wide screens */
+@media (min-width: var(--breakpoint-pin)) {
+  .admin-sidebar { transform: translateX(0); position: fixed; }
+}
+
+/* When open (overlay mode) */
+body.sidebar-open .admin-sidebar { transform: translateX(0); }
+
+/* Backdrop */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.36);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .18s ease, visibility .18s ease;
+  z-index: 1150;
+}
+body.sidebar-open .sidebar-backdrop { opacity: 1; visibility: visible; }
+
+/* Sidebar content */
+.sidebar-list { list-style:none; margin:0; padding:0; }
+.sidebar-list li { margin:6px 0; }
+.sidebar-link { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; color:var(--color-text); text-decoration:none; font-weight:600; }
+.sidebar-link:hover { background: rgba(0,0,0,0.03); transform: translateX(4px); transition: all .12s; }
+.sidebar-link .sidebar-icon { width:28px; text-align:center; flex-shrink:0; }
+.sidebar-list .active > .sidebar-link { background: var(--color-primary); color:#fff; box-shadow: 0 6px 18px rgba(0,0,0,0.06); transform:none; }
+
+/* Ensure sidebar scrolls without shifting layout */
+.admin-sidebar { -webkit-overflow-scrolling: touch; }
+
+/* =========================
+   Main content
+   ========================= */
+.admin-main {
+  margin-top: 0;
+  flex: 1 1 auto;
+  padding: 18px;
+  min-height: calc(100vh - var(--header-height));
+  transition: margin .22s ease;
+  box-sizing: border-box;
+}
+
+/* When sidebar pinned shift content */
+@media (min-width: var(--breakpoint-pin)) {
+  html[dir="ltr"] .admin-main { margin-left: var(--sidebar-width); }
+  html[dir="rtl"] .admin-main { margin-right: var(--sidebar-width); }
+}
+
+/* =========================
+   Buttons / Cards / Forms
+   ========================= */
+.btn { display:inline-flex; align-items:center; gap:8px; padding:8px 14px; border-radius:8px; border:1px solid var(--color-border); background:transparent; color:var(--color-text); cursor:pointer; text-decoration:none; }
+.btn-primary { background:var(--color-primary); color:#fff; border-color:transparent; }
+.btn-primary:hover { background:var(--color-primary-dark); }
+
+/* Simple card */
+.card { background:var(--color-card); border:1px solid var(--color-border); border-radius:10px; padding:16px; box-shadow:0 2px 6px rgba(2,6,23,0.03); }
+
+/* Form controls */
+input, textarea, select { width:100%; padding:10px 12px; border:1px solid var(--color-border); border-radius:8px; background:#fff; color:var(--color-text); }
+
+/* Utilities */
+.hidden { display:none !important; }
+.text-muted { color:var(--color-muted); }
+
+/* =========================
+   RTL adaptations
+   ========================= */
+/* Sidebar from right, header reorder, toggle placement */
+html[dir="rtl"] .admin-sidebar {
+  left: auto !important;
+  right: 0 !important;
+  border-right: none !important;
+  border-left: 1px solid var(--color-border) !important;
+  transform: translateX(115%) !important; /* hidden by default */
+}
+html[dir="rtl"] body.sidebar-open .admin-sidebar { transform: translateX(0) !important; }
+@media (min-width: var(--breakpoint-pin)) {
+  html[dir="rtl"] .admin-sidebar { transform: translateX(0) !important; left: auto !important; right: 0 !important; }
+}
+
+/* Header regions ordering for RTL */
+html[dir="rtl"] .header-left { order: 3; }     /* brand/toggle goes last in DOM visually */
+html[dir="rtl"] .header-center { order: 2; }
+html[dir="rtl"] .header-right { order: 1; }    /* user area appears first visually */
+
+/* Place toggle on the right (absolute so it doesn't shift others) */
+html[dir="rtl"] #sidebarToggle {
+  position: absolute;
+  right: 12px;
+  left: auto;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1410;
+}
+
+/* Make brand align to right and leave space for toggle */
+html[dir="rtl"] .brand { justify-content:flex-end; margin-right:56px; }
+
+/* Sidebar list item alignment */
+html[dir="rtl"] .sidebar-link { justify-content:flex-end; text-align:right; }
+html[dir="rtl"] .sidebar-link .sidebar-icon { margin-left:10px; margin-right:0; }
+
+/* Avatar / user area */
+html[dir="rtl"] .header-right { flex-direction: row-reverse; }
+html[dir="rtl"] .user-info { text-align:right; }
+
+/* Backdrop behavior (ensure covers whole viewport) */
+html[dir="rtl"] .sidebar-backdrop { left:0; right:0; }
+
+/* Defensive logo sizing for RTL too */
+html[dir="rtl"] .brand-logo { max-width:150px !important; max-height: calc(var(--header-height) - 16px) !important; }
+
+/* =========================
+   Responsive
+   ========================= */
+@media (min-width:700px) {
+  .header-center { display:flex; }
+  .user-info { display:flex; }
+  .sidebar-backdrop { display:none !important; } /* no backdrop on pinned view */
+}
+@media (max-width:699px) {
+  .brand-fallback { display:none; }
+  .brand-logo { max-width:120px !important; max-height: calc(var(--header-height) - 22px) !important; }
+  .avatar { width:34px; height:34px; }
+}
+/* Header order fixes (load AFTER admin.css)
+   Ensures full mirroring of header elements for RTL/LTR.
+   - Keeps toggle + brand grouped on one side.
+   - Keeps notifications/user/logout grouped on the opposite side.
+   - Forces consistent order on all screen sizes.
+*/
+
+/* Common: mark specific items so we can order them reliably */
+.header-left { display:flex !important; align-items:center !important; gap:8px !important; }
+.header-center { display:flex !important; align-items:center !important; justify-content:center !important; }
+.header-right { display:flex !important; align-items:center !important; gap:8px !important; }
+
+/* Ensure identifiable elements keep fixed roles */
+#sidebarToggle { order: 0 !important; flex: 0 0 auto !important; }
+.admin-header .brand { order: 1 !important; flex: 0 0 auto !important; }
+.header-center { order: 2 !important; flex: 1 1 auto !important; min-width:0 !important; }
+
+/* Header-right children explicit orders (default LTR) */
+/* Put notifications first (left of user in LTR), then user, then logout if present */
+.header-right .notif-wrap { order: 0 !important; }
+.header-right .user-menu { order: 1 !important; }
+.header-right .btn-logout, .header-right form { order: 2 !important; }
+
+/* Defensive: if elements have other wrappers, try matching common classes */
+.header-right > .notif-wrap, .header-right > .user-menu, .header-right > .btn-logout { display:flex !important; align-items:center !important; }
+
+/* LTR: ensure toggle is on the left and header-right floats to right */
+html[dir="ltr"] .header-left { order: 0 !important; }
+html[dir="ltr"] .header-center { order: 1 !important; }
+html[dir="ltr"] .header-right { order: 2 !important; }
+
+/* RTL: invert region orders so header-right (user) is visually first, toggle+brand on the right */
+html[dir="rtl"] .header-left { order: 2 !important; }
+html[dir="rtl"] .header-center { order: 1 !important; }
+html[dir="rtl"] .header-right { order: 0 !important; }
+
+/* RTL: force toggle to the right (absolute) and ensure brand doesn't overlap */
+html[dir="rtl"] #sidebarToggle {
+  position: absolute !important;
+  right: 12px !important;
+  left: auto !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 1600 !important;
+}
+
+/* RTL: ensure header-right children order is mirrored:
+   user-menu should appear to the right of notifications visually (so order reversed relative to LTR) */
+html[dir="rtl"] .header-right .notif-wrap { order: 1 !important; }
+html[dir="rtl"] .header-right .user-menu { order: 0 !important; }
+html[dir="rtl"] .header-right .btn-logout, html[dir="rtl"] .header-right form { order: 2 !important; }
+
+/* Ensure header-left (brand) sits with margin so absolute toggle doesn't cover it */
+html[dir="rtl"] .admin-header .brand { margin-right: 56px !important; }
+
+/* Make sure center area shrinks properly (avoid overflow pushing icons) */
+.admin-header .header-center { min-width: 0 !important; }
+.admin-header .search-wrap { min-width: 0 !important; max-width: 520px; overflow: hidden; }
+
+/* Prevent wrapping on all header children */
+.admin-header { white-space: nowrap !important; }
+.admin-header > * { min-width: 0 !important; }
+
+/* Small screen adjustments: ensure toggle always clickable and visible */
+@media (max-width: 700px) {
+  /* Toggle stays absolute in RTL, normal in LTR */
+  html[dir="ltr"] #sidebarToggle { position: relative !important; right: auto !important; top: auto !important; transform: none !important; }
+  html[dir="rtl"] #sidebarToggle { right: 8px !important; }
+  /* Collapse center on tiny screens */
+  .header-center { display: none !important; }
+}
+/* header-order-fixes.css
+   Must be loaded AFTER admin.css and any rtl fixes.
+   Enforces clear left/right grouping and spacing (both LTR/RTL).
+*/
+
+/* 1) Base: ensure header is one line and children can shrink */
+.admin-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  flex-wrap: nowrap !important;
+}
+
+/* 2) Define left/center/right regions behavior */
+.header-left, .header-center, .header-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-width: 0 !important; /* allow children to shrink */
+}
+
+/* 3) Force grouping and ordering (LTR default) */
+.header-left { order: 0 !important; flex: 0 0 auto !important; }
+.header-center { order: 1 !important; flex: 1 1 auto !important; justify-content: center !important; min-width: 0 !important; }
+.header-right { order: 2 !important; flex: 0 0 auto !important; }
+
+/* 4) Prevent overlap: make each header-right child non-flexible and spaced */
+.header-right > * { flex: none !important; margin-left: 8px !important; margin-right: 0 !important; }
+
+/* 5) RTL: invert ordering and use margin-right auto to push groups visually */
+html[dir="rtl"] .header-left  { order: 2 !important; }
+html[dir="rtl"] .header-center{ order: 1 !important; }
+html[dir="rtl"] .header-right { order: 0 !important; }
+
+/* For LTR put header-right to far right using auto margin on center (or header-left) */
+html[dir="ltr"] .header-center { margin: 0 12px; }
+html[dir="ltr"] .header-right { margin-left: auto !important; margin-right: 0 !important; }
+
+/* For RTL put header-right to far left (mirror) */
+html[dir="rtl"] .header-center { margin: 0 12px; }
+html[dir="rtl"] .header-right { margin-right: auto !important; margin-left: 0 !important; }
+
+/* 6) Ensure toggle button stays in-flow (not absolute) to avoid overlapping brand */
+#sidebarToggle {
+  position: static !important;
+  right: auto !important;
+  left: auto !important;
+  margin: 0 !important;
+  flex: 0 0 auto !important;
+}
+
+/* 7) Adjust margins of header-right children for RTL so spacing mirrors */
+html[dir="rtl"] .header-right > * { margin-right: 8px !important; margin-left: 0 !important; }
+
+/* 8) If the brand text or logo is long, truncate it instead of pushing icons */
+.admin-header .brand { max-width: 280px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* 9) Small screens: collapse center (search) and prevent icons overflow */
+@media (max-width: 700px) {
+  .header-center { display: none !important; }
+  .header-right > * { margin-left: 6px !important; margin-right: 6px !important; }
+  html[dir="rtl"] .header-right > * { margin-right: 6px !important; margin-left: 6px !important; }
+}
+
+/* 10) Defensive: override other rules forcing width:100% on images */
+.admin-header img.brand-logo, .brand > img.brand-logo { width: auto !important; height: auto !important; max-width: 150px !important; }
+
+/* 11) Make sure icons are visually separated and not stacked */
+.icon-btn, .notif-wrap, .user-menu, .btn-logout, form { display: inline-flex !important; align-items: center !important; gap: 6px !important; }
+/* Defensive overrides if some other CSS forces transforms or positions */
+#sidebarToggle[aria-expanded="true"] { box-shadow: 0 6px 18px rgba(0,0,0,0.08) !important; }
+
+/* End of header-order-fixes.css */
+/* Accessibility focus */
+a:focus, button:focus, input:focus { outline:3px solid rgba(59,130,246,0.18); outline-offset:2px; }
+
+/* Defensive: override any global img{width:100%} */
+.admin-header img.brand-logo, .brand > img.brand-logo { width:auto !important; height:auto !important; max-width:150px !important; }
+
+/* =========================
+   Notes for JS
+   =========================
+   - Sidebar toggle JS should toggle class "sidebar-open" on <body>.
+   - Sidebar backdrop should be an element with class "sidebar-backdrop" appended to <body>.
+   - When body has .sidebar-open, sidebar becomes visible in overlay mode.
+   - On wide screens (>=var(--breakpoint-pin)) sidebar is pinned and admin-main margin is shifted.
+   ========================= */

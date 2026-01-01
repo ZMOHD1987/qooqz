@@ -1,0 +1,257 @@
+/* admin/assets/css/admin-theme.css
+   Server-driven theme base stylesheet.
+   - Relies on CSS variables injected by admin_core.syncThemeVarsFromAdminUI()
+     (variables names: --theme-primary, --theme-primary-hover, --theme-secondary,
+      --theme-accent, --theme-background, --theme-background-secondary,
+      --theme-text-primary, --theme-text-secondary, --theme-border, --theme-success,
+      --theme-error, --theme-warning, --theme-info, --theme-font-family, etc.)
+   - Component-specific rules (.btn-<slug>, .card-<slug>) are generated client-side
+     and injected into <style id="theme-component-styles"> by admin_core.generateComponentStyles().
+   - This file provides layout, sensible fallbacks and utilities.
+*/
+
+/* ----------------------
+   Fallback CSS variables (safe defaults)
+   ---------------------- */
+:root {
+  /* fonts & base */
+  --theme-font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --theme-font-size: 14px;
+  --theme-line-height: 1.45;
+
+  /* core colors (provide sensible defaults) */
+  --theme-primary: #3B82F6;
+  --theme-primary-hover: #2563EB;
+  --theme-secondary: #10B981;
+  --theme-accent: #F59E0B;
+
+  --theme-background: #ffffff;
+  --theme-background-secondary: #F8FAFC;
+  --theme-surface: var(--theme-background-secondary);
+  --theme-text-primary: #111827;
+  --theme-text-secondary: #6B7280;
+  --theme-border: #E5E7EB;
+
+  --theme-success: #10B981;
+  --theme-error: #EF4444;
+  --theme-warning: #F59E0B;
+  --theme-info: #3B82F6;
+
+  /* layout sizes */
+  --theme-header-height: 64px;
+  --theme-sidebar-width: 280px;
+  --theme-card-radius: 8px;
+  --theme-btn-radius: 6px;
+  --theme-btn-padding: 10px 16px;
+
+  --theme-z-top: 1400;
+}
+
+/* ----------------------
+   Global base
+   ---------------------- */
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: var(--theme-font-family);
+  font-size: var(--theme-font-size);
+  line-height: var(--theme-line-height);
+  color: var(--theme-text-primary);
+  background: var(--theme-background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Links */
+a { color: var(--theme-primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ----------------------
+   Header / Brand / Toggle
+   ---------------------- */
+.admin-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: var(--theme-header-height);
+  padding: 0 12px;
+  background: var(--theme-surface);
+  border-bottom: 1px solid var(--theme-border);
+  position: relative;
+  z-index: calc(var(--theme-z-top) + 100);
+}
+
+.header-left, .header-center, .header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand { display:flex; align-items:center; gap:10px; }
+
+/* Sidebar toggle */
+#sidebarToggle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: calc(var(--theme-z-top) + 200);
+}
+
+/* ensure accessible focus */
+a:focus, button:focus, input:focus { outline: 3px solid rgba(59,130,246,0.18); outline-offset: 2px; }
+
+/* ----------------------
+   Layout: Sidebar & Main
+   ---------------------- */
+.admin-layout { display:flex; min-height: calc(100vh - var(--theme-header-height)); }
+
+.admin-sidebar, #adminSidebar, aside.admin-sidebar {
+  position: fixed;
+  top: var(--theme-header-height);
+  left: 0;
+  width: var(--theme-sidebar-width);
+  height: calc(100vh - var(--theme-header-height));
+  background: var(--theme-surface);
+  border-right: 1px solid var(--theme-border);
+  transform: translateX(-115%);
+  transition: transform .22s ease, visibility .22s;
+  visibility: hidden;
+  z-index: calc(var(--theme-z-top) - 50);
+  overflow:auto;
+  padding: 12px;
+}
+
+/* RTL mirror */
+[dir="rtl"] .admin-sidebar { left: auto; right: 0; border-left: 1px solid var(--theme-border); border-right: none; transform: translateX(115%); }
+
+/* shown */
+body.sidebar-open .admin-sidebar,
+body.sidebar-open #adminSidebar { transform: translateX(0); visibility: visible; }
+
+/* backdrop */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  display: none;
+  background: rgba(0,0,0,0.35);
+  z-index: calc(var(--theme-z-top) - 100);
+  opacity: 0;
+  transition: opacity .22s ease;
+}
+body.sidebar-open .sidebar-backdrop { display:block; opacity:1; }
+
+/* main content */
+.admin-main {
+  flex: 1 1 auto;
+  margin-top: var(--theme-header-height);
+  padding: 20px;
+  transition: margin-left .22s ease, margin-right .22s ease;
+}
+@media (min-width:1100px) {
+  body.sidebar-open .admin-main { margin-left: var(--theme-sidebar-width); }
+  [dir="rtl"] body.sidebar-open .admin-main { margin-left: 0; margin-right: var(--theme-sidebar-width); }
+}
+
+/* ----------------------
+   Buttons: base + helpers
+   (detailed styling comes from generated .btn-<slug>)
+   ---------------------- */
+.btn {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:.5rem;
+  padding: var(--theme-btn-padding);
+  border-radius: var(--theme-btn-radius);
+  cursor:pointer;
+  text-decoration:none;
+  border: 0;
+  font: inherit;
+  color: var(--theme-text-primary);
+  background: transparent;
+  transition: background .15s ease, color .15s ease, transform .08s ease;
+}
+
+.btn:active { transform: translateY(1px); }
+
+.btn-sm { padding: 6px 10px; font-size: 13px; }
+.btn-lg { padding: 12px 20px; font-size: 16px; }
+
+/* simple utility classes */
+.text-primary { color: var(--theme-primary) !important; }
+.text-muted { color: var(--theme-text-secondary) !important; }
+.bg-surface { background: var(--theme-surface) !important; }
+
+/* ----------------------
+   Cards
+   (detailed .card-<slug> rules generated client-side)
+   ---------------------- */
+.card {
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--theme-card-radius);
+  padding: 16px;
+  box-shadow: 0 6px 22px rgba(15,23,42,0.06);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.card .card-title { font-weight: 600; margin-bottom: 8px; color: var(--theme-text-primary); }
+
+/* ----------------------
+   Forms & inputs
+   ---------------------- */
+.input, input[type="text"], input[type="search"], textarea, select {
+  display:block;
+  width:100%;
+  padding:8px 10px;
+  border:1px solid var(--theme-border);
+  border-radius:6px;
+  background:#fff;
+  color:var(--theme-text-primary);
+  font: inherit;
+}
+
+/* ----------------------
+   Layout utilities
+   ---------------------- */
+.row { display:flex; flex-wrap:wrap; gap:12px; }
+.col { flex:1 1 0; min-width:0; }
+
+.badge { display:inline-flex; align-items:center; justify-content:center; padding:6px 10px; border-radius:999px; background:var(--theme-border); color:var(--theme-text-primary); font-size:13px; }
+
+/* Sidebar links */
+.sidebar-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px; }
+.sidebar-link { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:6px; color:var(--theme-text-primary); text-decoration:none; }
+[dir="ltr"] .sidebar-link { flex-direction:row; text-align:left; }
+[dir="rtl"] .sidebar-link { flex-direction:row-reverse; text-align:right; }
+
+/* ----------------------
+   Accessibility helpers
+   ---------------------- */
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+
+/* ----------------------
+   Debug helpers (optional)
+   ---------------------- */
+/* Uncomment during development */
+/*
+:root { outline: 2px dashed rgba(59,130,246,0.06); }
+*/
+
+/* ----------------------
+   Notes:
+   - Ensure admin_core.generateComponentStyles() runs after these rules are loaded,
+     so generated .btn-<slug> and .card-<slug> override these fallbacks.
+   - Use classes in templates: <button class="btn btn-primary">Save</button>
+     where "btn-primary" is either a DB slug (clean, without "btn-" prefix) or generated accordingly.
+   ---------------------- */

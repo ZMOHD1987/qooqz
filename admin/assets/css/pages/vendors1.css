@@ -1,0 +1,18 @@
+/* Basic styles for vendors admin page */
+#vendorsTable { width:100%; border-collapse:collapse; margin-bottom:12px; font-family:system-ui,Segoe UI,Arial; }
+#vendorsTable th, #vendorsTable td { border:1px solid #e6eef0; padding:8px; text-align:left; vertical-align:middle; }
+.tools { margin-bottom:12px; }
+.modal { position:fixed; inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:20px;z-index:999; }
+.modal-inner { background:#fff;width:900px;max-width:100%;border-radius:8px;padding:12px;box-shadow:0 6px 18px rgba(0,0,0,0.12); }
+.modal header{ display:flex;justify-content:space-between;align-items:center;margin-bottom:8px; }
+.form-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+.form-grid label{ display:block; font-size:14px; color:#111827; }
+.form-grid input[type="text"], .form-grid input[type="email"], .form-grid textarea, .form-grid select { width:100%; padding:8px;border:1px solid #e6eef0;border-radius:6px; box-sizing:border-box; }
+.errors{ background:#fff5f5;border:1px solid #fecaca;color:#b91c1c;padding:8px;border-radius:6px;margin-bottom:8px; }
+.btn{ display:inline-block;padding:6px 10px;border-radius:6px;background:#e6eef0;border:0;cursor:pointer; }
+.btn.primary{ background:#0ea5a4;color:#fff; }
+.btn.danger{ background:#ef4444;color:#fff; }
+.btn.small{ padding:4px 8px;font-size:13px; }
+.img-preview{ margin-top:6px; }
+.img-preview img{ border-radius:6px; border:1px solid #e6eef0; display:block; max-width:100%; height:auto; }
+.tr-lang-panel { background:#fbfdff; border-radius:6px; }

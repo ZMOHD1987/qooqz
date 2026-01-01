@@ -1,0 +1,15 @@
+/* htdocs/admin/assets/css/category.css */
+body{font-family:Segoe UI, Tahoma, Arial, sans-serif;background:#f6f7fb;direction:rtl}
+.wrap{max-width:980px;margin:24px auto;padding:16px;background:#fff;border-radius:8px}
+h1{margin:0 0 12px}
+.card{background:#fafafa;padding:12px;border-radius:6px;margin-bottom:12px}
+label{display:block;margin:8px 0}
+input[type="text"], input[type="number"], select, textarea{width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box}
+.actions{text-align:center;margin-top:12px}
+button{padding:8px 12px;border-radius:6px;border:none;background:#0d6efd;color:#fff;cursor:pointer}
+button.secondary{background:#6c757d}
+.lang-section{border:1px dashed #ddd;padding:8px;border-radius:6px;margin-bottom:8px}
+.lang-section h3{margin:0 0 8px}
+.hint{font-size:0.9rem;color:#666}
+#messages .ok{background:#e9f8ef;color:#086;padding:8px;border-radius:6px;margin-bottom:8px}
+#messages .err{background:#fdecea;color:#b00;padding:8px;border-radius:6px;margin-bottom:8px}

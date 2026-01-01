@@ -1,0 +1,156 @@
+/* admin/assets/css/admin-overrides.css
+   Overrides driven ONLY from DB via admin_core.syncThemeVarsFromAdminUI()
+   All visual values reference --theme-... variables (no hard-coded color fallbacks).
+   Ensure admin_core sets these keys from theme.colors / theme.colors_map / theme.fonts / theme.designs:
+     --theme-header-height, --theme-sidebar-width, --theme-sidebar-background,
+     --theme-sidebar-text, --theme-sidebar-border, --theme-sidebar-card, --theme-sidebar-card-text,
+     --theme-sidebar-toggle-bg, --theme-sidebar-toggle-bg-hover, --theme-sidebar-toggle-color,
+     --theme-nav-font-family, --theme-nav-font-size, ...
+*/
+
+/* Header */
+.admin-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  height: var(--theme-header-height) !important;
+  padding: 0 12px !important;
+  position: relative !important;
+  background: var(--theme-surface) !important;
+  border-bottom: 1px solid var(--theme-border) !important;
+  z-index: calc(var(--theme-z-top,1400) + 100) !important;
+  font-family: var(--theme-font-family) !important;
+}
+
+/* Header regions */
+.header-left,
+.header-center,
+.header-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+}
+.header-center {
+  flex: 1 1 auto !important;
+  justify-content: center !important;
+  pointer-events: none;
+}
+.header-center > * { pointer-events: auto; }
+
+/* Sidebar toggle (fully DB-driven) */
+#sidebarToggle {
+  position: absolute !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: var(--theme-sidebar-toggle-size, 44px) !important;
+  height: var(--theme-sidebar-toggle-size, 44px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: var(--theme-sidebar-toggle-bg) !important;
+  color: var(--theme-sidebar-toggle-color, #fff) !important;
+  border: none !important;
+  border-radius: var(--theme-btn-radius,8px) !important;
+  cursor: pointer !important;
+  font-size: var(--theme-sidebar-toggle-fontsize, 20px) !important;
+  z-index: calc(var(--theme-z-top,1400) + 200) !important;
+  transition: background .18s ease, transform .12s ease !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+#sidebarToggle:hover { background: var(--theme-sidebar-toggle-bg-hover) !important; }
+
+/* LTR/RTL offsets come from design (DB) */
+html[dir="ltr"] #sidebarToggle { left: var(--theme-sidebar-toggle-offset-ltr,12px) !important; right: auto !important; }
+html[dir="rtl"] #sidebarToggle { right: var(--theme-sidebar-toggle-offset-rtl,12px) !important; left: auto !important; }
+
+/* Brand spacing (respect toggle width) */
+.brand { display:flex !important; align-items:center !important; gap:10px !important; min-width:0; color:inherit !important; text-decoration:none !important; }
+html[dir="ltr"] .brand { margin-left: calc(var(--theme-sidebar-toggle-size,44px) + 12px) !important; }
+html[dir="rtl"] .brand { margin-right: calc(var(--theme-sidebar-toggle-size,44px) + 12px) !important; }
+
+/* Header icons & avatar */
+.icon-btn, .btn-logout {
+  width: var(--theme-header-icon-size,40px) !important;
+  height: var(--theme-header-icon-size,40px) !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: calc(var(--theme-btn-radius,8px)) !important;
+  cursor: pointer !important;
+  color: inherit !important;
+  font-size: var(--theme-header-icon-fontsize,18px) !important;
+  transition: background .18s ease !important;
+}
+.icon-btn:hover, .btn-logout:hover { background: rgba(0,0,0,0.06) !important; }
+
+/* Sidebar (fully DB-driven via --theme- variables) */
+.admin-sidebar {
+  position: fixed !important;
+  top: var(--theme-header-height) !important;
+  bottom: 0 !important;
+  width: var(--theme-sidebar-width) !important;
+  max-width: 90vw !important;
+  background: var(--theme-sidebar-background) !important;
+  color: var(--theme-sidebar-text) !important;
+  border: 1px solid var(--theme-sidebar-border) !important;
+  padding: var(--theme-sidebar-padding,14px) !important;
+  overflow-y: auto !important;
+  z-index: calc(var(--theme-z-top,1400) - 100) !important;
+  transition: transform .28s ease !important;
+  box-shadow: var(--theme-sidebar-box-shadow, 4px 0 20px rgba(0,0,0,0.08)) !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Hide/show (JS toggles body.sidebar-open) */
+html[dir="ltr"] .admin-sidebar { left: 0 !important; transform: translateX(-100%) !important; }
+html[dir="rtl"] .admin-sidebar { right: 0 !important; transform: translateX(100%) !important; }
+body.sidebar-open .admin-sidebar { transform: translateX(0) !important; }
+
+/* Backdrop (DB-driven z-index) */
+.sidebar-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0,0,0,0.35) !important;
+  z-index: calc(var(--theme-z-top,1400) - 200) !important;
+  display: none !important;
+  opacity: 0 !important;
+  transition: opacity .25s ease !important;
+}
+body.sidebar-open .sidebar-backdrop { display:block !important; opacity:1 !important; }
+
+/* Ensure header-right alignment */
+.header-right { justify-content: flex-end !important; }
+
+/* Compatibility: sidebar card strictly from DB vars */
+.admin-sidebar .card {
+  background: var(--theme-sidebar-card) !important;
+  color: var(--theme-sidebar-card-text) !important;
+  border: 1px solid rgba(255,255,255,0.04) !important;
+  border-radius: var(--theme-card-radius,8px) !important;
+  padding: 12px !important;
+  margin-bottom: 10px !important;
+  box-shadow: var(--theme-sidebar-card-shadow, 0 6px 18px rgba(2,6,23,0.45)) !important;
+}
+
+/* Nav font and colors: forced from DB variables only */
+.admin-sidebar, .admin-sidebar .sidebar-link, .admin-sidebar .sidebar-link * {
+  font-family: var(--theme-nav-font-family) !important;
+  font-size: var(--theme-nav-font-size) !important;
+  color: var(--theme-sidebar-text) !important;
+}
+
+/* Small screens */
+@media (max-width:900px) {
+  #sidebarToggle { width: calc(var(--theme-sidebar-toggle-size) + 4px) !important; height: calc(var(--theme-sidebar-toggle-size) + 4px) !important; }
+  .admin-sidebar { width: min(86vw, var(--theme-sidebar-width)) !important; }
+  .admin-sidebar .card { padding: 10px !important; }
+  .admin-sidebar .sidebar-link { font-size: calc(var(--theme-nav-font-size) * 0.95) !important; padding: 10px !important; }
+}
+
+/* Accessibility and final rules */
+#sidebarToggle { pointer-events: auto !important; visibility: visible !important; }

@@ -1,0 +1,66 @@
+:root {
+  --primary: #06b6d4;
+  --bg: #fff;
+  --muted: #6b7280;
+  --border: #e6eef0;
+  --radius: 8px;
+  --btn-radius: 999px;
+}
+
+.admin-fragment { box-sizing: border-box; color: #0f1724; }
+#adminProducts { padding: 12px; }
+
+.tools { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+
+.btn {
+  padding:8px 12px; border-radius: 8px; border:1px solid transparent; background:#f3f7f8; color:#0f1724; cursor:pointer; font-weight:600;
+}
+.btn.primary { background: linear-gradient(180deg,var(--primary), #039fb0); color:#fff; border-color: rgba(0,0,0,0.04); }
+.btn.danger { background:#ef4444; color:#fff; }
+.btn.small { padding:6px 8px; }
+
+.table-wrap { border:1px solid var(--border); border-radius: var(--radius); background:var(--bg); padding:8px; overflow:auto; }
+#productsTable { width:100%; border-collapse:separate; min-width:760px; }
+#productsTable thead th { text-align:left; padding:10px; background:#fbfcfd; border-bottom:1px solid var(--border); color:var(--muted); font-weight:700; }
+#productsTable tbody td { padding:10px; border-bottom:1px solid #f3f6f7; vertical-align:middle; }
+
+.form-wrap { margin-top:16px; border:1px solid var(--border); border-radius:var(--radius); padding:12px; background:linear-gradient(180deg,#fff,#fbfcfd); }
+.form-wrap h3 { margin:0 0 8px 0; }
+
+input[type="text"], input[type="number"], textarea, select {
+  width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); box-sizing:border-box;
+}
+textarea { resize:vertical; min-height:80px; }
+
+.preview img { max-height:100px; border-radius:8px; border:1px solid var(--border); }
+
+#product_attributes_list .attr-item { margin-bottom:8px; }
+
+#categoryTree ul {
+  list-style: none;
+  padding-left: 20px;
+}
+#categoryTree li {
+  margin: 4px 0;
+}
+#categoryTree input[type="radio"],
+#categoryTree input[type="checkbox"] {
+  margin-right: 8px;
+}
+#categoryTree label {
+  cursor: pointer;
+  user-select: none;
+}
+#categoryTree button {
+  margin-left: 8px;
+  padding: 2px 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#productTranslationsTable th, #productTranslationsTable td { padding:8px; border-bottom:1px solid #f3f6f7; }
+
+@media (max-width:900px) {
+  #productFormWrap form { grid-template-columns: 1fr; }
+  .tools { flex-direction:column; align-items:flex-start; gap:6px; }
+}

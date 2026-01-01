@@ -1,0 +1,273 @@
+/* admin/assets/css/admin-overrides.css
+   Overrides and layout specifics driven by server tables via CSS variables.
+   All hard-coded colors / sizes replaced with --theme-... variables (with sensible fallbacks).
+   Also includes mobile-friendly modal overrides to ensure good appearance on phones.
+   Ensure admin_core.syncThemeVarsFromAdminUI() populates these keys:
+     --theme-header-height, --theme-sidebar-width, --theme-sidebar-background,
+     --theme-sidebar-text, --theme-sidebar-border, --theme-sidebar-toggle-bg,
+     --theme-sidebar-toggle-bg-hover, --theme-sidebar-toggle-color,
+     --theme-font-family, --theme-nav-font-family, --theme-nav-font-size,
+     --theme-primary, --theme-primary-hover, --theme-card-radius, etc.
+*/
+
+/* Basic reset for this override file */
+:root { }
+
+/* -------------------------
+   Header
+   ------------------------- */
+.admin-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  height: var(--theme-header-height, 64px) !important;
+  padding: 0 12px !important;
+  position: relative !important;
+  background: var(--theme-surface, var(--theme-background-secondary, #f9fafb)) !important;
+  border-bottom: 1px solid var(--theme-border, #e5e7eb) !important;
+  z-index: calc(var(--theme-z-top, 1400) + 100) !important;
+  font-family: var(--theme-font-family, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif) !important;
+}
+
+/* Header regions */
+.header-left,
+.header-center,
+.header-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+}
+
+.header-center {
+  flex: 1 1 auto !important;
+  justify-content: center !important;
+  pointer-events: none;
+}
+.header-center > * { pointer-events: auto; }
+
+/* -------------------------
+   Sidebar Toggle
+   ------------------------- */
+#sidebarToggle {
+  position: absolute !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: var(--theme-sidebar-toggle-size, 44px) !important;
+  height: var(--theme-sidebar-toggle-size, 44px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: var(--theme-sidebar-toggle-bg, var(--theme-primary, #3B82F6)) !important;
+  color: var(--theme-sidebar-toggle-color, #ffffff) !important;
+  border: none !important;
+  border-radius: var(--theme-btn-radius, 8px) !important;
+  cursor: pointer !important;
+  font-size: var(--theme-sidebar-toggle-fontsize, 20px) !important;
+  z-index: calc(var(--theme-z-top, 1400) + 200) !important;
+  transition: all 0.22s ease !important;
+}
+#sidebarToggle:hover {
+  background: var(--theme-sidebar-toggle-bg-hover, var(--theme-primary-hover, #2563EB)) !important;
+}
+
+/* Positioning by direction (falls back to left/right offsets from theme if provided) */
+html[dir="ltr"] #sidebarToggle  { left: var(--theme-sidebar-toggle-offset-ltr, 12px) !important; }
+html[dir="rtl"] #sidebarToggle  { right: var(--theme-sidebar-toggle-offset-rtl, 12px) !important; }
+
+/* When sidebar open style for toggle */
+body.sidebar-open #sidebarToggle {
+  background: var(--theme-sidebar-toggle-bg-open, #dc2626) !important;
+}
+body.sidebar-open #sidebarToggle span::before {
+  content: var(--theme-sidebar-toggle-open-icon, "✕") !important;
+  font-size: calc(var(--theme-sidebar-toggle-fontsize, 20px) + 4px) !important;
+  font-weight: 700 !important;
+}
+
+/* -------------------------
+   Brand / logo spacing
+   ------------------------- */
+.brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 0;
+  text-decoration: none !important;
+  color: inherit !important;
+}
+html[dir="ltr"] .brand  { margin-left: calc(var(--theme-sidebar-toggle-size,44px) + 12px) !important; }
+html[dir="rtl"] .brand  { margin-right: calc(var(--theme-sidebar-toggle-size,44px) + 12px) !important; }
+
+.brand-logo {
+  max-height: calc(var(--theme-header-height,64px) - 16px) !important;
+  max-width: 150px !important;
+  object-fit: contain !important;
+}
+.brand-fallback {
+  font-weight: 700 !important;
+  font-size: 1.05rem !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* -------------------------
+   Header icon buttons / avatar
+   ------------------------- */
+.icon-btn,
+.btn-logout {
+  width: var(--theme-header-icon-size, 40px) !important;
+  height: var(--theme-header-icon-size, 40px) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: calc(var(--theme-btn-radius,8px)) !important;
+  cursor: pointer !important;
+  color: inherit !important;
+  font-size: var(--theme-header-icon-fontsize, 18px) !important;
+  transition: background 0.18s ease !important;
+}
+.icon-btn:hover,
+.btn-logout:hover { background: rgba(0,0,0,0.06) !important; }
+
+.user-menu { display:flex !important; align-items:center !important; gap:8px !important; }
+.user-info { text-align:start !important; line-height:1.2 !important; }
+html[dir="rtl"] .user-info { text-align:end !important; }
+
+.username-text { font-weight:600 !important; font-size:14px !important; }
+.user-role { font-size:12px !important; color: var(--theme-text-secondary, #6b7280) !important; }
+
+.avatar {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  border: 2px solid var(--theme-primary, #3B82F6) !important;
+}
+
+/* -------------------------
+   Sidebar (overrides)
+   ------------------------- */
+.admin-sidebar {
+  position: fixed !important;
+  top: var(--theme-header-height, 64px) !important;
+  bottom: 0 !important;
+  width: var(--theme-sidebar-width, 260px) !important;
+  max-width: 90vw !important;
+  background: var(--theme-sidebar-background, var(--theme-surface, #f9fafb)) !important;
+  color: var(--theme-sidebar-text, var(--theme-text-primary, #111827)) !important;
+  border: 1px solid var(--theme-sidebar-border, var(--theme-border, #e5e7eb)) !important;
+  padding: var(--theme-sidebar-padding, 14px) !important;
+  overflow-y: auto !important;
+  z-index: calc(var(--theme-z-top,1400) - 100) !important;
+  transition: transform 0.28s ease !important;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.08) !important;
+}
+
+/* hide by default (mirrored behavior) */
+html[dir="ltr"] .admin-sidebar  { left: 0 !important; transform: translateX(-100%) !important; border-right: 1px solid var(--theme-sidebar-border, var(--theme-border)) !important; }
+html[dir="rtl"] .admin-sidebar  { right: 0 !important; transform: translateX(100%) !important; border-left: 1px solid var(--theme-sidebar-border, var(--theme-border)) !important; }
+
+/* show when open */
+body.sidebar-open .admin-sidebar { transform: translateX(0) !important; }
+
+/* Sidebar link styles (use variables and nav font) */
+.sidebar-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px; }
+.sidebar-link {
+  display:flex; align-items:center; gap:10px;
+  padding:8px 10px; border-radius:6px;
+  color: var(--theme-sidebar-text, var(--theme-text-primary)) !important;
+  text-decoration:none !important;
+  transition: background .12s ease, color .12s ease !important;
+  font-family: var(--theme-nav-font-family, var(--theme-font-family)) !important;
+  font-size: var(--theme-nav-font-size, 15px) !important;
+}
+.sidebar-link:hover { background: rgba(0,0,0,0.03) !important; }
+
+/* -------------------------
+   Backdrop
+   ------------------------- */
+.sidebar-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0,0,0,0.35) !important;
+  z-index: calc(var(--theme-z-top,1400) - 200) !important;
+  display: none !important;
+  opacity: 0 !important;
+  transition: opacity 0.25s ease !important;
+}
+body.sidebar-open .sidebar-backdrop { display:block !important; opacity:1 !important; }
+
+/* -------------------------
+   Responsive: ensure toggle & modal usable on phones
+   ------------------------- */
+@media (max-width: 900px) {
+  /* make toggle slightly larger & ensure reachable */
+  #sidebarToggle { width: var(--theme-sidebar-toggle-size-mobile, 48px) !important; height: var(--theme-sidebar-toggle-size-mobile, 48px) !important; font-size: var(--theme-sidebar-toggle-fontsize-mobile, 22px) !important; }
+
+  /* Sidebar occupies most of screen on mobile */
+  .admin-sidebar { width: min(86vw, var(--theme-sidebar-width, 260px)) !important; }
+
+  /* Ensure header center doesn't block toggle */
+  .header-center { justify-content: center !important; pointer-events: none; }
+  .header-center > * { pointer-events: auto; }
+
+  /* Make header icon spacing compact on small screens */
+  .brand { margin-left: calc(var(--theme-sidebar-toggle-size-mobile,48px) + 12px) !important; }
+}
+
+/* -------------------------
+   Modal (mobile-friendly overrides)
+   - modal.css is included separately in header (modal.css). These overrides ensure good mobile behavior.
+   ------------------------- */
+.admin-modal-backdrop {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
+  z-index: calc(var(--theme-z-top,1400) + 2000) !important;
+}
+
+.admin-modal-panel {
+  width: 920px;
+  max-width: 100%;
+  max-height: 90vh;
+  overflow:auto;
+  background: var(--theme-modal-bg, #ffffff);
+  border-radius: var(--theme-card-radius, 8px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+  padding: var(--theme-modal-padding, 20px);
+}
+
+/* Mobile modal sizing */
+@media (max-width: 700px) {
+  .admin-modal-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: calc(100vh - 40px) !important;
+    margin: 10px;
+    border-radius: 10px !important;
+    padding: 12px !important;
+  }
+}
+
+/* -------------------------
+   Misc fixes and accessibility
+   ------------------------- */
+.header-right { justify-content: flex-end !important; }
+
+/* Ensure any legacy hard-coded selectors referencing --color-* still work */
+#sidebarToggle { background: var(--theme-sidebar-toggle-bg, var(--color-primary)) !important; }
+#sidebarToggle:hover { background: var(--theme-sidebar-toggle-bg-hover, var(--color-primary-dark)) !important; }
+
+/* -------------------------
+   Notes:
+   - This override file expects admin_core to set the variables listed at top.
+   - modal.css is loaded separately in header.php (link rel="/admin/assets/css/modal.css"); the modal rules above provide responsive fallbacks to guarantee good appearance on phones.
+   - If you prefer modal rules strictly inside modal.css, move the .admin-modal-* rules there and remove from here.
+   ------------------------- */

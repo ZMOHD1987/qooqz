@@ -1,0 +1,273 @@
+/* admin/assets/css/pages/banners.css
+   Updated visual design:
+   - Primary color changed to turquoise (فيروزي) as requested
+   - Modern rounded buttons (pill-like) with subtle shadow
+   - Table with clearly separated columns (vertical dividers) and improved spacing
+   - RTL-aware adjustments
+   - Accessible focus states
+*/
+
+/* Theme variables */
+:root{
+  --primary: #06b6d4;        /* فيروزى */
+  --primary-600: #039fb0;
+  --bg: #ffffff;
+  --surface: #fbfdfe;
+  --muted: #556073;
+  --muted-2: #9aa4ae;
+  --border: #e6eef0;
+  --danger: #e03b3b;
+  --success: #16a34a;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --shadow-sm: 0 4px 10px rgba(6,182,212,0.08);
+  --focus-ring: 3px rgba(6,182,212,0.18);
+  --max-width: 1200px;
+  --text: #0f1724;
+  --transition: 180ms cubic-bezier(.2,.9,.2,1);
+}
+
+/* Container */
+#adminBanners {
+  max-width: var(--max-width);
+  margin: 20px auto;
+  padding: 12px;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color: var(--text);
+  box-sizing: border-box;
+}
+
+/* Heading */
+#adminBanners h2 {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Tools row */
+.tools {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+  margin-bottom:14px;
+}
+
+/* Inputs inside tools */
+.tools input[type="search"] {
+  padding:10px 12px;
+  border-radius: 999px;
+  border:1px solid var(--border);
+  background: #fff;
+  min-width:260px;
+  box-shadow: none;
+  transition: box-shadow var(--transition), border-color var(--transition);
+}
+.tools input[type="search"]:focus {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-color: var(--primary-600);
+}
+
+/* Button base (pill) */
+.btn {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 14px;
+  border-radius: 999px; /* pill */
+  border: 1px solid transparent;
+  background:#f7fbfc;
+  color: var(--text);
+  font-weight:600;
+  font-size:13px;
+  cursor:pointer;
+  transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+  box-shadow: none;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+
+/* Primary (turquoise) */
+.btn.primary {
+  background: linear-gradient(180deg, var(--primary), var(--primary-600));
+  color: #fff;
+  border-color: rgba(0,0,0,0.04);
+  box-shadow: 0 6px 20px rgba(6,182,212,0.12);
+}
+.btn.primary:hover { transform: translateY(-2px) scale(1.01); }
+
+/* Danger */
+.btn.danger {
+  background: linear-gradient(180deg, var(--danger), #c23131);
+  color: #fff;
+  border-color: rgba(0,0,0,0.04);
+}
+.btn.outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+/* Small / icon variants */
+.btn.small { padding:6px 8px; font-size:13px; border-radius:8px; }
+.btn.icon { padding:8px; width:38px; height:38px; justify-content:center; }
+
+/* Disabled */
+.btn[disabled], .btn.disabled { opacity:0.5; pointer-events:none; transform:none; box-shadow:none; }
+
+/* Table container */
+.table-wrap {
+  border:1px solid var(--border);
+  border-radius: var(--radius);
+  overflow:auto;
+  background: var(--bg);
+  padding:6px;
+}
+
+/* Table: separate columns with vertical dividers */
+#bannersTable {
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  min-width:760px;
+  table-layout: fixed;
+}
+#bannersTable thead th {
+  position: sticky;
+  top:0;
+  z-index:1;
+  background: linear-gradient(180deg,#fbfdfe,#f7fbfc);
+  padding:12px;
+  font-size:13px;
+  font-weight:700;
+  color:var(--muted);
+  text-align:left;
+  border-bottom:2px solid var(--border);
+}
+#bannersTable tbody td {
+  padding:12px;
+  vertical-align:middle;
+  color:var(--text);
+  background: #fff;
+  border-right:1px solid var(--border);
+}
+#bannersTable tbody tr td:first-child { border-left: 1px solid var(--border); }
+#bannersTable thead th:first-child, #bannersTable tbody td:first-child {
+  border-left: 1px solid var(--border);
+}
+
+/* Hide last column right border for neat look */
+#bannersTable tbody td:last-child { border-right: none; }
+
+/* Zebra subtle rows */
+#bannersTable tbody tr:nth-child(even) td { background: #fbfcfd; }
+
+/* Responsive: allow horizontal scroll on small screens */
+@media (max-width:900px) {
+  #bannersTable { min-width:720px; }
+  #adminBanners { padding:12px; }
+}
+
+/* Thinner column for images */
+#bannersTable td img { max-height:48px; border-radius:6px; display:block; }
+
+/* Action buttons in table */
+#bannersTable .btn { padding:6px 10px; font-size:13px; border-radius:8px; box-shadow:none; transform:none; }
+#bannersTable .btn.editBtn { background: #ffffff; border:1px solid var(--border); color:var(--primary-600); font-weight:600; }
+#bannersTable .btn.editBtn:hover { background: rgba(6,182,212,0.06); }
+#bannersTable .btn.danger { padding:6px 10px; }
+
+/* Toggle active button (more compact) */
+.toggleActiveBtn {
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background: #fff;
+  cursor:pointer;
+  font-weight:600;
+}
+.toggleActiveBtn.active {
+  background: rgba(6,182,212,0.12);
+  border-color: rgba(6,182,212,0.22);
+  color: var(--primary-600);
+}
+
+/* Form layout */
+.form-wrap {
+  margin-top:18px;
+  border-radius: var(--radius);
+  padding:14px;
+  background: linear-gradient(180deg,#fff,#fbfdfe);
+  border:1px solid var(--border);
+  box-shadow: 0 8px 30px rgba(10,20,30,0.03);
+}
+.form-wrap h3 { margin:0 0 10px 0; font-size:16px; }
+
+/* Two-column grid */
+.form-wrap form { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+@media (max-width:820px) { .form-wrap form { grid-template-columns: 1fr; } }
+
+/* Inputs and selects */
+.form-wrap input[type="text"],
+.form-wrap input[type="number"],
+.form-wrap input[type="datetime-local"],
+.form-wrap input[type="color"],
+.form-wrap select,
+.form-wrap textarea {
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background: #fff;
+  transition: box-shadow var(--transition), border-color var(--transition);
+}
+.form-wrap input:focus, .form-wrap select:focus, .form-wrap textarea:focus {
+  outline:none;
+  box-shadow: var(--focus-ring);
+  border-color: var(--primary-600);
+}
+
+/* File input: nicer appearance */
+input[type="file"] {
+  display:block;
+  padding:6px 0;
+  color:var(--muted);
+}
+
+/* Preview images */
+#banner_image_preview img, #banner_mobile_image_preview img { max-height:100px; border-radius:10px; border:1px solid var(--border); }
+
+/* Translations table */
+#translationsInlineTable { width:100%; border-collapse:collapse; }
+#translationsInlineTable th, #translationsInlineTable td { padding:10px; border-bottom:1px solid #f3f6f7; text-align:left; vertical-align:top; }
+#translationsInlineTable input { padding:8px; border-radius:8px; }
+
+/* Status */
+.status { min-height:24px; margin-bottom:8px; font-size:14px; color:var(--muted); }
+
+/* Alerts */
+.alert { padding:10px; border-radius:8px; background:#fffbe6; color:#7a5a00; border:1px solid #fff0b3; }
+
+/* Accessibility focus */
+.btn:focus, .toggleActiveBtn:focus, input:focus, select:focus, textarea:focus {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+/* RTL adjustments */
+[dir="rtl"] #adminBanners { direction: rtl; }
+[dir="rtl"] .tools { direction: rtl; }
+[dir="rtl"] #bannersTable thead th, [dir="rtl"] #bannersTable tbody td { text-align: right; }
+[dir="rtl"] .form-wrap label { text-align: right; }
+
+/* Small utility classes */
+.muted { color: var(--muted-2); }
+.center { display:flex; align-items:center; justify-content:center; }
+
+/* Printing */
+@media print {
+  .tools, .form-wrap, .btn { display:none !important; }
+}
+
+/* End of file */
