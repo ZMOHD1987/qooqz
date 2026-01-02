@@ -1,62 +1,49 @@
 /**
  * admin/assets/js/pages/vendors.js
- * Theme-integrated Vendors admin UI script
- * 
- * Integration with bootstrap_admin_ui.php theme system:
- * - Uses window.ADMIN_UI for theme data (colors, buttons, settings)
- * - RBAC via window.ADMIN_UI.user.permissions
- * - i18n via window.ADMIN_UI.strings
- * - Themed buttons via window.ADMIN_UI.theme.buttons_map
+ * Vendors Management UI - Works with MVC structure via /api/routes/vendors.php
  */
 
 (function () {
   'use strict';
 
   // ---------- Configuration ----------
-  const API = '/api/vendors';  // RESTful MVC endpoint (routes through api/routes/vendors.php)
+  const API = '/api/routes/vendors.php'; // Main API endpoint
   const COUNTRIES_API = '/api/helpers/countries.php';
   const CITIES_API = '/api/helpers/cities.php';
-  const RETRY_ON_403 = true;
   const DEBUG = false;
-  const IMAGE_PROCESSING = false;
 
-  // Image processing specs (if IMAGE_PROCESSING true)
-  const IMAGE_SPECS = {
-    logo: { w: 600, h: 600, quality: 0.85 },
-    cover: { w: 1400, h: 787, quality: 0.86 },
-    banner: { w: 1600, h: 400, quality: 0.86 }
-  };
-
-  // ---------- Runtime state from window.ADMIN_UI (bootstrap_admin_ui.php) ----------
+  // ---------- Runtime state from bootstrap_admin_ui.php ----------
   const ADMIN_UI = window.ADMIN_UI || {};
-  let CSRF = ADMIN_UI.csrf_token || window.CSRF_TOKEN || '';
-  let CURRENT = ADMIN_UI.user || window.CURRENT_USER || {};
-  const THEME = ADMIN_UI.theme || {};
+  let CSRF_TOKEN = ADMIN_UI.csrf_token || window.CSRF_TOKEN || '';
+  const CURRENT_USER = ADMIN_UI.user || window.CURRENT_USER || {};
   const STRINGS = ADMIN_UI.strings || {};
-  const LANGS = window.AVAILABLE_LANGUAGES || [{ code: 'en', name: 'English', strings: {} }];
-  const PREF_LANG = ADMIN_UI.lang || window.ADMIN_LANG || (CURRENT.preferred_language || 'en');
+  const AVAILABLE_LANGS = window.AVAILABLE_LANGUAGES || [];
+  const PREF_LANG = ADMIN_UI.lang || window.ADMIN_LANG || 'en';
   const LANG_DIRECTION = ADMIN_UI.direction || window.LANG_DIRECTION || 'ltr';
-  const IS_ADMIN = !!(CURRENT.role_id && Number(CURRENT.role_id) === 1);
+  const IS_ADMIN = CURRENT_USER.role_id && Number(CURRENT_USER.role_id) === 1;
 
   // ---------- Helpers ----------
-  const $ = id => document.getElementById(id);
+  const $ = (id) => document.getElementById(id);
   const log = (...args) => { if (DEBUG) console.log('[vendors.js]', ...args); };
-  function escapeHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  
-  // i18n helper using ADMIN_UI.strings
+
+  function escapeHtml(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   function t(key, fallback = '') {
     return STRINGS[key] || fallback || key;
   }
 
-  // ---------- DOM refs ----------
+  // ---------- DOM References ----------
   const refs = {
+    // Table section
     tbody: $('vendorsTbody'),
     vendorsCount: $('vendorsCount'),
     vendorSearch: $('vendorSearch'),
     vendorRefresh: $('vendorRefresh'),
     vendorNewBtn: $('vendorNewBtn'),
 
-    // فلاتر البحث المتقدمة
+    // Advanced filters
     filterStatus: $('filterStatus'),
     filterVerified: $('filterVerified'),
     filterCountry: $('filterCountry'),
@@ -65,6 +52,7 @@
     filterEmail: $('filterEmail'),
     filterClear: $('filterClear'),
 
+    // Form section
     formSection: $('vendorFormSection'),
     form: $('vendorForm'),
     formTitle: $('vendorFormTitle'),
@@ -72,31 +60,30 @@
     resetBtn: $('vendorResetBtn'),
     errorsBox: $('vendorFormErrors'),
 
+    // Translations
     translationsArea: $('vendor_translations_area'),
     addLangBtn: $('vendorAddLangBtn'),
 
+    // Parent vendor
     parentWrap: $('parentVendorWrap'),
+    isBranchCheckbox: $('vendor_is_branch'),
 
+    // Image previews
     previewLogo: $('preview_logo'),
     previewCover: $('preview_cover'),
     previewBanner: $('preview_banner'),
 
+    // Image inputs
     logoInput: $('vendor_logo'),
     coverInput: $('vendor_cover'),
     bannerInput: $('vendor_banner'),
 
-    btnGetCoords: $('btnGetCoords'),
-    
-    // حقل is_branch لعرض/إخفاء parent vendor
-    isBranchCheckbox: $('vendor_is_branch')
+    // Coordinates
+    btnGetCoords: $('btnGetCoords')
   };
 
-  // Fill missing refs with null to avoid undefined access
-  Object.keys(refs).forEach(k => { if (!refs[k]) refs[k] = null; });
-
-  // ---------- نظام الإشعارات في أعلى الصفحة ----------
+  // ---------- Notification System ----------
   function showNotification(message, type = 'info', duration = 5000) {
-    // إنشاء عنصر الإشعار إذا لم يكن موجوداً
     let notificationArea = $('#notificationArea');
     if (!notificationArea) {
       notificationArea = document.createElement('div');
@@ -111,7 +98,6 @@
       document.body.appendChild(notificationArea);
     }
 
-    // إنشاء الإشعار
     const notification = document.createElement('div');
     notification.className = 'notification';
     notification.style.cssText = `
@@ -131,7 +117,6 @@
       word-break: break-word;
     `;
 
-    // تحديد لون حسب النوع
     const colors = {
       success: '#10b981',
       error: '#ef4444',
@@ -140,7 +125,6 @@
     };
     notification.style.backgroundColor = colors[type] || colors.info;
 
-    // محتوى الإشعار
     notification.innerHTML = `
       <div style="flex: 1; margin-right: 10px;">
         ${escapeHtml(message)}
@@ -150,16 +134,13 @@
       </button>
     `;
 
-    // إضافة الإشعار إلى المنطقة
     notificationArea.appendChild(notification);
 
-    // زر الإغلاق
     notification.querySelector('.notification-close').addEventListener('click', () => {
       notification.style.animation = 'slideOut 0.3s ease';
       setTimeout(() => notification.remove(), 300);
     });
 
-    // إزالة تلقائية بعد المدة
     if (duration > 0) {
       setTimeout(() => {
         if (notification.parentNode) {
@@ -169,7 +150,6 @@
       }, duration);
     }
 
-    // إضافة أنيميشن CSS إذا لم تكن موجودة
     if (!document.querySelector('#notification-styles')) {
       const style = document.createElement('style');
       style.id = 'notification-styles';
@@ -201,75 +181,64 @@
     return notification;
   }
 
-  // ---------- Network helpers ----------
+  // ---------- Network Functions ----------
   async function fetchJson(url, opts = {}) {
     opts.credentials = 'include';
+    log('Fetching:', url);
     const res = await fetch(url, opts);
     let body = null;
-    try { body = await res.json(); } catch (e) { body = null; }
-    if (!res.ok) throw { status: res.status, body };
-    return body;
-  }
-
-  async function fetchCurrentUserAndCsrf() {
-    try {
-      const j = await fetchJson(`${API}/current_user`);  // GET /api/vendors/current_user
-      CSRF = j.csrf_token || j.csrf || CSRF;
-      CURRENT = j.user || CURRENT;
-      window.CSRF_TOKEN = CSRF;
-      window.CURRENT_USER = CURRENT;
-      log('fetched user+csrf', { csrf: !!CSRF, userId: CURRENT?.id });
-      return { csrf: CSRF, user: CURRENT };
-    } catch (err) {
-      log('fetchCurrentUserAndCsrf failed', err);
-      return { csrf: CSRF, user: CURRENT };
+    try { 
+      body = await res.json(); 
+    } catch (e) { 
+      log('Failed to parse JSON:', e);
+      body = null; 
     }
+    if (!res.ok) {
+      log('Request failed:', { status: res.status, body });
+      throw { status: res.status, body };
+    }
+    return body;
   }
 
   async function postFormData(fd) {
     if (!fd) fd = new FormData();
-    await fetchCurrentUserAndCsrf();
-    fd.set('csrf_token', CSRF || '');
-    const headers = { 'X-CSRF-Token': CSRF || '' };
+    if (CSRF_TOKEN) {
+      fd.set('csrf_token', CSRF_TOKEN);
+    }
     
-    // Determine if this is create or update based on vendor_id
-    const vendorId = fd._vendorId || fd.get('id') || 0;
-    const isUpdate = vendorId && parseInt(vendorId) > 0;
-    
-    // Use proper REST method and endpoint
-    const method = isUpdate ? 'PUT' : 'POST';
-    const url = isUpdate ? `${API}/${encodeURIComponent(vendorId)}` : API;
-    
-    const res = await fetch(url, { 
-      method, 
+    const res = await fetch(API, { 
+      method: 'POST', 
       body: fd, 
-      credentials: 'include', 
-      headers 
+      credentials: 'include',
+      headers: {
+        'X-CSRF-Token': CSRF_TOKEN || ''
+      }
     });
+    
     let json = null;
-    try { json = await res.json(); } catch (e) { json = null; }
-    if (!res.ok) throw { status: res.status, body: json };
+    try { 
+      json = await res.json(); 
+    } catch (e) { 
+      log('Failed to parse JSON response:', e);
+      json = null; 
+    }
+    
+    if (!res.ok) {
+      log('POST request failed:', { status: res.status, json });
+      throw { status: res.status, body: json };
+    }
+    
     return json;
   }
 
-  async function postWithRetry(fd) {
-    try {
-      return await postFormData(fd);
-    } catch (err) {
-      if (RETRY_ON_403 && err && err.status === 403) {
-        log('403 detected - refresh CSRF and retry');
-        await fetchCurrentUserAndCsrf();
-        fd.set('csrf_token', CSRF || '');
-        return await postFormData(fd);
-      }
-      throw err;
-    }
-  }
-
-  // ---------- UI error helpers ----------
+  // ---------- Error Handling ----------
   function setError(msg) {
     if (!refs.errorsBox) return;
-    if (!msg) { refs.errorsBox.style.display = 'none'; refs.errorsBox.textContent = ''; return; }
+    if (!msg) {
+      refs.errorsBox.style.display = 'none';
+      refs.errorsBox.textContent = '';
+      return;
+    }
     refs.errorsBox.style.display = 'block';
     refs.errorsBox.textContent = msg;
   }
@@ -283,6 +252,7 @@
   function showFieldErrors(errors) {
     clearFieldErrors();
     if (!refs.form) return;
+    
     for (const key in errors) {
       const msgs = errors[key];
       const message = Array.isArray(msgs) ? msgs.join(', ') : String(msgs);
@@ -299,6 +269,7 @@
         city_id: 'vendor_city',
         parent_vendor_id: 'vendor_parent_id'
       };
+      
       const elId = idMap[key] || ('vendor_' + key);
       const el = $(elId);
       if (el) {
@@ -307,6 +278,7 @@
         span.className = 'field-error';
         span.style.color = '#b91c1c';
         span.style.marginTop = '4px';
+        span.style.fontSize = '12px';
         span.textContent = message;
         el.parentNode.insertBefore(span, el.nextSibling);
       } else {
@@ -315,53 +287,60 @@
     }
   }
 
-  // ---------- Countries / Cities / Parents ----------
-  async function loadCountries(selectedId = '') {
-    const sel = $('vendor_country');
+  // ---------- Countries & Cities ----------
+  async function loadCountries(selectId = 'vendor_country', selectedId = '') {
+    const sel = $(selectId);
     if (!sel) return;
-    sel.innerHTML = `<option value="">${t('loading_countries','Loading countries...')}</option>`;
+    
+    sel.innerHTML = `<option value="">${t('loading_countries', 'Loading countries...')}</option>`;
+    
     try {
-      // Pass language parameter for translated country names
       const response = await fetchJson(`${COUNTRIES_API}?lang=${encodeURIComponent(PREF_LANG)}&scope=all`);
       const countries = response.data || response || [];
-      sel.innerHTML = `<option value="">-- ${t('select_country','Select country')} --</option>`;
+      
+      sel.innerHTML = `<option value="">-- ${t('select_country', 'Select country')} --</option>`;
       countries.forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.id;
         opt.textContent = c.name + (c.iso2 ? ` (${c.iso2})` : '');
         sel.appendChild(opt);
       });
+      
       if (selectedId) sel.value = selectedId;
-      log('Loaded countries:', countries.length);
+      log(`Loaded ${countries.length} countries`);
     } catch (err) {
-      sel.innerHTML = `<option value="">${t('failed_load','Failed to load')}</option>`;
+      sel.innerHTML = `<option value="">${t('failed_load', 'Failed to load')}</option>`;
       log('loadCountries error:', err);
     }
   }
 
-  async function loadCities(countryId, selectedId = '') {
-    const sel = $('vendor_city');
+  async function loadCities(countryId, selectId = 'vendor_city', selectedId = '') {
+    const sel = $(selectId);
     if (!sel) return;
-    if (!countryId) { 
-      sel.innerHTML = `<option value="">${t('select_country_first','Select country first')}</option>`; 
-      return; 
+    
+    if (!countryId) {
+      sel.innerHTML = `<option value="">${t('select_country_first', 'Select country first')}</option>`;
+      return;
     }
-    sel.innerHTML = `<option value="">${t('loading_cities','Loading cities...')}</option>`;
+    
+    sel.innerHTML = `<option value="">${t('loading_cities', 'Loading cities...')}</option>`;
+    
     try {
-      // Pass language and country_id parameters for translated city names
       const response = await fetchJson(`${CITIES_API}?country_id=${encodeURIComponent(countryId)}&lang=${encodeURIComponent(PREF_LANG)}&scope=all`);
       const cities = response.data || response || [];
-      sel.innerHTML = `<option value="">-- ${t('select_city','Select city')} --</option>`;
+      
+      sel.innerHTML = `<option value="">-- ${t('select_city', 'Select city')} --</option>`;
       cities.forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.id;
         opt.textContent = c.name;
         sel.appendChild(opt);
       });
+      
       if (selectedId) sel.value = selectedId;
-      log('Loaded cities for country', countryId, ':', cities.length);
+      log(`Loaded ${cities.length} cities for country ${countryId}`);
     } catch (err) {
-      sel.innerHTML = `<option value="">${t('failed_load','Failed to load')}</option>`;
+      sel.innerHTML = `<option value="">${t('failed_load', 'Failed to load')}</option>`;
       log('loadCities error:', err);
     }
   }
@@ -369,11 +348,14 @@
   async function loadParentVendors(excludeId = 0) {
     const sel = $('vendor_parent_id');
     if (!sel) return;
-    sel.innerHTML = `<option value="">${t('loading_parents','Loading...')}</option>`;
+    
+    sel.innerHTML = `<option value="">${t('loading_parents', 'Loading...')}</option>`;
+    
     try {
-      const j = await fetchJson(`${API}/parents`);  // GET /api/vendors/parents
-      const rows = j.data || [];
-      sel.innerHTML = `<option value="">-- ${t('select_parent','select parent')} --</option>`;
+      const response = await fetchJson(`${API}?parents=1`);
+      const rows = response.data || [];
+      
+      sel.innerHTML = `<option value="">-- ${t('select_parent', 'Select parent')} --</option>`;
       rows.forEach(v => {
         if (excludeId && Number(excludeId) === Number(v.id)) return;
         const opt = document.createElement('option');
@@ -382,14 +364,15 @@
         sel.appendChild(opt);
       });
     } catch (err) {
-      sel.innerHTML = `<option value="">${t('failed_load','Failed to load')}</option>`;
-      log('loadParentVendors', err);
+      sel.innerHTML = `<option value="">${t('failed_load', 'Failed to load')}</option>`;
+      log('loadParentVendors error:', err);
     }
   }
 
-  // ---------- وظيفة لعرض/إخفاء حقل parent vendor ----------
+  // ---------- Parent Vendor Toggle ----------
   function toggleParentVendorField() {
     if (!refs.parentWrap || !refs.isBranchCheckbox) return;
+    
     if (refs.isBranchCheckbox.checked) {
       refs.parentWrap.style.display = 'block';
       loadParentVendors($('vendor_id')?.value || 0);
@@ -399,446 +382,854 @@
     }
   }
 
-  // bind country change to load cities (form)
-  if ($('vendor_country')) $('vendor_country').addEventListener('change', function () { loadCities(this.value); });
-
-  // bind filter country change to load filter cities
-  if (refs.filterCountry) refs.filterCountry.addEventListener('change', function () { loadFilterCities(this.value); });
-
-  // ---------- Image preview (simple) ----------
-  function previewImage(container, fileOrUrl) {
+  // ---------- Image Preview ----------
+  function previewImage(containerId, fileOrUrl) {
+    const container = $(containerId);
     if (!container) return;
+    
     container.innerHTML = '';
     if (!fileOrUrl) return;
+    
     const img = document.createElement('img');
-    img.style.maxWidth = '240px';
-    img.style.maxHeight = '160px';
-    img.style.display = 'block';
+    img.style.cssText = `
+      max-width: 240px;
+      max-height: 160px;
+      border-radius: 8px;
+      object-fit: cover;
+      display: block;
+    `;
+    
     if (typeof fileOrUrl === 'string') {
       img.src = fileOrUrl;
       container.appendChild(img);
       return;
     }
+    
     const fr = new FileReader();
-    fr.onload = e => { img.src = e.target.result; container.appendChild(img); };
+    fr.onload = e => {
+      img.src = e.target.result;
+      container.appendChild(img);
+    };
     fr.readAsDataURL(fileOrUrl);
   }
 
-  if (refs.logoInput) refs.logoInput.addEventListener('change', function () { const f = this.files[0]; previewImage(refs.previewLogo, f); this._processed = null; });
-  if (refs.coverInput) refs.coverInput.addEventListener('change', function () { const f = this.files[0]; previewImage(refs.previewCover, f); this._processed = null; });
-  if (refs.bannerInput) refs.bannerInput.addEventListener('change', function () { const f = this.files[0]; previewImage(refs.previewBanner, f); this._processed = null; });
+  if (refs.logoInput) {
+    refs.logoInput.addEventListener('change', function() {
+      const file = this.files[0];
+      previewImage('preview_logo', file);
+    });
+  }
+  
+  if (refs.coverInput) {
+    refs.coverInput.addEventListener('change', function() {
+      const file = this.files[0];
+      previewImage('preview_cover', file);
+    });
+  }
+  
+  if (refs.bannerInput) {
+    refs.bannerInput.addEventListener('change', function() {
+      const file = this.files[0];
+      previewImage('preview_banner', file);
+    });
+  }
 
-  // ---------- Translations panel ----------
+  // ---------- Translations Management ----------
   function addTranslationPanel(code = '', name = '') {
-    const container = refs.translationsArea;
-    if (!container) return null;
+    if (!refs.translationsArea) return null;
+    
     if (!code) {
-      code = prompt('Language code (e.g., ar)');
+      code = prompt(t('enter_lang_code', 'Enter language code (e.g., ar):'));
       if (!code) return null;
     }
-    code = String(code).trim();
+    
+    code = String(code).trim().toLowerCase();
     if (!code) return null;
-    if (container.querySelector(`.tr-lang-panel[data-lang="${code}"]`)) return null;
+    
+    if (refs.translationsArea.querySelector(`.tr-lang-panel[data-lang="${code}"]`)) {
+      showNotification(t('lang_exists', 'Language already added'), 'warning');
+      return null;
+    }
 
     const panel = document.createElement('div');
     panel.className = 'tr-lang-panel';
     panel.dataset.lang = code;
-    panel.style.border = '1px solid #eef2f7';
-    panel.style.padding = '8px';
-    panel.style.marginBottom = '8px';
+    panel.style.cssText = `
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      background: #f9fafb;
+    `;
+    
     panel.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <strong>${escapeHtml(name || code)} (${escapeHtml(code)})</strong>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <div>
-          <button class="btn small toggle-lang" type="button">Collapse</button>
-          <button class="btn small danger remove-lang" type="button">Remove</button>
+          <strong style="font-size: 16px;">${escapeHtml(name || code.toUpperCase())}</strong>
+          <span style="color: #6b7280; font-size: 14px; margin-left: 8px;">(${escapeHtml(code)})</span>
+        </div>
+        <div>
+          <button type="button" class="btn small toggle-lang" style="margin-right: 8px;">${t('collapse', 'Collapse')}</button>
+          <button type="button" class="btn small danger remove-lang">${t('remove', 'Remove')}</button>
         </div>
       </div>
-      <div class="tr-body" style="margin-top:8px;">
-        <label>Description <textarea class="tr-desc" rows="3" style="width:100%"></textarea></label>
-        <label>Return policy <textarea class="tr-return" rows="2" style="width:100%"></textarea></label>
-        <label>Shipping policy <textarea class="tr-shipping" rows="2" style="width:100%"></textarea></label>
-        <label>Meta title <input class="tr-meta-title" type="text" style="width:100%"></label>
-        <label>Meta description <input class="tr-meta-desc" type="text" style="width:100%"></label>
+      <div class="tr-body">
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; margin-bottom: 4px; font-weight: 500;">${t('description', 'Description')}</label>
+          <textarea name="translations[${code}][description]" rows="3" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></textarea>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; margin-bottom: 4px; font-weight: 500;">${t('return_policy', 'Return Policy')}</label>
+          <textarea name="translations[${code}][return_policy]" rows="2" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></textarea>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; margin-bottom: 4px; font-weight: 500;">${t('shipping_policy', 'Shipping Policy')}</label>
+          <textarea name="translations[${code}][shipping_policy]" rows="2" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;"></textarea>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div>
+            <label style="display: block; margin-bottom: 4px; font-weight: 500;">${t('meta_title', 'Meta Title')}</label>
+            <input type="text" name="translations[${code}][meta_title]" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 4px; font-weight: 500;">${t('meta_description', 'Meta Description')}</label>
+            <input type="text" name="translations[${code}][meta_description]" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+          </div>
+        </div>
       </div>
     `;
-    container.appendChild(panel);
+    
+    refs.translationsArea.appendChild(panel);
 
-    panel.querySelector('.remove-lang').addEventListener('click', () => panel.remove());
+    panel.querySelector('.remove-lang').addEventListener('click', () => {
+      panel.remove();
+    });
+    
     panel.querySelector('.toggle-lang').addEventListener('click', () => {
       const body = panel.querySelector('.tr-body');
       if (!body) return;
-      if (body.style.display === 'none') { body.style.display = 'block'; panel.querySelector('.toggle-lang').textContent = 'Collapse'; }
-      else { body.style.display = 'none'; panel.querySelector('.toggle-lang').textContent = 'Open'; }
+      
+      if (body.style.display === 'none') {
+        body.style.display = 'block';
+        panel.querySelector('.toggle-lang').textContent = t('collapse', 'Collapse');
+      } else {
+        body.style.display = 'none';
+        panel.querySelector('.toggle-lang').textContent = t('expand', 'Expand');
+      }
     });
 
-    if (LANG_DIRECTION === 'rtl') panel.querySelectorAll('textarea,input').forEach(i => i.setAttribute('dir','rtl'));
+    if (LANG_DIRECTION === 'rtl') {
+      panel.querySelectorAll('textarea, input').forEach(el => el.setAttribute('dir', 'rtl'));
+    }
+    
     return panel;
   }
-  if (refs.addLangBtn) refs.addLangBtn.addEventListener('click', () => addTranslationPanel('', ''));
 
-  function collectTranslations() {
-    const out = {};
-    const container = refs.translationsArea;
-    if (!container) return out;
-    container.querySelectorAll('.tr-lang-panel').forEach(p => {
-      const lang = p.dataset.lang;
-      const desc = p.querySelector('.tr-desc')?.value || '';
-      const rp = p.querySelector('.tr-return')?.value || '';
-      const sp = p.querySelector('.tr-shipping')?.value || '';
-      const mt = p.querySelector('.tr-meta-title')?.value || '';
-      const md = p.querySelector('.tr-meta-desc')?.value || '';
-      if (desc || rp || sp || mt || md) out[lang] = { description: desc, return_policy: rp, shipping_policy: sp, meta_title: mt, meta_description: md };
-    });
-    return out;
+  if (refs.addLangBtn) {
+    refs.addLangBtn.addEventListener('click', () => addTranslationPanel('', ''));
   }
 
-  // ---------- collectFormData (comprehensive & robust) ----------
+  function collectTranslations() {
+    const translations = {};
+    
+    if (!refs.translationsArea) return translations;
+    
+    refs.translationsArea.querySelectorAll('.tr-lang-panel').forEach(panel => {
+      const lang = panel.dataset.lang;
+      const data = {};
+      
+      const desc = panel.querySelector(`[name="translations[${lang}][description]"]`)?.value || '';
+      const returnPolicy = panel.querySelector(`[name="translations[${lang}][return_policy]"]`)?.value || '';
+      const shippingPolicy = panel.querySelector(`[name="translations[${lang}][shipping_policy]"]`)?.value || '';
+      const metaTitle = panel.querySelector(`[name="translations[${lang}][meta_title]"]`)?.value || '';
+      const metaDesc = panel.querySelector(`[name="translations[${lang}][meta_description]"]`)?.value || '';
+      
+      if (desc || returnPolicy || shippingPolicy || metaTitle || metaDesc) {
+        translations[lang] = {
+          description: desc,
+          return_policy: returnPolicy,
+          shipping_policy: shippingPolicy,
+          meta_title: metaTitle,
+          meta_description: metaDesc
+        };
+      }
+    });
+    
+    return translations;
+  }
+
+  // ---------- Form Data Collection ----------
   function collectFormData() {
     const fd = new FormData();
-    // Don't append 'action' - we'll use HTTP method instead
-    const vendorId = $('vendor_id')?.value || 0;
-    // Only store id internally for decision making, not as form field
-    fd._vendorId = vendorId;  // Internal use only
-    fd.append('id', vendorId);  // Still send id for backend compatibility
+    fd.append('action', 'save');
+    fd.append('id', $('vendor_id')?.value || '0');
 
-    // canonical list of server fields we want to send
-    const serverFields = [
-      'store_name','slug','vendor_type','store_type','is_branch','parent_vendor_id','branch_code',
-      'inherit_settings','inherit_products','inherit_commission',
-      'phone','mobile','email','website_url','registration_number','tax_number',
-      'country_id','city_id','address','postal_code','latitude','longitude',
-      'commission_rate','service_radius','accepts_online_booking','average_response_time',
-      'status','suspension_reason','is_verified','is_featured','approved_at'
-    ];
-
-    // mapping of common DOM ids to server field names (covers variants)
-    const domCandidates = {
-      store_name: ['vendor_store_name','store_name'],
-      slug: ['vendor_slug','slug'],
-      vendor_type: ['vendor_type','vendor_vendor_type'],
-      store_type: ['vendor_store_type','store_type'],
-      is_branch: ['vendor_is_branch','is_branch'],
-      parent_vendor_id: ['vendor_parent_id','parent_vendor_id'],
-      branch_code: ['vendor_branch_code','branch_code'],
-      inherit_settings: ['inherit_settings','vendor_inherit_settings'],
-      inherit_products: ['inherit_products','vendor_inherit_products'],
-      inherit_commission: ['inherit_commission','vendor_inherit_commission'],
-      phone: ['vendor_phone','phone'],
-      mobile: ['vendor_mobile','mobile'],
-      email: ['vendor_email','email'],
-      website_url: ['vendor_website','website_url','vendor_site'],
-      registration_number: ['vendor_registration_number','registration_number'],
-      tax_number: ['vendor_tax_number','tax_number'],
-      country_id: ['vendor_country','country_id'],
-      city_id: ['vendor_city','city_id'],
-      address: ['vendor_address','address'],
-      postal_code: ['vendor_postal','vendor_postal_code','postal_code'],
-      latitude: ['vendor_latitude','latitude'],
-      longitude: ['vendor_longitude','longitude'],
-      commission_rate: ['vendor_commission','commission_rate'],
-      service_radius: ['vendor_radius','service_radius'],
-      accepts_online_booking: ['vendor_accepts_online_booking','accepts_online_booking'],
-      average_response_time: ['vendor_average_response_time','average_response_time'],
-      status: ['vendor_status','status'],
-      suspension_reason: ['vendor_suspension_reason','suspension_reason'],
-      is_verified: ['vendor_is_verified','is_verified'],
-      is_featured: ['vendor_is_featured','is_featured'],
-      approved_at: ['vendor_approved_at','approved_at']
+    const fieldMapping = {
+      // Basic info
+      'vendor_store_name': 'store_name',
+      'vendor_slug': 'slug',
+      'vendor_type': 'vendor_type',
+      'vendor_store_type': 'store_type',
+      'vendor_branch_code': 'branch_code',
+      
+      // Contact info
+      'vendor_phone': 'phone',
+      'vendor_mobile': 'mobile',
+      'vendor_email': 'email',
+      'vendor_website': 'website_url',
+      'vendor_registration_number': 'registration_number',
+      'vendor_tax_number': 'tax_number',
+      
+      // Location
+      'vendor_country': 'country_id',
+      'vendor_city': 'city_id',
+      'vendor_address': 'address',
+      'vendor_postal': 'postal_code',
+      'vendor_latitude': 'latitude',
+      'vendor_longitude': 'longitude',
+      
+      // Business settings
+      'vendor_commission': 'commission_rate',
+      'vendor_radius': 'service_radius',
+      'vendor_average_response_time': 'average_response_time',
+      'vendor_suspension_reason': 'suspension_reason',
+      'vendor_approved_at': 'approved_at'
     };
 
-    function getValFromDomCandidates(field) {
-      const cands = domCandidates[field] || ['vendor_' + field];
-      for (const id of cands) {
-        const el = document.getElementById(id);
-        if (!el) continue;
-        if (el.type === 'checkbox') return el.checked ? '1' : '0';
-        return el.value == null ? '' : String(el.value);
+    Object.entries(fieldMapping).forEach(([inputId, fieldName]) => {
+      const el = $(inputId);
+      if (el) {
+        fd.append(fieldName, el.value || '');
       }
-      return '';
+    });
+
+    // Checkboxes
+    const checkboxes = {
+      'vendor_is_branch': 'is_branch',
+      'vendor_accepts_online_booking': 'accepts_online_booking',
+      'vendor_is_verified': 'is_verified',
+      'vendor_is_featured': 'is_featured'
+    };
+
+    Object.entries(checkboxes).forEach(([checkboxId, fieldName]) => {
+      const el = $(checkboxId);
+      if (el) {
+        fd.append(fieldName, el.checked ? '1' : '0');
+      }
+    });
+
+    // Inherit settings (if they exist)
+    ['inherit_settings', 'inherit_products', 'inherit_commission'].forEach(field => {
+      const el = $(field);
+      if (el) {
+        fd.append(field, el.checked ? '1' : '0');
+      }
+    });
+
+    // Parent vendor
+    if ($('vendor_parent_id')) {
+      fd.append('parent_vendor_id', $('vendor_parent_id').value || '');
     }
 
-    serverFields.forEach(f => fd.set(f, getValFromDomCandidates(f)));
+    // Status (admin only)
+    if (IS_ADMIN && $('vendor_status')) {
+      fd.append('status', $('vendor_status').value || 'pending');
+    }
 
-    // Files - server expects vendor_logo/vendor_cover/vendor_banner
-    const logo = document.getElementById('vendor_logo');
-    if (logo && logo._processed) fd.set('vendor_logo', logo._processed, logo._processed.name);
-    else if (logo && logo.files && logo.files[0]) fd.set('vendor_logo', logo.files[0]);
+    // Files
+    ['logo', 'cover', 'banner'].forEach(type => {
+      const input = $(`vendor_${type}`);
+      if (input && input.files && input.files[0]) {
+        fd.append(`vendor_${type}`, input.files[0]);
+      }
+    });
 
-    const cover = document.getElementById('vendor_cover');
-    if (cover && cover._processed) fd.set('vendor_cover', cover._processed, cover._processed.name);
-    else if (cover && cover.files && cover.files[0]) fd.set('vendor_cover', cover.files[0]);
-
-    const banner = document.getElementById('vendor_banner');
-    if (banner && banner._processed) fd.set('vendor_banner', banner._processed, banner._processed.name);
-    else if (banner && banner.files && banner.files[0]) fd.set('vendor_banner', banner.files[0]);
-
-    // Translations (always send JSON string)
-    fd.set('translations', JSON.stringify(collectTranslations()));
+    // Translations
+    const translations = collectTranslations();
+    if (Object.keys(translations).length > 0) {
+      fd.append('translations', JSON.stringify(translations));
+    }
 
     if (DEBUG) {
-      const dbg = {};
-      for (const p of fd.entries()) dbg[p[0]] = (p[1] instanceof File) ? `[File] ${p[1].name}` : p[1];
-      console.log('collectFormData ->', dbg);
+      const debugData = {};
+      for (const [key, value] of fd.entries()) {
+        debugData[key] = value instanceof File ? `[File: ${value.name}]` : value;
+      }
+      console.log('FormData:', debugData);
     }
 
     return fd;
   }
 
-  // ---------- Save logic ----------
+  // ---------- Save Vendor ----------
   async function saveVendor() {
     setError('');
     clearFieldErrors();
 
-    // client-side required checks
-    const required = ['vendor_store_name','vendor_email','vendor_phone','vendor_country'];
-    const clientErr = {};
-    required.forEach(id => {
-      const el = document.getElementById(id);
-      if (!el || !String(el.value || '').trim()) clientErr[id.replace('vendor_','')] = [`${id} required`];
+    // Client-side validation
+    const requiredFields = ['vendor_store_name', 'vendor_email', 'vendor_phone', 'vendor_country'];
+    const clientErrors = {};
+    
+    requiredFields.forEach(fieldId => {
+      const el = $(fieldId);
+      if (el && !el.value.trim()) {
+        const fieldName = fieldId.replace('vendor_', '');
+        clientErrors[fieldName] = [t('field_required', 'This field is required')];
+      }
     });
-    if (Object.keys(clientErr).length) { showFieldErrors(clientErr); setError(t('fix_errors','Please fix errors')); return; }
-
-    const fd = collectFormData();
-
-    // ensure country present
-    if (!fd.get('country_id')) {
-      showFieldErrors({ country_id: ['Country id is required'] });
-      setError(t('country_required','Please select a country before saving.'));
-      document.getElementById('vendor_country')?.focus();
+    
+    if (Object.keys(clientErrors).length > 0) {
+      showFieldErrors(clientErrors);
+      setError(t('fix_errors', 'Please fix the errors below'));
       return;
     }
 
+    const fd = collectFormData();
+
     try {
-      const res = await postWithRetry(fd);
-      if (!res || !res.success) {
-        if (res && res.errors) { showFieldErrors(res.errors || {}); setError(res.message || t('validation_failed','Validation failed')); }
-        else setError(res.message || t('save_failed','Save failed'));
+      const response = await postFormData(fd);
+      
+      if (!response.success) {
+        if (response.errors) {
+          showFieldErrors(response.errors);
+        }
+        setError(response.message || t('save_failed', 'Save failed'));
         return;
       }
+      
       resetForm();
       await loadList();
-      showNotification(t('saved','Saved successfully'), 'success', 3000);
-    } catch (err) {
-      log('saveVendor', err);
-      if (err && err.status === 422 && err.body && err.body.errors) {
-        showFieldErrors(err.body.errors);
-        setError(err.body.message || t('validation_failed','Validation failed'));
+      showNotification(t('saved', 'Vendor saved successfully'), 'success');
+      
+    } catch (error) {
+      log('Save error:', error);
+      
+      if (error.status === 422 && error.body && error.body.errors) {
+        showFieldErrors(error.body.errors);
+        setError(error.body.message || t('validation_failed', 'Validation failed'));
         return;
       }
-      if (err && err.status === 403) {
-        showNotification(t('forbidden','Forbidden — session expired or no permission.'), 'error', 5000);
+      
+      if (error.status === 403) {
+        showNotification(t('forbidden', 'Forbidden - session expired or no permission'), 'error');
         return;
       }
-      showNotification(t('network_error','Network or server error'), 'error', 5000);
+      
+      showNotification(t('network_error', 'Network or server error'), 'error');
     }
   }
 
-  // ---------- Edit / Delete / Toggle ----------
+  // ---------- Reset Form ----------
   function resetForm() {
     if (!refs.form) return;
+    
     refs.form.reset();
-    if (refs.translationsArea) refs.translationsArea.innerHTML = '';
-    addTranslationPanel(PREF_LANG, LANGS.find(l => l.code === PREF_LANG)?.name || PREF_LANG);
-    if ($('vendor_id')) $('vendor_id').value = 0;
-    if (refs.previewLogo) refs.previewLogo.innerHTML = '';
-    if (refs.previewCover) refs.previewCover.innerHTML = '';
-    if (refs.previewBanner) refs.previewBanner.innerHTML = '';
-    ['vendor_logo','vendor_cover','vendor_banner'].forEach(id => { const el = document.getElementById(id); if (el) el._processed = null; });
-    clearFieldErrors(); setError('');
-    if (refs.parentWrap) refs.parentWrap.style.display = 'none';
-    // إعادة تعيين checkbox is_branch
-    if (refs.isBranchCheckbox) refs.isBranchCheckbox.checked = false;
-    const sect = refs.formSection;
-    if (sect) window.scrollTo({ top: sect.offsetTop - 20, behavior: 'smooth' });
-  }
-
-  async function openEdit(id) {
-    setError(''); clearFieldErrors();
-    try {
-      const j = await fetchJson(`${API}/${encodeURIComponent(id)}`);  // GET /api/vendors/{id}
-      if (!j || !j.success) { 
-        showNotification(j?.message || t('load_failed','Load failed'), 'error', 5000);
-        return; 
-      }
-      const v = j.data;
-
-      if ($('vendor_id')) $('vendor_id').value = v.id || 0;
-
-      // fill fields: includes postal_code, website_url, service_radius, average_response_time
-      const fillMap = {
-        vendor_store_name: v.store_name || '',
-        vendor_slug: v.slug || '',
-        vendor_type: v.vendor_type || '',
-        vendor_store_type: v.store_type || '',
-        vendor_branch_code: v.branch_code || '',
-        vendor_phone: v.phone || '',
-        vendor_mobile: v.mobile || '',
-        vendor_email: v.email || '',
-        vendor_website: v.website_url || '',
-        vendor_registration_number: v.registration_number || '',
-        vendor_tax_number: v.tax_number || '',
-        vendor_postal: v.postal_code || '',
-        vendor_address: v.address || '',
-        vendor_latitude: v.latitude || '',
-        vendor_longitude: v.longitude || '',
-        vendor_commission: v.commission_rate || '',
-        vendor_radius: v.service_radius || '',
-        vendor_average_response_time: v.average_response_time || ''
-      };
-      Object.keys(fillMap).forEach(id => { const el = document.getElementById(id); if (el) el.value = fillMap[id]; });
-
-      // checkboxes
-      if ($('vendor_is_branch')) $('vendor_is_branch').checked = !!v.is_branch;
-      if ($('inherit_settings')) $('inherit_settings').checked = (v.inherit_settings == 1);
-      if ($('inherit_products')) $('inherit_products').checked = (v.inherit_products == 1);
-      if ($('inherit_commission')) $('inherit_commission').checked = (v.inherit_commission == 1);
-      if ($('vendor_accepts_online_booking')) $('vendor_accepts_online_booking').checked = (v.accepts_online_booking == 1);
-
-      // التحكم في عرض حقل parent vendor بناءً على is_branch
-      toggleParentVendorField();
-
-      // countries/cities
-      await loadCountries(v.country_id || '');
-      if (v.country_id) {
-        if (document.getElementById('vendor_country')) document.getElementById('vendor_country').value = v.country_id;
-        await loadCities(v.country_id, v.city_id || '');
-      }
-
-      // translations
-      if (refs.translationsArea) refs.translationsArea.innerHTML = '';
-      if (v.translations) {
-        for (const lang of Object.keys(v.translations)) {
-          addTranslationPanel(lang, lang);
-          const panel = refs.translationsArea.querySelector(`.tr-lang-panel[data-lang="${lang}"]`);
-          if (!panel) continue;
-          const data = v.translations[lang] || {};
-          panel.querySelector('.tr-desc') && (panel.querySelector('.tr-desc').value = data.description || '');
-          panel.querySelector('.tr-return') && (panel.querySelector('.tr-return').value = data.return_policy || '');
-          panel.querySelector('.tr-shipping') && (panel.querySelector('.tr-shipping').value = data.shipping_policy || '');
-          panel.querySelector('.tr-meta-title') && (panel.querySelector('.tr-meta-title').value = data.meta_title || '');
-          panel.querySelector('.tr-meta-desc') && (panel.querySelector('.tr-meta-desc').value = data.meta_description || '');
-        }
-      } else addTranslationPanel(PREF_LANG, LANGS.find(l => l.code === PREF_LANG)?.name || PREF_LANG);
-
-      // admin-only
-      if (IS_ADMIN) {
-        if ($('vendor_status')) $('vendor_status').value = v.status || 'pending';
-        if ($('vendor_is_verified')) $('vendor_is_verified').checked = !!v.is_verified;
-        if ($('vendor_is_featured')) $('vendor_is_featured').checked = !!v.is_featured;
-      }
-
-      await loadParentVendors(v.id);
-      if (v.parent_vendor_id && $('vendor_parent_id')) $('vendor_parent_id').value = v.parent_vendor_id;
-
-      // show previews if urls provided
-      if (v.logo_url && refs.previewLogo) previewImage(refs.previewLogo, v.logo_url);
-      if (v.cover_image_url && refs.previewCover) previewImage(refs.previewCover, v.cover_image_url);
-      if (v.banner_url && refs.previewBanner) previewImage(refs.previewBanner, v.banner_url);
-
-      const sect = refs.formSection;
-      if (sect) window.scrollTo({ top: sect.offsetTop - 20, behavior: 'smooth' });
-
-    } catch (err) {
-      log('openEdit error', err);
-      if (err && err.status === 403) { 
-        showNotification(t('forbidden','Forbidden — session expired or no permission.'), 'error', 5000);
-        await fetchCurrentUserAndCsrf(); 
-      }
-      else showNotification(t('error_loading','Error loading vendor'), 'error', 5000);
+    
+    if ($('vendor_id')) $('vendor_id').value = '0';
+    
+    if (refs.translationsArea) {
+      refs.translationsArea.innerHTML = '';
+      addTranslationPanel(PREF_LANG, AVAILABLE_LANGS.find(l => l.code === PREF_LANG)?.name || PREF_LANG);
     }
-  }
-
-  // ---------- Delete/Toggle ----------
-  async function doDelete(id) {
-    if (!confirm(t('confirm_delete','Delete vendor #') + id + '?')) return;
-    try {
-      await fetchCurrentUserAndCsrf();  // Ensure CSRF is fresh
-      const headers = { 
-        'X-CSRF-Token': CSRF || '',
-        'Content-Type': 'application/json'
-      };
-      const res = await fetch(`${API}/${encodeURIComponent(id)}`, {  // DELETE /api/vendors/{id}
-        method: 'DELETE',
-        credentials: 'include',
-        headers
-      });
-      let json = null;
-      try { json = await res.json(); } catch (e) { json = null; }
-      
-      if (!res.ok || !json || !json.success) {
-        showNotification(t('delete_failed','Delete failed: ') + (json?.message || ''), 'error', 5000);
-      } else { 
-        resetForm(); 
-        loadList(); 
-        showNotification(t('deleted','Deleted'), 'success', 3000);
-      }
-    } catch (err) { 
-      log('delete', err); 
-      showNotification(t('network_error','Network error'), 'error', 5000);
-    }
-  }
-
-  async function toggleVerify(id, value) {
-    if (!confirm(t('confirm_toggle_verify','Toggle verification?'))) return;
-    try {
-      await fetchCurrentUserAndCsrf();  // Ensure CSRF is fresh
-      const headers = { 
-        'X-CSRF-Token': CSRF || '',
-        'Content-Type': 'application/json'
-      };
-      const endpoint = value ? 'approve' : 'reject';
-      const res = await fetch(`${API}/${encodeURIComponent(id)}/${endpoint}`, {  // POST /api/vendors/{id}/approve or /reject
-        method: 'POST',
-        credentials: 'include',
-        headers
-      });
-      let json = null;
-      try { json = await res.json(); } catch (e) { json = null; }
-      
-      if (!res.ok || !json || !json.success) {
-        showNotification(t('failed','Failed: ') + (json?.message || ''), 'error', 5000);
-      } else {
-        loadList();
-        showNotification(t('updated','Updated'), 'success', 3000);
-      }
-    } catch (err) { 
-      log('toggleVerify', err); 
-      showNotification(t('network_error','Network error'), 'error', 5000);
-    }
-  }
-
-  // ---------- Wire UI and init ----------
-  function wireUI() {
-    if (refs.vendorSearch) {
-      let timer = null;
-      refs.vendorSearch.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadList, 300); });
-    }
-    if (refs.vendorRefresh) refs.vendorRefresh.addEventListener('click', loadList);
-    if (refs.vendorNewBtn) refs.vendorNewBtn.addEventListener('click', () => { resetForm(); if (refs.formTitle) refs.formTitle.textContent = t('create_edit','Create / Edit Vendor'); loadParentVendors(); });
-    if (refs.saveBtn) refs.saveBtn.addEventListener('click', saveVendor);
-    if (refs.resetBtn) refs.resetBtn.addEventListener('click', resetForm);
-    if (refs.addLangBtn) refs.addLangBtn.addEventListener('click', () => addTranslationPanel('', ''));
-    if (refs.btnGetCoords) refs.btnGetCoords.addEventListener('click', () => {
-      setError('');
-      if (!navigator.geolocation) { 
-        showNotification(t('geolocation_not_supported','Geolocation not supported'), 'error', 5000);
-        return; 
-      }
-      setError(t('getting_location','Getting current location...'));
-      navigator.geolocation.getCurrentPosition(pos => {
-        if ($('vendor_latitude')) $('vendor_latitude').value = pos.coords.latitude.toFixed(7);
-        if ($('vendor_longitude')) $('vendor_longitude').value = pos.coords.longitude.toFixed(7);
-        setError('');
-      }, err => setError(t('could_not_get_location','Could not get location: ') + (err.message || err.code)), { enableHighAccuracy:false, timeout:10000, maximumAge:60000 });
+    
+    // Clear image previews
+    ['preview_logo', 'preview_cover', 'preview_banner'].forEach(id => {
+      const el = $(id);
+      if (el) el.innerHTML = '';
     });
     
-    // إضافة حدث لعرض/إخفاء حقل parent vendor
+    // Clear file inputs
+    ['logo', 'cover', 'banner'].forEach(type => {
+      const input = $(`vendor_${type}`);
+      if (input) input.value = '';
+    });
+    
+    // Hide parent vendor field
+    if (refs.parentWrap) refs.parentWrap.style.display = 'none';
+    if (refs.isBranchCheckbox) refs.isBranchCheckbox.checked = false;
+    
+    // Clear errors
+    clearFieldErrors();
+    setError('');
+    
+    // Update form title
+    if (refs.formTitle) refs.formTitle.textContent = t('create_vendor', 'Create New Vendor');
+    
+    // Scroll to form
+    if (refs.formSection) {
+      refs.formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  // ---------- Edit Vendor ----------
+  async function openEdit(id) {
+    setError('');
+    clearFieldErrors();
+    
+    try {
+      const response = await fetchJson(`${API}?_fetch_row=1&id=${encodeURIComponent(id)}`);
+      
+      if (!response.success || !response.data) {
+        showNotification(response?.message || t('load_failed', 'Failed to load vendor'), 'error');
+        return;
+      }
+      
+      const vendor = response.data;
+      
+      // Set vendor ID
+      if ($('vendor_id')) $('vendor_id').value = vendor.id || '0';
+      
+      // Fill basic fields
+      const fieldMap = {
+        'store_name': 'vendor_store_name',
+        'slug': 'vendor_slug',
+        'vendor_type': 'vendor_type',
+        'store_type': 'vendor_store_type',
+        'branch_code': 'vendor_branch_code',
+        'phone': 'vendor_phone',
+        'mobile': 'vendor_mobile',
+        'email': 'vendor_email',
+        'website_url': 'vendor_website',
+        'registration_number': 'vendor_registration_number',
+        'tax_number': 'vendor_tax_number',
+        'postal_code': 'vendor_postal',
+        'address': 'vendor_address',
+        'latitude': 'vendor_latitude',
+        'longitude': 'vendor_longitude',
+        'commission_rate': 'vendor_commission',
+        'service_radius': 'vendor_radius',
+        'average_response_time': 'vendor_average_response_time',
+        'suspension_reason': 'vendor_suspension_reason',
+        'approved_at': 'vendor_approved_at'
+      };
+      
+      Object.entries(fieldMap).forEach(([vendorKey, fieldId]) => {
+        const el = $(fieldId);
+        if (el && vendor[vendorKey] !== undefined) {
+          el.value = vendor[vendorKey] || '';
+        }
+      });
+      
+      // Set checkboxes
+      if ($('vendor_is_branch')) $('vendor_is_branch').checked = !!vendor.is_branch;
+      if ($('vendor_accepts_online_booking')) $('vendor_accepts_online_booking').checked = !!vendor.accepts_online_booking;
+      
+      // Set inherit checkboxes if they exist
+      ['inherit_settings', 'inherit_products', 'inherit_commission'].forEach(field => {
+        const el = $(field);
+        if (el && vendor[field] !== undefined) {
+          el.checked = !!vendor[field];
+        }
+      });
+      
+      // Toggle parent vendor field based on is_branch
+      toggleParentVendorField();
+      
+      // Load countries and cities
+      await loadCountries('vendor_country', vendor.country_id || '');
+      if (vendor.country_id) {
+        await loadCities(vendor.country_id, 'vendor_city', vendor.city_id || '');
+      }
+      
+      // Load parent vendors and select if exists
+      await loadParentVendors(vendor.id);
+      if (vendor.parent_vendor_id && $('vendor_parent_id')) {
+        $('vendor_parent_id').value = vendor.parent_vendor_id;
+      }
+      
+      // Load translations
+      if (refs.translationsArea) {
+        refs.translationsArea.innerHTML = '';
+        
+        if (vendor.translations && Object.keys(vendor.translations).length > 0) {
+          Object.entries(vendor.translations).forEach(([lang, data]) => {
+            const panel = addTranslationPanel(lang, lang.toUpperCase());
+            if (panel && data) {
+              if (data.description) panel.querySelector(`[name="translations[${lang}][description]"]`).value = data.description;
+              if (data.return_policy) panel.querySelector(`[name="translations[${lang}][return_policy]"]`).value = data.return_policy;
+              if (data.shipping_policy) panel.querySelector(`[name="translations[${lang}][shipping_policy]"]`).value = data.shipping_policy;
+              if (data.meta_title) panel.querySelector(`[name="translations[${lang}][meta_title]"]`).value = data.meta_title;
+              if (data.meta_description) panel.querySelector(`[name="translations[${lang}][meta_description]"]`).value = data.meta_description;
+            }
+          });
+        } else {
+          addTranslationPanel(PREF_LANG, AVAILABLE_LANGS.find(l => l.code === PREF_LANG)?.name || PREF_LANG);
+        }
+      }
+      
+      // Admin only fields
+      if (IS_ADMIN) {
+        if ($('vendor_status')) $('vendor_status').value = vendor.status || 'pending';
+        if ($('vendor_is_verified')) $('vendor_is_verified').checked = !!vendor.is_verified;
+        if ($('vendor_is_featured')) $('vendor_is_featured').checked = !!vendor.is_featured;
+      }
+      
+      // Load image previews
+      if (vendor.logo_url) previewImage('preview_logo', vendor.logo_url);
+      if (vendor.cover_image_url) previewImage('preview_cover', vendor.cover_image_url);
+      if (vendor.banner_url) previewImage('preview_banner', vendor.banner_url);
+      
+      // Update form title
+      if (refs.formTitle) {
+        refs.formTitle.textContent = t('edit_vendor', 'Edit Vendor') + ': ' + escapeHtml(vendor.store_name || '');
+      }
+      
+      // Scroll to form
+      if (refs.formSection) {
+        refs.formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      
+    } catch (error) {
+      log('Edit error:', error);
+      
+      if (error.status === 403) {
+        showNotification(t('forbidden', 'Forbidden - session expired or no permission'), 'error');
+      } else {
+        showNotification(t('error_loading', 'Error loading vendor data'), 'error');
+      }
+    }
+  }
+
+  // ---------- Delete Vendor ----------
+  async function doDelete(id) {
+    if (!confirm(t('confirm_delete', 'Are you sure you want to delete vendor #') + id + '?')) {
+      return;
+    }
+    
+    try {
+      const fd = new FormData();
+      fd.append('action', 'delete');
+      fd.append('id', id);
+      
+      const response = await postFormData(fd);
+      
+      if (!response.success) {
+        showNotification(response?.message || t('delete_failed', 'Delete failed'), 'error');
+        return;
+      }
+      
+      resetForm();
+      await loadList();
+      showNotification(t('deleted', 'Vendor deleted successfully'), 'success');
+      
+    } catch (error) {
+      log('Delete error:', error);
+      showNotification(t('network_error', 'Network error'), 'error');
+    }
+  }
+
+  // ---------- Toggle Verification ----------
+  async function toggleVerify(id, value) {
+    if (!confirm(t('confirm_toggle_verify', 'Toggle verification status?'))) {
+      return;
+    }
+    
+    try {
+      const fd = new FormData();
+      fd.append('action', 'toggle_verify');
+      fd.append('id', id);
+      fd.append('value', value);
+      
+      const response = await postFormData(fd);
+      
+      if (!response.success) {
+        showNotification(response?.message || t('toggle_failed', 'Toggle failed'), 'error');
+        return;
+      }
+      
+      await loadList();
+      showNotification(t('updated', 'Verification status updated'), 'success');
+      
+    } catch (error) {
+      log('Toggle verify error:', error);
+      showNotification(t('network_error', 'Network error'), 'error');
+    }
+  }
+
+  // ---------- Load Filter Countries ----------
+  async function loadFilterCountries() {
+    if (!refs.filterCountry) return;
+    
+    refs.filterCountry.innerHTML = `<option value="">-- ${t('all_countries', 'All Countries')} --</option>`;
+    
+    try {
+      const response = await fetchJson(`${COUNTRIES_API}?lang=${encodeURIComponent(PREF_LANG)}&scope=all`);
+      const countries = response.data || response || [];
+      
+      countries.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name + (c.iso2 ? ` (${c.iso2})` : '');
+        refs.filterCountry.appendChild(opt);
+      });
+      
+      log(`Loaded ${countries.length} filter countries`);
+    } catch (err) {
+      log('loadFilterCountries error:', err);
+    }
+  }
+
+  // ---------- Load Filter Cities ----------
+  async function loadFilterCities(countryId) {
+    if (!refs.filterCity) return;
+    
+    if (!countryId) {
+      refs.filterCity.innerHTML = `<option value="">-- ${t('all_cities', 'All Cities')} --</option>`;
+      return;
+    }
+    
+    refs.filterCity.innerHTML = `<option value="">${t('loading_cities', 'Loading cities...')}</option>`;
+    
+    try {
+      const response = await fetchJson(`${CITIES_API}?country_id=${encodeURIComponent(countryId)}&lang=${encodeURIComponent(PREF_LANG)}&scope=all`);
+      const cities = response.data || response || [];
+      
+      refs.filterCity.innerHTML = `<option value="">-- ${t('all_cities', 'All Cities')} --</option>`;
+      cities.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        refs.filterCity.appendChild(opt);
+      });
+      
+      log(`Loaded ${cities.length} filter cities for country ${countryId}`);
+    } catch (err) {
+      refs.filterCity.innerHTML = `<option value="">-- ${t('all_cities', 'All Cities')} --</option>`;
+      log('loadFilterCities error:', err);
+    }
+  }
+
+  // ---------- Load Vendors List ----------
+  async function loadList() {
+    if (!refs.tbody) return;
+    
+    refs.tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#6b7280;padding:40px;">${t('loading', 'Loading...')}</td></tr>`;
+    
+    try {
+      const params = new URLSearchParams();
+      
+      // Search
+      if (refs.vendorSearch && refs.vendorSearch.value.trim()) {
+        params.append('search', refs.vendorSearch.value.trim());
+      }
+      
+      // Advanced filters
+      if (refs.filterStatus && refs.filterStatus.value) {
+        params.append('status', refs.filterStatus.value);
+      }
+      
+      if (refs.filterVerified && refs.filterVerified.value) {
+        params.append('is_verified', refs.filterVerified.value);
+      }
+      
+      if (refs.filterCountry && refs.filterCountry.value) {
+        params.append('country_id', refs.filterCountry.value);
+      }
+      
+      if (refs.filterCity && refs.filterCity.value) {
+        params.append('city_id', refs.filterCity.value);
+      }
+      
+      if (refs.filterPhone && refs.filterPhone.value) {
+        params.append('phone', refs.filterPhone.value);
+      }
+      
+      if (refs.filterEmail && refs.filterEmail.value) {
+        params.append('email', refs.filterEmail.value);
+      }
+      
+      const url = API + (params.toString() ? '?' + params.toString() : '');
+      log('Loading list from:', url);
+      
+      const response = await fetchJson(url);
+      const rows = response.data || [];
+      const total = response.total || rows.length;
+      
+      if (refs.vendorsCount) {
+        refs.vendorsCount.textContent = total;
+      }
+      
+      renderTable(rows);
+      
+    } catch (error) {
+      log('Load list error:', error);
+      refs.tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#b91c1c;padding:40px;">${t('error_loading', 'Error loading data')}</td></tr>`;
+    }
+  }
+
+  // ---------- Render Table ----------
+  function renderTable(rows) {
+    if (!refs.tbody) return;
+    
+    if (!rows || rows.length === 0) {
+      refs.tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#6b7280;padding:40px;">${t('no_vendors', 'No vendors found')}</td></tr>`;
+      return;
+    }
+    
+    refs.tbody.innerHTML = '';
+    
+    rows.forEach(vendor => {
+      const tr = document.createElement('tr');
+      tr.style.cssText = 'border-bottom: 1px solid #e5e7eb;';
+      
+      tr.innerHTML = `
+        <td style="padding: 12px; text-align: center;">${escapeHtml(vendor.id)}</td>
+        <td style="padding: 12px;">
+          <div style="font-weight: 600; color: #111827;">${escapeHtml(vendor.store_name)}</div>
+          <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">${escapeHtml(vendor.slug || '')}</div>
+        </td>
+        <td style="padding: 12px;">${escapeHtml(vendor.email || '')}</td>
+        <td style="padding: 12px;">
+          <span style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+            ${escapeHtml(vendor.vendor_type || '')}
+          </span>
+        </td>
+        <td style="padding: 12px;">
+          <span class="status-badge status-${vendor.status || 'pending'}">
+            ${escapeHtml(vendor.status || 'pending')}
+          </span>
+        </td>
+        <td style="padding: 12px; text-align: center;">
+          ${vendor.is_verified ? 
+            '<span style="color: #10b981; font-weight: 600;">✓ ' + t('yes', 'Yes') + '</span>' : 
+            '<span style="color: #6b7280;">✗ ' + t('no', 'No') + '</span>'}
+        </td>
+        <td style="padding: 12px;">
+          <button class="btn editBtn" data-id="${escapeHtml(vendor.id)}" style="margin-right: 8px;">
+            ${t('edit', 'Edit')}
+          </button>
+          <button class="btn danger delBtn" data-id="${escapeHtml(vendor.id)}" style="margin-right: 8px;">
+            ${t('delete', 'Delete')}
+          </button>
+          ${IS_ADMIN ? `
+            <button class="btn small verifyBtn" data-id="${escapeHtml(vendor.id)}" data-ver="${vendor.is_verified ? 0 : 1}">
+              ${vendor.is_verified ? t('unverify', 'Unverify') : t('verify', 'Verify')}
+            </button>
+          ` : ''}
+        </td>
+      `;
+      
+      refs.tbody.appendChild(tr);
+    });
+    
+    // Add event listeners to buttons
+    refs.tbody.querySelectorAll('.editBtn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openEdit(btn.dataset.id);
+      });
+    });
+    
+    refs.tbody.querySelectorAll('.delBtn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        doDelete(btn.dataset.id);
+      });
+    });
+    
+    refs.tbody.querySelectorAll('.verifyBtn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleVerify(btn.dataset.id, btn.dataset.ver);
+      });
+    });
+  }
+
+  // ---------- Wire UI Events ----------
+  function wireUI() {
+    // Search
+    if (refs.vendorSearch) {
+      let searchTimer;
+      refs.vendorSearch.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(loadList, 300);
+      });
+    }
+    
+    // Refresh button
+    if (refs.vendorRefresh) {
+      refs.vendorRefresh.addEventListener('click', loadList);
+    }
+    
+    // New vendor button
+    if (refs.vendorNewBtn) {
+      refs.vendorNewBtn.addEventListener('click', () => {
+        resetForm();
+        if (refs.formTitle) {
+          refs.formTitle.textContent = t('create_vendor', 'Create New Vendor');
+        }
+        loadParentVendors();
+      });
+    }
+    
+    // Save button
+    if (refs.saveBtn) {
+      refs.saveBtn.addEventListener('click', saveVendor);
+    }
+    
+    // Reset button
+    if (refs.resetBtn) {
+      refs.resetBtn.addEventListener('click', resetForm);
+    }
+    
+    // Add language button
+    if (refs.addLangBtn) {
+      refs.addLangBtn.addEventListener('click', () => addTranslationPanel('', ''));
+    }
+    
+    // Get coordinates button
+    if (refs.btnGetCoords) {
+      refs.btnGetCoords.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+          showNotification(t('geolocation_not_supported', 'Geolocation is not supported by your browser'), 'error');
+          return;
+        }
+        
+        setError(t('getting_location', 'Getting current location...'));
+        
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            if ($('vendor_latitude')) {
+              $('vendor_latitude').value = position.coords.latitude.toFixed(7);
+            }
+            if ($('vendor_longitude')) {
+              $('vendor_longitude').value = position.coords.longitude.toFixed(7);
+            }
+            setError('');
+            showNotification(t('location_updated', 'Location updated'), 'success');
+          },
+          (error) => {
+            setError(t('location_error', 'Could not get location: ') + error.message);
+          },
+          {
+            enableHighAccuracy: false,
+            timeout: 10000,
+            maximumAge: 60000
+          }
+        );
+      });
+    }
+    
+    // Is branch checkbox
     if (refs.isBranchCheckbox) {
       refs.isBranchCheckbox.addEventListener('change', toggleParentVendorField);
     }
     
-    // إضافة أحداث لفلاتر البحث المتقدمة
+    // Country change (for cities)
+    if ($('vendor_country')) {
+      $('vendor_country').addEventListener('change', function() {
+        loadCities(this.value, 'vendor_city');
+      });
+    }
+    
+    // Filter country change
+    if (refs.filterCountry) {
+      refs.filterCountry.addEventListener('change', function() {
+        loadFilterCities(this.value);
+      });
+    }
+    
+    // Clear filters button
     if (refs.filterClear) {
       refs.filterClear.addEventListener('click', () => {
         if (refs.filterStatus) refs.filterStatus.value = '';
@@ -851,7 +1242,7 @@
       });
     }
     
-    // إضافة أحداث التغيير للفلاتر
+    // Filter change events
     const filters = ['filterStatus', 'filterVerified', 'filterCountry', 'filterCity', 'filterPhone', 'filterEmail'];
     filters.forEach(filterName => {
       if (refs[filterName]) {
@@ -859,14 +1250,7 @@
       }
     });
     
-    // Ensure at least one translation panel exists
-    if (refs.translationsArea && refs.translationsArea.children.length === 0) addTranslationPanel(PREF_LANG, LANGS.find(l => l.code === PREF_LANG)?.name || PREF_LANG);
-  }
-
-  // ---------- Initialization ----------
-  (async function init() {
-    await fetchCurrentUserAndCsrf();
-    // apply direction
+    // Apply language direction
     if (LANG_DIRECTION === 'rtl') {
       document.documentElement.dir = 'rtl';
       if (refs.form) refs.form.style.direction = 'rtl';
@@ -874,134 +1258,46 @@
       document.documentElement.dir = 'ltr';
       if (refs.form) refs.form.style.direction = 'ltr';
     }
+  }
+
+  // ---------- Initialize ----------
+  (async function init() {
+    log('Initializing vendors management...');
+    
+    // Wire UI events
     wireUI();
-    await loadCountries();
-    // تحميل قائمة البلدان للفلتر
+    
+    // Load initial data
+    await loadCountries('vendor_country');
     await loadFilterCountries();
+    
+    // Reset form (creates default translation panel)
     resetForm();
+    
+    // Load vendors list
     await loadList();
-    // expose debug helpers
-    window.vendorsAdmin = {
-      collectFormData: () => {
-        try {
+    
+    // Expose functions for debugging
+    if (DEBUG) {
+      window.vendorsAdmin = {
+        loadList,
+        resetForm,
+        collectFormData: () => {
           const fd = collectFormData();
-          const out = {};
-          for (const e of fd.entries()) out[e[0]] = (e[1] instanceof File) ? `[File] ${e[1].name}` : e[1];
-          return out;
-        } catch (e) { return { error: e.message }; }
-      },
-      reload: async () => { await loadCountries(); await loadList(); }
-    };
+          const data = {};
+          for (const [key, value] of fd.entries()) {
+            data[key] = value instanceof File ? `[File: ${value.name}]` : value;
+          }
+          return data;
+        }
+      };
+    }
+    
+    showNotification(t('ready', 'Vendors management ready'), 'info', 2000);
+    
   })();
 
-  // ---------- loadFilterCountries للفلتر ----------
-  async function loadFilterCountries() {
-    const sel = refs.filterCountry;
-    if (!sel) return;
-    sel.innerHTML = `<option value="">-- ${t('all_countries','All countries')} --</option>`;
-    try {
-      // Pass language parameter for translated country names
-      const response = await fetchJson(`${COUNTRIES_API}?lang=${encodeURIComponent(PREF_LANG)}&scope=all`);
-      const countries = response.data || response || [];
-      countries.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c.id;
-        opt.textContent = c.name + (c.iso2 ? ` (${c.iso2})` : '');
-        sel.appendChild(opt);
-      });
-      log('Loaded filter countries:', countries.length);
-    } catch (err) {
-      log('loadFilterCountries error:', err);
-    }
-  }
-  
-  // ---------- loadFilterCities للفلتر ----------
-  async function loadFilterCities(countryId) {
-    const sel = refs.filterCity;
-    if (!sel) return;
-    if (!countryId) {
-      sel.innerHTML = `<option value="">-- ${t('all_cities','All cities')} --</option>`;
-      return;
-    }
-    sel.innerHTML = `<option value="">${t('loading_cities','Loading cities...')}</option>`;
-    try {
-      // Pass language and country_id parameters for translated city names
-      const response = await fetchJson(`${CITIES_API}?country_id=${encodeURIComponent(countryId)}&lang=${encodeURIComponent(PREF_LANG)}&scope=all`);
-      const cities = response.data || response || [];
-      sel.innerHTML = `<option value="">-- ${t('all_cities','All cities')} --</option>`;
-      cities.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c.id;
-        opt.textContent = c.name;
-        sel.appendChild(opt);
-      });
-      log('Loaded filter cities for country', countryId, ':', cities.length);
-    } catch (err) {
-      sel.innerHTML = `<option value="">-- ${t('all_cities','All cities')} --</option>`;
-      log('loadFilterCities error:', err);
-    }
-  }
-
-  // ---------- loadList & render مع الفلترة ----------
-  async function loadList() {
-    if (!refs.tbody) return;
-    refs.tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#6b7280;padding:18px">${t('loading','Loading...')}</td></tr>`;
-    try {
-      const params = new URLSearchParams();
-      
-      // البحث العادي
-      const q = (refs.vendorSearch && refs.vendorSearch.value) ? refs.vendorSearch.value.trim() : '';
-      if (q) params.append('search', q);
-      
-      // الفلترة المتقدمة
-      if (refs.filterStatus && refs.filterStatus.value) params.append('status', refs.filterStatus.value);
-      if (refs.filterVerified && refs.filterVerified.value) params.append('is_verified', refs.filterVerified.value);
-      if (refs.filterCountry && refs.filterCountry.value) params.append('country_id', refs.filterCountry.value);
-      if (refs.filterCity && refs.filterCity.value) params.append('city_id', refs.filterCity.value);
-      if (refs.filterPhone && refs.filterPhone.value) params.append('phone', refs.filterPhone.value);
-      if (refs.filterEmail && refs.filterEmail.value) params.append('email', refs.filterEmail.value);
-      
-      const url = API + (params.toString() ? '?' + params.toString() : '');
-      const j = await fetchJson(url);
-      const rows = j.data || j.data?.data || j || [];
-      const total = j.total ?? (Array.isArray(rows) ? rows.length : 0);
-      if (refs.vendorsCount) refs.vendorsCount.textContent = total;
-      renderTable(Array.isArray(rows) ? rows : []);
-    } catch (err) {
-      log('loadList', err);
-      refs.tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#b91c1c;padding:18px">${t('error_loading','Error loading')}</td></tr>`;
-    }
-  }
-
-  function renderTable(rows) {
-    if (!refs.tbody) return;
-    if (!rows || rows.length === 0) {
-      refs.tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#6b7280;padding:18px">${t('no_vendors','No vendors')}</td></tr>`;
-      return;
-    }
-    refs.tbody.innerHTML = '';
-    rows.forEach(v => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td style="padding:8px;border-bottom:1px solid #eef2f7">${escapeHtml(String(v.id))}</td>
-        <td style="padding:8px;border-bottom:1px solid #eef2f7">${escapeHtml(v.store_name)}<br><small>${escapeHtml(v.slug||'')}</small></td>
-        <td style="padding:8px;border-bottom:1px solid #eef2f7">${escapeHtml(v.email||'')}</td>
-        <td style="padding:8px;border-bottom:1px solid #eef2f7">${escapeHtml(v.vendor_type||'')}</td>
-        <td style="padding:8px;border-bottom:1px solid #eef2f7">${escapeHtml(v.status||'')}</td>
-        <td style="padding:8px;border-bottom:1px solid #eef2f7;text-align:center">${v.is_verified ? '<strong>Yes</strong>' : 'No'}</td>
-        <td style="padding:8px;border-bottom:1px solid #eef2f7">
-          <button class="btn editBtn" data-id="${escapeHtml(String(v.id))}">${t('edit','Edit')}</button>
-          <button class="btn danger delBtn" data-id="${escapeHtml(String(v.id))}">${t('delete','Delete')}</button>
-          ${IS_ADMIN ? `<button class="btn small verifyBtn" data-id="${escapeHtml(String(v.id))}" data-ver="${v.is_verified?0:1}">${v.is_verified? t('unverify','Unverify') : t('verify','Verify')}</button>` : ''}
-        </td>`;
-      refs.tbody.appendChild(tr);
-    });
-    refs.tbody.querySelectorAll('.editBtn').forEach(b => b.addEventListener('click', e => openEdit(b.dataset.id)));
-    refs.tbody.querySelectorAll('.delBtn').forEach(b => b.addEventListener('click', e => doDelete(b.dataset.id)));
-    refs.tbody.querySelectorAll('.verifyBtn').forEach(b => b.addEventListener('click', e => toggleVerify(b.dataset.id, b.dataset.ver)));
-  }
-
-  // ---------- Expose save action to global (optional) ----------
+  // ---------- Expose save function globally (optional) ----------
   window.saveVendor = saveVendor;
 
 })();
