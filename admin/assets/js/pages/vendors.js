@@ -307,39 +307,48 @@
     if (!sel) return;
     sel.innerHTML = `<option value="">${t('loading_countries','Loading countries...')}</option>`;
     try {
-      const data = await fetchJson(COUNTRIES_API);
-      sel.innerHTML = `<option value="">-- ${t('select_country','select country')} --</option>`;
-      (data || []).forEach(c => {
+      // Pass language parameter for translated country names
+      const response = await fetchJson(`${COUNTRIES_API}?lang=${encodeURIComponent(PREF_LANG)}&scope=all`);
+      const countries = response.data || response || [];
+      sel.innerHTML = `<option value="">-- ${t('select_country','Select country')} --</option>`;
+      countries.forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.id;
         opt.textContent = c.name + (c.iso2 ? ` (${c.iso2})` : '');
         sel.appendChild(opt);
       });
       if (selectedId) sel.value = selectedId;
+      log('Loaded countries:', countries.length);
     } catch (err) {
       sel.innerHTML = `<option value="">${t('failed_load','Failed to load')}</option>`;
-      log('loadCountries', err);
+      log('loadCountries error:', err);
     }
   }
 
   async function loadCities(countryId, selectedId = '') {
     const sel = $('vendor_city');
     if (!sel) return;
-    if (!countryId) { sel.innerHTML = `<option value="">${t('select_country_first','Select country first')}</option>`; return; }
+    if (!countryId) { 
+      sel.innerHTML = `<option value="">${t('select_country_first','Select country first')}</option>`; 
+      return; 
+    }
     sel.innerHTML = `<option value="">${t('loading_cities','Loading cities...')}</option>`;
     try {
-      const data = await fetchJson(`${CITIES_API}?country_id=${encodeURIComponent(countryId)}`);
-      sel.innerHTML = `<option value="">-- ${t('select_city','select city')} --</option>`;
-      (data || []).forEach(c => {
+      // Pass language and country_id parameters for translated city names
+      const response = await fetchJson(`${CITIES_API}?country_id=${encodeURIComponent(countryId)}&lang=${encodeURIComponent(PREF_LANG)}&scope=all`);
+      const cities = response.data || response || [];
+      sel.innerHTML = `<option value="">-- ${t('select_city','Select city')} --</option>`;
+      cities.forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.id;
         opt.textContent = c.name;
         sel.appendChild(opt);
       });
       if (selectedId) sel.value = selectedId;
+      log('Loaded cities for country', countryId, ':', cities.length);
     } catch (err) {
       sel.innerHTML = `<option value="">${t('failed_load','Failed to load')}</option>`;
-      log('loadCities', err);
+      log('loadCities error:', err);
     }
   }
 
@@ -376,8 +385,11 @@
     }
   }
 
-  // bind country change to load cities
+  // bind country change to load cities (form)
   if ($('vendor_country')) $('vendor_country').addEventListener('change', function () { loadCities(this.value); });
+
+  // bind filter country change to load filter cities
+  if (refs.filterCountry) refs.filterCountry.addEventListener('change', function () { loadFilterCities(this.value); });
 
   // ---------- Image preview (simple) ----------
   function previewImage(container, fileOrUrl) {
@@ -846,15 +858,45 @@
     if (!sel) return;
     sel.innerHTML = `<option value="">-- ${t('all_countries','All countries')} --</option>`;
     try {
-      const data = await fetchJson(COUNTRIES_API);
-      (data || []).forEach(c => {
+      // Pass language parameter for translated country names
+      const response = await fetchJson(`${COUNTRIES_API}?lang=${encodeURIComponent(PREF_LANG)}&scope=all`);
+      const countries = response.data || response || [];
+      countries.forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.id;
         opt.textContent = c.name + (c.iso2 ? ` (${c.iso2})` : '');
         sel.appendChild(opt);
       });
+      log('Loaded filter countries:', countries.length);
     } catch (err) {
-      log('loadFilterCountries', err);
+      log('loadFilterCountries error:', err);
+    }
+  }
+  
+  // ---------- loadFilterCities للفلتر ----------
+  async function loadFilterCities(countryId) {
+    const sel = refs.filterCity;
+    if (!sel) return;
+    if (!countryId) {
+      sel.innerHTML = `<option value="">-- ${t('all_cities','All cities')} --</option>`;
+      return;
+    }
+    sel.innerHTML = `<option value="">${t('loading_cities','Loading cities...')}</option>`;
+    try {
+      // Pass language and country_id parameters for translated city names
+      const response = await fetchJson(`${CITIES_API}?country_id=${encodeURIComponent(countryId)}&lang=${encodeURIComponent(PREF_LANG)}&scope=all`);
+      const cities = response.data || response || [];
+      sel.innerHTML = `<option value="">-- ${t('all_cities','All cities')} --</option>`;
+      cities.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        sel.appendChild(opt);
+      });
+      log('Loaded filter cities for country', countryId, ':', cities.length);
+    } catch (err) {
+      sel.innerHTML = `<option value="">-- ${t('all_cities','All cities')} --</option>`;
+      log('loadFilterCities error:', err);
     }
   }
 
