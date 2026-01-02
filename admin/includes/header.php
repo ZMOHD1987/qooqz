@@ -89,6 +89,7 @@ $GLOBALS['ADMIN_UI'] = $ADMIN_UI_PAYLOAD;
   <link rel="stylesheet" href="/admin/assets/css/admin.css">
   <link rel="stylesheet" href="/admin/assets/css/admin-overrides.css">
   <link rel="stylesheet" href="/admin/assets/css/modal.css">
+  <link rel="stylesheet" href="/admin/assets/css/color-slider.css">
 
   <script>
     try {
@@ -114,6 +115,7 @@ $GLOBALS['ADMIN_UI'] = $ADMIN_UI_PAYLOAD;
   <script src="/admin/assets/js/admin_core.js" defer></script>
   <script src="/admin/assets/js/sidebar-toggle.js" defer></script>
   <script src="/admin/assets/js/modal.js" defer></script>
+  <script src="/admin/assets/js/color-slider.js" defer></script>
 </head>
 <body class="admin">
   <header class="admin-header" role="banner">

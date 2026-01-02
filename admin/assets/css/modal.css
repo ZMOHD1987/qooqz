@@ -266,6 +266,17 @@ body.sidebar-open .sidebar-backdrop { display:block !important; opacity:1 !impor
 #sidebarToggle:hover { background: var(--theme-sidebar-toggle-bg-hover, var(--color-primary-dark)) !important; }
 
 /* -------------------------
+   Color Slider in Modal
+   ------------------------- */
+.admin-modal-panel .color-slider-container {
+  max-height: 500px;
+}
+
+.admin-modal-panel .color-slider-content {
+  max-height: 400px;
+}
+
+/* -------------------------
    Notes:
    - This override file expects admin_core to set the variables listed at top.
    - modal.css is loaded separately in header.php (link rel="/admin/assets/css/modal.css"); the modal rules above provide responsive fallbacks to guarantee good appearance on phones.

@@ -623,4 +623,75 @@
     try { translateButtons(document); } catch (e) {}
   });
 
+  /* ---------------------------
+     Color Slider Modal Support
+     --------------------------- */
+  
+  // Helper to show color picker in a modal
+  AdminModal.showColorPicker = function (options) {
+    options = options || {};
+    var title = options.title || 'Select Color';
+    var onSelect = options.onSelect || function () {};
+    var onCancel = options.onCancel || function () {};
+
+    var html = '<div style="padding:20px;">';
+    html += '<h2 style="margin-top:0;">' + title + '</h2>';
+    html += '<div id="modalColorSlider" data-color-slider></div>';
+    html += '<div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end;">';
+    html += '<button class="btn btn-secondary" onclick="AdminModal.close()">Cancel</button>';
+    html += '<button class="btn btn-primary" id="confirmColorBtn">Select</button>';
+    html += '</div>';
+    html += '</div>';
+
+    AdminModal.show(html);
+
+    // Initialize color slider in modal after ensuring DOM is ready
+    if (typeof requestAnimationFrame !== 'undefined') {
+      requestAnimationFrame(function() {
+        setTimeout(function () {
+          try {
+            var container = document.getElementById('modalColorSlider');
+            if (container && window.ColorSlider) {
+              ColorSlider.render(container, {
+                onSelect: function (color) {
+                  var btn = document.getElementById('confirmColorBtn');
+                  if (btn) {
+                    btn.onclick = function () {
+                      onSelect(color);
+                      AdminModal.close();
+                    };
+                  }
+                }
+              });
+            }
+          } catch (e) {
+            console.error('Failed to initialize color slider in modal', e);
+          }
+        }, 50);
+      });
+    } else {
+      // Fallback for older browsers
+      setTimeout(function () {
+        try {
+          var container = document.getElementById('modalColorSlider');
+          if (container && window.ColorSlider) {
+            ColorSlider.render(container, {
+              onSelect: function (color) {
+                var btn = document.getElementById('confirmColorBtn');
+                if (btn) {
+                  btn.onclick = function () {
+                    onSelect(color);
+                    AdminModal.close();
+                  };
+                }
+              }
+            });
+          }
+        } catch (e) {
+          console.error('Failed to initialize color slider in modal', e);
+        }
+      }, 100);
+    }
+  };
+
 })();
