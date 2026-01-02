@@ -1,18 +1,25 @@
 /**
  * admin/assets/js/pages/IndependentDriver.js
- *
+ * Version: 2.0 - Fixed API endpoint (2026-01-02)
+ * 
  * Final JS for Independent Drivers (RBAC-aware, responsive)
  * - Works with server-provided translations merged into window.ADMIN_UI.strings
  * - Prefers server helpers (window.Admin.fetchJson / window.Admin.can) when available
  * - Features: list, get, create, update, delete, upload previews, inline status change, debounced search
+ * 
+ * API ENDPOINT: /api/routes/independent_drivers.php (line 143)
+ * If you see 404 errors for /api/independent-drivers, clear browser cache!
  *
  * Save as UTF-8 without BOM.
  */
 (function () {
   'use strict';
 
-  // mark loaded
+  // mark loaded with version
   window.__IndependentDriverLoaded = true;
+  window.__IndependentDriverVersion = '2.0-fixed';
+  console.log('=== IndependentDriver.js v2.0 loaded ===');
+  console.log('API endpoint will be: /api/routes/independent_drivers.php');
 
   /* ---------------------- Utilities ---------------------- */
   function safeJsonParse(txt) {
@@ -141,6 +148,8 @@
 
     /* ---------------------- Elements & state ---------------------- */
     var API = '/api/routes/independent_drivers.php';
+    console.log('IndependentDriver API endpoint:', API);
+    
     var tableBody = $('#idrv-table tbody') || (app.querySelector('#idrv-table') && app.querySelector('#idrv-table').tBodies[0]);
     var searchInput = $('#idrv-search');
     var filterStatus = $('#idrv-filter-status');
