@@ -140,7 +140,7 @@
     function $all(sel, ctx) { ctx = ctx || app; return Array.prototype.slice.call(ctx.querySelectorAll(sel)); }
 
     /* ---------------------- Elements & state ---------------------- */
-    var API = '/api/independent-drivers';
+    var API = '/api/routes/independent_drivers.php';
     var tableBody = $('#idrv-table tbody') || (app.querySelector('#idrv-table') && app.querySelector('#idrv-table').tBodies[0]);
     var searchInput = $('#idrv-search');
     var filterStatus = $('#idrv-filter-status');

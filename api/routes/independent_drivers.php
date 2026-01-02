@@ -9,6 +9,13 @@ $FALLBACK = __DIR__ . '/../error_debug.log';
 if (!is_dir($LOG_DIR)) @mkdir($LOG_DIR, 0755, true);
 function idrv_log($m){ global $LOG_FILE, $FALLBACK; @file_put_contents($LOG_FILE, '['.date('c').'] '.trim($m).PHP_EOL, FILE_APPEND|LOCK_EX) ?: @file_put_contents($FALLBACK, '['.date('c').'] '.trim($m).PHP_EOL, FILE_APPEND|LOCK_EX); }
 
+// Include bootstrap FIRST to ensure session and auth are properly loaded
+$bootstrap = __DIR__ . '/../bootstrap.php';
+if (is_readable($bootstrap)) {
+    require_once $bootstrap;
+    idrv_log('Bootstrap loaded');
+}
+
 if (php_sapi_name() !== 'cli' && session_status() === PHP_SESSION_NONE) @session_start();
 
 // Acquire DB
@@ -49,8 +56,9 @@ require_once $controller;
 
 try {
     $controllerObj = new IndependentDriverController($db);
+    idrv_log('Controller initialized successfully');
 } catch (Throwable $e) {
-    idrv_log('Controller init error: '.$e->getMessage());
+    idrv_log('Controller init error: '.$e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
     header('Content-Type: application/json', true, 500);
     echo json_encode(['success'=>false,'message'=>'Server error'], JSON_UNESCAPED_UNICODE);
     exit;
@@ -59,7 +67,14 @@ try {
 $action = isset($_REQUEST['action']) ? trim((string)$_REQUEST['action']) : null;
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-idrv_log('Dispatch: method='.$method.' action='.$action.' uri=' . ($_SERVER['REQUEST_URI'] ?? ''));
+idrv_log('Dispatch: method='.$method.' action='.$action.' uri=' . ($_SERVER['REQUEST_URI'] ?? '') . ' session_id=' . (session_id() ?: 'none'));
+
+// Log session data for debugging
+if (!empty($_SESSION)) {
+    idrv_log('Session data present: user_id=' . ($_SESSION['user_id'] ?? 'none') . ' permissions=' . json_encode($_SESSION['permissions'] ?? []));
+} else {
+    idrv_log('No session data found');
+}
 
 try {
     if ($method === 'GET' && ($action === null || $action === 'list')) {
