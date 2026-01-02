@@ -201,14 +201,6 @@
     return notification;
   }
 
-  // ---------- i18n ----------
-  let STRINGS = {};
-  (function loadStrings() {
-    const lang = LANGS.find(l => l.code === PREF_LANG) || LANGS[0];
-    STRINGS = lang.strings || {};
-  })();
-  function t(key, fallback) { return STRINGS[key] || fallback || key; }
-
   // ---------- Network helpers ----------
   async function fetchJson(url, opts = {}) {
     opts.credentials = 'include';
