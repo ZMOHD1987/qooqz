@@ -6,19 +6,7 @@
 
 /* ========== THEME VARIABLES ========== */
 /* These are populated by admin_core.js from bootstrap_admin_ui.php */
-:root {
-    /* Fallback values - will be overridden by theme */
-    --theme-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    --theme-font-size: 14px;
-    --theme-line-height: 1.5;
-    --theme-text-primary: #333;
-    --theme-background: #ffffff;
-    --theme-background-secondary: #f5f7fa;
-    --theme-border: #e1e5eb;
-    --theme-primary: #3B82F6;
-    --theme-primary-hover: #2563EB;
-    --theme-card-radius: 8px;
-}
+/* NO local fallbacks - all values come from admin-theme.css which is loaded first */
 
 /* ========== RESET & BASE STYLES ========== */
 * {
@@ -61,7 +49,7 @@ body {
 
 #adminVendors > header > div {
     font-size: 13px;
-    color: var(--theme-text-secondary, #666);
+    color: var(--theme-text-secondary);
     background: var(--theme-background-secondary);
     padding: 6px 12px;
     border-radius: var(--theme-card-radius);
@@ -95,7 +83,7 @@ body {
 .advanced-filters label {
     display: block;
     font-size: 13px;
-    color: var(--theme-text-secondary, #5a6c7d);
+    color: var(--theme-text-secondary);
     margin-bottom: 5px;
     font-weight: 500;
 }
@@ -105,8 +93,9 @@ body {
     width: 100%;
     padding: 8px 10px;
     border: 1px solid var(--theme-border);
-    border-radius: var(--theme-btn-radius, 4px);
+    border-radius: var(--theme-btn-radius);
     background: var(--theme-background);
+    color: var(--theme-text-primary);
     font-size: 13px;
     transition: border-color 0.15s;
 }
@@ -133,8 +122,9 @@ body {
     max-width: 400px;
     padding: 8px 12px;
     border: 1px solid var(--theme-border);
-    border-radius: var(--theme-btn-radius, 4px);
+    border-radius: var(--theme-btn-radius);
     font-size: 13px;
+    color: var(--theme-text-primary);
     background: var(--theme-background);
 }
 
@@ -147,7 +137,7 @@ body {
 .tools > div:last-child {
     margin-left: auto;
     font-size: 13px;
-    color: var(--theme-text-secondary, #666);
+    color: var(--theme-text-secondary);
     font-weight: 500;
 }
 
@@ -168,7 +158,7 @@ body {
 }
 
 #vendorsTable thead {
-    background: var(--theme-primary, linear-gradient(135deg, #2c3e50 0%, #34495e 100%));
+    background: var(--theme-primary);
 }
 
 #vendorsTable th {
@@ -176,8 +166,8 @@ body {
     text-align: left;
     font-weight: 600;
     font-size: 13px;
-    color: var(--theme-background, #fff);
-    border-bottom: 2px solid var(--theme-primary-hover, #1a252f);
+    color: var(--theme-background);
+    border-bottom: 2px solid var(--theme-primary-hover);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -200,19 +190,19 @@ body {
 }
 
 #vendorsTable tbody tr:nth-child(even) {
-    background-color: #fafbfc;
+    background-color: var(--theme-surface);
 }
 
 #vendorsTable tbody tr:nth-child(even):hover {
-    background-color: #f1f3f4;
+    background-color: var(--theme-background-secondary);
 }
 
 #vendorsTable td {
     padding: 14px 16px;
     font-size: 13px;
-    color: #2c3e50;
+    color: var(--theme-text-primary);
     vertical-align: middle;
-    border-right: 1px solid #f1f3f4;
+    border-right: 1px solid var(--theme-border);
 }
 
 #vendorsTable td:last-child {
@@ -222,7 +212,7 @@ body {
 #vendorsTable td small {
     display: block;
     font-size: 12px;
-    color: var(--theme-text-secondary, #7f8c8d);
+    color: var(--theme-text-secondary);
     margin-top: 3px;
 }
 
@@ -231,7 +221,7 @@ body {
     padding: 5px 10px;
     margin: 2px;
     font-size: 12px;
-    border-radius: var(--theme-btn-radius, 3px);
+    border-radius: var(--theme-btn-radius);
     border: none;
     cursor: pointer;
     transition: all 0.2s;
@@ -239,30 +229,32 @@ body {
 }
 
 #vendorsTable .editBtn {
-    background: var(--theme-primary, #3498db);
-    color: var(--theme-background, white);
+    background: var(--theme-primary);
+    color: var(--theme-background);
 }
 
 #vendorsTable .editBtn:hover {
-    background: var(--theme-primary-hover, #2980b9);
+    background: var(--theme-primary-hover);
 }
 
 #vendorsTable .delBtn {
-    background: var(--theme-error, #e74c3c);
-    color: var(--theme-background, white);
+    background: var(--theme-error);
+    color: var(--theme-background);
 }
 
 #vendorsTable .delBtn:hover {
-    background: var(--theme-error-hover, #c0392b);
+    background: var(--theme-error);
+    opacity: 0.85;
 }
 
 #vendorsTable .verifyBtn {
-    background: var(--theme-success, #27ae60);
-    color: var(--theme-background, white);
+    background: var(--theme-success);
+    color: var(--theme-background);
 }
 
 #vendorsTable .verifyBtn:hover {
-    background: var(--theme-success-hover, #219653);
+    background: var(--theme-success);
+    opacity: 0.85;
 }
 
 /* ========== FORM SECTION ========== */
@@ -303,7 +295,7 @@ body {
     margin-bottom: 6px;
     font-size: 13px;
     font-weight: 500;
-    color: #5a6c7d;
+    color: var(--theme-text-secondary);
 }
 
 .form-grid input[type="text"],
@@ -315,10 +307,11 @@ body {
 .form-grid select {
     width: 100%;
     padding: 9px 12px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
+    border: 1px solid var(--theme-border);
+    border-radius: var(--theme-btn-radius);
     font-size: 13px;
-    background: #fff;
+    color: var(--theme-text-primary);
+    background: var(--theme-background);
     transition: border-color 0.15s;
 }
 
@@ -326,8 +319,8 @@ body {
 .form-grid textarea:focus,
 .form-grid select:focus {
     outline: none;
-    border-color: #3498db;
-    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 .form-grid textarea {
@@ -368,28 +361,28 @@ body {
 .img-preview img {
     max-width: 120px;
     max-height: 120px;
-    border-radius: 4px;
-    border: 1px solid #dee2e6;
+    border-radius: var(--theme-btn-radius);
+    border: 1px solid var(--theme-border);
     object-fit: cover;
-    background: #f8f9fa;
+    background: var(--theme-surface);
     padding: 4px;
 }
 
 /* ========== TRANSLATIONS AREA ========== */
 #vendor_translations_area {
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
+    border: 1px solid var(--theme-border);
+    border-radius: var(--theme-card-radius);
     padding: 15px;
     max-height: 300px;
     overflow-y: auto;
-    background: #fafbfc;
+    background: var(--theme-surface);
     margin-bottom: 15px;
 }
 
 .tr-lang-panel {
-    background: #fff;
-    border: 1px solid #e1e5eb;
-    border-radius: 6px;
+    background: var(--theme-background);
+    border: 1px solid var(--theme-border);
+    border-radius: var(--theme-card-radius);
     padding: 15px;
     margin-bottom: 10px;
 }
@@ -403,7 +396,7 @@ body {
 
 .tr-lang-panel strong {
     font-size: 13px;
-    color: #2c3e50;
+    color: var(--theme-text-primary);
     font-weight: 600;
 }
 
@@ -416,7 +409,7 @@ body {
 .tr-body label {
     display: block;
     font-size: 12px;
-    color: #5a6c7d;
+    color: var(--theme-text-secondary);
     margin-bottom: 4px;
 }
 
@@ -424,10 +417,11 @@ body {
 .tr-body input {
     width: 100%;
     padding: 8px 10px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
+    border: 1px solid var(--theme-border);
+    border-radius: var(--theme-btn-radius);
     font-size: 13px;
-    background: #fff;
+    color: var(--theme-text-primary);
+    background: var(--theme-background);
 }
 
 /* ========== BUTTON STYLES - THEME INTEGRATED ========== */
@@ -435,9 +429,9 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: var(--theme-btn-padding, 8px 16px);
+    padding: var(--theme-btn-padding);
     border: none;
-    border-radius: var(--theme-btn-radius, 4px);
+    border-radius: var(--theme-btn-radius);
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
@@ -446,8 +440,8 @@ body {
     white-space: nowrap;
     height: 36px;
     line-height: 1;
-    background: var(--theme-secondary, #6c757d);
-    color: var(--theme-background, white);
+    background: var(--theme-secondary);
+    color: var(--theme-background);
     border: 1px solid transparent;
 }
 
@@ -463,22 +457,22 @@ body {
 
 /* Primary Button */
 .btn.primary {
-    background: var(--theme-primary, #3498db);
-    border-color: var(--theme-primary-hover, #2980b9);
+    background: var(--theme-primary);
+    border-color: var(--theme-primary-hover);
 }
 
 .btn.primary:hover {
-    background: var(--theme-primary-hover, #2980b9);
+    background: var(--theme-primary-hover);
 }
 
 /* Danger Button */
 .btn.danger {
-    background: var(--theme-error, #e74c3c);
-    border-color: var(--theme-error-hover, #c0392b);
+    background: var(--theme-error);
 }
 
 .btn.danger:hover {
-    background: var(--theme-error-hover, #c0392b);
+    background: var(--theme-error);
+    opacity: 0.85;
 }
 
 /* Small Button */
@@ -504,22 +498,22 @@ body {
 
 /* ========== ERROR & VALIDATION ========== */
 #vendorFormErrors {
-    background: #fee;
-    border: 1px solid #f5c6cb;
-    color: #721c24;
+    background: var(--theme-surface);
+    border: 1px solid var(--theme-error);
+    color: var(--theme-error);
     padding: 12px 15px;
-    border-radius: 4px;
+    border-radius: var(--theme-btn-radius);
     margin-bottom: 15px;
     font-size: 13px;
 }
 
 .field-invalid {
-    border-color: #e74c3c !important;
+    border-color: var(--theme-error) !important;
 }
 
 .field-error {
     font-size: 12px;
-    color: #e74c3c;
+    color: var(--theme-error);
     margin-top: 4px;
     font-style: italic;
 }
@@ -709,17 +703,17 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-    background: #f1f3f4;
-    border-radius: 4px;
+    background: var(--theme-surface);
+    border-radius: var(--theme-btn-radius);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #bdc3c7;
-    border-radius: 4px;
+    background: var(--theme-border);
+    border-radius: var(--theme-btn-radius);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #95a5a6;
+    background: var(--theme-text-secondary);
 }
 
 #vendor_translations_area::-webkit-scrollbar {
@@ -727,7 +721,7 @@ body {
 }
 
 #vendor_translations_area::-webkit-scrollbar-thumb {
-    background: #7f8c8d;
+    background: var(--theme-text-secondary);
 }
 /* ========== MOBILE OPTIMIZATIONS ========== */
 
