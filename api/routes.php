@@ -132,6 +132,10 @@ $routes = [
     ['GET',  '#^/api/system-settings$#', __DIR__ . '/controllers/SystemSettingsController.php', 'System_index'],
     ['PUT',  '#^/api/system-settings/([^/]+)$#', __DIR__ . '/controllers/SystemSettingsController.php', 'System_update'],
 
+    // Independent Drivers - delegate to standalone route handler
+    ['GET',  '#^/api/routes/independent_drivers\.php#', null, 'independent_drivers_handler'],
+    ['POST', '#^/api/routes/independent_drivers\.php#', null, 'independent_drivers_handler'],
+
     // Test / proxy to external fragment (for your testing)
     ['GET',  '#^/api/test/external$#', null, 'proxy_external_test'],
 ];
@@ -250,4 +254,24 @@ function proxy_external_test($container): void {
     http_response_code($httpCode >= 200 ? $httpCode : 200);
     echo $resp;
     exit;
+}
+
+/**
+ * Independent Drivers handler - delegates to standalone route file
+ */
+function independent_drivers_handler($container): void {
+    $routeFile = __DIR__ . '/routes/independent_drivers.php';
+    if (!is_readable($routeFile)) {
+        log_error('Independent drivers route file not found: ' . $routeFile);
+        json_error('Route handler not found', 500);
+    }
+    
+    try {
+        // Make globals available to the route file
+        global $db, $conn;
+        require $routeFile;
+    } catch (Throwable $e) {
+        log_exception($e);
+        json_error('Server error in independent drivers route', 500);
+    }
 }
