@@ -132,9 +132,9 @@ $routes = [
     ['GET',  '#^/api/system-settings$#', __DIR__ . '/controllers/SystemSettingsController.php', 'System_index'],
     ['PUT',  '#^/api/system-settings/([^/]+)$#', __DIR__ . '/controllers/SystemSettingsController.php', 'System_update'],
 
-    // Independent Drivers - delegate to standalone route handler
-    ['GET',  '#^/api/routes/independent_drivers\.php#', null, 'independent_drivers_handler'],
-    ['POST', '#^/api/routes/independent_drivers\.php#', null, 'independent_drivers_handler'],
+    // Independent Drivers - RESTful API endpoints
+    ['GET',  '#^/api/independent-drivers#', null, 'independent_drivers_handler'],
+    ['POST', '#^/api/independent-drivers#', null, 'independent_drivers_handler'],
 
     // Test / proxy to external fragment (for your testing)
     ['GET',  '#^/api/test/external$#', null, 'proxy_external_test'],
@@ -258,17 +258,29 @@ function proxy_external_test($container): void {
 
 /**
  * Independent Drivers handler - delegates to standalone route file
+ * Uses proper dependency injection via container
  */
 function independent_drivers_handler($container): void {
-    $routeFile = __DIR__ . '/routes/independent_drivers.php';
+    // Use constant for route file path (can be overridden in config)
+    if (!defined('INDEPENDENT_DRIVERS_ROUTE_FILE')) {
+        define('INDEPENDENT_DRIVERS_ROUTE_FILE', __DIR__ . '/routes/independent_drivers.php');
+    }
+    
+    $routeFile = INDEPENDENT_DRIVERS_ROUTE_FILE;
     if (!is_readable($routeFile)) {
         log_error('Independent drivers route file not found: ' . $routeFile);
         json_error('Route handler not found', 500);
     }
     
     try {
-        // Make globals available to the route file
-        global $db, $conn;
+        // Pass container to route file - route file should use $container instead of globals
+        // For backward compatibility with existing route file that uses globals, we still set them
+        if (isset($container['db'])) {
+            global $db, $conn;
+            $db = $container['db'];
+            $conn = $container['db'];
+        }
+        
         require $routeFile;
     } catch (Throwable $e) {
         log_exception($e);
