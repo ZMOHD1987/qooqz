@@ -13,7 +13,7 @@
   'use strict';
 
   // ---------- Configuration ----------
-  const API = '/api/vendors.php';
+  const API = '/api/vendors';  // RESTful MVC endpoint (routes through api/routes/vendors.php)
   const COUNTRIES_API = '/api/helpers/countries.php';
   const CITIES_API = '/api/helpers/cities.php';
   const RETRY_ON_403 = true;
@@ -213,7 +213,7 @@
 
   async function fetchCurrentUserAndCsrf() {
     try {
-      const j = await fetchJson(`${API}?action=current_user`);
+      const j = await fetchJson(`${API}/current_user`);  // GET /api/vendors/current_user
       CSRF = j.csrf_token || j.csrf || CSRF;
       CURRENT = j.user || CURRENT;
       window.CSRF_TOKEN = CSRF;
@@ -231,7 +231,21 @@
     await fetchCurrentUserAndCsrf();
     fd.set('csrf_token', CSRF || '');
     const headers = { 'X-CSRF-Token': CSRF || '' };
-    const res = await fetch(API, { method: 'POST', body: fd, credentials: 'include', headers });
+    
+    // Determine if this is create or update based on vendor_id
+    const vendorId = fd._vendorId || fd.get('id') || 0;
+    const isUpdate = vendorId && parseInt(vendorId) > 0;
+    
+    // Use proper REST method and endpoint
+    const method = isUpdate ? 'PUT' : 'POST';
+    const url = isUpdate ? `${API}/${encodeURIComponent(vendorId)}` : API;
+    
+    const res = await fetch(url, { 
+      method, 
+      body: fd, 
+      credentials: 'include', 
+      headers 
+    });
     let json = null;
     try { json = await res.json(); } catch (e) { json = null; }
     if (!res.ok) throw { status: res.status, body: json };
@@ -357,7 +371,7 @@
     if (!sel) return;
     sel.innerHTML = `<option value="">${t('loading_parents','Loading...')}</option>`;
     try {
-      const j = await fetchJson(`${API}?parents=1`);
+      const j = await fetchJson(`${API}/parents`);  // GET /api/vendors/parents
       const rows = j.data || [];
       sel.innerHTML = `<option value="">-- ${t('select_parent','select parent')} --</option>`;
       rows.forEach(v => {
@@ -482,8 +496,11 @@
   // ---------- collectFormData (comprehensive & robust) ----------
   function collectFormData() {
     const fd = new FormData();
-    fd.append('action', 'save');
-    fd.append('id', $('vendor_id')?.value || 0);
+    // Don't append 'action' - we'll use HTTP method instead
+    const vendorId = $('vendor_id')?.value || 0;
+    // Only store id internally for decision making, not as form field
+    fd._vendorId = vendorId;  // Internal use only
+    fd.append('id', vendorId);  // Still send id for backend compatibility
 
     // canonical list of server fields we want to send
     const serverFields = [
@@ -639,7 +656,7 @@
   async function openEdit(id) {
     setError(''); clearFieldErrors();
     try {
-      const j = await fetchJson(`${API}?_fetch_row=1&id=${encodeURIComponent(id)}`);
+      const j = await fetchJson(`${API}/${encodeURIComponent(id)}`);  // GET /api/vendors/{id}
       if (!j || !j.success) { 
         showNotification(j?.message || t('load_failed','Load failed'), 'error', 5000);
         return; 
@@ -733,37 +750,62 @@
   }
 
   // ---------- Delete/Toggle ----------
-  function doDelete(id) {
+  async function doDelete(id) {
     if (!confirm(t('confirm_delete','Delete vendor #') + id + '?')) return;
-    const fd = new FormData(); fd.append('action', 'delete'); fd.append('id', id);
-    postWithRetry(fd).then(res => {
-      if (!res || !res.success) {
-        showNotification(t('delete_failed','Delete failed: ') + (res?.message || ''), 'error', 5000);
+    try {
+      await fetchCurrentUserAndCsrf();  // Ensure CSRF is fresh
+      const headers = { 
+        'X-CSRF-Token': CSRF || '',
+        'Content-Type': 'application/json'
+      };
+      const res = await fetch(`${API}/${encodeURIComponent(id)}`, {  // DELETE /api/vendors/{id}
+        method: 'DELETE',
+        credentials: 'include',
+        headers
+      });
+      let json = null;
+      try { json = await res.json(); } catch (e) { json = null; }
+      
+      if (!res.ok || !json || !json.success) {
+        showNotification(t('delete_failed','Delete failed: ') + (json?.message || ''), 'error', 5000);
       } else { 
         resetForm(); 
         loadList(); 
         showNotification(t('deleted','Deleted'), 'success', 3000);
       }
-    }).catch(err => { 
+    } catch (err) { 
       log('delete', err); 
       showNotification(t('network_error','Network error'), 'error', 5000);
-    });
+    }
   }
 
-  function toggleVerify(id, value) {
+  async function toggleVerify(id, value) {
     if (!confirm(t('confirm_toggle_verify','Toggle verification?'))) return;
-    const fd = new FormData(); fd.append('action', 'toggle_verify'); fd.append('id', id); fd.append('value', value);
-    postWithRetry(fd).then(res => {
-      if (!res || !res.success) {
-        showNotification(t('failed','Failed: ') + (res?.message || ''), 'error', 5000);
+    try {
+      await fetchCurrentUserAndCsrf();  // Ensure CSRF is fresh
+      const headers = { 
+        'X-CSRF-Token': CSRF || '',
+        'Content-Type': 'application/json'
+      };
+      const endpoint = value ? 'approve' : 'reject';
+      const res = await fetch(`${API}/${encodeURIComponent(id)}/${endpoint}`, {  // POST /api/vendors/{id}/approve or /reject
+        method: 'POST',
+        credentials: 'include',
+        headers
+      });
+      let json = null;
+      try { json = await res.json(); } catch (e) { json = null; }
+      
+      if (!res.ok || !json || !json.success) {
+        showNotification(t('failed','Failed: ') + (json?.message || ''), 'error', 5000);
       } else {
         loadList();
         showNotification(t('updated','Updated'), 'success', 3000);
       }
-    }).catch(err => { 
+    } catch (err) { 
       log('toggleVerify', err); 
       showNotification(t('network_error','Network error'), 'error', 5000);
-    });
+    }
   }
 
   // ---------- Wire UI and init ----------
