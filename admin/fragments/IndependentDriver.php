@@ -10,15 +10,24 @@
 
 declare(strict_types=1);
 
-// ----------------- Diagnostic shutdown logger -----------------
+// ----------------- Diagnostic shutdown logger with enhanced logging -----------------
 register_shutdown_function(function () {
     $err = error_get_last();
     if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
-        $log = __DIR__ . '/../../api/error_debug.log';
-        $msg = "[" . date('c') . "] SHUTDOWN ERROR: {$err['message']} in {$err['file']}:{$err['line']}" . PHP_EOL;
+        $log = __DIR__ . '/../../api/logs/independent_drivers.log';
+        $msg = "[" . date('c') . "] FRAGMENT SHUTDOWN ERROR: {$err['message']} in {$err['file']}:{$err['line']}" . PHP_EOL;
         @file_put_contents($log, $msg, FILE_APPEND);
+        
+        // Also log to fallback
+        $fallbackLog = __DIR__ . '/../../api/error_debug.log';
+        @file_put_contents($fallbackLog, $msg, FILE_APPEND);
     }
 });
+
+// Log fragment load start
+$fragmentLog = __DIR__ . '/../../api/logs/independent_drivers.log';
+$logMsg = "[" . date('c') . "] FRAGMENT: Loading IndependentDriver.php | URI: " . ($_SERVER['REQUEST_URI'] ?? 'none') . " | Referrer: " . ($_SERVER['HTTP_REFERER'] ?? 'none') . PHP_EOL;
+@file_put_contents($fragmentLog, $logMsg, FILE_APPEND);
 
 // ----------------- Helpers -----------------
 function safe_json_encode($v) {
