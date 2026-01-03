@@ -34,7 +34,7 @@
   function escapeHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function escapeAttr(s){ return escapeHtml(s).replace(/'/g, '&#39;'); }
 
-  var API = '/api/banners.php';
+  var API = '/api/routes/banners.php';
 
   var tbody = getEl('bannersTbody');
   var countEl = getEl('bannersCount');
