@@ -132,6 +132,10 @@ $routes = [
     ['GET',  '#^/api/system-settings$#', __DIR__ . '/controllers/SystemSettingsController.php', 'System_index'],
     ['PUT',  '#^/api/system-settings/([^/]+)$#', __DIR__ . '/controllers/SystemSettingsController.php', 'System_update'],
 
+    // Independent Drivers - RESTful API endpoints (matches /api/independent-drivers with optional query params)
+    ['GET',  '#^/api/independent-drivers(/.*)?$#', null, 'independent_drivers_handler'],
+    ['POST', '#^/api/independent-drivers(/.*)?$#', null, 'independent_drivers_handler'],
+
     // Test / proxy to external fragment (for your testing)
     ['GET',  '#^/api/test/external$#', null, 'proxy_external_test'],
 ];
@@ -250,4 +254,41 @@ function proxy_external_test($container): void {
     http_response_code($httpCode >= 200 ? $httpCode : 200);
     echo $resp;
     exit;
+}
+
+/**
+ * Independent Drivers handler - delegates to standalone route file
+ * Uses proper dependency injection via container
+ */
+function independent_drivers_handler($container): void {
+    // Use constant for route file path (can be overridden in config)
+    if (!defined('INDEPENDENT_DRIVERS_ROUTE_FILE')) {
+        define('INDEPENDENT_DRIVERS_ROUTE_FILE', __DIR__ . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'independent_drivers.php');
+    }
+    
+    $routeFile = INDEPENDENT_DRIVERS_ROUTE_FILE;
+    if (!is_readable($routeFile)) {
+        log_error('Independent drivers route file not found: ' . $routeFile);
+        json_error('Route handler not found', 500);
+    }
+    
+    try {
+        // Pass database connection from container
+        // Use $db as the standard variable name for consistency
+        if (isset($container['db'])) {
+            global $db;
+            $db = $container['db'];
+            
+            // For backward compatibility with legacy code that might use $conn
+            if (!isset($GLOBALS['conn'])) {
+                global $conn;
+                $conn = $container['db'];
+            }
+        }
+        
+        require $routeFile;
+    } catch (Throwable $e) {
+        log_exception($e);
+        json_error('Server error in independent drivers route', 500);
+    }
 }

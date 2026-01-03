@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build artifacts
+dist/
+build/
+
+# Logs
+*.log
+api/logs/*.log
+api/error_log.txt
+api/error_debug.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*
+
+# Temporary files
+/tmp/
+*.tmp
+*.bak
+*.swp
+
+# Uploads (keep directory structure but ignore uploaded files)
+uploads/*
+!uploads/.gitkeep
+
+# Cache
+cache/
+*.cache
+
+# Environment files (sensitive)
+.env
+.env.local
+.env.production
+
+# Database backups
+*.sql.gz
+*.sql.bak
