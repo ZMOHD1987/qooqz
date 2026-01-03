@@ -8,6 +8,11 @@ require_once __DIR__ . '/../models/Banner.php';
 require_once __DIR__ . '/../validators/BannerValidator.php';
 require_once __DIR__ . '/../helpers/auth_helper.php';
 
+// Also load RBAC helper for permission functions
+if (is_readable(__DIR__ . '/../helpers/RBAC.php')) {
+    require_once __DIR__ . '/../helpers/RBAC.php';
+}
+
 /**
  * Helper: Check if user has permission to manage banners
  * Uses auth_helper.php functions for proper session and permission checking
@@ -20,6 +25,26 @@ function banner_check_permission($container) {
     if (function_exists('get_authenticated_user_with_permissions')) {
         $user = get_authenticated_user_with_permissions();
         if ($user) {
+            // If permissions are empty but user exists, try to load them from DB
+            if (empty($user['permissions']) || !is_array($user['permissions']) || count($user['permissions']) === 0) {
+                // Try to reload permissions from database using RBAC helper
+                if (function_exists('load_user_permissions_into_session') && !empty($user['id'])) {
+                    $perms = load_user_permissions_into_session((int)$user['id']);
+                    if (!empty($perms)) {
+                        $user['permissions'] = $perms;
+                        $_SESSION['permissions'] = $perms;
+                    }
+                }
+                // Also try get_current_user from RBAC which loads permissions
+                if (function_exists('get_current_user') && (empty($user['permissions']) || count($user['permissions']) === 0)) {
+                    $rbacUser = get_current_user();
+                    if ($rbacUser && !empty($rbacUser['permissions'])) {
+                        $user['permissions'] = $rbacUser['permissions'];
+                        $_SESSION['permissions'] = $rbacUser['permissions'];
+                    }
+                }
+            }
+            
             // Check if user has manage_banners permission
             if (!empty($user['permissions']) && is_array($user['permissions'])) {
                 if (in_array('manage_banners', $user['permissions'], true)) {
@@ -40,6 +65,13 @@ function banner_check_permission($container) {
     // Fallback: Check has_permission function if available
     if (function_exists('has_permission')) {
         if (has_permission('manage_banners')) {
+            return true;
+        }
+    }
+    
+    // Fallback: Check user_has function from RBAC if available
+    if (function_exists('user_has')) {
+        if (user_has('manage_banners')) {
             return true;
         }
     }
