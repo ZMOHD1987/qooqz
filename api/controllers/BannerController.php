@@ -1,187 +1,279 @@
 <?php
-// htdocs/api/controllers/BannerController.php
-// Controller for banners API (list, get, save, delete, toggle, translations)
-// Expects:
-// - helpers/response.php defining respond(), respond_success(), respond_error(), json_input()
-// - models/Banner.php with Banner::... methods
-// - validators/BannerValidator.php with BannerValidator::validate()
-// - session started by wrapper and optional require_manage_users() for permissions
+// api/controllers/BannerController.php
+// Controller for Banners API with proper error handling and permissions
 
-// Load dependencies (paths relative to this file)
-if (!defined('BANNER_CONTROLLER_LOADED')) {
-    define('BANNER_CONTROLLER_LOADED', true);
-
-    require_once __DIR__ . '/../helpers/response.php';
-    require_once __DIR__ . '/../models/Banner.php';
-    require_once __DIR__ . '/../validators/BannerValidator.php';
-}
-
-/**
- * BannerController
- */
 class BannerController
 {
-    // Optional permission check helper
-    protected static function checkPermission()
+    /**
+     * Check if user has permission to manage banners
+     * Checks session permissions or role_id == 1 (ADMIN)
+     */
+    private static function checkPermission()
     {
-        if (function_exists('require_manage_users')) {
-            try {
-                return require_manage_users();
-            } catch (Throwable $e) {
-                return false;
+        // Check session permissions
+        if (!empty($_SESSION['permissions']) && is_array($_SESSION['permissions'])) {
+            if (in_array('manage_banners', $_SESSION['permissions'], true)) {
+                return true;
             }
         }
-        // if no permission helper, allow by default (wrapper may have already checked)
-        return true;
+
+        // Check if user is admin (role_id == 1)
+        if (!empty($_SESSION['user']['role_id']) && (int)$_SESSION['user']['role_id'] === 1) {
+            return true;
+        }
+
+        // Check RBAC if available
+        if (isset($GLOBALS['rbac']) && is_object($GLOBALS['rbac'])) {
+            if (method_exists($GLOBALS['rbac'], 'hasPermission')) {
+                return (bool)$GLOBALS['rbac']->hasPermission('manage_banners');
+            }
+        }
+
+        // Check current_user in container
+        if (function_exists('container')) {
+            $user = container('current_user');
+            if ($user && !empty($user['role_id']) && (int)$user['role_id'] === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    // Validate CSRF token for POST requests (returns true/false)
-    protected static function validateCsrf($input)
+    /**
+     * Validate CSRF token
+     */
+    private static function validateCsrf($input)
     {
-        if (!isset($_SESSION)) session_start();
+        if (session_status() === PHP_SESSION_NONE) {
+            @session_start();
+        }
+
         $token = isset($input['csrf_token']) ? (string)$input['csrf_token'] : '';
-        if (empty($token)) return false;
-        if (empty($_SESSION['csrf_token'])) return false;
+        if (empty($token) || empty($_SESSION['csrf_token'])) {
+            return false;
+        }
+
         return hash_equals((string)$_SESSION['csrf_token'], $token);
     }
 
-    // GET / list
-    // $input can be $_GET
+    /**
+     * Log error to api/error_log.txt
+     */
+    private static function logError($message)
+    {
+        $logFile = __DIR__ . '/../error_log.txt';
+        $line = '[' . date('c') . '] BannerController: ' . $message . PHP_EOL;
+        @file_put_contents($logFile, $line, FILE_APPEND | LOCK_EX);
+    }
+
+    /**
+     * List banners
+     * GET request with optional filters
+     */
     public static function list($input = [])
     {
-        if (!self::checkPermission()) return respond_error('Unauthorized', HTTP_UNAUTHORIZED);
-
-        $opts = [];
-        if (isset($input['position'])) $opts['position'] = $input['position'];
-        if (isset($input['is_active'])) $opts['is_active'] = $input['is_active'];
-        if (isset($input['q'])) $opts['q'] = $input['q'];
-        if (isset($input['limit'])) $opts['limit'] = (int)$input['limit'];
-        if (isset($input['offset'])) $opts['offset'] = (int)$input['offset'];
+        if (!self::checkPermission()) {
+            respond_error('Unauthorized', HTTP_UNAUTHORIZED);
+            return;
+        }
 
         try {
+            $opts = [];
+            if (isset($input['position'])) $opts['position'] = $input['position'];
+            if (isset($input['is_active'])) $opts['is_active'] = $input['is_active'];
+            if (isset($input['q'])) $opts['q'] = $input['q'];
+            if (isset($input['limit'])) $opts['limit'] = (int)$input['limit'];
+            if (isset($input['offset'])) $opts['offset'] = (int)$input['offset'];
+
             $rows = Banner::all($opts);
             $count = is_array($rows) ? count($rows) : 0;
+
             respond(['success' => true, 'count' => $count, 'data' => $rows]);
         } catch (Throwable $e) {
-            respond_error('DB error', HTTP_INTERNAL_SERVER_ERROR, null, ERROR_CODE_DATABASE);
+            self::logError('list error: ' . $e->getMessage());
+            respond_error('Database error', HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
-    // GET single
+    /**
+     * Get single banner
+     * GET request with id parameter
+     */
     public static function get($input = [])
     {
-        if (!self::checkPermission()) return respond_error('Unauthorized', HTTP_UNAUTHORIZED);
+        if (!self::checkPermission()) {
+            respond_error('Unauthorized', HTTP_UNAUTHORIZED);
+            return;
+        }
 
         $id = !empty($input['id']) ? (int)$input['id'] : 0;
         $lang = isset($input['lang']) ? $input['lang'] : null;
-        if (!$id) return respond_error('Missing id', HTTP_BAD_REQUEST);
+
+        if (!$id) {
+            respond_error('Missing id parameter', HTTP_BAD_REQUEST);
+            return;
+        }
 
         try {
-            $b = Banner::find($id, $lang);
-            if (!$b) return respond_not_found('Banner not found');
-            respond(['success' => true, 'data' => $b]);
+            $banner = Banner::find($id, $lang);
+            if (!$banner) {
+                respond_not_found('Banner not found');
+                return;
+            }
+
+            respond(['success' => true, 'data' => $banner]);
         } catch (Throwable $e) {
-            respond_error('DB error', HTTP_INTERNAL_SERVER_ERROR, null, ERROR_CODE_DATABASE);
+            self::logError('get error: ' . $e->getMessage());
+            respond_error('Database error', HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
-    // POST save (create or update)
-    // $input is assoc array (from json_input() or $_POST)
+    /**
+     * Save (create or update) banner
+     * POST request with banner data
+     */
     public static function save($input = [])
     {
-        // permission + csrf
-        if (!self::checkPermission()) return respond_error('Unauthorized', HTTP_UNAUTHORIZED);
-        if (!self::validateCsrf($input)) return respond_error('Invalid CSRF', HTTP_FORBIDDEN);
+        if (!self::checkPermission()) {
+            respond_error('Unauthorized', HTTP_UNAUTHORIZED);
+            return;
+        }
 
-        // ensure translations field is decoded if sent as JSON string
+        if (!self::validateCsrf($input)) {
+            respond_error('Invalid CSRF token', HTTP_FORBIDDEN);
+            return;
+        }
+
+        // Handle translations if sent as JSON string
         if (isset($input['translations']) && is_string($input['translations'])) {
             $decoded = @json_decode($input['translations'], true);
             if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
                 $input['translations'] = $decoded;
-            } else {
-                // If it's an invalid JSON string, we ignore translations rather than fail validation here
-                $input['translations'] = null;
             }
         }
 
-        // validate input
-        $v = BannerValidator::validate($input);
-        if ($v !== true) {
-            return respond(['success' => false, 'message' => 'Validation failed', 'errors' => $v], HTTP_UNPROCESSABLE_ENTITY);
+        // Validate
+        $validation = BannerValidator::validate($input);
+        if ($validation !== true) {
+            respond(['success' => false, 'message' => 'Validation failed', 'errors' => $validation], HTTP_UNPROCESSABLE_ENTITY);
+            return;
         }
 
         try {
             $id = Banner::save($input);
-            // save translations if provided as array
+
+            // Save translations if provided
             if (!empty($input['translations']) && is_array($input['translations'])) {
                 foreach ($input['translations'] as $lang => $tr) {
-                    // ensure $tr is array
                     if (!is_array($tr)) continue;
                     Banner::upsertTranslation($id, $lang, $tr);
                 }
             }
+
             $banner = Banner::find($id);
-            respond(['success' => true, 'message' => (!empty($input['id']) ? 'Updated' : 'Created'), 'data' => $banner]);
+            $message = !empty($input['id']) ? 'Updated successfully' : 'Created successfully';
+
+            respond(['success' => true, 'message' => $message, 'data' => $banner]);
         } catch (Throwable $e) {
-            // log if available
-            error_log('BannerController::save exception: ' . $e->getMessage());
-            respond_error('DB error', HTTP_INTERNAL_SERVER_ERROR, null, ERROR_CODE_DATABASE);
+            self::logError('save error: ' . $e->getMessage());
+            respond_error('Database error', HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
-    // POST delete
+    /**
+     * Delete banner
+     * POST request with id parameter
+     */
     public static function delete($input = [])
     {
-        if (!self::checkPermission()) return respond_error('Unauthorized', HTTP_UNAUTHORIZED);
-        if (!self::validateCsrf($input)) return respond_error('Invalid CSRF', HTTP_FORBIDDEN);
+        if (!self::checkPermission()) {
+            respond_error('Unauthorized', HTTP_UNAUTHORIZED);
+            return;
+        }
+
+        if (!self::validateCsrf($input)) {
+            respond_error('Invalid CSRF token', HTTP_FORBIDDEN);
+            return;
+        }
 
         $id = !empty($input['id']) ? (int)$input['id'] : 0;
-        if (!$id) return respond_error('Invalid id', HTTP_BAD_REQUEST);
+        if (!$id) {
+            respond_error('Invalid id parameter', HTTP_BAD_REQUEST);
+            return;
+        }
 
         try {
             $ok = Banner::delete($id);
-            if ($ok) respond(['success' => true, 'message' => 'Deleted']);
-            else respond_error('Delete failed', HTTP_INTERNAL_SERVER_ERROR);
+            if ($ok) {
+                respond(['success' => true, 'message' => 'Deleted successfully']);
+            } else {
+                respond_error('Delete failed', HTTP_INTERNAL_SERVER_ERROR);
+            }
         } catch (Throwable $e) {
-            error_log('BannerController::delete exception: ' . $e->getMessage());
-            respond_error('DB error', HTTP_INTERNAL_SERVER_ERROR, null, ERROR_CODE_DATABASE);
+            self::logError('delete error: ' . $e->getMessage());
+            respond_error('Database error', HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
-    // POST toggle_active
+    /**
+     * Toggle active status
+     * POST request with id parameter
+     */
     public static function toggleActive($input = [])
     {
-        if (!self::checkPermission()) return respond_error('Unauthorized', HTTP_UNAUTHORIZED);
-        if (!self::validateCsrf($input)) return respond_error('Invalid CSRF', HTTP_FORBIDDEN);
+        if (!self::checkPermission()) {
+            respond_error('Unauthorized', HTTP_UNAUTHORIZED);
+            return;
+        }
+
+        if (!self::validateCsrf($input)) {
+            respond_error('Invalid CSRF token', HTTP_FORBIDDEN);
+            return;
+        }
 
         $id = !empty($input['id']) ? (int)$input['id'] : 0;
-        if (!$id) return respond_error('Invalid id', HTTP_BAD_REQUEST);
+        if (!$id) {
+            respond_error('Invalid id parameter', HTTP_BAD_REQUEST);
+            return;
+        }
 
         try {
             $row = Banner::toggleActive($id);
-            if ($row) respond(['success' => true, 'message' => 'Toggled', 'data' => $row]);
-            else respond_error('Toggle failed', HTTP_INTERNAL_SERVER_ERROR);
+            if ($row) {
+                respond(['success' => true, 'message' => 'Toggled successfully', 'data' => $row]);
+            } else {
+                respond_error('Toggle failed', HTTP_INTERNAL_SERVER_ERROR);
+            }
         } catch (Throwable $e) {
-            error_log('BannerController::toggleActive exception: ' . $e->getMessage());
-            respond_error('DB error', HTTP_INTERNAL_SERVER_ERROR, null, ERROR_CODE_DATABASE);
+            self::logError('toggleActive error: ' . $e->getMessage());
+            respond_error('Database error', HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
-    // POST translations (list translations for banner)
+    /**
+     * Get translations for a banner
+     * POST request with id parameter
+     */
     public static function translations($input = [])
     {
-        if (!self::checkPermission()) return respond_error('Unauthorized', HTTP_UNAUTHORIZED);
-        if (!self::validateCsrf($input)) return respond_error('Invalid CSRF', HTTP_FORBIDDEN);
+        if (!self::checkPermission()) {
+            respond_error('Unauthorized', HTTP_UNAUTHORIZED);
+            return;
+        }
 
         $id = !empty($input['id']) ? (int)$input['id'] : 0;
-        if (!$id) return respond_error('Invalid id', HTTP_BAD_REQUEST);
+        if (!$id) {
+            respond_error('Invalid id parameter', HTTP_BAD_REQUEST);
+            return;
+        }
 
         try {
-            $t = Banner::getTranslations($id);
-            respond(['success' => true, 'data' => $t]);
+            $translations = Banner::getTranslations($id);
+            respond(['success' => true, 'data' => $translations]);
         } catch (Throwable $e) {
-            error_log('BannerController::translations exception: ' . $e->getMessage());
-            respond_error('DB error', HTTP_INTERNAL_SERVER_ERROR, null, ERROR_CODE_DATABASE);
+            self::logError('translations error: ' . $e->getMessage());
+            respond_error('Database error', HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }

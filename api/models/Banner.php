@@ -1,78 +1,173 @@
 <?php
-// htdocs/api/models/Banner.php
-// Banner model — improved and robust prepared statements
-// Requires global $conn (mysqli)
+// api/models/Banner.php
+// Banner model compatible with PHP 7.2+ (no typed properties)
+// Supports multiple DB connection methods: $GLOBALS['conn'], $GLOBALS['mysqli'], container('db'), connectDB(), get_db()
 
-if (!defined('BANNER_MODEL_LOADED')) define('BANNER_MODEL_LOADED', true);
+if (!class_exists('Banner')) {
 
 class Banner
 {
-    public static $table = 'banners';
-    public static $transTable = 'banner_translations';
-
-    // Fetch single banner with translations (optional language)
-    public static function find($id, $language = null)
+    // Helper: get DB connection using multiple fallback methods
+    private static function getDB()
     {
-        global $conn;
-        $id = (int)$id;
-        $stmt = $conn->prepare("SELECT * FROM `" . self::$table . "` WHERE id = ? LIMIT 1");
-        if (!$stmt) throw new Exception('DB prepare failed: ' . $conn->error);
-        $stmt->bind_param('i', $id);
-        $stmt->execute();
-        $row = $stmt->get_result()->fetch_assoc();
-        $stmt->close();
-        if (!$row) return null;
-        // attach translations
-        $row['translations'] = self::getTranslations($id);
-        // if language requested, overlay translated fields
-        if ($language) {
-            $t = self::getTranslation($id, $language);
-            if ($t) {
-                if (!empty($t['title'])) $row['title'] = $t['title'];
-                if (isset($t['subtitle'])) $row['subtitle'] = $t['subtitle'];
-                if (isset($t['link_text'])) $row['link_text'] = $t['link_text'];
+        // Try container() helper
+        if (function_exists('container')) {
+            $db = container('db');
+            if ($db instanceof mysqli) return $db;
+        }
+
+        // Try $GLOBALS['CONTAINER']['db']
+        if (isset($GLOBALS['CONTAINER']['db']) && $GLOBALS['CONTAINER']['db'] instanceof mysqli) {
+            return $GLOBALS['CONTAINER']['db'];
+        }
+
+        // Try common global variables
+        foreach (['conn', 'mysqli', 'db'] as $var) {
+            if (isset($GLOBALS[$var]) && $GLOBALS[$var] instanceof mysqli) {
+                return $GLOBALS[$var];
             }
         }
-        return $row;
+
+        // Try connectDB() function
+        if (function_exists('connectDB')) {
+            $db = connectDB();
+            if ($db instanceof mysqli) return $db;
+        }
+
+        // Try get_db() function
+        if (function_exists('get_db')) {
+            $db = get_db();
+            if ($db instanceof mysqli) return $db;
+        }
+
+        throw new Exception('Database connection not available');
     }
 
-    // List with optional filters
+    // Helper for bind_param by reference (PHP 5.3+ compatibility)
+    private static function refValues($arr)
+    {
+        $refs = [];
+        foreach ($arr as $key => $value) {
+            $refs[$key] = &$arr[$key];
+        }
+        return $refs;
+    }
+
+    /**
+     * Get all banners with optional filters
+     * @param array $opts Options: position, is_active, q (search), limit, offset
+     * @return array
+     */
     public static function all($opts = [])
     {
-        global $conn;
+        $conn = self::getDB();
         $where = [];
         $params = [];
         $types = '';
 
-        if (!empty($opts['position'])) { $where[] = 'position = ?'; $types .= 's'; $params[] = $opts['position']; }
-        if (isset($opts['is_active']) && $opts['is_active'] !== '') { $where[] = 'is_active = ?'; $types .= 'i'; $params[] = (int)$opts['is_active']; }
-        if (!empty($opts['q'])) { $where[] = '(title LIKE ? OR subtitle LIKE ?)'; $types .= 'ss'; $like = '%' . $opts['q'] . '%'; $params[] = $like; $params[] = $like; }
+        if (!empty($opts['position'])) {
+            $where[] = 'position = ?';
+            $types .= 's';
+            $params[] = $opts['position'];
+        }
 
-        $sql = "SELECT id, title, image_url, mobile_image_url, position, is_active, start_date, end_date, sort_order FROM `" . self::$table . "`";
-        if ($where) $sql .= ' WHERE ' . implode(' AND ', $where);
+        if (isset($opts['is_active']) && $opts['is_active'] !== '') {
+            $where[] = 'is_active = ?';
+            $types .= 'i';
+            $params[] = (int)$opts['is_active'];
+        }
+
+        if (!empty($opts['q'])) {
+            $where[] = '(title LIKE ? OR subtitle LIKE ?)';
+            $types .= 'ss';
+            $like = '%' . $opts['q'] . '%';
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        $sql = "SELECT id, title, subtitle, image_url, mobile_image_url, link_url, link_text, position, theme_id, background_color, text_color, button_style, sort_order, is_active, start_date, end_date, created_at, updated_at FROM banners";
+        
+        if ($where) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+        
         $sql .= ' ORDER BY sort_order ASC, id DESC';
-        if (!empty($opts['limit'])) $sql .= ' LIMIT ' . (int)$opts['limit'] . ' OFFSET ' . (int)($opts['offset'] ?? 0);
+        
+        if (!empty($opts['limit'])) {
+            $sql .= ' LIMIT ' . (int)$opts['limit'];
+            if (!empty($opts['offset'])) {
+                $sql .= ' OFFSET ' . (int)$opts['offset'];
+            }
+        }
 
         $stmt = $conn->prepare($sql);
-        if (!$stmt) throw new Exception('DB prepare failed: ' . $conn->error);
+        if (!$stmt) {
+            throw new Exception('DB prepare failed: ' . $conn->error);
+        }
+
         if ($params) {
             array_unshift($params, $types);
             call_user_func_array([$stmt, 'bind_param'], self::refValues($params));
         }
+
         $stmt->execute();
         $res = $stmt->get_result();
         $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
         $stmt->close();
+
         return $rows;
     }
 
-    // Save (create or update). $data = associative array.
-    public static function save(&$data)
+    /**
+     * Find banner by ID with optional language overlay
+     * @param int $id
+     * @param string|null $lang Language code for translation overlay
+     * @return array|null
+     */
+    public static function find($id, $lang = null)
     {
-        global $conn;
+        $conn = self::getDB();
+        $id = (int)$id;
+
+        $stmt = $conn->prepare("SELECT * FROM banners WHERE id = ? LIMIT 1");
+        if (!$stmt) {
+            throw new Exception('DB prepare failed: ' . $conn->error);
+        }
+
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        if (!$row) {
+            return null;
+        }
+
+        // Attach translations
+        $row['translations'] = self::getTranslations($id);
+
+        // If language requested, overlay translated fields
+        if ($lang && isset($row['translations'][$lang])) {
+            $t = $row['translations'][$lang];
+            if (!empty($t['title'])) $row['title'] = $t['title'];
+            if (isset($t['subtitle'])) $row['subtitle'] = $t['subtitle'];
+            if (isset($t['link_text'])) $row['link_text'] = $t['link_text'];
+        }
+
+        return $row;
+    }
+
+    /**
+     * Save (create or update) banner
+     * @param array $data Banner data with 'id' for update, without for insert
+     * @return int Banner ID
+     */
+    public static function save($data)
+    {
+        $conn = self::getDB();
         $id = !empty($data['id']) ? (int)$data['id'] : 0;
 
-        // normalize / defaults
+        // Normalize data
         $title = isset($data['title']) ? $data['title'] : '';
         $subtitle = isset($data['subtitle']) ? $data['subtitle'] : null;
         $image_url = isset($data['image_url']) ? $data['image_url'] : '';
@@ -85,12 +180,12 @@ class Banner
         $text_color = isset($data['text_color']) ? $data['text_color'] : '#000000';
         $button_style = isset($data['button_style']) ? $data['button_style'] : null;
         $sort_order = isset($data['sort_order']) ? (int)$data['sort_order'] : 0;
-        $start_date = !empty($data['start_date']) ? str_replace('T',' ',$data['start_date']) : null;
-        $end_date = !empty($data['end_date']) ? str_replace('T',' ',$data['end_date']) : null;
         $is_active = isset($data['is_active']) ? (int)$data['is_active'] : 0;
+        $start_date = !empty($data['start_date']) ? str_replace('T', ' ', $data['start_date']) : null;
+        $end_date = !empty($data['end_date']) ? str_replace('T', ' ', $data['end_date']) : null;
 
         if ($id) {
-            // Build dynamic UPDATE query with theme_id handled for NULL
+            // UPDATE
             $fields = [
                 'title' => $title,
                 'subtitle' => $subtitle,
@@ -103,21 +198,26 @@ class Banner
                 'text_color' => $text_color,
                 'button_style' => $button_style,
                 'sort_order' => $sort_order,
+                'is_active' => $is_active,
                 'start_date' => $start_date,
-                'end_date' => $end_date,
-                'is_active' => $is_active
+                'end_date' => $end_date
             ];
 
             $setParts = [];
             $params = [];
             $types = '';
+
             foreach ($fields as $col => $val) {
                 $setParts[] = "`$col` = ?";
-                $types .= is_int($val) ? 'i' : 's';
+                if (is_int($val)) {
+                    $types .= 'i';
+                } else {
+                    $types .= 's';
+                }
                 $params[] = $val;
             }
 
-            // handle theme_id separately to allow NULL
+            // Handle theme_id separately for NULL
             if ($theme_id === null) {
                 $setParts[] = "`theme_id` = NULL";
             } else {
@@ -126,31 +226,45 @@ class Banner
                 $params[] = $theme_id;
             }
 
-            $sql = "UPDATE `" . self::$table . "` SET " . implode(', ', $setParts) . ", updated_at = NOW() WHERE id = ?";
+            $setParts[] = "`updated_at` = NOW()";
+
+            $sql = "UPDATE banners SET " . implode(', ', $setParts) . " WHERE id = ?";
             $types .= 'i';
             $params[] = $id;
 
             $stmt = $conn->prepare($sql);
-            if (!$stmt) throw new Exception('DB prepare failed (update): ' . $conn->error);
+            if (!$stmt) {
+                throw new Exception('DB prepare failed (update): ' . $conn->error);
+            }
+
             array_unshift($params, $types);
             call_user_func_array([$stmt, 'bind_param'], self::refValues($params));
-            $ok = $stmt->execute();
-            if ($ok === false) {
+            
+            if (!$stmt->execute()) {
                 $err = $stmt->error;
                 $stmt->close();
                 throw new Exception('DB update error: ' . $err);
             }
             $stmt->close();
+            
             return $id;
         } else {
             // INSERT
-            $sql = "INSERT INTO `" . self::$table . "` (title, subtitle, image_url, mobile_image_url, link_url, link_text, position, theme_id, background_color, text_color, button_style, sort_order, is_active, start_date, end_date, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())";
+            $sql = "INSERT INTO banners (title, subtitle, image_url, mobile_image_url, link_url, link_text, position, theme_id, background_color, text_color, button_style, sort_order, is_active, start_date, end_date, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())";
+            
             $stmt = $conn->prepare($sql);
-            if (!$stmt) throw new Exception('DB prepare failed (insert): ' . $conn->error);
-            // types: title(s), subtitle(s), image_url(s), mobile_image_url(s), link_url(s), link_text(s), position(s),
-            // theme_id(i), background_color(s), text_color(s), button_style(s), sort_order(i), is_active(i), start_date(s), end_date(s)
-            $types = 'sssssss' . 'i' . 'sss' . 'ii' . 'ss';
-            $bindTheme = $theme_id !== null ? $theme_id : 0; // if 0 and your DB FK disallows 0, we may set NULL — we'll pass 0 and then update to NULL if needed
+            if (!$stmt) {
+                throw new Exception('DB prepare failed (insert): ' . $conn->error);
+            }
+
+            $types = 'sssssss'; // title, subtitle, image_url, mobile_image_url, link_url, link_text, position
+            $types .= 'i';      // theme_id
+            $types .= 'sss';    // background_color, text_color, button_style
+            $types .= 'ii';     // sort_order, is_active
+            $types .= 'ss';     // start_date, end_date
+
+            $bindTheme = $theme_id !== null ? $theme_id : 0;
+            
             $params = [
                 $title,
                 $subtitle,
@@ -168,131 +282,181 @@ class Banner
                 $start_date,
                 $end_date
             ];
-            // If theme_id must be NULL instead of 0, do an INSERT with NULL: easier to handle by building SQL with NULLIF(?,0)
-            // We'll use NULLIF to allow sending 0 => NULL
-            // But since prepared statement already created, above uses bindTheme; it's acceptable if theme_id allows 0 or FK not strict.
+
             array_unshift($params, $types);
             call_user_func_array([$stmt, 'bind_param'], self::refValues($params));
-            $ok = $stmt->execute();
-            if ($ok === false) {
+            
+            if (!$stmt->execute()) {
                 $err = $stmt->error;
                 $stmt->close();
                 throw new Exception('DB insert error: ' . $err);
             }
+
             $newId = $stmt->insert_id;
             $stmt->close();
-            // If we used 0 for theme and theme_id should be NULL, and theme_id is not allowed 0, adjust:
+
+            // If theme_id should be NULL, update it
             if ($theme_id === null) {
-                $u = $conn->prepare("UPDATE `" . self::$table . "` SET theme_id = NULL WHERE id = ?");
-                if ($u) { $u->bind_param('i', $newId); $u->execute(); $u->close(); }
+                $u = $conn->prepare("UPDATE banners SET theme_id = NULL WHERE id = ?");
+                if ($u) {
+                    $u->bind_param('i', $newId);
+                    $u->execute();
+                    $u->close();
+                }
             }
+
             return $newId;
         }
     }
 
+    /**
+     * Delete banner by ID
+     * @param int $id
+     * @return bool
+     */
     public static function delete($id)
     {
-        global $conn;
+        $conn = self::getDB();
         $id = (int)$id;
-        $stmt = $conn->prepare("DELETE FROM `" . self::$table . "` WHERE id = ? LIMIT 1");
-        if (!$stmt) throw new Exception('DB prepare failed (delete): ' . $conn->error);
+
+        // Delete translations first
+        $dt = $conn->prepare("DELETE FROM banner_translations WHERE banner_id = ?");
+        if ($dt) {
+            $dt->bind_param('i', $id);
+            $dt->execute();
+            $dt->close();
+        }
+
+        // Delete banner
+        $stmt = $conn->prepare("DELETE FROM banners WHERE id = ? LIMIT 1");
+        if (!$stmt) {
+            throw new Exception('DB prepare failed (delete): ' . $conn->error);
+        }
+
         $stmt->bind_param('i', $id);
         $ok = $stmt->execute();
         $stmt->close();
+
         return $ok;
     }
 
+    /**
+     * Toggle active status of banner
+     * @param int $id
+     * @return array|bool Updated banner row or false
+     */
     public static function toggleActive($id)
     {
-        global $conn;
+        $conn = self::getDB();
         $id = (int)$id;
-        $stmt = $conn->prepare("UPDATE `" . self::$table . "` SET is_active = 1 - is_active, updated_at = NOW() WHERE id = ?");
-        if (!$stmt) throw new Exception('DB prepare failed (toggle): ' . $conn->error);
+
+        $stmt = $conn->prepare("UPDATE banners SET is_active = 1 - is_active, updated_at = NOW() WHERE id = ?");
+        if (!$stmt) {
+            throw new Exception('DB prepare failed (toggle): ' . $conn->error);
+        }
+
         $stmt->bind_param('i', $id);
         $ok = $stmt->execute();
         $stmt->close();
+
         if ($ok) {
-            $s = $conn->prepare("SELECT is_active FROM `" . self::$table . "` WHERE id = ? LIMIT 1");
-            if ($s) { $s->bind_param('i', $id); $s->execute(); $row = $s->get_result()->fetch_assoc(); $s->close(); return $row; }
+            $s = $conn->prepare("SELECT is_active FROM banners WHERE id = ? LIMIT 1");
+            if ($s) {
+                $s->bind_param('i', $id);
+                $s->execute();
+                $row = $s->get_result()->fetch_assoc();
+                $s->close();
+                return $row;
+            }
         }
+
         return false;
     }
 
-    // Translations handling
-    public static function upsertTranslation($banner_id, $lang, $data)
+    /**
+     * Upsert translation for banner
+     * @param int $banner_id
+     * @param string $language_code
+     * @param array $data Translation data (title, subtitle, link_text)
+     * @return bool
+     */
+    public static function upsertTranslation($banner_id, $language_code, $data)
     {
-        global $conn;
+        $conn = self::getDB();
         $banner_id = (int)$banner_id;
-        $lang = substr($lang, 0, 8);
+        $language_code = substr($language_code, 0, 8);
+        
         $title = isset($data['title']) ? $data['title'] : null;
         $subtitle = isset($data['subtitle']) ? $data['subtitle'] : null;
         $link_text = isset($data['link_text']) ? $data['link_text'] : null;
 
-        // check existing
-        $check = $conn->prepare("SELECT id FROM `" . self::$transTable . "` WHERE banner_id = ? AND language_code = ? LIMIT 1");
-        if (!$check) throw new Exception('DB prepare failed (trans check): ' . $conn->error);
-        $check->bind_param('is', $banner_id, $lang);
+        // Check if exists
+        $check = $conn->prepare("SELECT id FROM banner_translations WHERE banner_id = ? AND language_code = ? LIMIT 1");
+        if (!$check) {
+            throw new Exception('DB prepare failed (trans check): ' . $conn->error);
+        }
+
+        $check->bind_param('is', $banner_id, $language_code);
         $check->execute();
         $res = $check->get_result()->fetch_assoc();
         $check->close();
 
         if ($res) {
-            $sql = "UPDATE `" . self::$transTable . "` SET title = ?, subtitle = ?, link_text = ? WHERE banner_id = ? AND language_code = ?";
+            // UPDATE
+            $sql = "UPDATE banner_translations SET title = ?, subtitle = ?, link_text = ? WHERE banner_id = ? AND language_code = ?";
             $s = $conn->prepare($sql);
-            if (!$s) throw new Exception('DB prepare failed (trans update): ' . $conn->error);
-            $s->bind_param('sss i s', $title, $subtitle, $link_text, $banner_id, $lang); // this will likely fail — using correct types below
-            // correct bind: title(s), subtitle(s), link_text(s), banner_id(i), language_code(s)
-            $s->bind_param('sss is', $title, $subtitle, $link_text, $banner_id, $lang);
+            if (!$s) {
+                throw new Exception('DB prepare failed (trans update): ' . $conn->error);
+            }
+            $s->bind_param('sssis', $title, $subtitle, $link_text, $banner_id, $language_code);
             $ok = $s->execute();
-            if ($s) $s->close();
+            $s->close();
             return $ok;
         } else {
-            $sql = "INSERT INTO `" . self::$transTable . "` (banner_id, language_code, title, subtitle, link_text) VALUES (?,?,?,?,?)";
+            // INSERT
+            $sql = "INSERT INTO banner_translations (banner_id, language_code, title, subtitle, link_text) VALUES (?,?,?,?,?)";
             $s = $conn->prepare($sql);
-            if (!$s) throw new Exception('DB prepare failed (trans insert): ' . $conn->error);
-            $s->bind_param('issss', $banner_id, $lang, $title, $subtitle, $link_text);
+            if (!$s) {
+                throw new Exception('DB prepare failed (trans insert): ' . $conn->error);
+            }
+            $s->bind_param('issss', $banner_id, $language_code, $title, $subtitle, $link_text);
             $ok = $s->execute();
-            if ($s) $s->close();
+            $s->close();
             return $ok;
         }
     }
 
+    /**
+     * Get all translations for a banner
+     * @param int $banner_id
+     * @return array Associative array keyed by language_code
+     */
     public static function getTranslations($banner_id)
     {
-        global $conn;
+        $conn = self::getDB();
         $banner_id = (int)$banner_id;
-        $stmt = $conn->prepare("SELECT language_code, title, subtitle, link_text FROM `" . self::$transTable . "` WHERE banner_id = ?");
-        if (!$stmt) throw new Exception('DB prepare failed (getTranslations): ' . $conn->error);
+
+        $stmt = $conn->prepare("SELECT language_code, title, subtitle, link_text FROM banner_translations WHERE banner_id = ?");
+        if (!$stmt) {
+            throw new Exception('DB prepare failed (getTranslations): ' . $conn->error);
+        }
+
         $stmt->bind_param('i', $banner_id);
         $stmt->execute();
         $res = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
+
         $out = [];
-        foreach ($res as $r) $out[$r['language_code']] = ['title' => $r['title'], 'subtitle' => $r['subtitle'], 'link_text' => $r['link_text']];
+        foreach ($res as $r) {
+            $out[$r['language_code']] = [
+                'title' => $r['title'],
+                'subtitle' => $r['subtitle'],
+                'link_text' => $r['link_text']
+            ];
+        }
+
         return $out;
     }
-
-    public static function getTranslation($banner_id, $language_code)
-    {
-        global $conn;
-        $banner_id = (int)$banner_id;
-        $stmt = $conn->prepare("SELECT title, subtitle, link_text FROM `" . self::$transTable . "` WHERE banner_id = ? AND language_code = ? LIMIT 1");
-        if (!$stmt) throw new Exception('DB prepare failed (getTranslation): ' . $conn->error);
-        $stmt->bind_param('is', $banner_id, $language_code);
-        $stmt->execute();
-        $r = $stmt->get_result()->fetch_assoc();
-        $stmt->close();
-        return $r ?: null;
-    }
-
-    // helper to create references for bind_param
-    public static function refValues($arr)
-    {
-        // for PHP 5.3+ compatibility
-        $refs = [];
-        foreach ($arr as $key => $value) {
-            $refs[$key] = &$arr[$key];
-        }
-        return $refs;
-    }
 }
+
+} // end if !class_exists
