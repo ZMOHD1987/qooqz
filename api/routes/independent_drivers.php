@@ -25,8 +25,19 @@ idrv_log('=== SCRIPT START ===', [
 // Include bootstrap FIRST to ensure session and auth are properly loaded
 $bootstrap = __DIR__ . '/../bootstrap.php';
 if (is_readable($bootstrap)) {
-    require_once $bootstrap;
-    idrv_log('Bootstrap loaded successfully');
+    try {
+        require_once $bootstrap;
+        idrv_log('Bootstrap loaded successfully');
+    } catch (Throwable $e) {
+        idrv_log('FATAL ERROR: Bootstrap loading failed', [
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ]);
+        header('Content-Type: application/json', true, 500);
+        echo json_encode(['success'=>false,'message'=>'Bootstrap error'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 } else {
     idrv_log('ERROR: Bootstrap file not readable', ['path' => $bootstrap]);
 }
@@ -64,8 +75,21 @@ if (!($db instanceof mysqli)) {
 idrv_log('DB connection established', ['host' => $db->host_info ?? 'unknown']);
 
 // Log database and table info
-$dbName = $db->query("SELECT DATABASE()")->fetch_row()[0] ?? 'unknown';
-idrv_log('Database info', ['db_name' => $dbName, 'table' => 'independent_drivers']);
+try {
+    $result = $db->query("SELECT DATABASE()");
+    if ($result) {
+        $row = $result->fetch_row();
+        $dbName = $row[0] ?? 'unknown';
+        $result->free();
+    } else {
+        $dbName = 'query_failed';
+        idrv_log('WARNING: Could not get database name', ['error' => $db->error]);
+    }
+    idrv_log('Database info', ['db_name' => $dbName, 'table' => 'independent_drivers']);
+} catch (Throwable $e) {
+    idrv_log('ERROR: Failed to get database name', ['error' => $e->getMessage()]);
+    idrv_log('Database info', ['db_name' => 'error', 'table' => 'independent_drivers']);
+}
 
 // Ensure files
 $model = __DIR__ . '/../models/IndependentDriver.php';
@@ -92,11 +116,50 @@ if (!is_readable($model) || !is_readable($validator) || !is_readable($controller
 
 idrv_log('All required files found');
 
-require_once $model;
-require_once $validator;
-require_once $controller;
+try {
+    require_once $model;
+    idrv_log('Model loaded');
+} catch (Throwable $e) {
+    idrv_log('FATAL ERROR: Model loading failed', [
+        'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine()
+    ]);
+    header('Content-Type: application/json', true, 500);
+    echo json_encode(['success'=>false,'message'=>'Model loading error'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
-idrv_log('Files loaded successfully');
+try {
+    require_once $validator;
+    idrv_log('Validator loaded');
+} catch (Throwable $e) {
+    idrv_log('FATAL ERROR: Validator loading failed', [
+        'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine()
+    ]);
+    header('Content-Type: application/json', true, 500);
+    echo json_encode(['success'=>false,'message'=>'Validator loading error'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+try {
+    require_once $controller;
+    idrv_log('Controller loaded');
+} catch (Throwable $e) {
+    idrv_log('FATAL ERROR: Controller loading failed', [
+        'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'trace' => $e->getTraceAsString()
+    ]);
+    header('Content-Type: application/json', true, 500);
+    echo json_encode(['success'=>false,'message'=>'Controller loading error'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+idrv_log('All files loaded successfully');
 
 try {
     $controllerObj = new IndependentDriverController($db);
