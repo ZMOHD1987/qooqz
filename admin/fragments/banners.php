@@ -5,12 +5,12 @@
 // - Loads preferred language from session / user, falls back to en.json.
 // - Flattens translations to LANG_FLAT and exposes LANG_JSON (nested) and LANG_FLAT to JS.
 // - Renders the whole management UI, server-rendered translation inputs, search, and active-toggle buttons.
-// - Expects API endpoints: /api/routes/banners.php and /api/upload_image.php
+// - Expects API endpoints: /api/banners and /api/upload_image.php
 //
 // Install:
 // - Place this file at admin/fragments/banners.php
 // - Put translation JSON files under languages/banners/en.json, ar.json, ...
-// - Ensure /api/routes/banners.php supports list, _fetch_row, save, delete, toggle_active (toggle_active optional; fallback will try save).
+// - Ensure /api/banners supports list, get, POST actions (save, delete, toggle_active).
 // - Clear browser cache after deploy.
 
 if (session_status() === PHP_SESSION_NONE) session_start();
