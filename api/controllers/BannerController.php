@@ -6,21 +6,57 @@
 // Load dependencies
 require_once __DIR__ . '/../models/Banner.php';
 require_once __DIR__ . '/../validators/BannerValidator.php';
+require_once __DIR__ . '/../helpers/auth_helper.php';
 
 /**
  * Helper: Check if user has permission to manage banners
+ * Uses auth_helper.php functions for proper session and permission checking
  */
 function banner_check_permission($container) {
-    // Check current_user from container
-    $user = $container['current_user'] ?? null;
+    // Start session safely
+    start_session_safe();
     
+    // Try to get authenticated user with permissions using auth helper
+    if (function_exists('get_authenticated_user_with_permissions')) {
+        $user = get_authenticated_user_with_permissions();
+        if ($user) {
+            // Check if user has manage_banners permission
+            if (!empty($user['permissions']) && is_array($user['permissions'])) {
+                if (in_array('manage_banners', $user['permissions'], true)) {
+                    return true;
+                }
+            }
+            
+            // Check if superadmin (role_id == 1 or role == 1)
+            if (!empty($user['role_id']) && (int)$user['role_id'] === 1) {
+                return true;
+            }
+            if (!empty($user['role']) && (int)$user['role'] === 1) {
+                return true;
+            }
+        }
+    }
+    
+    // Fallback: Check has_permission function if available
+    if (function_exists('has_permission')) {
+        if (has_permission('manage_banners')) {
+            return true;
+        }
+    }
+    
+    // Fallback: Check is_superadmin function if available
+    if (function_exists('is_superadmin')) {
+        if (is_superadmin()) {
+            return true;
+        }
+    }
+    
+    // Fallback: Check container current_user
+    $user = $container['current_user'] ?? null;
     if ($user) {
-        // Check if admin (role_id == 1)
         if (!empty($user['role_id']) && (int)$user['role_id'] === 1) {
             return true;
         }
-        
-        // Check permissions array
         if (!empty($user['permissions']) && is_array($user['permissions'])) {
             if (in_array('manage_banners', $user['permissions'], true)) {
                 return true;
@@ -28,14 +64,16 @@ function banner_check_permission($container) {
         }
     }
     
-    // Check session permissions
+    // Final fallback: Check session directly
     if (!empty($_SESSION['permissions']) && is_array($_SESSION['permissions'])) {
         if (in_array('manage_banners', $_SESSION['permissions'], true)) {
             return true;
         }
     }
     
-    // Check if user is admin via session
+    if (!empty($_SESSION['user']['role_id']) && (int)$_SESSION['user']['role_id'] === 1) {
+        return true;
+    }
     if (!empty($_SESSION['user']['role']) && (int)$_SESSION['user']['role'] === 1) {
         return true;
     }
@@ -45,17 +83,31 @@ function banner_check_permission($container) {
 
 /**
  * Helper: Get user's preferred language
+ * Uses auth helper and session to determine user language
  */
 function banner_get_user_language($container) {
-    // Check current_user from container
+    // Try auth helper first
+    if (function_exists('get_authenticated_user_with_permissions')) {
+        $user = get_authenticated_user_with_permissions();
+        if ($user && !empty($user['preferred_language'])) {
+            return $user['preferred_language'];
+        }
+    }
+    
+    // Check container current_user
     $user = $container['current_user'] ?? null;
     if ($user && !empty($user['preferred_language'])) {
         return $user['preferred_language'];
     }
     
-    // Check session
+    // Check session user
     if (!empty($_SESSION['user']['preferred_language'])) {
         return $_SESSION['user']['preferred_language'];
+    }
+    
+    // Check session preferred_language
+    if (!empty($_SESSION['preferred_language'])) {
+        return $_SESSION['preferred_language'];
     }
     
     // Check GET parameter
