@@ -1,22 +1,22 @@
 <?php
 // admin/fragments/banners.php
-// COMPLETE fragment (reads translations from JSON files in /languages/admin)
+// COMPLETE fragment (reads translations from JSON files in /languages/banners)
 // - Assumes translation files are JSON: en.json, ar.json, etc.
 // - Loads preferred language from session / user, falls back to en.json.
 // - Flattens translations to LANG_FLAT and exposes LANG_JSON (nested) and LANG_FLAT to JS.
 // - Renders the whole management UI, server-rendered translation inputs, search, and active-toggle buttons.
-// - Expects API endpoints: /api/banners.php and /api/upload_image.php
+// - Expects API endpoints: /api/banners and /api/upload_image.php
 //
 // Install:
-// - Place this file at htdocs/admin/fragments/banners.php
-// - Put translation JSON files under htdocs/languages/admin/en.json, ar.json, ...
-// - Ensure /api/banners.php supports list, _fetch_row, save, delete, toggle_active (toggle_active optional; fallback will try save).
+// - Place this file at admin/fragments/banners.php
+// - Put translation JSON files under languages/banners/en.json, ar.json, ...
+// - Ensure /api/banners supports list, get, POST actions (save, delete, toggle_active).
 // - Clear browser cache after deploy.
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-// --- configuration: base path for language files (relative to htdocs)
-$langBase = __DIR__ . '/../../languages/admin'; // e.g. htdocs/languages/admin
+// --- configuration: base path for language files
+$langBase = __DIR__ . '/../../languages/banners'; // languages/banners
 $defaultLangCode = 'en';
 
 // --- try to include init/auth (common locations) to ensure session user/permissions/rbac available
