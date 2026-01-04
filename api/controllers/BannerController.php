@@ -541,7 +541,13 @@ if (!class_exists('BannerController')) {
          * Helper to get container using consistent naming
          */
         private static function getContainer() {
-            return $GLOBALS['CONTAINER'] ?? [];
+            // Try to get container from global scope
+            if (isset($GLOBALS['CONTAINER']) && is_array($GLOBALS['CONTAINER'])) {
+                return $GLOBALS['CONTAINER'];
+            }
+            
+            // Return empty array as fallback (functions will handle missing DB)
+            return [];
         }
         
         /**
@@ -563,6 +569,10 @@ if (!class_exists('BannerController')) {
          * Save (create or update) banner
          */
         public static function save($input) {
+            // Ensure action is set for save operation
+            if (empty($_POST['action'])) {
+                $_POST['action'] = 'save';
+            }
             Banner_store(self::getContainer());
         }
         
@@ -570,17 +580,30 @@ if (!class_exists('BannerController')) {
          * Delete banner
          */
         public static function delete($input) {
-            // Set action to delete to ensure Banner_store handles it correctly
-            $_POST['action'] = 'delete';
-            Banner_store(self::getContainer());
+            $id = $input['id'] ?? 0;
+            
+            // Check if this is action-based delete (via POST with action parameter)
+            if (!empty($_POST['action']) && $_POST['action'] === 'delete') {
+                // Already set correctly, just call store
+                Banner_store(self::getContainer());
+            } elseif (!empty($_POST['id'])) {
+                // Set action to delete for POST-based delete
+                $_POST['action'] = 'delete';
+                Banner_store(self::getContainer());
+            } else {
+                // Direct DELETE method call
+                Banner_delete(self::getContainer(), $id);
+            }
         }
         
         /**
          * Toggle active status
          */
         public static function toggleActive($input) {
-            // Set action to toggle_active to ensure Banner_store handles it correctly
-            $_POST['action'] = 'toggle_active';
+            // Check if action is already set
+            if (empty($_POST['action'])) {
+                $_POST['action'] = 'toggle_active';
+            }
             Banner_store(self::getContainer());
         }
         
