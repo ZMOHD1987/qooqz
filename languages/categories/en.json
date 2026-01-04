@@ -1,0 +1,10 @@
+{
+  "lang": "en",
+  "name": "English",
+  "direction": "ltr",
+  "strings": {
+    "title": "Categories",
+    "save": "Save",
+    "delete_confirm": "Are you sure?"
+  }
+}

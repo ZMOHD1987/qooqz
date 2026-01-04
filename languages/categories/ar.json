@@ -1,0 +1,10 @@
+{
+  "lang": "ar",
+  "name": "Arabic",
+  "direction": "rtl",
+  "strings": {
+    "title": "الفئات",
+    "save": "حفظ",
+    "delete_confirm": "هل أنت متأكد؟"
+  }
+}

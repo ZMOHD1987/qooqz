@@ -1,0 +1,102 @@
+{
+  "brand": "لوحة التحكم",
+  "title": "لوحة الإدارة",
+  "search_placeholder": "ابحث...",
+  "search_button": "بحث",
+  "notifications": "الإشعارات",
+  "toggle_sidebar": "تبديل الشريط الجانبي",
+  "logout": "تسجيل الخروج",
+  "profile": "الملف الشخصي",
+  "edit_profile": "تعديل الملف",
+  "save": "حفظ",
+  "cancel": "إلغاء",
+  "create": "إنشاء",
+  "delete": "حذف",
+  "add": "إضافة",
+  "confirm": "تأكيد",
+  "close": "إغلاق",
+
+  "dashboard_title": "لوحة التحكم",
+  "dashboard_subtitle": "استخدم القائمة الجانبية للتنقل داخل لوحة الإدارة",
+  "welcome_title": "مرحباً",
+  "welcome_message": "هذه لوحة الإدارة الخاصة بك لإدارة الموقع.",
+  "quick_actions_title": "إجراءات سريعة",
+
+  "test_instructions_title": "تعليمات الاختبار",
+  "test_step_1_heading": "افتح أدوات المطور",
+  "test_step_1": "افتح أدوات المطور في المتصفح (F12).",
+  "test_step_2": "ابحث عن رسائل الـ console التي تبدأ بـ ===.",
+  "test_step_3": "اضغط زر تبديل الشريط الجانبي (☰).",
+  "test_step_4": "تحقق من تبويب الشبكة لوجود تحميلات fragments فاشلة.",
+  "test_step_5": "اكتب testSidebar() في الـ console لتبديل الشريط برمجياً.",
+
+  "nav": {
+    "dashboard": "الرئيسية",
+    "products": "المنتجات",
+    "categories": "التصنيفات",
+    "users": "المستخدمون",
+    "menus": "القوائم",
+    "roles": "الأدوار",
+    "orders": "الطلبات",
+    "reports": "التقارير",
+    "settings": "الإعدادات",
+    "payments": "المدفوعات",
+    "shipping": "الشحن"
+  },
+
+  "menu": {
+    "platform": "المنصة",
+    "pages": "الصفحات",
+    "media": "الوسائط",
+    "banners": "البانرات",
+    "vendors": "البائعون",
+    "delivery_companies": "شركات التوصيل",
+    "payments": "المدفوعات",
+    "shipping": "الشحن",
+    "reviews": "التقييمات",
+    "auctions": "المزادات",
+    "jobs": "الوظائف",
+    "coupons": "القسائم",
+    "notifications": "الإشعارات",
+    "support": "الدعم",
+    "wallet": "المحفظة"
+  },
+
+  "manage_products": "إدارة المنتجات",
+  "manage_categories": "تنظيم التصنيفات",
+  "manage_users": "إدارة المستخدمين",
+  "manage_drivers": "إدارة السائقين",
+  "manage_vendors": "إدارة البائعين",
+  "manage_orders": "إدارة الطلبات",
+
+  "menus_list": {
+    "title": "القوائم",
+    "description": "إدارة قوائم التطبيق وبنيتها.",
+    "col_name": "الاسم",
+    "col_items": "العناصر",
+    "col_actions": "الإجراءات",
+    "edit": "تعديل",
+    "new_menu": "قائمة جديدة",
+    "add_item": "إضافة عنصر",
+    "empty": "لا توجد قوائم"
+  },
+
+  "independent_driver": {
+    "title": "السائقون المستقلون",
+    "description": "إدارة سائقي التوصيل المستقلين.",
+    "add_driver": "إضافة سائق",
+    "edit_driver": "تعديل السائق",
+    "no_drivers": "لا توجد سجلات للسائقين"
+  },
+
+  "errors": {
+    "generic": "حدث خطأ. الرجاء المحاولة مرة أخرى.",
+    "forbidden": "تم رفض الوصول.",
+    "not_found": "المورد غير موجود."
+  },
+
+  "ui": {
+    "loading": "جاري التحميل...",
+    "no_data": "لا توجد بيانات للعرض"
+  }
+}

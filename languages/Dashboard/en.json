@@ -1,0 +1,102 @@
+{
+  "brand": "Admin",
+  "title": "Administration",
+  "search_placeholder": "Search...",
+  "search_button": "Search",
+  "notifications": "Notifications",
+  "toggle_sidebar": "Toggle sidebar",
+  "logout": "Logout",
+  "profile": "Profile",
+  "edit_profile": "Edit profile",
+  "save": "Save",
+  "cancel": "Cancel",
+  "create": "Create",
+  "delete": "Delete",
+  "add": "Add",
+  "confirm": "Confirm",
+  "close": "Close",
+
+  "dashboard_title": "Dashboard",
+  "dashboard_subtitle": "Use the sidebar to navigate the admin area",
+  "welcome_title": "Welcome",
+  "welcome_message": "This admin panel lets you manage the site.",
+  "quick_actions_title": "Quick actions",
+
+  "test_instructions_title": "Test instructions",
+  "test_step_1_heading": "Open developer tools",
+  "test_step_1": "Open the browser developer tools (F12).",
+  "test_step_2": "Look for console messages starting with ===.",
+  "test_step_3": "Click the sidebar toggle button (☰).",
+  "test_step_4": "Check the Network tab for failed fragment loads.",
+  "test_step_5": "Run testSidebar() in the console to toggle programmatically.",
+
+  "nav": {
+    "dashboard": "Dashboard",
+    "products": "Products",
+    "categories": "Categories",
+    "users": "Users",
+    "menus": "Menus",
+    "roles": "Roles",
+    "orders": "Orders",
+    "reports": "Reports",
+    "settings": "Settings",
+    "payments": "Payments",
+    "shipping": "Shipping"
+  },
+
+  "menu": {
+    "platform": "Platform",
+    "pages": "Pages",
+    "media": "Media",
+    "banners": "Banners",
+    "vendors": "Vendors",
+    "delivery_companies": "Delivery companies",
+    "payments": "Payments",
+    "shipping": "Shipping",
+    "reviews": "Reviews",
+    "auctions": "Auctions",
+    "jobs": "Jobs",
+    "coupons": "Coupons",
+    "notifications": "Notifications",
+    "support": "Support",
+    "wallet": "Wallet"
+  },
+
+  "manage_products": "Manage products",
+  "manage_categories": "Organize categories",
+  "manage_users": "Manage users",
+  "manage_drivers": "Manage drivers",
+  "manage_vendors": "Manage vendors",
+  "manage_orders": "Manage orders",
+
+  "menus_list": {
+    "title": "Menus",
+    "description": "Manage application menus and their structure.",
+    "col_name": "Name",
+    "col_items": "Items",
+    "col_actions": "Actions",
+    "edit": "Edit",
+    "new_menu": "New menu",
+    "add_item": "Add item",
+    "empty": "No menus found"
+  },
+
+  "independent_driver": {
+    "title": "Independent Drivers",
+    "description": "Manage independent delivery drivers.",
+    "add_driver": "Add driver",
+    "edit_driver": "Edit driver",
+    "no_drivers": "No drivers found"
+  },
+
+  "errors": {
+    "generic": "An error occurred. Please try again.",
+    "forbidden": "Access denied.",
+    "not_found": "Resource not found."
+  },
+
+  "ui": {
+    "loading": "Loading...",
+    "no_data": "No data to display"
+  }
+}
