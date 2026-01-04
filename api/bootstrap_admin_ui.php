@@ -732,11 +732,16 @@ if ($debug) {
             'id' => $userInfo['id'] ?? null,
             'username' => $userInfo['username'] ?? null,
             'email' => $userInfo['email'] ?? null,
+            'preferred_language' => $userInfo['preferred_language'] ?? null,
             'role_id' => $userInfo['role_id'] ?? null,
+            'roles' => $userInfo['roles'] ?? [],
+            'permissions' => $userInfo['permissions'] ?? [],
             'permissions_count' => count($userInfo['permissions'] ?? []),
             'roles_count' => count($userInfo['roles'] ?? []),
             'is_active' => $userInfo['is_active'] ?? false
         ],
+        'session_permissions' => $_SESSION['permissions'] ?? [],
+        'session_roles' => $_SESSION['roles'] ?? [],
         'theme' => $ADMIN_UI_PAYLOAD['theme'] ?? [],
         'payload_keys' => array_keys($ADMIN_UI_PAYLOAD)
     ];
