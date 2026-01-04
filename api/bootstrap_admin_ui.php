@@ -256,13 +256,17 @@ if (!empty($currentUser['id'])) {
     if (empty($roles) && $db && table_exists($db, 'roles')) {
         try {
             $rows = safe_query_all($db, "
-                SELECT r.key_name 
+                SELECT r.id, r.key_name 
                 FROM roles r
                 JOIN users u ON u.role_id = r.id
                 WHERE u.id = ?
             ", [$uid], 'i');
             foreach ($rows as $r) {
                 $roles[] = $r['key_name'];
+                // Populate role_id if it's missing
+                if (empty($userInfo['role_id']) && isset($r['id'])) {
+                    $userInfo['role_id'] = (int)$r['id'];
+                }
             }
             _admin_ui_log("loaded roles for user {$uid}: " . count($roles) . " roles");
         } catch (Throwable $e) {
@@ -276,6 +280,22 @@ if (!empty($currentUser['id'])) {
     
     $_SESSION['permissions'] = $perms;
     $_SESSION['roles'] = $roles;
+    
+    // If role_id is still null but we have roles, fetch the role_id from the first role
+    if (empty($userInfo['role_id']) && !empty($roles) && $db && table_exists($db, 'roles')) {
+        try {
+            $firstRole = $roles[0];
+            $rows = safe_query_all($db, "
+                SELECT id FROM roles WHERE key_name = ? LIMIT 1
+            ", [$firstRole], 's');
+            if (!empty($rows)) {
+                $userInfo['role_id'] = (int)$rows[0]['id'];
+                _admin_ui_log("populated role_id {$userInfo['role_id']} from role key_name: {$firstRole}");
+            }
+        } catch (Throwable $e) {
+            _admin_ui_log("role_id lookup failed: " . $e->getMessage());
+        }
+    }
     
     $userInfo['permissions'] = $perms;
     $userInfo['roles'] = $roles;
