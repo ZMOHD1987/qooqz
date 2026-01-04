@@ -42,17 +42,76 @@ if (empty($_SESSION['csrf_token'])) {
 }
 $csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
 
-// Helper to get translation string
+// Helper to get translation string with comprehensive fallbacks
 function get_str($key, $strings) {
+    // Define fallback translations (Arabic)
+    $fallbacks = [
+        'banners.page_title' => 'إدارة البانرات',
+        'banners.heading_manage_banners' => 'إدارة البانرات',
+        'banners.no_permission_notice' => 'ليس لديك صلاحية لإدارة البانرات',
+        'banners.search_placeholder' => 'البحث عن بانرات...',
+        'banners.btn_refresh' => 'تحديث',
+        'banners.btn_new' => 'إضافة بانر',
+        'banners.total' => 'الإجمالي',
+        'banners.id' => 'الرقم',
+        'banners.title' => 'العنوان',
+        'banners.image' => 'الصورة',
+        'banners.position' => 'الموضع',
+        'banners.is_active' => 'نشط',
+        'banners.actions' => 'الإجراءات',
+        'banners.loading' => 'جاري التحميل...',
+        'banners.subtitle' => 'العنوان الفرعي',
+        'banners.image_url' => 'رابط الصورة',
+        'banners.position_homepage_main' => 'الرئيسية - أساسي',
+        'banners.position_homepage_secondary' => 'الرئيسية - ثانوي',
+        'banners.position_category' => 'الفئة',
+        'banners.position_product' => 'المنتج',
+        'banners.position_custom' => 'مخصص',
+        'banners.btn_save' => 'حفظ',
+        'banners.btn_cancel' => 'إلغاء',
+        'banners.add_banner' => 'إضافة بانر',
+        'banners.edit_banner' => 'تعديل بانر',
+        'banners.btn_edit' => 'تعديل',
+        'banners.btn_delete' => 'حذف',
+        'banners.btn_toggle' => 'تبديل',
+        'banners.yes' => 'نعم',
+        'banners.no' => 'لا',
+        'banners.confirm_delete' => 'هل أنت متأكد من الحذف؟',
+        'banners.processing' => 'جاري المعالجة...',
+        'banners.saved_success' => 'تم الحفظ بنجاح',
+        'banners.deleted_success' => 'تم الحذف بنجاح',
+        'banners.toggled_success' => 'تم التبديل بنجاح',
+        'banners.error_loading' => 'خطأ في التحميل',
+        'banners.error_save' => 'خطأ في الحفظ',
+        'banners.error_delete' => 'خطأ في الحذف',
+        'banners.error_toggle' => 'خطأ في التبديل',
+        'banners.no_banners' => 'لا توجد بانرات',
+        'banners.error_fetch' => 'خطأ في جلب البيانات'
+    ];
+    
+    // Try direct key first
     if (isset($strings[$key])) return $strings[$key];
+    
     // Try nested keys (e.g., "banners.page_title")
     $parts = explode('.', $key);
     $val = $strings;
     foreach ($parts as $p) {
-        if (isset($val[$p])) $val = $val[$p];
-        else return $key;
+        if (is_array($val) && isset($val[$p])) {
+            $val = $val[$p];
+        } else {
+            // Not found in strings, check fallbacks
+            if (isset($fallbacks[$key])) return $fallbacks[$key];
+            return $key;
+        }
     }
-    return is_string($val) ? $val : $key;
+    
+    // If we got a string value, return it
+    if (is_string($val)) return $val;
+    
+    // Otherwise check fallbacks
+    if (isset($fallbacks[$key])) return $fallbacks[$key];
+    
+    return $key;
 }
 ?>
 <!DOCTYPE html>

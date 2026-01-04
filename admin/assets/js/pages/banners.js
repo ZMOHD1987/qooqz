@@ -14,11 +14,40 @@
   var DIRECTION = window.DIRECTION || 'ltr';
   var CSRF_TOKEN = window.CSRF_TOKEN || '';
 
-  // Translation helper
+  // Translation helper with fallbacks
   function t(key){
     if (!key) return '';
+    
+    // Fallback translations (Arabic)
+    var fallbacks = {
+      'banners.loading': 'جاري التحميل...',
+      'banners.no_banners': 'لا توجد بانرات',
+      'banners.btn_edit': 'تعديل',
+      'banners.btn_delete': 'حذف',
+      'banners.btn_toggle': 'تبديل',
+      'banners.btn_save': 'حفظ',
+      'banners.btn_new': 'إضافة بانر',
+      'banners.btn_refresh': 'تحديث',
+      'banners.btn_cancel': 'إلغاء',
+      'banners.yes': 'نعم',
+      'banners.no': 'لا',
+      'banners.confirm_delete': 'هل أنت متأكد؟',
+      'banners.processing': 'جاري المعالجة...',
+      'banners.saved_success': 'تم الحفظ بنجاح',
+      'banners.deleted_success': 'تم الحذف بنجاح',
+      'banners.toggled_success': 'تم التبديل بنجاح',
+      'banners.error_loading': 'خطأ في التحميل',
+      'banners.error_save': 'خطأ في الحفظ',
+      'banners.error_delete': 'خطأ في الحذف',
+      'banners.error_toggle': 'خطأ في التبديل',
+      'banners.error_fetch': 'خطأ في جلب البيانات',
+      'banners.add_banner': 'إضافة بانر',
+      'banners.edit_banner': 'تعديل بانر'
+    };
+    
     // Try direct key
     if (I18N[key]) return I18N[key];
+    
     // Try nested key (e.g., "banners.title")
     var parts = key.split('.');
     var val = I18N;
@@ -26,10 +55,19 @@
       if (val && typeof val === 'object' && val[parts[i]]) {
         val = val[parts[i]];
       } else {
+        // Not found in I18N, check fallbacks
+        if (fallbacks[key]) return fallbacks[key];
         return key.replace(/_/g, ' ');
       }
     }
-    return typeof val === 'string' ? val : key.replace(/_/g, ' ');
+    
+    // If we got a string value, return it
+    if (typeof val === 'string') return val;
+    
+    // Otherwise check fallbacks
+    if (fallbacks[key]) return fallbacks[key];
+    
+    return key.replace(/_/g, ' ');
   }
 
   // DOM helpers
