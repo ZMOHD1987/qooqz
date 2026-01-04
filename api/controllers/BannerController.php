@@ -538,64 +538,62 @@ function Banner_delete_translation($container, $translation_id) {
 if (!class_exists('BannerController')) {
     class BannerController {
         /**
+         * Helper to get container using consistent naming
+         */
+        private static function getContainer() {
+            return $GLOBALS['CONTAINER'] ?? [];
+        }
+        
+        /**
          * List all banners OR get single banner
          */
         public static function list($input) {
-            $container = $GLOBALS['CONTAINER'] ?? $GLOBALS['container'] ?? [];
-            Banner_index($container);
+            Banner_index(self::getContainer());
         }
         
         /**
          * Get single banner
          */
         public static function get($input) {
-            $container = $GLOBALS['CONTAINER'] ?? $GLOBALS['container'] ?? [];
             $id = $input['id'] ?? 0;
-            Banner_show($container, $id);
+            Banner_show(self::getContainer(), $id);
         }
         
         /**
          * Save (create or update) banner
          */
         public static function save($input) {
-            $container = $GLOBALS['CONTAINER'] ?? $GLOBALS['container'] ?? [];
-            Banner_store($container);
+            Banner_store(self::getContainer());
         }
         
         /**
          * Delete banner
          */
         public static function delete($input) {
-            $container = $GLOBALS['CONTAINER'] ?? $GLOBALS['container'] ?? [];
-            $id = $input['id'] ?? 0;
-            
-            // For POST action-based delete
-            if (!empty($_POST['id'])) {
-                Banner_store($container); // Will handle action=delete
-            } else {
-                Banner_delete($container, $id);
-            }
+            // Set action to delete to ensure Banner_store handles it correctly
+            $_POST['action'] = 'delete';
+            Banner_store(self::getContainer());
         }
         
         /**
          * Toggle active status
          */
         public static function toggleActive($input) {
-            $container = $GLOBALS['CONTAINER'] ?? $GLOBALS['container'] ?? [];
-            Banner_store($container); // Will handle action=toggle_active
+            // Set action to toggle_active to ensure Banner_store handles it correctly
+            $_POST['action'] = 'toggle_active';
+            Banner_store(self::getContainer());
         }
         
         /**
          * Get or update translations
          */
         public static function translations($input) {
-            $container = $GLOBALS['CONTAINER'] ?? $GLOBALS['container'] ?? [];
             $id = $input['id'] ?? 0;
             
             if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-                Banner_translations($container, $id);
+                Banner_translations(self::getContainer(), $id);
             } else {
-                Banner_add_translation($container, $id);
+                Banner_add_translation(self::getContainer(), $id);
             }
         }
     }
