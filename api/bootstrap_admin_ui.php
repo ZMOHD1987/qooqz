@@ -495,11 +495,11 @@ if ($languagesBaseDir) {
 
         // Save to cache atomically
         try {
-            $tmpCache = $cacheFile . '.tmp.' . getmypid();
+            $tmpCache = $cacheFile . '.tmp.' . getmypid() . '.' . uniqid();
             $writeResult = @file_put_contents($tmpCache, json_encode($merged, JSON_UNESCAPED_UNICODE));
             if ($writeResult !== false) {
                 @rename($tmpCache, $cacheFile);
-                @chmod($cacheFile, 0664);
+                @chmod($cacheFile, 0644);
                 _admin_ui_log("translations cached to: {$cacheFile} (" . count($merged) . " keys)");
             } else {
                 _admin_ui_log("failed to write translation cache: {$tmpCache}");
@@ -512,7 +512,7 @@ if ($languagesBaseDir) {
     $ADMIN_UI_PAYLOAD['strings'] = is_array($merged) ? $merged : [];
     _admin_ui_log("translations loaded: " . count($ADMIN_UI_PAYLOAD['strings']) . " keys (cache hit: " . ($cacheHit ? 'yes' : 'no') . ")");
 } else {
-    _admin_ui_log("translations: languages directory not found. Candidates: " . implode(', ', array_filter($languagesCandidates)));
+    _admin_ui_log("translations: languages directory not found. Candidates: " . implode(', ', array_filter($languagesCandidates, function($x) { return !empty($x); })));
 }
 
 /* -------------------------
