@@ -1,19 +1,182 @@
 <?php
 // admin/fragments/banners.php
-// COMPLETE fragment (reads translations from JSON files in /languages/banners)
-// - Assumes translation files are JSON: en.json, ar.json, etc.
-// - Loads preferred language from session / user, falls back to en.json.
-// - Flattens translations to LANG_FLAT and exposes LANG_JSON (nested) and LANG_FLAT to JS.
-// - Renders the whole management UI, server-rendered translation inputs, search, and active-toggle buttons.
-// - Expects API endpoints: /api/banners and /api/upload_image.php
-//
-// Install:
-// - Place this file at admin/fragments/banners.php
-// - Put translation JSON files under languages/banners/en.json, ar.json, ...
-// - Ensure /api/banners supports list, get, POST actions (save, delete, toggle_active).
-// - Clear browser cache after deploy.
+// Banner management fragment - uses ONLY bootstrap_admin_ui.php for all data
+// Gets translations, permissions, theme, and settings from database via ADMIN_UI_PAYLOAD
 
-if (session_status() === PHP_SESSION_NONE) session_start();
+// Load admin UI bootstrap - provides $ADMIN_UI_PAYLOAD with everything from DB
+require_once __DIR__ . '/../../api/bootstrap_admin_ui.php';
+
+// Extract data from ADMIN_UI_PAYLOAD
+$userInfo = $ADMIN_UI_PAYLOAD['user'] ?? [];
+$lang = $ADMIN_UI_PAYLOAD['lang'] ?? 'en';
+$direction = $ADMIN_UI_PAYLOAD['direction'] ?? 'ltr';
+$strings = $ADMIN_UI_PAYLOAD['strings'] ?? [];
+$theme = $ADMIN_UI_PAYLOAD['theme'] ?? [];
+
+// Permission check - prioritize role_id == 1 (super admin)
+$canManageBanners = false;
+
+// First check if user is super admin (role_id == 1)
+if (!empty($userInfo['role_id']) && (int)$userInfo['role_id'] === 1) {
+    $canManageBanners = true;
+}
+
+// Check if user has super_admin role in roles array
+if (!$canManageBanners && !empty($userInfo['roles']) && is_array($userInfo['roles'])) {
+    if (in_array('super_admin', $userInfo['roles'], true) || in_array('admin', $userInfo['roles'], true)) {
+        $canManageBanners = true;
+    }
+}
+
+// Check permissions array for manage_banners permission
+if (!$canManageBanners) {
+    $sessionPerms = $userInfo['permissions'] ?? [];
+    if (is_array($sessionPerms) && in_array('manage_banners', $sessionPerms, true)) {
+        $canManageBanners = true;
+    }
+}
+
+// CSRF token
+if (empty($_SESSION['csrf_token'])) {
+    try { $_SESSION['csrf_token'] = bin2hex(random_bytes(16)); } catch (Exception $e) { $_SESSION['csrf_token'] = bin2hex(openssl_random_pseudo_bytes(16)); }
+}
+$csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
+
+// Helper to get translation string
+function get_str($key, $strings) {
+    if (isset($strings[$key])) return $strings[$key];
+    // Try nested keys (e.g., "banners.page_title")
+    $parts = explode('.', $key);
+    $val = $strings;
+    foreach ($parts as $p) {
+        if (isset($val[$p])) $val = $val[$p];
+        else return $key;
+    }
+    return is_string($val) ? $val : $key;
+}
+?>
+<!DOCTYPE html>
+<html lang="<?php echo htmlspecialchars($lang, ENT_QUOTES); ?>" dir="<?php echo htmlspecialchars($direction, ENT_QUOTES); ?>">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo htmlspecialchars(get_str('banners.page_title', $strings) ?: get_str('page_title', $strings) ?: 'إدارة البانرات', ENT_QUOTES); ?></title>
+    <link rel="stylesheet" href="/admin/assets/css/pages/banners.css">
+    <style>
+        :root {
+            --primary-color: <?php echo htmlspecialchars($theme['colors_map']['primary_color']['color_value'] ?? '#3B82F6', ENT_QUOTES); ?>;
+            --primary-hover: <?php echo htmlspecialchars($theme['colors_map']['primary_hover']['color_value'] ?? '#2563EB', ENT_QUOTES); ?>;
+            --background-color: <?php echo htmlspecialchars($theme['colors_map']['background_color']['color_value'] ?? '#FFFFFF', ENT_QUOTES); ?>;
+            --text-color: <?php echo htmlspecialchars($theme['colors_map']['text_color']['color_value'] ?? '#000000', ENT_QUOTES); ?>;
+        }
+    </style>
+</head>
+<body>
+
+<div id="adminBanners" class="admin-fragment" dir="<?php echo htmlspecialchars($direction, ENT_QUOTES); ?>" style="font-family:Arial, Helvetica, sans-serif; max-width:1200px; margin:16px auto;">
+
+  <h2 style="margin-bottom:8px;"><?php echo htmlspecialchars(get_str('banners.heading_manage_banners', $strings) ?: get_str('heading_manage_banners', $strings) ?: 'إدارة البانرات', ENT_QUOTES); ?></h2>
+
+  <?php if (!$canManageBanners): ?>
+    <div style="background:#fff3cd;color:#856404;border:1px solid #ffeeba;padding:10px;border-radius:6px;margin-bottom:12px;">
+      <?php echo htmlspecialchars(get_str('banners.no_permission_notice', $strings) ?: get_str('no_permission_notice', $strings) ?: 'ليس لديك صلاحية لإدارة البانرات', ENT_QUOTES); ?>
+    </div>
+  <?php else: ?>
+
+  <!-- Search and filters -->
+  <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <input type="search" id="bannerSearch" placeholder="<?php echo htmlspecialchars(get_str('banners.search_placeholder', $strings) ?: get_str('search_placeholder', $strings) ?: 'البحث عن بانرات...', ENT_QUOTES); ?>" style="flex:1;min-width:200px;padding:8px;border:1px solid #ddd;border-radius:4px;">
+    <button id="btnRefresh" style="padding:8px 16px;background:var(--primary-color);color:#fff;border:none;border-radius:4px;cursor:pointer;"><?php echo htmlspecialchars(get_str('banners.btn_refresh', $strings) ?: get_str('btn_refresh', $strings) ?: 'تحديث', ENT_QUOTES); ?></button>
+    <button id="btnNew" style="padding:8px 16px;background:var(--primary-color);color:#fff;border:none;border-radius:4px;cursor:pointer;"><?php echo htmlspecialchars(get_str('banners.btn_new', $strings) ?: get_str('btn_new', $strings) ?: 'إضافة بانر', ENT_QUOTES); ?></button>
+  </div>
+
+  <div id="bannersStatus" style="margin-bottom:8px;min-height:20px;color:#064e3b;"></div>
+
+  <div style="margin-bottom:8px;"><strong><?php echo htmlspecialchars(get_str('banners.total', $strings) ?: get_str('total', $strings) ?: 'الإجمالي', ENT_QUOTES); ?>:</strong> <span id="bannersCount">-</span></div>
+
+  <!-- Table -->
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;border:1px solid #ddd;">
+      <thead>
+        <tr style="background:#f3f4f6;">
+          <th style="padding:8px;border:1px solid #ddd;text-align:<?php echo $direction === 'rtl' ? 'right' : 'left'; ?>;"><?php echo htmlspecialchars(get_str('banners.id', $strings) ?: get_str('id', $strings) ?: 'الرقم', ENT_QUOTES); ?></th>
+          <th style="padding:8px;border:1px solid #ddd;text-align:<?php echo $direction === 'rtl' ? 'right' : 'left'; ?>;"><?php echo htmlspecialchars(get_str('banners.title', $strings) ?: get_str('title', $strings) ?: 'العنوان', ENT_QUOTES); ?></th>
+          <th style="padding:8px;border:1px solid #ddd;text-align:<?php echo $direction === 'rtl' ? 'right' : 'left'; ?>;"><?php echo htmlspecialchars(get_str('banners.image', $strings) ?: get_str('image', $strings) ?: 'الصورة', ENT_QUOTES); ?></th>
+          <th style="padding:8px;border:1px solid #ddd;text-align:<?php echo $direction === 'rtl' ? 'right' : 'left'; ?>;"><?php echo htmlspecialchars(get_str('banners.position', $strings) ?: get_str('position', $strings) ?: 'الموضع', ENT_QUOTES); ?></th>
+          <th style="padding:8px;border:1px solid #ddd;text-align:<?php echo $direction === 'rtl' ? 'right' : 'left'; ?>;"><?php echo htmlspecialchars(get_str('banners.is_active', $strings) ?: get_str('is_active', $strings) ?: 'نشط', ENT_QUOTES); ?></th>
+          <th style="padding:8px;border:1px solid #ddd;text-align:<?php echo $direction === 'rtl' ? 'right' : 'left'; ?>;"><?php echo htmlspecialchars(get_str('banners.actions', $strings) ?: get_str('actions', $strings) ?: 'الإجراءات', ENT_QUOTES); ?></th>
+        </tr>
+      </thead>
+      <tbody id="bannersTbody">
+        <tr><td colspan="6" style="padding:12px;text-align:center;color:#666;"><?php echo htmlspecialchars(get_str('banners.loading', $strings) ?: get_str('loading', $strings) ?: 'جاري التحميل...', ENT_QUOTES); ?></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Form area (hidden by default) -->
+  <div id="bannerFormWrap" style="display:none;margin-top:20px;padding:16px;border:1px solid #ddd;border-radius:6px;background:#f9fafb;">
+    <h3 id="formTitle"><?php echo htmlspecialchars(get_str('banners.add_banner', $strings) ?: get_str('add_banner', $strings) ?: 'إضافة بانر', ENT_QUOTES); ?></h3>
+    <form id="bannerForm">
+      <input type="hidden" id="bannerId" name="id">
+      <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
+      <input type="hidden" name="action" value="save">
+      
+      <div style="margin-bottom:12px;">
+        <label><?php echo htmlspecialchars(get_str('banners.title', $strings) ?: 'العنوان', ENT_QUOTES); ?>:</label>
+        <input type="text" name="title" id="bannerTitle" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+      </div>
+      
+      <div style="margin-bottom:12px;">
+        <label><?php echo htmlspecialchars(get_str('banners.subtitle', $strings) ?: 'العنوان الفرعي', ENT_QUOTES); ?>:</label>
+        <input type="text" name="subtitle" id="bannerSubtitle" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+      </div>
+      
+      <div style="margin-bottom:12px;">
+        <label><?php echo htmlspecialchars(get_str('banners.image_url', $strings) ?: 'رابط الصورة', ENT_QUOTES); ?>:</label>
+        <input type="text" name="image_url" id="bannerImageUrl" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+      </div>
+      
+      <div style="margin-bottom:12px;">
+        <label><?php echo htmlspecialchars(get_str('banners.position', $strings) ?: 'الموضع', ENT_QUOTES); ?>:</label>
+        <select name="position" id="bannerPosition" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+          <option value="homepage_main"><?php echo htmlspecialchars(get_str('banners.position_homepage_main', $strings) ?: 'الرئيسية - أساسي', ENT_QUOTES); ?></option>
+          <option value="homepage_secondary"><?php echo htmlspecialchars(get_str('banners.position_homepage_secondary', $strings) ?: 'الرئيسية - ثانوي', ENT_QUOTES); ?></option>
+          <option value="category"><?php echo htmlspecialchars(get_str('banners.position_category', $strings) ?: 'الفئة', ENT_QUOTES); ?></option>
+          <option value="product"><?php echo htmlspecialchars(get_str('banners.position_product', $strings) ?: 'المنتج', ENT_QUOTES); ?></option>
+          <option value="custom"><?php echo htmlspecialchars(get_str('banners.position_custom', $strings) ?: 'مخصص', ENT_QUOTES); ?></option>
+        </select>
+      </div>
+      
+      <div style="margin-bottom:12px;">
+        <label><input type="checkbox" name="is_active" id="bannerIsActive" value="1"> <?php echo htmlspecialchars(get_str('banners.is_active', $strings) ?: 'نشط', ENT_QUOTES); ?></label>
+      </div>
+      
+      <div style="display:flex;gap:8px;">
+        <button type="submit" style="padding:8px 16px;background:var(--primary-color);color:#fff;border:none;border-radius:4px;cursor:pointer;"><?php echo htmlspecialchars(get_str('banners.btn_save', $strings) ?: 'حفظ', ENT_QUOTES); ?></button>
+        <button type="button" id="btnCancelForm" style="padding:8px 16px;background:#6b7280;color:#fff;border:none;border-radius:4px;cursor:pointer;"><?php echo htmlspecialchars(get_str('banners.btn_cancel', $strings) ?: 'إلغاء', ENT_QUOTES); ?></button>
+      </div>
+    </form>
+  </div>
+
+  <?php endif; ?>
+
+</div>
+
+<script>
+// Pass ADMIN_UI_PAYLOAD data to JavaScript
+window.ADMIN_UI = <?php echo json_encode($ADMIN_UI_PAYLOAD, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+window.I18N = window.ADMIN_UI.strings || {};
+window.I18N_FLAT = window.ADMIN_UI.strings || {};
+window.USER_INFO = window.ADMIN_UI.user || {};
+window.THEME = window.ADMIN_UI.theme || {};
+window.LANG = '<?php echo htmlspecialchars($lang, ENT_QUOTES); ?>';
+window.DIRECTION = '<?php echo htmlspecialchars($direction, ENT_QUOTES); ?>';
+window.CSRF_TOKEN = '<?php echo $csrf; ?>';
+</script>
+<script src="/admin/assets/js/pages/banners.js"></script>
+
+</body>
+</html>
 
 // --- configuration: base path for language files
 $langBase = __DIR__ . '/../../languages/banners'; // languages/banners
