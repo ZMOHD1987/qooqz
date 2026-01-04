@@ -21,10 +21,40 @@ function banner_check_permission($container) {
     // Start session safely
     start_session_safe();
     
+    // First check: Super admin by role_id
+    if (!empty($_SESSION['user']['role_id']) && (int)$_SESSION['user']['role_id'] === 1) {
+        return true;
+    }
+    if (!empty($_SESSION['user']['role']) && (int)$_SESSION['user']['role'] === 1) {
+        return true;
+    }
+    
+    // Check if user has super_admin role in roles array
+    if (!empty($_SESSION['user']['roles']) && is_array($_SESSION['user']['roles'])) {
+        if (in_array('super_admin', $_SESSION['user']['roles'], true) || in_array('admin', $_SESSION['user']['roles'], true)) {
+            return true;
+        }
+    }
+    
     // Try to get authenticated user with permissions using auth helper
     if (function_exists('get_authenticated_user_with_permissions')) {
         $user = get_authenticated_user_with_permissions();
         if ($user) {
+            // Check if superadmin (role_id == 1 or role == 1)
+            if (!empty($user['role_id']) && (int)$user['role_id'] === 1) {
+                return true;
+            }
+            if (!empty($user['role']) && (int)$user['role'] === 1) {
+                return true;
+            }
+            
+            // Check roles array
+            if (!empty($user['roles']) && is_array($user['roles'])) {
+                if (in_array('super_admin', $user['roles'], true) || in_array('admin', $user['roles'], true)) {
+                    return true;
+                }
+            }
+            
             // If permissions are empty but user exists, try to load them from DB
             if (empty($user['permissions']) || !is_array($user['permissions']) || count($user['permissions']) === 0) {
                 // Try to reload permissions from database using RBAC helper
@@ -50,14 +80,6 @@ function banner_check_permission($container) {
                 if (in_array('manage_banners', $user['permissions'], true)) {
                     return true;
                 }
-            }
-            
-            // Check if superadmin (role_id == 1 or role == 1)
-            if (!empty($user['role_id']) && (int)$user['role_id'] === 1) {
-                return true;
-            }
-            if (!empty($user['role']) && (int)$user['role'] === 1) {
-                return true;
             }
         }
     }
@@ -89,6 +111,11 @@ function banner_check_permission($container) {
         if (!empty($user['role_id']) && (int)$user['role_id'] === 1) {
             return true;
         }
+        if (!empty($user['roles']) && is_array($user['roles'])) {
+            if (in_array('super_admin', $user['roles'], true) || in_array('admin', $user['roles'], true)) {
+                return true;
+            }
+        }
         if (!empty($user['permissions']) && is_array($user['permissions'])) {
             if (in_array('manage_banners', $user['permissions'], true)) {
                 return true;
@@ -96,18 +123,11 @@ function banner_check_permission($container) {
         }
     }
     
-    // Final fallback: Check session directly
+    // Final fallback: Check session permissions array
     if (!empty($_SESSION['permissions']) && is_array($_SESSION['permissions'])) {
         if (in_array('manage_banners', $_SESSION['permissions'], true)) {
             return true;
         }
-    }
-    
-    if (!empty($_SESSION['user']['role_id']) && (int)$_SESSION['user']['role_id'] === 1) {
-        return true;
-    }
-    if (!empty($_SESSION['user']['role']) && (int)$_SESSION['user']['role'] === 1) {
-        return true;
     }
     
     return false;

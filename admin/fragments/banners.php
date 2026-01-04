@@ -149,13 +149,32 @@ if (empty($languages) && is_dir($langBase)) {
 
 // permission check (no redirect)
 $canManageBanners = false;
-if (isset($rbac) && is_object($rbac)) {
+
+// First check if user is super admin (role_id == 1)
+if (!empty($_SESSION['user']['role_id']) && (int)$_SESSION['user']['role_id'] === 1) {
+    $canManageBanners = true;
+}
+if (!empty($_SESSION['user']['role']) && (int)$_SESSION['user']['role'] === 1) {
+    $canManageBanners = true;
+}
+
+// Check if user has super_admin role in roles array
+if (!$canManageBanners && !empty($_SESSION['user']['roles']) && is_array($_SESSION['user']['roles'])) {
+    if (in_array('super_admin', $_SESSION['user']['roles'], true) || in_array('admin', $_SESSION['user']['roles'], true)) {
+        $canManageBanners = true;
+    }
+}
+
+// Check using RBAC if available
+if (!$canManageBanners && isset($rbac) && is_object($rbac)) {
     if (method_exists($rbac, 'hasPermission')) {
         try { $canManageBanners = (bool)$rbac->hasPermission('manage_banners'); } catch (Throwable $e) { $canManageBanners = false; }
     } elseif (method_exists($rbac, 'check')) {
         try { $canManageBanners = (bool)$rbac->check('manage_banners'); } catch (Throwable $e) { $canManageBanners = false; }
     }
 }
+
+// Check permissions array for manage_banners permission
 if (!$canManageBanners) {
     $sessionPerms = $_SESSION['permissions'] ?? [];
     if (is_array($sessionPerms) && in_array('manage_banners', $sessionPerms, true)) $canManageBanners = true;
