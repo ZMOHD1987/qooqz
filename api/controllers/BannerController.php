@@ -530,3 +530,73 @@ function Banner_update_translation($container, $translation_id) {
 function Banner_delete_translation($container, $translation_id) {
     respond_error('Not implemented yet', HTTP_NOT_IMPLEMENTED);
 }
+
+/**
+ * BannerController class wrapper for compatibility with routes
+ * This class provides static methods that wrap the function-based controller above
+ */
+if (!class_exists('BannerController')) {
+    class BannerController {
+        /**
+         * List all banners OR get single banner
+         */
+        public static function list($input) {
+            $container = $GLOBALS['CONTAINER'] ?? $GLOBALS['container'] ?? [];
+            Banner_index($container);
+        }
+        
+        /**
+         * Get single banner
+         */
+        public static function get($input) {
+            $container = $GLOBALS['CONTAINER'] ?? $GLOBALS['container'] ?? [];
+            $id = $input['id'] ?? 0;
+            Banner_show($container, $id);
+        }
+        
+        /**
+         * Save (create or update) banner
+         */
+        public static function save($input) {
+            $container = $GLOBALS['CONTAINER'] ?? $GLOBALS['container'] ?? [];
+            Banner_store($container);
+        }
+        
+        /**
+         * Delete banner
+         */
+        public static function delete($input) {
+            $container = $GLOBALS['CONTAINER'] ?? $GLOBALS['container'] ?? [];
+            $id = $input['id'] ?? 0;
+            
+            // For POST action-based delete
+            if (!empty($_POST['id'])) {
+                Banner_store($container); // Will handle action=delete
+            } else {
+                Banner_delete($container, $id);
+            }
+        }
+        
+        /**
+         * Toggle active status
+         */
+        public static function toggleActive($input) {
+            $container = $GLOBALS['CONTAINER'] ?? $GLOBALS['container'] ?? [];
+            Banner_store($container); // Will handle action=toggle_active
+        }
+        
+        /**
+         * Get or update translations
+         */
+        public static function translations($input) {
+            $container = $GLOBALS['CONTAINER'] ?? $GLOBALS['container'] ?? [];
+            $id = $input['id'] ?? 0;
+            
+            if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+                Banner_translations($container, $id);
+            } else {
+                Banner_add_translation($container, $id);
+            }
+        }
+    }
+}
