@@ -167,7 +167,20 @@ function normalize_color_key(string $k): string {
 }
 
 /* -------------------------
-   Fetch comprehensive user information (roles, permissions)
+   Helper: Check if table exists
+   ------------------------- */
+function table_exists(mysqli $db, string $table): bool {
+    try {
+        $t = $db->real_escape_string($table);
+        $res = $db->query("SHOW TABLES LIKE '{$t}'");
+        return $res && $res->num_rows > 0;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+/* -------------------------
+   Fetch user information with session-cached roles & permissions
    ------------------------- */
 $userInfo = [
     'id' => null,
@@ -177,107 +190,96 @@ $userInfo = [
     'avatar' => null,
     'is_active' => false,
     'role_id' => null,
-    'role_key' => null,
-    'role_display_name' => null,
-    'roles' => [],
     'permissions' => [],
-    'permissions_map' => []
+    'roles' => []
 ];
 
-if ($db && $currentUser && !empty($currentUser['id'])) {
-    try {
-        $uid = (int)$currentUser['id'];
-        // Fetch user with role information
-        $userRows = safe_query_all($db, "
-            SELECT u.id, u.username, u.email, u.preferred_language, u.avatar, u.is_active, u.role_id,
-                   r.key_name AS role_key, r.display_name AS role_display_name
-            FROM users u
-            LEFT JOIN roles r ON r.id = u.role_id
-            WHERE u.id = ?
-            LIMIT 1
-        ", [$uid], 'i');
-        
-        if (!empty($userRows)) {
-            $userData = $userRows[0];
-            $userInfo['id'] = (int)$userData['id'];
-            $userInfo['username'] = $userData['username'] ?? null;
-            $userInfo['email'] = $userData['email'] ?? null;
-            $userInfo['preferred_language'] = $userData['preferred_language'] ?? null;
-            $userInfo['avatar'] = $userData['avatar'] ?? null;
-            $userInfo['is_active'] = !empty($userData['is_active']);
-            $userInfo['role_id'] = isset($userData['role_id']) ? (int)$userData['role_id'] : null;
-            $userInfo['role_key'] = $userData['role_key'] ?? null;
-            $userInfo['role_display_name'] = $userData['role_display_name'] ?? null;
-            
-            // Build roles array
-            if ($userInfo['role_id']) {
-                $userInfo['roles'][] = [
-                    'id' => $userInfo['role_id'],
-                    'key_name' => $userInfo['role_key'],
-                    'display_name' => $userInfo['role_display_name']
-                ];
-            }
-            
-            // Fetch permissions via role_permissions
-            if ($userInfo['role_id']) {
-                try {
-                    $permRows = safe_query_all($db, "
-                        SELECT DISTINCT p.id, p.key_name, p.display_name, p.description
-                        FROM role_permissions rp
-                        JOIN permissions p ON p.id = rp.permission_id
-                        WHERE rp.role_id = ?
-                        ORDER BY p.key_name ASC
-                    ", [$userInfo['role_id']], 'i');
-                    
-                    foreach ($permRows as $perm) {
-                        $userInfo['permissions'][] = [
-                            'id' => (int)$perm['id'],
-                            'key_name' => $perm['key_name'],
-                            'display_name' => $perm['display_name'] ?? null,
-                            'description' => $perm['description'] ?? null
-                        ];
-                        $userInfo['permissions_map'][$perm['key_name']] = true;
-                    }
-                    _admin_ui_log("loaded permissions for user {$uid}: " . count($userInfo['permissions']) . " permissions");
-                } catch (Throwable $e) {
-                    _admin_ui_log("permissions fetch failed for user {$uid}: " . $e->getMessage());
-                }
-            }
-            
-            // Also check for direct user permissions (if user_permissions table exists)
-            try {
-                $directPermRows = safe_query_all($db, "
-                    SELECT DISTINCT p.id, p.key_name, p.display_name, p.description
-                    FROM user_permissions up
-                    JOIN permissions p ON p.id = up.permission_id
-                    WHERE up.user_id = ?
-                    ORDER BY p.key_name ASC
-                ", [$uid], 'i');
-                
-                foreach ($directPermRows as $perm) {
-                    if (!isset($userInfo['permissions_map'][$perm['key_name']])) {
-                        $userInfo['permissions'][] = [
-                            'id' => (int)$perm['id'],
-                            'key_name' => $perm['key_name'],
-                            'display_name' => $perm['display_name'] ?? null,
-                            'description' => $perm['description'] ?? null
-                        ];
-                        $userInfo['permissions_map'][$perm['key_name']] = true;
-                    }
-                }
-            } catch (Throwable $e) {
-                // user_permissions table might not exist, silently continue
-                _admin_ui_log("direct user_permissions check skipped or failed: " . $e->getMessage());
-            }
-        } else {
-            _admin_ui_log("user {$uid} not found in database");
-        }
-    } catch (Throwable $e) {
-        _admin_ui_log("user info fetch failed: " . $e->getMessage());
+if (!empty($currentUser['id'])) {
+    $uid = (int)$currentUser['id'];
+    
+    // Basic user info from currentUser (already fetched by bootstrap_admin_context.php)
+    $userInfo['id'] = $uid;
+    $userInfo['username'] = $currentUser['username'] ?? null;
+    $userInfo['email'] = $currentUser['email'] ?? null;
+    $userInfo['role_id'] = $currentUser['role_id'] ?? null;
+    $userInfo['preferred_language'] = $currentUser['preferred_language'] ?? null;
+    
+    // Try to get additional fields if available
+    if (isset($currentUser['avatar'])) {
+        $userInfo['avatar'] = $currentUser['avatar'];
     }
-} elseif (!$db) {
-    _admin_ui_log("user info fetch skipped: no database connection");
-} elseif (!$currentUser) {
+    if (isset($currentUser['is_active'])) {
+        $userInfo['is_active'] = !empty($currentUser['is_active']);
+    }
+    
+    // Get permissions from session cache first
+    $perms = $_SESSION['permissions'] ?? [];
+    $roles = $_SESSION['roles'] ?? [];
+    
+    // If session cache is empty and DB is available, fetch from database
+    if (empty($perms) && $db && table_exists($db, 'user_permissions')) {
+        try {
+            $rows = safe_query_all($db, "
+                SELECT p.key_name 
+                FROM permissions p
+                JOIN user_permissions up ON up.permission_id = p.id
+                WHERE up.user_id = ?
+            ", [$uid], 'i');
+            foreach ($rows as $r) {
+                $perms[] = $r['key_name'];
+            }
+            _admin_ui_log("loaded permissions from user_permissions for user {$uid}: " . count($perms) . " permissions");
+        } catch (Throwable $e) {
+            _admin_ui_log("user_permissions query failed: " . $e->getMessage());
+        }
+    }
+    
+    // If still empty, try role_permissions
+    if (empty($perms) && $db && !empty($userInfo['role_id']) && table_exists($db, 'role_permissions')) {
+        try {
+            $rows = safe_query_all($db, "
+                SELECT p.key_name 
+                FROM permissions p
+                JOIN role_permissions rp ON rp.permission_id = p.id
+                WHERE rp.role_id = ?
+            ", [$userInfo['role_id']], 'i');
+            foreach ($rows as $r) {
+                $perms[] = $r['key_name'];
+            }
+            _admin_ui_log("loaded permissions from role_permissions for user {$uid}: " . count($perms) . " permissions");
+        } catch (Throwable $e) {
+            _admin_ui_log("role_permissions query failed: " . $e->getMessage());
+        }
+    }
+    
+    // Fetch roles if empty and DB available
+    if (empty($roles) && $db && table_exists($db, 'roles')) {
+        try {
+            $rows = safe_query_all($db, "
+                SELECT r.key_name 
+                FROM roles r
+                JOIN users u ON u.role_id = r.id
+                WHERE u.id = ?
+            ", [$uid], 'i');
+            foreach ($rows as $r) {
+                $roles[] = $r['key_name'];
+            }
+            _admin_ui_log("loaded roles for user {$uid}: " . count($roles) . " roles");
+        } catch (Throwable $e) {
+            _admin_ui_log("roles query failed: " . $e->getMessage());
+        }
+    }
+    
+    // Deduplicate and store back to session
+    $perms = array_values(array_unique($perms));
+    $roles = array_values(array_unique($roles));
+    
+    $_SESSION['permissions'] = $perms;
+    $_SESSION['roles'] = $roles;
+    
+    $userInfo['permissions'] = $perms;
+    $userInfo['roles'] = $roles;
+} else {
     _admin_ui_log("user info fetch skipped: no current user");
 }
 
@@ -731,8 +733,8 @@ if ($debug) {
             'username' => $userInfo['username'] ?? null,
             'email' => $userInfo['email'] ?? null,
             'role_id' => $userInfo['role_id'] ?? null,
-            'role_key' => $userInfo['role_key'] ?? null,
             'permissions_count' => count($userInfo['permissions'] ?? []),
+            'roles_count' => count($userInfo['roles'] ?? []),
             'is_active' => $userInfo['is_active'] ?? false
         ],
         'theme' => $ADMIN_UI_PAYLOAD['theme'] ?? [],
