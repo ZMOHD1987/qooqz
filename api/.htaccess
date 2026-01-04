@@ -1,0 +1,55 @@
+# API Directory Configuration
+# Enable URL rewriting for clean API endpoints
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /api/
+    
+    # If the file exists, serve it directly
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+    
+    # If the directory exists, serve it directly
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+    
+    # Route /api/banners to routes/banners.php (standalone endpoint)
+    RewriteRule ^banners/?$ routes/banners.php [QSA,L]
+    
+    # Route all other API requests through index.php
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
+
+# Disable directory listing
+Options -Indexes
+
+# Set default charset
+AddDefaultCharset UTF-8
+
+# Handle PHP errors gracefully
+php_flag display_errors Off
+php_flag log_errors On
+
+# Set memory limit (if allowed by hosting)
+<IfModule mod_php7.c>
+    php_value memory_limit 256M
+    php_value max_execution_time 60
+    php_value upload_max_filesize 10M
+    php_value post_max_size 10M
+</IfModule>
+
+# Security headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# CORS headers for API (allow from same origin and localhost)
+<IfModule mod_headers.c>
+    SetEnvIf Origin "^https?://(localhost|127\.0\.0\.1|mzmz\.rf\.gd)(:[0-9]+)?$" CORS_ORIGIN=$0
+    Header set Access-Control-Allow-Origin "%{CORS_ORIGIN}e" env=CORS_ORIGIN
+    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+    Header set Access-Control-Allow-Credentials "true"
+</IfModule>
