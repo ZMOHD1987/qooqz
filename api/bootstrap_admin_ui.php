@@ -167,26 +167,158 @@ function normalize_color_key(string $k): string {
 }
 
 /* -------------------------
+   Helper: Check if table exists
+   ------------------------- */
+function table_exists(mysqli $db, string $table): bool {
+    try {
+        $t = $db->real_escape_string($table);
+        $res = $db->query("SHOW TABLES LIKE '{$t}'");
+        return $res && $res->num_rows > 0;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+/* -------------------------
+   Fetch user information with session-cached roles & permissions
+   ------------------------- */
+$userInfo = [
+    'id' => null,
+    'username' => null,
+    'email' => null,
+    'preferred_language' => null,
+    'avatar' => null,
+    'is_active' => false,
+    'role_id' => null,
+    'permissions' => [],
+    'roles' => []
+];
+
+if (!empty($currentUser['id'])) {
+    $uid = (int)$currentUser['id'];
+    
+    // Basic user info from currentUser (already fetched by bootstrap_admin_context.php)
+    $userInfo['id'] = $uid;
+    $userInfo['username'] = $currentUser['username'] ?? null;
+    $userInfo['email'] = $currentUser['email'] ?? null;
+    $userInfo['role_id'] = $currentUser['role_id'] ?? null;
+    $userInfo['preferred_language'] = $currentUser['preferred_language'] ?? null;
+    
+    // Try to get additional fields if available
+    if (isset($currentUser['avatar'])) {
+        $userInfo['avatar'] = $currentUser['avatar'];
+    }
+    if (isset($currentUser['is_active'])) {
+        $userInfo['is_active'] = !empty($currentUser['is_active']);
+    }
+    
+    // Get permissions from session cache first
+    $perms = $_SESSION['permissions'] ?? [];
+    $roles = $_SESSION['roles'] ?? [];
+    
+    // If session cache is empty and DB is available, fetch from database
+    if (empty($perms) && $db && table_exists($db, 'user_permissions')) {
+        try {
+            $rows = safe_query_all($db, "
+                SELECT p.key_name 
+                FROM permissions p
+                JOIN user_permissions up ON up.permission_id = p.id
+                WHERE up.user_id = ?
+            ", [$uid], 'i');
+            foreach ($rows as $r) {
+                $perms[] = $r['key_name'];
+            }
+            _admin_ui_log("loaded permissions from user_permissions for user {$uid}: " . count($perms) . " permissions");
+        } catch (Throwable $e) {
+            _admin_ui_log("user_permissions query failed: " . $e->getMessage());
+        }
+    }
+    
+    // If still empty, try role_permissions
+    if (empty($perms) && $db && !empty($userInfo['role_id']) && table_exists($db, 'role_permissions')) {
+        try {
+            $rows = safe_query_all($db, "
+                SELECT p.key_name 
+                FROM permissions p
+                JOIN role_permissions rp ON rp.permission_id = p.id
+                WHERE rp.role_id = ?
+            ", [$userInfo['role_id']], 'i');
+            foreach ($rows as $r) {
+                $perms[] = $r['key_name'];
+            }
+            _admin_ui_log("loaded permissions from role_permissions for user {$uid}: " . count($perms) . " permissions");
+        } catch (Throwable $e) {
+            _admin_ui_log("role_permissions query failed: " . $e->getMessage());
+        }
+    }
+    
+    // Fetch roles if empty and DB available
+    if (empty($roles) && $db && table_exists($db, 'roles')) {
+        try {
+            $rows = safe_query_all($db, "
+                SELECT r.id, r.key_name 
+                FROM roles r
+                JOIN users u ON u.role_id = r.id
+                WHERE u.id = ?
+            ", [$uid], 'i');
+            foreach ($rows as $r) {
+                $roles[] = $r['key_name'];
+                // Populate role_id if it's missing
+                if (empty($userInfo['role_id']) && isset($r['id'])) {
+                    $userInfo['role_id'] = (int)$r['id'];
+                }
+            }
+            _admin_ui_log("loaded roles for user {$uid}: " . count($roles) . " roles");
+        } catch (Throwable $e) {
+            _admin_ui_log("roles query failed: " . $e->getMessage());
+        }
+    }
+    
+    // Deduplicate and store back to session
+    $perms = array_values(array_unique($perms));
+    $roles = array_values(array_unique($roles));
+    
+    $_SESSION['permissions'] = $perms;
+    $_SESSION['roles'] = $roles;
+    
+    // If role_id is still null but we have roles, fetch the role_id from the first role
+    if (empty($userInfo['role_id']) && !empty($roles) && $db && table_exists($db, 'roles')) {
+        try {
+            $firstRole = $roles[0];
+            $rows = safe_query_all($db, "
+                SELECT id FROM roles WHERE key_name = ? LIMIT 1
+            ", [$firstRole], 's');
+            if (!empty($rows)) {
+                $userInfo['role_id'] = (int)$rows[0]['id'];
+                _admin_ui_log("populated role_id {$userInfo['role_id']} from role key_name: {$firstRole}");
+            }
+        } catch (Throwable $e) {
+            _admin_ui_log("role_id lookup failed: " . $e->getMessage());
+        }
+    }
+    
+    $userInfo['permissions'] = $perms;
+    $userInfo['roles'] = $roles;
+} else {
+    _admin_ui_log("user info fetch skipped: no current user");
+}
+
+$ADMIN_UI_PAYLOAD['user'] = $userInfo;
+
+/* -------------------------
    Determine user language & direction
    ------------------------- */
 $userLang = 'en';
 $userDirection = 'ltr';
 $rtlLangs = ['ar', 'fa', 'he', 'ur', 'ps', 'sd', 'ku'];
 
-if (!empty($_SESSION['preferred_language'])) {
+// Priority: user DB record > session preferred_language > session lang
+if (!empty($userInfo['preferred_language'])) {
+    $userLang = strtolower(trim((string)$userInfo['preferred_language']));
+} elseif (!empty($_SESSION['preferred_language'])) {
     $userLang = strtolower(trim((string)$_SESSION['preferred_language']));
 } elseif (!empty($_SESSION['lang'])) {
     $userLang = strtolower(trim((string)$_SESSION['lang']));
-}
-
-if ($db && $currentUser && !empty($currentUser['id'])) {
-    try {
-        $uid = (int)$currentUser['id'];
-        $r = safe_query_all($db, "SELECT preferred_language FROM users WHERE id = ? LIMIT 1", [$uid], 'i');
-        if (!empty($r) && !empty($r[0]['preferred_language'])) $userLang = strtolower(trim((string)$r[0]['preferred_language']));
-    } catch (Throwable $e) {
-        _admin_ui_log("user language lookup failed: " . $e->getMessage());
-    }
 }
 
 $userLang = $userLang ?: 'en';
@@ -196,42 +328,81 @@ $ADMIN_UI_PAYLOAD['lang'] = $userLang;
 $ADMIN_UI_PAYLOAD['direction'] = $userDirection;
 
 /* -------------------------
-   Module detection (for translations)
+   Module detection (for translations) - Enhanced & Dynamic
    ------------------------- */
 $currentScript = $_SERVER['SCRIPT_NAME'] ?? '';
 $baseName = basename($currentScript, '.php');
 $moduleName = '';
 
+// Extended common mappings
 $commonMappings = [
     'delivery_companies' => 'DeliveryCompany',
     'delivery_company'   => 'DeliveryCompany',
+    'delivery_zone'      => 'DeliveryZone',
+    'delivery_zones'     => 'DeliveryZone',
+    'independent_driver' => 'IndependentDriver',
+    'independent_drivers'=> 'IndependentDriver',
     'drivers'            => 'Drivers',
     'orders'             => 'Orders',
     'products'           => 'Products',
+    'product_studio'     => 'Products',
     'users'              => 'Users',
     'settings'           => 'Settings',
+    'vendors'            => 'Vendors',
+    'vendor'             => 'Vendors',
+    'banners'            => 'Banners',
+    'banner'             => 'Banners',
+    'categories'         => 'Categories',
+    'category'           => 'Categories',
+    'menus'              => 'Menus',
+    'menu'               => 'Menus',
+    'menu_form'          => 'Menus',
+    'menus_list'         => 'Menus',
+    'roles'              => 'Roles',
+    'role'               => 'Roles',
+    'permissions'        => 'Permissions',
+    'permission'         => 'Permissions',
 ];
 
 if (isset($commonMappings[$baseName])) {
     $moduleName = $commonMappings[$baseName];
 } else {
-    $singular = preg_replace('/s$/', '', $baseName);
-    $moduleName = preg_replace_callback('/_([a-z])/', function($m){ return strtoupper($m[1]); }, ucfirst($singular));
+    // Try to extract from path (e.g., /admin/fragments/products.php -> products)
+    $pathInfo = $_SERVER['PATH_INFO'] ?? $_SERVER['REQUEST_URI'] ?? '';
+    if (preg_match('#/([a-z0-9_]+)\.php#i', $pathInfo, $match)) {
+        $extracted = $match[1];
+        if (isset($commonMappings[$extracted])) {
+            $moduleName = $commonMappings[$extracted];
+        }
+    }
+    
+    // Fallback to smart conversion
+    if (!$moduleName) {
+        $singular = preg_replace('/s$/', '', $baseName);
+        $moduleName = preg_replace_callback('/_([a-z])/', function($m){ return strtoupper($m[1]); }, ucfirst($singular));
+    }
 }
 
+_admin_ui_log("detected module: '{$moduleName}' from script: '{$baseName}'");
+
 /* -------------------------
-   Load translations (robust with cache)
+   Load translations (robust with cache & recursive merging)
    ------------------------- */
 $languagesCandidates = [
     dirname(__DIR__) . '/languages',
     __DIR__ . '/../languages',
     (($_SERVER['DOCUMENT_ROOT'] ?? '') !== '') ? rtrim($_SERVER['DOCUMENT_ROOT'], '/\\') . '/languages' : '',
     dirname(__DIR__, 2) . '/languages',
+    __DIR__ . '/languages',
 ];
 
 $languagesBaseDir = null;
 foreach ($languagesCandidates as $cand) {
-    if ($cand && is_dir($cand)) { $languagesBaseDir = realpath($cand); break; }
+    if ($cand && is_dir($cand)) { 
+        $languagesBaseDir = realpath($cand); 
+        _admin_ui_log("languages directory found: {$languagesBaseDir}");
+        break; 
+    }
 }
 
 $ADMIN_UI_PAYLOAD['strings'] = [];
@@ -239,55 +410,131 @@ if ($languagesBaseDir) {
     $safeLang = preg_replace('/[^a-z0-9_\-]/i', '_', strtolower((string)$userLang));
     $safeModule = $moduleName ? preg_replace('/[^a-z0-9_\-]/i', '_', (string)$moduleName) : 'global';
     $cacheFile = rtrim(sys_get_temp_dir(), '/\\') . DIRECTORY_SEPARATOR . "admin_strings_{$safeModule}_{$safeLang}.json";
-    $cacheTtl = 120;
+    $cacheTtl = 120; // 2 minutes TTL
 
     $merged = null;
-    if (is_readable($cacheFile) && (time() - filemtime($cacheFile) < $cacheTtl)) {
-        $raw = @file_get_contents($cacheFile);
-        $decoded = $raw ? @json_decode($raw, true) : null;
-        if (is_array($decoded)) $merged = $decoded;
-        else @unlink($cacheFile);
+    $cacheHit = false;
+    
+    // Try to load from cache with TTL check
+    if (is_readable($cacheFile)) {
+        $cacheAge = time() - filemtime($cacheFile);
+        if ($cacheAge < $cacheTtl) {
+            $raw = @file_get_contents($cacheFile);
+            $decoded = $raw ? @json_decode($raw, true) : null;
+            if (is_array($decoded)) {
+                $merged = $decoded;
+                $cacheHit = true;
+                _admin_ui_log("translations cache HIT (age: {$cacheAge}s, TTL: {$cacheTtl}s)");
+            } else {
+                @unlink($cacheFile);
+                _admin_ui_log("translations cache INVALID, deleted");
+            }
+        } else {
+            @unlink($cacheFile);
+            _admin_ui_log("translations cache EXPIRED (age: {$cacheAge}s, TTL: {$cacheTtl}s)");
+        }
     }
+    
+    // Load and merge translations if no valid cache
     if ($merged === null) {
+        _admin_ui_log("translations cache MISS, loading from files");
         $merged = [];
+        
+        // Helper function for loading JSON with BOM handling
         $loadJson = function($path) {
-            if (!$path || !is_readable($path)) return null;
+            if (!$path || !is_readable($path)) {
+                _admin_ui_log("translation file not readable: {$path}");
+                return null;
+            }
             $json = @file_get_contents($path);
-            if ($json === false) return null;
-            if (substr($json, 0, 3) === "\xEF\xBB\xBF") $json = preg_replace('/^\x{FEFF}/u', '', $json);
+            if ($json === false) {
+                _admin_ui_log("translation file read failed: {$path}");
+                return null;
+            }
+            // Remove BOM if present
+            if (substr($json, 0, 3) === "\xEF\xBB\xBF") {
+                $json = preg_replace('/^\x{FEFF}/u', '', $json);
+            }
             $data = @json_decode($json, true);
-            if (!is_array($data)) return null;
-            return isset($data['strings']) && is_array($data['strings']) ? $data['strings'] : $data;
+            if (!is_array($data)) {
+                _admin_ui_log("translation file invalid JSON: {$path}");
+                return null;
+            }
+            // Support both direct strings and nested under 'strings' key
+            $result = isset($data['strings']) && is_array($data['strings']) ? $data['strings'] : $data;
+            _admin_ui_log("loaded translation file: {$path} (" . count($result) . " keys)");
+            return $result;
+        };
+        
+        // Recursive merge function for deep merging
+        $recursiveMerge = function($base, $overlay) use (&$recursiveMerge) {
+            if (!is_array($base)) $base = [];
+            if (!is_array($overlay)) return $base;
+            
+            foreach ($overlay as $key => $value) {
+                if (is_array($value) && isset($base[$key]) && is_array($base[$key])) {
+                    $base[$key] = $recursiveMerge($base[$key], $value);
+                } else {
+                    $base[$key] = $value;
+                }
+            }
+            return $base;
         };
 
+        // Load base admin English translations
         $adminEn = $languagesBaseDir . '/admin/en.json';
         $tmp = $loadJson($adminEn);
-        if (is_array($tmp)) $merged = $tmp;
+        if (is_array($tmp)) {
+            $merged = $recursiveMerge($merged, $tmp);
+        }
 
+        // Load admin translations for user language (if not English)
         if (!empty($userLang) && strtolower($userLang) !== 'en') {
             $adminLangFile = $languagesBaseDir . "/admin/{$userLang}.json";
             $tmp = $loadJson($adminLangFile);
-            if (is_array($tmp)) $merged = array_replace_recursive($merged, $tmp);
-        }
-
-        if (!empty($moduleName)) {
-            $moduleEn = $languagesBaseDir . "/{$moduleName}/en.json";
-            $tmp = $loadJson($moduleEn);
-            if (is_array($tmp)) $merged = array_replace_recursive($merged, $tmp);
-            if (!empty($userLang) && strtolower($userLang) !== 'en') {
-                $moduleLang = $languagesBaseDir . "/{$moduleName}/{$userLang}.json";
-                $tmp = $loadJson($moduleLang);
-                if (is_array($tmp)) $merged = array_replace_recursive($merged, $tmp);
+            if (is_array($tmp)) {
+                $merged = $recursiveMerge($merged, $tmp);
             }
         }
 
-        $tmpCache = $cacheFile . '.tmp';
-        @file_put_contents($tmpCache, json_encode($merged, JSON_UNESCAPED_UNICODE));
-        @rename($tmpCache, $cacheFile);
+        // Load module-specific English translations
+        if (!empty($moduleName)) {
+            $moduleEn = $languagesBaseDir . "/{$moduleName}/en.json";
+            $tmp = $loadJson($moduleEn);
+            if (is_array($tmp)) {
+                $merged = $recursiveMerge($merged, $tmp);
+            }
+            
+            // Load module-specific translations for user language
+            if (!empty($userLang) && strtolower($userLang) !== 'en') {
+                $moduleLang = $languagesBaseDir . "/{$moduleName}/{$userLang}.json";
+                $tmp = $loadJson($moduleLang);
+                if (is_array($tmp)) {
+                    $merged = $recursiveMerge($merged, $tmp);
+                }
+            }
+        }
+
+        // Save to cache atomically
+        try {
+            $tmpCache = $cacheFile . '.tmp.' . getmypid() . '.' . uniqid();
+            $writeResult = @file_put_contents($tmpCache, json_encode($merged, JSON_UNESCAPED_UNICODE));
+            if ($writeResult !== false) {
+                @rename($tmpCache, $cacheFile);
+                @chmod($cacheFile, 0644);
+                _admin_ui_log("translations cached to: {$cacheFile} (" . count($merged) . " keys)");
+            } else {
+                _admin_ui_log("failed to write translation cache: {$tmpCache}");
+            }
+        } catch (Throwable $e) {
+            _admin_ui_log("translation cache write error: " . $e->getMessage());
+        }
     }
+    
     $ADMIN_UI_PAYLOAD['strings'] = is_array($merged) ? $merged : [];
+    _admin_ui_log("translations loaded: " . count($ADMIN_UI_PAYLOAD['strings']) . " keys (cache hit: " . ($cacheHit ? 'yes' : 'no') . ")");
 } else {
-    _admin_ui_log("translations: languages directory not found. Candidates: " . implode(', ', $languagesCandidates));
+    _admin_ui_log("translations: languages directory not found. Candidates: " . implode(', ', array_filter($languagesCandidates, function($x) { return !empty($x); })));
 }
 
 /* -------------------------
@@ -501,7 +748,22 @@ if ($debug) {
         'detected_module' => $moduleName,
         'languages_dir' => $languagesBaseDir ?? null,
         'strings_count' => count($ADMIN_UI_PAYLOAD['strings'] ?? []),
-        'theme' => $ADMIN_UI_PAYLOAD['theme'] ?? []
+        'user_info' => [
+            'id' => $userInfo['id'] ?? null,
+            'username' => $userInfo['username'] ?? null,
+            'email' => $userInfo['email'] ?? null,
+            'preferred_language' => $userInfo['preferred_language'] ?? null,
+            'role_id' => $userInfo['role_id'] ?? null,
+            'roles' => $userInfo['roles'] ?? [],
+            'permissions' => $userInfo['permissions'] ?? [],
+            'permissions_count' => count($userInfo['permissions'] ?? []),
+            'roles_count' => count($userInfo['roles'] ?? []),
+            'is_active' => $userInfo['is_active'] ?? false
+        ],
+        'session_permissions' => $_SESSION['permissions'] ?? [],
+        'session_roles' => $_SESSION['roles'] ?? [],
+        'theme' => $ADMIN_UI_PAYLOAD['theme'] ?? [],
+        'payload_keys' => array_keys($ADMIN_UI_PAYLOAD)
     ];
     echo json_encode($out, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     exit;
