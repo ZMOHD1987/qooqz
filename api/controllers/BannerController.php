@@ -21,10 +21,40 @@ function banner_check_permission($container) {
     // Start session safely
     start_session_safe();
     
+    // First check: Super admin by role_id
+    if (!empty($_SESSION['user']['role_id']) && (int)$_SESSION['user']['role_id'] === 1) {
+        return true;
+    }
+    if (!empty($_SESSION['user']['role']) && (int)$_SESSION['user']['role'] === 1) {
+        return true;
+    }
+    
+    // Check if user has super_admin role in roles array
+    if (!empty($_SESSION['user']['roles']) && is_array($_SESSION['user']['roles'])) {
+        if (in_array('super_admin', $_SESSION['user']['roles'], true) || in_array('admin', $_SESSION['user']['roles'], true)) {
+            return true;
+        }
+    }
+    
     // Try to get authenticated user with permissions using auth helper
     if (function_exists('get_authenticated_user_with_permissions')) {
         $user = get_authenticated_user_with_permissions();
         if ($user) {
+            // Check if superadmin (role_id == 1 or role == 1)
+            if (!empty($user['role_id']) && (int)$user['role_id'] === 1) {
+                return true;
+            }
+            if (!empty($user['role']) && (int)$user['role'] === 1) {
+                return true;
+            }
+            
+            // Check roles array
+            if (!empty($user['roles']) && is_array($user['roles'])) {
+                if (in_array('super_admin', $user['roles'], true) || in_array('admin', $user['roles'], true)) {
+                    return true;
+                }
+            }
+            
             // If permissions are empty but user exists, try to load them from DB
             if (empty($user['permissions']) || !is_array($user['permissions']) || count($user['permissions']) === 0) {
                 // Try to reload permissions from database using RBAC helper
@@ -50,14 +80,6 @@ function banner_check_permission($container) {
                 if (in_array('manage_banners', $user['permissions'], true)) {
                     return true;
                 }
-            }
-            
-            // Check if superadmin (role_id == 1 or role == 1)
-            if (!empty($user['role_id']) && (int)$user['role_id'] === 1) {
-                return true;
-            }
-            if (!empty($user['role']) && (int)$user['role'] === 1) {
-                return true;
             }
         }
     }
@@ -89,6 +111,11 @@ function banner_check_permission($container) {
         if (!empty($user['role_id']) && (int)$user['role_id'] === 1) {
             return true;
         }
+        if (!empty($user['roles']) && is_array($user['roles'])) {
+            if (in_array('super_admin', $user['roles'], true) || in_array('admin', $user['roles'], true)) {
+                return true;
+            }
+        }
         if (!empty($user['permissions']) && is_array($user['permissions'])) {
             if (in_array('manage_banners', $user['permissions'], true)) {
                 return true;
@@ -96,18 +123,11 @@ function banner_check_permission($container) {
         }
     }
     
-    // Final fallback: Check session directly
+    // Final fallback: Check session permissions array
     if (!empty($_SESSION['permissions']) && is_array($_SESSION['permissions'])) {
         if (in_array('manage_banners', $_SESSION['permissions'], true)) {
             return true;
         }
-    }
-    
-    if (!empty($_SESSION['user']['role_id']) && (int)$_SESSION['user']['role_id'] === 1) {
-        return true;
-    }
-    if (!empty($_SESSION['user']['role']) && (int)$_SESSION['user']['role'] === 1) {
-        return true;
     }
     
     return false;
@@ -529,4 +549,95 @@ function Banner_update_translation($container, $translation_id) {
  */
 function Banner_delete_translation($container, $translation_id) {
     respond_error('Not implemented yet', HTTP_NOT_IMPLEMENTED);
+}
+
+/**
+ * BannerController class wrapper for compatibility with routes
+ * This class provides static methods that wrap the function-based controller above
+ */
+if (!class_exists('BannerController')) {
+    class BannerController {
+        /**
+         * Helper to get container using consistent naming
+         */
+        private static function getContainer() {
+            // Try to get container from global scope
+            if (isset($GLOBALS['CONTAINER']) && is_array($GLOBALS['CONTAINER'])) {
+                return $GLOBALS['CONTAINER'];
+            }
+            
+            // Return empty array as fallback (functions will handle missing DB)
+            return [];
+        }
+        
+        /**
+         * List all banners OR get single banner
+         */
+        public static function list($input) {
+            Banner_index(self::getContainer());
+        }
+        
+        /**
+         * Get single banner
+         */
+        public static function get($input) {
+            $id = $input['id'] ?? 0;
+            Banner_show(self::getContainer(), $id);
+        }
+        
+        /**
+         * Save (create or update) banner
+         */
+        public static function save($input) {
+            // Ensure action is set for save operation
+            if (empty($_POST['action'])) {
+                $_POST['action'] = 'save';
+            }
+            Banner_store(self::getContainer());
+        }
+        
+        /**
+         * Delete banner
+         */
+        public static function delete($input) {
+            $id = $input['id'] ?? 0;
+            
+            // Check if this is action-based delete (via POST with action parameter)
+            if (!empty($_POST['action']) && $_POST['action'] === 'delete') {
+                // Already set correctly, just call store
+                Banner_store(self::getContainer());
+            } elseif (!empty($_POST['id'])) {
+                // Set action to delete for POST-based delete
+                $_POST['action'] = 'delete';
+                Banner_store(self::getContainer());
+            } else {
+                // Direct DELETE method call
+                Banner_delete(self::getContainer(), $id);
+            }
+        }
+        
+        /**
+         * Toggle active status
+         */
+        public static function toggleActive($input) {
+            // Check if action is already set
+            if (empty($_POST['action'])) {
+                $_POST['action'] = 'toggle_active';
+            }
+            Banner_store(self::getContainer());
+        }
+        
+        /**
+         * Get or update translations
+         */
+        public static function translations($input) {
+            $id = $input['id'] ?? 0;
+            
+            if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+                Banner_translations(self::getContainer(), $id);
+            } else {
+                Banner_add_translation(self::getContainer(), $id);
+            }
+        }
+    }
 }

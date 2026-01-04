@@ -150,53 +150,46 @@ if (!function_exists('get_current_user')) {
 if (!function_exists('_rbac_fetch_permissions_by_user')) {
     function _rbac_fetch_permissions_by_user(mysqli $db, int $userId): array {
         $perms = [];
+        
         try {
-            // direct user_permissions (if exists)
-            $q = "SELECT p.key_name FROM permissions p JOIN user_permissions up ON up.permission_id = p.id WHERE up.user_id = ?";
-            if ($stmt = @$db->prepare($q)) {
-                $stmt->bind_param('i', $userId);
-                $stmt->execute();
-                $res = $stmt->get_result();
-                while ($r = $res->fetch_assoc()) $perms[] = $r['key_name'] ?? null;
-                $stmt->close();
-            }
-        } catch (Throwable $e) { error_log('_rbac_fetch_permissions_by_user user_permissions query failed: '.$e->getMessage()); }
-
-        try {
-            // try users.role_id -> role_permissions
+            // Fetch permissions based on standard RBAC schema:
+            // users.role_id -> role_permissions.role_id -> permissions.key_name
+            // This matches the database schema: users, roles, role_permissions, permissions tables
+            
             $roleId = 0;
+            
+            // Get user's role_id from users table
             if ($stmt = @$db->prepare("SELECT role_id FROM users WHERE id = ? LIMIT 1")) {
                 $stmt->bind_param('i', $userId);
                 $stmt->execute();
                 $res = $stmt->get_result();
                 $row = $res ? $res->fetch_assoc() : null;
                 $stmt->close();
-                if ($row && isset($row['role_id'])) $roleId = (int)$row['role_id'];
+                if ($row && isset($row['role_id'])) {
+                    $roleId = (int)$row['role_id'];
+                }
             }
+            
+            // If user has a role, fetch permissions for that role
             if ($roleId) {
-                $q2 = "SELECT p.key_name FROM permissions p JOIN role_permissions rp ON rp.permission_id = p.id WHERE rp.role_id = ?";
-                if ($s2 = @$db->prepare($q2)) {
-                    $s2->bind_param('i', $roleId);
-                    $s2->execute();
-                    $res2 = $s2->get_result();
-                    while ($r2 = $res2->fetch_assoc()) $perms[] = $r2['key_name'] ?? null;
-                    $s2->close();
-                }
-            } else {
-                // fallback to user_roles join
-                $q3 = "SELECT DISTINCT p.key_name FROM permissions p
-                       JOIN role_permissions rp ON rp.permission_id = p.id
-                       JOIN user_roles ur ON ur.role_id = rp.role_id
-                       WHERE ur.user_id = ?";
-                if ($s3 = @$db->prepare($q3)) {
-                    $s3->bind_param('i', $userId);
-                    $s3->execute();
-                    $res3 = $s3->get_result();
-                    while ($r3 = $res3->fetch_assoc()) $perms[] = $r3['key_name'] ?? null;
-                    $s3->close();
+                $q = "SELECT p.key_name FROM permissions p 
+                      JOIN role_permissions rp ON rp.permission_id = p.id 
+                      WHERE rp.role_id = ?";
+                if ($stmt = @$db->prepare($q)) {
+                    $stmt->bind_param('i', $roleId);
+                    $stmt->execute();
+                    $res = $stmt->get_result();
+                    while ($r = $res->fetch_assoc()) {
+                        if (!empty($r['key_name'])) {
+                            $perms[] = $r['key_name'];
+                        }
+                    }
+                    $stmt->close();
                 }
             }
-        } catch (Throwable $e) { error_log('_rbac_fetch_permissions_by_user role_permissions query failed: '.$e->getMessage()); }
+        } catch (Throwable $e) { 
+            error_log('_rbac_fetch_permissions_by_user query failed: ' . $e->getMessage()); 
+        }
 
         return array_values(array_filter(array_unique(array_map('strval', $perms))));
     }
