@@ -1,8 +1,4 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-
 // api/controllers/PermissionsController.php
 // Permissions controller (RBAC compatible, Banner-style)
 
@@ -16,36 +12,70 @@ if (is_readable(__DIR__ . '/../helpers/RBAC.php')) {
 }
 
 /* =========================================================
-   Helper: check if current user can manage permissions
+   Permission Check
 ========================================================= */
-function permissions_check_permission($container = [])
+function permissions_check_permission($container)
 {
     start_session_safe();
 
     // Super admin shortcuts
-    $user = $_SESSION['user'] ?? ($container['current_user'] ?? null);
-    if ($user) {
-        $role_id = (int)($user['role_id'] ?? 0);
-        if ($role_id === 1) return true;
+    if (!empty($_SESSION['user']['role_id']) && (int)$_SESSION['user']['role_id'] === 1) return true;
+    if (!empty($_SESSION['user']['role']) && (int)$_SESSION['user']['role'] === 1) return true;
 
-        $roles = $user['roles'] ?? [];
-        if (in_array('super_admin', $roles, true) || in_array('admin', $roles, true)) {
+    if (!empty($_SESSION['user']['roles']) && is_array($_SESSION['user']['roles'])) {
+        if (in_array('super_admin', $_SESSION['user']['roles'], true) ||
+            in_array('admin', $_SESSION['user']['roles'], true)) {
             return true;
         }
-
-        $perms = $user['permissions'] ?? [];
-        if (in_array('manage_permissions', $perms, true)) return true;
     }
 
-    // Fallback session check
-    $session_perms = $_SESSION['permissions'] ?? [];
-    if (in_array('manage_permissions', $session_perms, true)) return true;
+    // Auth helper
+    if (function_exists('get_authenticated_user_with_permissions')) {
+        $user = get_authenticated_user_with_permissions();
+        if ($user) {
+            if (!empty($user['role_id']) && (int)$user['role_id'] === 1) return true;
+
+            if (!empty($user['roles']) && is_array($user['roles'])) {
+                if (in_array('super_admin', $user['roles'], true) ||
+                    in_array('admin', $user['roles'], true)) {
+                    return true;
+                }
+            }
+
+            if (empty($user['permissions']) && function_exists('load_user_permissions_into_session')) {
+                load_user_permissions_into_session((int)$user['id']);
+            }
+
+            if (!empty($user['permissions']) && in_array('manage_permissions', $user['permissions'], true)) {
+                return true;
+            }
+        }
+    }
+
+    if (function_exists('has_permission') && has_permission('manage_permissions')) return true;
+    if (function_exists('user_has') && user_has('manage_permissions')) return true;
+    if (function_exists('is_superadmin') && is_superadmin()) return true;
+
+    // Container fallback
+    $user = $container['current_user'] ?? null;
+    if ($user) {
+        if (!empty($user['role_id']) && (int)$user['role_id'] === 1) return true;
+        if (!empty($user['permissions']) && in_array('manage_permissions', $user['permissions'], true)) {
+            return true;
+        }
+    }
+
+    // Session fallback
+    if (!empty($_SESSION['permissions']) &&
+        in_array('manage_permissions', $_SESSION['permissions'], true)) {
+        return true;
+    }
 
     return false;
 }
 
 /* =========================================================
-   CSRF check
+   CSRF
 ========================================================= */
 function permissions_validate_csrf()
 {
@@ -54,11 +84,13 @@ function permissions_validate_csrf()
     }
 
     $token = $_POST['csrf_token'] ?? $_GET['csrf_token'] ?? '';
-    return !empty($token) && !empty($_SESSION['csrf_token']) && hash_equals((string)$_SESSION['csrf_token'], (string)$token);
+    return !empty($token) &&
+           !empty($_SESSION['csrf_token']) &&
+           hash_equals((string)$_SESSION['csrf_token'], (string)$token);
 }
 
 /* =========================================================
-   Log errors
+   Logger
 ========================================================= */
 function permissions_log_error($msg)
 {
@@ -68,39 +100,18 @@ function permissions_log_error($msg)
 }
 
 /* =========================================================
-   Helper response functions
+   GET /api/permissions
 ========================================================= */
-function respond($data, $status = 200)
-{
-    http_response_code($status);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($data);
-    exit;
-}
-
-function respond_error($msg, $status = 500)
-{
-    respond(['success' => false, 'message' => $msg], $status);
-}
-
-function respond_not_found($msg = 'Not Found')
-{
-    respond(['success' => false, 'message' => $msg], 404);
-}
-
-/* =========================================================
-   GET list / single permission
-========================================================= */
-function Permissions_index($container = [])
+function Permissions_index($container)
 {
     if (!permissions_check_permission($container)) {
-        respond_error('Unauthorized', 401);
+        respond_error('Unauthorized', HTTP_UNAUTHORIZED);
+        return;
     }
 
     try {
-        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-        if ($id > 0) {
-            Permissions_show($container, $id);
+        if (!empty($_GET['id'])) {
+            Permissions_show($container, (int)$_GET['id']);
             return;
         }
 
@@ -113,88 +124,101 @@ function Permissions_index($container = [])
         respond(['success' => true, 'count' => count($rows), 'data' => $rows]);
     } catch (Throwable $e) {
         permissions_log_error($e->getMessage());
-        respond_error('Database error', 500);
+        respond_error('Database error', HTTP_INTERNAL_SERVER_ERROR);
     }
 }
 
-function Permissions_show($container = [], $id)
+/* =========================================================
+   GET /api/permissions/{id}
+========================================================= */
+function Permissions_show($container, $id)
 {
     if (!permissions_check_permission($container)) {
-        respond_error('Unauthorized', 401);
+        respond_error('Unauthorized', HTTP_UNAUTHORIZED);
+        return;
     }
 
     try {
         $row = Permissions::find((int)$id);
         if (!$row) {
             respond_not_found('Permission not found');
+            return;
         }
         respond(['success' => true, 'data' => $row]);
     } catch (Throwable $e) {
         permissions_log_error($e->getMessage());
-        respond_error('Database error', 500);
+        respond_error('Database error', HTTP_INTERNAL_SERVER_ERROR);
     }
 }
 
 /* =========================================================
-   POST store: save / delete / assign / remove
+   POST /api/permissions
+   action = save | delete | assign | remove
 ========================================================= */
-function Permissions_store($container = [])
+function Permissions_store($container)
 {
     if (!permissions_check_permission($container)) {
-        respond_error('Unauthorized', 401);
+        respond_error('Unauthorized', HTTP_UNAUTHORIZED);
+        return;
     }
 
     $action = $_POST['action'] ?? 'save';
 
     if (!permissions_validate_csrf()) {
-        respond_error('Invalid CSRF token', 403);
+        respond_error('Invalid CSRF token', HTTP_FORBIDDEN);
+        return;
     }
 
     try {
-        switch ($action) {
-            case 'delete':
-                $id = (int)($_POST['id'] ?? 0);
-                if ($id <= 0) respond_error('Invalid permission ID', 400);
-                Permissions::delete($id);
-                respond(['success' => true, 'message' => 'Deleted successfully']);
-                break;
-
-            case 'assign':
-                Permissions::assignToRole((int)($_POST['permission_id'] ?? 0), (int)($_POST['role_id'] ?? 0));
-                respond(['success' => true, 'message' => 'Assigned successfully']);
-                break;
-
-            case 'remove':
-                Permissions::removeFromRole((int)($_POST['permission_id'] ?? 0), (int)($_POST['role_id'] ?? 0));
-                respond(['success' => true, 'message' => 'Removed successfully']);
-                break;
-
-            case 'save':
-            default:
-                $input = $_POST;
-                $validation = PermissionsValidator::validate($input);
-                if ($validation !== true) {
-                    respond(['success' => false, 'errors' => $validation], 422);
-                }
-
-                $id = Permissions::save($input);
-                $row = Permissions::find($id);
-
-                respond([
-                    'success' => true,
-                    'message' => empty($input['id']) ? 'Created successfully' : 'Updated successfully',
-                    'data' => $row
-                ]);
-                break;
+        if ($action === 'delete') {
+            $id = (int)($_POST['id'] ?? 0);
+            Permissions::delete($id);
+            respond(['success' => true, 'message' => 'Deleted successfully']);
+            return;
         }
+
+        if ($action === 'assign') {
+            Permissions::assignToRole(
+                (int)$_POST['permission_id'],
+                (int)$_POST['role_id']
+            );
+            respond(['success' => true]);
+            return;
+        }
+
+        if ($action === 'remove') {
+            Permissions::removeFromRole(
+                (int)$_POST['permission_id'],
+                (int)$_POST['role_id']
+            );
+            respond(['success' => true]);
+            return;
+        }
+
+        // SAVE
+        $input = function_exists('get_json_input') ? get_json_input() : $_POST;
+        $validation = PermissionsValidator::validate($input);
+        if ($validation !== true) {
+            respond(['success' => false, 'errors' => $validation], HTTP_UNPROCESSABLE_ENTITY);
+            return;
+        }
+
+        $id = Permissions::save($input);
+        $row = Permissions::find($id);
+
+        respond([
+            'success' => true,
+            'message' => empty($input['id']) ? 'Created successfully' : 'Updated successfully',
+            'data' => $row
+        ]);
     } catch (Throwable $e) {
         permissions_log_error($e->getMessage());
-        respond_error('Database error', 500);
+        respond_error('Database error', HTTP_INTERNAL_SERVER_ERROR);
     }
 }
 
 /* =========================================================
-   PermissionsController wrapper (Banner-style)
+   Controller Wrapper (Banner-style)
 ========================================================= */
 if (!class_exists('PermissionsController')) {
     class PermissionsController
@@ -204,35 +228,35 @@ if (!class_exists('PermissionsController')) {
             return $GLOBALS['CONTAINER'] ?? [];
         }
 
-        public static function list($input = [])
+        public static function list($input)
         {
             Permissions_index(self::container());
         }
 
-        public static function get($input = [])
+        public static function get($input)
         {
             Permissions_show(self::container(), $input['id'] ?? 0);
         }
 
-        public static function save($input = [])
+        public static function save($input)
         {
             $_POST['action'] = 'save';
             Permissions_store(self::container());
         }
 
-        public static function delete($input = [])
+        public static function delete($input)
         {
             $_POST['action'] = 'delete';
             Permissions_store(self::container());
         }
 
-        public static function assign($input = [])
+        public static function assign($input)
         {
             $_POST['action'] = 'assign';
             Permissions_store(self::container());
         }
 
-        public static function remove($input = [])
+        public static function remove($input)
         {
             $_POST['action'] = 'remove';
             Permissions_store(self::container());
