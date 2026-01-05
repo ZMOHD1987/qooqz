@@ -17,8 +17,11 @@ class Role_permissionsValidator
             $errors['permission_id'] = 'Invalid permission ID';
         }
 
-        if (isset($data['id']) && (!is_numeric($data['id']) || (int)$data['id'] <= 0)) {
-            $errors['id'] = 'Invalid role_permission ID';
+        // Only validate id if it's provided and not empty
+        if (isset($data['id']) && $data['id'] !== '' && $data['id'] !== null) {
+            if (!is_numeric($data['id']) || (int)$data['id'] <= 0) {
+                $errors['id'] = 'Invalid role_permission ID';
+            }
         }
 
         return empty($errors) ? true : $errors;

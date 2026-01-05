@@ -1,10 +1,10 @@
 <?php
-// api/routes/Role_permissions.php
-// Router entry for Role-Permissions API
+// api/routes/roles.php
+// Router entry for Roles API
 declare(strict_types=1);
 
 // basic debug flags (disable in production)
-if (defined('ROLE_PERMS_ROUTE_DEV') && ROLE_PERMS_ROUTE_DEV) {
+if (defined('ROLES_ROUTE_DEV') && ROLES_ROUTE_DEV) {
     ini_set('display_errors', 1); ini_set('display_startup_errors', 1); error_reporting(E_ALL);
 }
 
@@ -27,7 +27,7 @@ if (!empty($_SERVER['HTTP_ORIGIN'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 // require controller
-$ctrl = dirname(__DIR__) . '/controllers/Role_permissionsController.php';
+$ctrl = dirname(__DIR__) . '/controllers/RolesController.php';
 if (!is_readable($ctrl)) {
     http_response_code(500); header('Content-Type: application/json; charset=utf-8'); echo json_encode(['success'=>false,'message'=>'controller missing']); exit;
 }
@@ -57,16 +57,14 @@ $input = array_merge($_GET ?? [], $body ?? []);
 // route
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 if ($method === 'GET') {
-    if ($id !== null) Role_permissionsController::get(['id' => $id]); else Role_permissionsController::list($input);
+    if ($id !== null) RolesController::get(['id' => $id]); else RolesController::list($input);
     exit;
 }
 if ($method === 'POST') {
     $action = strtolower(trim((string)($input['action'] ?? $_POST['action'] ?? 'save')));
     switch ($action) {
-        case 'delete': Role_permissionsController::delete($input); break;
-        case 'assign': Role_permissionsController::assign($input); break;
-        case 'remove': Role_permissionsController::remove($input); break;
-        default: Role_permissionsController::save($input); break;
+        case 'delete': RolesController::delete($input); break;
+        default: RolesController::save($input); break;
     }
     exit;
 }

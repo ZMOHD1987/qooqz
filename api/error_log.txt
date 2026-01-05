@@ -1,0 +1,18 @@
+[2026-01-05T19:57:56+00:00] Config include failed: /home/runner/work/qooqz/qooqz/api/config/db.php -> php_network_getaddresses: getaddrinfo for sql311.infinityfree.com failed: No address associated with hostname
+[2026-01-05T19:57:56+00:00] Included: /helpers/auth_helper.php
+[2026-01-05T19:57:56+00:00] Included: /helpers/response.php
+[2026-01-05T19:57:56+00:00] Included: /helpers/jwt.php
+[2026-01-05T19:57:56+00:00] Included: /helpers/security.php
+[2026-01-05T19:57:56+00:00] Included: /helpers/upload.php
+[2026-01-05T19:57:56+00:00] Included: /middleware/validator.php
+[2026-01-05T19:57:56+00:00] Optional include not found: /helpers/rbac.php | /helpers/rbac_adapter.php
+[2026-01-05T19:57:56+00:00] Included: /helpers/i18n.php
+[2026-01-05T19:57:56+00:00] Included: /helpers/utils.php
+[2026-01-05T19:57:56+00:00] Included: /helpers/CSRF.php
+[2026-01-05T19:57:56+00:00] Included: /middleware/auth.php
+[2026-01-05T19:57:56+00:00] Included: /middleware/role.php
+[2026-01-05T19:57:56+00:00] Included: /middleware/rate_limit.php
+[2026-01-05T19:57:56+00:00] Included: /models/User.php
+[2026-01-05T19:57:56+00:00] Included: /models/Product.php
+[2026-01-05T19:57:56+00:00] DB credentials not provided in constants/env
+[2026-01-05T19:57:56+00:00] bootstrap loaded | current_user: null

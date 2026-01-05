@@ -18,6 +18,24 @@ $direction = $ADMIN_UI_PAYLOAD['direction'] ?? 'ltr';
 $strings = $ADMIN_UI_PAYLOAD['strings'] ?? [];
 $theme = $ADMIN_UI_PAYLOAD['theme'] ?? [];
 
+// Explicitly load role_permissions translations
+$languagesBaseDir = dirname(__DIR__, 2) . '/languages';
+$rolePermsLangFile = $languagesBaseDir . '/role_permissions/' . $lang . '.json';
+if (file_exists($rolePermsLangFile)) {
+    $rolePermsJson = @file_get_contents($rolePermsLangFile);
+    if ($rolePermsJson) {
+        // Remove BOM if present
+        if (substr($rolePermsJson, 0, 3) === "\xEF\xBB\xBF") {
+            $rolePermsJson = preg_replace('/^\x{FEFF}/u', '', $rolePermsJson);
+        }
+        $rolePermsData = @json_decode($rolePermsJson, true);
+        if (is_array($rolePermsData) && isset($rolePermsData['strings'])) {
+            // Merge role_permissions strings into existing strings
+            $strings = array_merge_recursive($strings, $rolePermsData['strings']);
+        }
+    }
+}
+
 // flatten strings for convenience
 function flatten_strings(array $src): array {
     $out = [];
@@ -54,6 +72,28 @@ $apiPath = $ADMIN_UI_PAYLOAD['api']['role_permissions'] ?? '/api/routes/Role_per
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title><?php echo htmlspecialchars(gs('role_permissions.title',$flat,'Role Permissions'), ENT_QUOTES); ?></title>
+  
+  <style>
+  /* Inject theme colors as CSS variables from database */
+  :root {
+    <?php
+    // Inject theme colors from database
+    if (!empty($theme['colors_map'])) {
+      foreach ($theme['colors_map'] as $key => $value) {
+        echo "--theme-" . $key . ": " . htmlspecialchars($value, ENT_QUOTES) . ";\n    ";
+      }
+    }
+    // Inject button styles
+    if (!empty($theme['buttons_map']['primary'])) {
+      $primary = $theme['buttons_map']['primary'];
+      echo "--btn-primary-bg: " . htmlspecialchars($primary['background_color'], ENT_QUOTES) . ";\n    ";
+      echo "--btn-primary-text: " . htmlspecialchars($primary['text_color'], ENT_QUOTES) . ";\n    ";
+      echo "--btn-primary-hover: " . htmlspecialchars($primary['hover_background_color'], ENT_QUOTES) . ";\n    ";
+    }
+    ?>
+  }
+  </style>
+  
   <link rel="stylesheet" href="/admin/assets/css/pages/role_permissions.css">
 </head>
 <body>
@@ -81,14 +121,14 @@ $apiPath = $ADMIN_UI_PAYLOAD['api']['role_permissions'] ?? '/api/routes/Role_per
     <div id="rpStatus" class="status" style="min-height:22px;margin-bottom:8px;"><?php echo htmlspecialchars(gs('role_permissions.loading',$flat,'Loading...'), ENT_QUOTES); ?></div>
 
     <div class="table-wrap">
-      <table id="rpTable" style="width:100%;border-collapse:collapse;">
+      <table id="rpTable" style="width:100%;border-collapse:collapse;" dir="<?php echo $direction; ?>">
         <thead>
           <tr>
-            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);width:50px;">ID</th>
-            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);">Role</th>
-            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);">Permission</th>
-            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);">Assigned At</th>
-            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);text-align:right;">Actions</th>
+            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);width:50px;"><?php echo htmlspecialchars(gs('role_permissions.table_id',$flat,'ID'), ENT_QUOTES); ?></th>
+            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);"><?php echo htmlspecialchars(gs('role_permissions.table_role',$flat,'Role'), ENT_QUOTES); ?></th>
+            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);"><?php echo htmlspecialchars(gs('role_permissions.table_permission',$flat,'Permission'), ENT_QUOTES); ?></th>
+            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);"><?php echo htmlspecialchars(gs('role_permissions.table_assigned_at',$flat,'Assigned At'), ENT_QUOTES); ?></th>
+            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);text-align:<?php echo $direction === 'rtl' ? 'left' : 'right'; ?>;"><?php echo htmlspecialchars(gs('role_permissions.table_actions',$flat,'Actions'), ENT_QUOTES); ?></th>
           </tr>
         </thead>
         <tbody id="rpTbody">
