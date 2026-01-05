@@ -100,6 +100,42 @@ class Roles
         $stmt->close();
         return $row ?: null;
     }
+
+    public static function save(array $data)
+    {
+        $db = self::getDB();
+        $id = !empty($data['id']) ? (int)$data['id'] : 0;
+        $key_name = trim($data['key_name'] ?? '');
+        $display_name = trim($data['display_name'] ?? '');
+
+        if ($id > 0) {
+            $stmt = $db->prepare("UPDATE roles SET key_name = ?, display_name = ? WHERE id = ? LIMIT 1");
+            if (!$stmt) throw new Exception('DB prepare failed (update): ' . $db->error);
+            $stmt->bind_param('ssi', $key_name, $display_name, $id);
+            $stmt->execute();
+            $stmt->close();
+            return $id;
+        } else {
+            $stmt = $db->prepare("INSERT INTO roles (key_name, display_name) VALUES (?, ?)");
+            if (!$stmt) throw new Exception('DB prepare failed (insert): ' . $db->error);
+            $stmt->bind_param('ss', $key_name, $display_name);
+            $stmt->execute();
+            $newId = $stmt->insert_id;
+            $stmt->close();
+            return $newId;
+        }
+    }
+
+    public static function delete(int $id): bool
+    {
+        $db = self::getDB();
+        $stmt = $db->prepare("DELETE FROM roles WHERE id = ? LIMIT 1");
+        if (!$stmt) throw new Exception('DB prepare failed (delete): ' . $db->error);
+        $stmt->bind_param('i', $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return $ok;
+    }
 }
 
 } // end class_exists

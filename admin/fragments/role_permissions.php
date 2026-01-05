@@ -121,14 +121,14 @@ $apiPath = $ADMIN_UI_PAYLOAD['api']['role_permissions'] ?? '/api/routes/Role_per
     <div id="rpStatus" class="status" style="min-height:22px;margin-bottom:8px;"><?php echo htmlspecialchars(gs('role_permissions.loading',$flat,'Loading...'), ENT_QUOTES); ?></div>
 
     <div class="table-wrap">
-      <table id="rpTable" style="width:100%;border-collapse:collapse;">
+      <table id="rpTable" style="width:100%;border-collapse:collapse;" dir="<?php echo $direction; ?>">
         <thead>
           <tr>
-            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);width:50px;">ID</th>
-            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);">Role</th>
-            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);">Permission</th>
-            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);">Assigned At</th>
-            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);text-align:right;">Actions</th>
+            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);width:50px;"><?php echo htmlspecialchars(gs('role_permissions.table_id',$flat,'ID'), ENT_QUOTES); ?></th>
+            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);"><?php echo htmlspecialchars(gs('role_permissions.table_role',$flat,'Role'), ENT_QUOTES); ?></th>
+            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);"><?php echo htmlspecialchars(gs('role_permissions.table_permission',$flat,'Permission'), ENT_QUOTES); ?></th>
+            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);"><?php echo htmlspecialchars(gs('role_permissions.table_assigned_at',$flat,'Assigned At'), ENT_QUOTES); ?></th>
+            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);text-align:<?php echo $direction === 'rtl' ? 'left' : 'right'; ?>;"><?php echo htmlspecialchars(gs('role_permissions.table_actions',$flat,'Actions'), ENT_QUOTES); ?></th>
           </tr>
         </thead>
         <tbody id="rpTbody">
