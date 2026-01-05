@@ -54,6 +54,28 @@ $apiPath = $ADMIN_UI_PAYLOAD['api']['role_permissions'] ?? '/api/routes/Role_per
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title><?php echo htmlspecialchars(gs('role_permissions.title',$flat,'Role Permissions'), ENT_QUOTES); ?></title>
+  
+  <style>
+  /* Inject theme colors as CSS variables from database */
+  :root {
+    <?php
+    // Inject theme colors from database
+    if (!empty($theme['colors_map'])) {
+      foreach ($theme['colors_map'] as $key => $value) {
+        echo "--theme-" . $key . ": " . htmlspecialchars($value, ENT_QUOTES) . ";\n    ";
+      }
+    }
+    // Inject button styles
+    if (!empty($theme['buttons_map']['primary'])) {
+      $primary = $theme['buttons_map']['primary'];
+      echo "--btn-primary-bg: " . htmlspecialchars($primary['background_color'], ENT_QUOTES) . ";\n    ";
+      echo "--btn-primary-text: " . htmlspecialchars($primary['text_color'], ENT_QUOTES) . ";\n    ";
+      echo "--btn-primary-hover: " . htmlspecialchars($primary['hover_background_color'], ENT_QUOTES) . ";\n    ";
+    }
+    ?>
+  }
+  </style>
+  
   <link rel="stylesheet" href="/admin/assets/css/pages/role_permissions.css">
 </head>
 <body>

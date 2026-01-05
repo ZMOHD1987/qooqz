@@ -113,9 +113,9 @@
 
   // lookups: roles & permissions
   function loadLookups(cb) {
-    // choose routes-based endpoints (prefer ADMIN_UI.api if provided)
-    var rolesApi = (ADMIN_UI && ADMIN_UI.api && ADMIN_UI.api.roles) ? ADMIN_UI.api.roles : '/api/routes/roles.php';
-    var permsApi = (ADMIN_UI && ADMIN_UI.api && ADMIN_UI.api.permissions) ? ADMIN_UI.api.permissions : '/api/routes/permissions.php';
+    // Use direct routes paths
+    var rolesApi = '/api/routes/roles.php';
+    var permsApi = '/api/routes/permissions.php';
 
     Promise.all([
       fetchJson(rolesApi + '?format=json').catch(function () { return { data: [] }; }),
