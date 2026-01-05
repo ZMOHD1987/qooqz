@@ -161,8 +161,15 @@ function Roles_store($container = [])
                 return;
         }
     } catch (Throwable $e) {
-        roles_log_error($e->getMessage());
-        respond_error('Database error', 500);
+        roles_log_error($e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+        // In development, include more details
+        $response = ['success' => false, 'message' => 'Database error'];
+        if (defined('ROLES_ROUTE_DEV') && ROLES_ROUTE_DEV) {
+            $response['error_details'] = $e->getMessage();
+            $response['error_file'] = $e->getFile();
+            $response['error_line'] = $e->getLine();
+        }
+        respond_error($response['message'], 500);
     }
 }
 
