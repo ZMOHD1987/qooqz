@@ -27,7 +27,7 @@ if (!empty($_SERVER['HTTP_ORIGIN'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 // require controller
-$ctrl = __DIR__ . '/controllers/Role_permissionsController.php';
+$ctrl = dirname(__DIR__) . '/controllers/Role_permissionsController.php';
 if (!is_readable($ctrl)) {
     http_response_code(500); header('Content-Type: application/json; charset=utf-8'); echo json_encode(['success'=>false,'message'=>'controller missing']); exit;
 }

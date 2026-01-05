@@ -1,0 +1,37 @@
+{
+  "lang": "en",
+  "name": "English",
+  "direction": "ltr",
+  "strings": {
+    "role_permissions": {
+      "title": "Role Permissions Management",
+      "loading": "Loading...",
+      "processing": "Processing...",
+      "no_entries": "No role-permission assignments found",
+      "no_permission_notice": "You do not have permission to manage role permissions",
+      "filter_all_roles": "All Roles",
+      "filter_all_permissions": "All Permissions",
+      "search_placeholder": "Search role or permission...",
+      "btn_refresh": "Refresh",
+      "btn_new": "Assign Permission to Role",
+      "btn_cancel": "Cancel",
+      "btn_save": "Save Assignment",
+      "btn_remove": "Remove",
+      "form_title": "Assign Permission to Role",
+      "label_role": "Role",
+      "label_permission": "Permission",
+      "select_role": "Select a role",
+      "select_permission": "Select a permission",
+      "confirm_remove": "Are you sure you want to remove this role-permission assignment?",
+      "saved": "Role-permission assignment saved successfully",
+      "deleted": "Role-permission assignment removed successfully",
+      "error_loading": "Error loading role-permission assignments",
+      "error_save": "Failed to save role-permission assignment",
+      "error_delete": "Failed to remove role-permission assignment",
+      "error_role_required": "Role is required",
+      "error_permission_required": "Permission is required",
+      "prev": "Previous",
+      "next": "Next"
+    }
+  }
+}
