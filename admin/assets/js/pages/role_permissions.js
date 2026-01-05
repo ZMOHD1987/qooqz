@@ -216,16 +216,29 @@
       var tr = document.createElement('tr');
       var actions = '';
       if (CAN_MANAGE) {
-        actions = '<button class="btn removeBtn" data-id="' + esc(it.id) + '">' + esc(t('role_permissions.btn_remove', 'Remove')) + '</button>';
+        actions = '<button class="btn editBtn" data-id="' + esc(it.id) + '" data-role="' + esc(it.role_id) + '" data-perm="' + esc(it.permission_id) + '" style="margin-right:6px;">' + esc(t('role_permissions.btn_edit', 'Edit')) + '</button>';
+        actions += '<button class="btn danger removeBtn" data-id="' + esc(it.id) + '">' + esc(t('role_permissions.btn_remove', 'Remove')) + '</button>';
       }
       var roleName = esc(it.role_display || it.role_key || ('role ' + (it.role_id || '')));
       var permName = esc(it.permission_display || it.permission_key || ('perm ' + (it.permission_id || '')));
-      tr.innerHTML = '<td style="padding:10px;border-bottom:1px solid #eee;">' + esc(it.id) + '</td>'
-                   + '<td style="padding:10px;border-bottom:1px solid #eee;">' + roleName + '</td>'
-                   + '<td style="padding:10px;border-bottom:1px solid #eee;">' + permName + '</td>'
-                   + '<td style="padding:10px;border-bottom:1px solid #eee;">' + esc(it.created_at || '') + '</td>'
-                   + '<td style="padding:10px;border-bottom:1px solid #eee;text-align:right;">' + actions + '</td>';
+      tr.innerHTML = '<td style="padding:10px;border-bottom:1px solid var(--theme-border,#333);">' + esc(it.id) + '</td>'
+                   + '<td style="padding:10px;border-bottom:1px solid var(--theme-border,#333);">' + roleName + '</td>'
+                   + '<td style="padding:10px;border-bottom:1px solid var(--theme-border,#333);">' + permName + '</td>'
+                   + '<td style="padding:10px;border-bottom:1px solid var(--theme-border,#333);">' + esc(it.created_at || '') + '</td>'
+                   + '<td style="padding:10px;border-bottom:1px solid var(--theme-border,#333);text-align:right;">' + actions + '</td>';
       tableBody.appendChild(tr);
+    });
+
+    // bind edit handlers
+    var edits = tableBody.querySelectorAll('.editBtn');
+    edits.forEach(function (b) {
+      b.addEventListener('click', function () {
+        var id = this.getAttribute('data-id');
+        var roleId = this.getAttribute('data-role');
+        var permId = this.getAttribute('data-perm');
+        if (!CAN_MANAGE) { alert(t('role_permissions.no_permission_notice', 'You do not have permission')); return; }
+        openEdit(id, roleId, permId);
+      });
     });
 
     // bind remove handlers
@@ -311,6 +324,21 @@
     if (rpRole) rpRole.focus();
   }
 
+  // open edit form
+  function openEdit(id, roleId, permId) {
+    if (!CAN_MANAGE) { alert(t('role_permissions.no_permission_notice', 'You do not have permission')); return; }
+    if (!formWrap) return;
+    clearFormErrors();
+    form.reset();
+    if (rpId) rpId.value = id;
+    if (rpRole) rpRole.value = roleId;
+    if (rpPermission) rpPermission.value = permId;
+    if (formWrap) formWrap.style.display = 'block';
+    var title = document.getElementById('rpFormTitle');
+    if (title) title.textContent = t('role_permissions.form_title_edit', 'Edit Role Permission');
+    if (rpRole) rpRole.focus();
+  }
+
   // validation helpers
   function clearFormErrors() {
     var prev = form.querySelectorAll('.field-error');
@@ -336,6 +364,12 @@
 
     clearFormErrors();
     var fd = new FormData(form);
+    
+    // Remove empty id field to avoid validation errors
+    if (!fd.get('id') || fd.get('id') === '') {
+      fd.delete('id');
+    }
+    
     fd.set('action', 'save');
     if (CSRF) fd.set('csrf_token', CSRF);
 

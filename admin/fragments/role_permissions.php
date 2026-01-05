@@ -18,6 +18,24 @@ $direction = $ADMIN_UI_PAYLOAD['direction'] ?? 'ltr';
 $strings = $ADMIN_UI_PAYLOAD['strings'] ?? [];
 $theme = $ADMIN_UI_PAYLOAD['theme'] ?? [];
 
+// Explicitly load role_permissions translations
+$languagesBaseDir = dirname(__DIR__, 2) . '/languages';
+$rolePermsLangFile = $languagesBaseDir . '/role_permissions/' . $lang . '.json';
+if (file_exists($rolePermsLangFile)) {
+    $rolePermsJson = @file_get_contents($rolePermsLangFile);
+    if ($rolePermsJson) {
+        // Remove BOM if present
+        if (substr($rolePermsJson, 0, 3) === "\xEF\xBB\xBF") {
+            $rolePermsJson = preg_replace('/^\x{FEFF}/u', '', $rolePermsJson);
+        }
+        $rolePermsData = @json_decode($rolePermsJson, true);
+        if (is_array($rolePermsData) && isset($rolePermsData['strings'])) {
+            // Merge role_permissions strings into existing strings
+            $strings = array_merge_recursive($strings, $rolePermsData['strings']);
+        }
+    }
+}
+
 // flatten strings for convenience
 function flatten_strings(array $src): array {
     $out = [];
