@@ -104,6 +104,16 @@ function json_input()
     return (json_last_error() === JSON_ERROR_NONE) ? $data : null;
 }
 
+// get_json_input(): wrapper that merges JSON body with $_POST, prioritizing JSON
+function get_json_input()
+{
+    $json = json_input();
+    if (is_array($json) && !empty($json)) {
+        return array_merge($_POST, $json);
+    }
+    return $_POST;
+}
+
 // convenience wrappers (backwards compatibility)
 function respond_created($data = null, $message = 'Created successfully')
 {
