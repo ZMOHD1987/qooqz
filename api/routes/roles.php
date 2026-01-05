@@ -11,12 +11,6 @@ if (defined('ROLES_ROUTE_DEV') && ROLES_ROUTE_DEV) {
 // start session
 if (php_sapi_name() !== 'cli' && session_status() === PHP_SESSION_NONE) session_start();
 
-// Load bootstrap for DB, session, helpers
-$bootstrapPath = dirname(__DIR__) . '/bootstrap.php';
-if (file_exists($bootstrapPath)) {
-    require_once $bootstrapPath;
-}
-
 // CORS allow (adjust allowed origins as needed)
 if (!empty($_SERVER['HTTP_ORIGIN'])) {
     $origin = $_SERVER['HTTP_ORIGIN'];
