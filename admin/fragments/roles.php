@@ -60,8 +60,8 @@ if (!$canManage && !empty($user['permissions']) && is_array($user['permissions']
 if (empty($_SESSION['csrf_token'])) { try { $_SESSION['csrf_token'] = bin2hex(random_bytes(16)); } catch (Throwable $e) { $_SESSION['csrf_token'] = bin2hex(openssl_random_pseudo_bytes(16)); } }
 $csrf = htmlspecialchars((string)($_SESSION['csrf_token'] ?? ''), ENT_QUOTES);
 
-// API path
-$apiPath = '/api/controllers/RolesController.php';
+// API path - use routes file, not controller directly
+$apiPath = '/api/routes/roles.php';
 ?>
 <!doctype html>
 <html lang="<?php echo htmlspecialchars($lang, ENT_QUOTES); ?>" dir="<?php echo htmlspecialchars($direction, ENT_QUOTES); ?>">

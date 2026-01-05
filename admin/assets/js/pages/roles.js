@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  var API = window.API_ROLES || '/api/controllers/RolesController.php';
+  var API = window.API_ROLES || '/api/routes/roles.php';
   var CSRF = window.CSRF_TOKEN || '';
   var I18N = window.I18N_FLAT || {};
   var USER = window.USER_INFO || {};
