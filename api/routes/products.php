@@ -93,13 +93,16 @@ try {
             exit;
 
         default:
-            Response::error('Endpoint not found', 404);
-            break;
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Endpoint not found']);
+            exit;
     }
 
 } catch (Throwable $e) {
     error_log("Products route error: " . $e->getMessage());
-    Response::error('Server error', 500);
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Internal Server Error']);
+    exit;
 }
 
 ?>

@@ -11,6 +11,12 @@ if (!isset($GLOBALS['CONTAINER'])) {
 // تحميل الملفات المطلوبة
 require_once __DIR__ . '/../models/Product.php';
 
+// Load Response helper class
+if (!class_exists('Response')) {
+    require_once __DIR__ . '/../helpers/response.php';
+    require_once __DIR__ . '/../helpers/Response.php';
+}
+
 // Load these files safely (they may already be loaded by bootstrap)
 if (!class_exists('Validator')) {
     if (file_exists(__DIR__ . '/../validators/ProductValidator.php')) {
