@@ -1,23 +1,6 @@
 <?php
 // admin/fragments/products.php
-// Products fragment using bootstrap files for context, UI, and database
-// Can be included in admin/dashboard.php or standalone
-
-// Load bootstrap files if not already loaded
-$apiDir = dirname(__DIR__, 2) . '/api';
-if (!isset($GLOBALS['CONTAINER']) || empty($GLOBALS['CONTAINER'])) {
-    require_once $apiDir . '/bootstrap.php';
-}
-
-// Bootstrap admin UI if not loaded (provides theme, colors, translations)
-if (!isset($GLOBALS['ADMIN_UI']) || empty($GLOBALS['ADMIN_UI'])) {
-    require_once $apiDir . '/bootstrap_admin_ui.php';
-}
-
-// Get references from bootstrap
-$db = $GLOBALS['CONTAINER']['db'] ?? $GLOBALS['ADMIN_DB'] ?? null;
-$currentUser = $GLOBALS['CONTAINER']['current_user'] ?? $GLOBALS['ADMIN_USER'] ?? null;
-$ADMIN_UI = $GLOBALS['ADMIN_UI'] ?? [];
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 // CSRF token
 if (empty($_SESSION['csrf_token'])) {
@@ -25,19 +8,27 @@ if (empty($_SESSION['csrf_token'])) {
 }
 $csrf = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES);
 
-// Get user language from admin UI payload
-$userLang = $ADMIN_UI['lang'] ?? ($currentUser['preferred_language'] ?? 'en');
-$userDirection = $ADMIN_UI['direction'] ?? 'ltr';
+// تحميل الترجمات بناءً على لغة المستخدم
+$langBase = dirname(__DIR__, 2) . '/languages/admin';
+$userLang = $_SESSION['user']['preferred_language'] ?? 'en';
+$langFile = $langBase . '/' . $userLang . '.json';
 
-// Get translations from ADMIN_UI payload (includes both admin and Product module translations)
-$strings = $ADMIN_UI['strings'] ?? [];
+// ترجمة افتراضية - الإنجليزية
+$defaultLangFile = $langBase . '/en.json';
 
-// Helper function to get translation from loaded strings
+$langData = [];
+if (file_exists($langFile)) {
+    $langData = json_decode(file_get_contents($langFile), true);
+} elseif (file_exists($defaultLangFile)) {
+    $langData = json_decode(file_get_contents($defaultLangFile), true);
+}
+
+// دالة الترجمة
 function trans($key, $fallback = '') {
-    global $strings;
+    global $langData;
     if (!$key) return $fallback;
     $parts = explode('.', $key);
-    $node = $strings;
+    $node = $langData;
     foreach ($parts as $p) {
         if (!is_array($node) || !array_key_exists($p, $node)) return $fallback;
         $node = $node[$p];
@@ -45,9 +36,9 @@ function trans($key, $fallback = '') {
     return is_string($node) ? $node : $fallback;
 }
 
-// Get available languages
+// تحميل اللغات المتاحة
 $languages = [];
-$languagesDir = dirname(__DIR__, 2) . '/languages/Product';
+$languagesDir = dirname(__DIR__, 2) . '/languages/admin';
 if (is_dir($languagesDir)) {
     foreach (glob($languagesDir . '/*.json') as $f) {
         $code = pathinfo($f, PATHINFO_FILENAME);
@@ -59,7 +50,7 @@ if (is_dir($languagesDir)) {
         ];
     }
 }
-if (empty($languages)) $languages = [['code' => 'en', 'name' => 'English', 'direction' => 'ltr'], ['code' => 'ar', 'name' => 'العربية', 'direction' => 'rtl']];
+if (empty($languages)) $languages = [['code' => 'en', 'name' => 'English', 'direction' => 'ltr']];
 ?>
 <link rel="stylesheet" href="/admin/assets/css/pages/products.css">
 <div id="adminProducts" class="admin-fragment" style="max-width:1200px;margin:18px auto;">

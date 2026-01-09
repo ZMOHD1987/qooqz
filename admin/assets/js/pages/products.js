@@ -12,9 +12,9 @@
   'use strict';
 
   // Config / globals
-  const API = '/api/products';
-  const META_API = '/api/product_meta';
-  const MEDIA_API = '/api/media';
+  const API = '/api/products.php';
+  const META_API = '/api/product_meta.php';
+  const MEDIA_API = '/api/media.php';
   const CSRF = window.CSRF_TOKEN || '';
   const USER = window.CURRENT_USER || {};
   const PREF_LANG = (USER.preferred_language && String(USER.preferred_language).trim()) || 'en';

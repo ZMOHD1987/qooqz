@@ -2,19 +2,11 @@
 // api/models/Product.php
 // Product model — cleaned & compatible with older PHP (no typed properties, no spread in bind_param)
 // Uses portable fetch helpers (works when mysqli_stmt::get_result is unavailable)
-// Updated to use bootstrap database connection
 
-// Load bootstrap if not already loaded (provides DB connection via $GLOBALS['CONTAINER'])
-if (!isset($GLOBALS['CONTAINER']) || empty($GLOBALS['CONTAINER'])) {
-    require_once __DIR__ . '/../bootstrap.php';
-}
-
-// Load utilities if not already loaded by bootstrap
-if (!function_exists('createSlug')) {
-    if (file_exists(__DIR__ . '/../helpers/utils.php')) {
-        require_once __DIR__ . '/../helpers/utils.php';
-    }
-}
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../config/constants.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../helpers/utils.php';
 
 class Product {
 
@@ -52,17 +44,7 @@ class Product {
     public $published_at;
 
     public function __construct() {
-        // Get database connection from bootstrap context
-        $this->mysqli = $GLOBALS['CONTAINER']['db'] ?? null;
-        
-        // Fallback to connectDB() if available and bootstrap didn't provide connection
-        if (!$this->mysqli && function_exists('connectDB')) {
-            $this->mysqli = connectDB();
-        }
-        
-        if (!$this->mysqli instanceof mysqli) {
-            throw new Exception('Database connection not available');
-        }
+        $this->mysqli = connectDB();
     }
 
     // --- Portable helpers -------------------------------------------------
@@ -132,27 +114,6 @@ class Product {
             $out[] = $r;
         }
         return $out;
-    }
-
-    private function tableExists($table) {
-        try {
-            $t = $this->mysqli->real_escape_string($table);
-            $res = $this->mysqli->query("SHOW TABLES LIKE '{$t}'");
-            return ($res && $res->num_rows > 0);
-        } catch (Throwable $e) {
-            return false;
-        }
-    }
-
-    private function columnExists($table, $column) {
-        try {
-            $t = $this->mysqli->real_escape_string($table);
-            $c = $this->mysqli->real_escape_string($column);
-            $res = $this->mysqli->query("SHOW COLUMNS FROM `{$t}` LIKE '{$c}'");
-            return ($res && $res->num_rows > 0);
-        } catch (Throwable $e) {
-            return false;
-        }
     }
 
     // --- Create -----------------------------------------------------------
@@ -254,20 +215,7 @@ class Product {
 
         if ($stmt->execute()) {
             $productId = $stmt->insert_id;
-            $vendorId = isset($data['vendor_id']) ? (int)$data['vendor_id'] : 0;
             $stmt->close();
-            
-            // Update vendor product count
-            if ($vendorId > 0 && $this->tableExists('vendors') && $this->columnExists('vendors', 'product_count')) {
-                $updateVendorSql = "UPDATE vendors SET product_count = (SELECT COUNT(*) FROM products WHERE vendor_id = ?) WHERE id = ?";
-                $updateStmt = $this->mysqli->prepare($updateVendorSql);
-                if ($updateStmt) {
-                    $updateStmt->bind_param('ii', $vendorId, $vendorId);
-                    $updateStmt->execute();
-                    $updateStmt->close();
-                }
-            }
-            
             Utils::log("Product created: ID {$productId}, SKU: " . (isset($data['sku']) ? $data['sku'] : ''), 'INFO');
             return $this->findById($productId);
         }
@@ -519,20 +467,6 @@ class Product {
     }
 
     public function delete($id) {
-        // Get vendor_id before deleting (for updating vendor count)
-        $vendorId = null;
-        $getVendorSql = "SELECT vendor_id FROM products WHERE id = ?";
-        $getStmt = $this->mysqli->prepare($getVendorSql);
-        if ($getStmt) {
-            $getStmt->bind_param('i', $id);
-            $getStmt->execute();
-            $result = $getStmt->get_result();
-            if ($row = $result->fetch_assoc()) {
-                $vendorId = (int)$row['vendor_id'];
-            }
-            $getStmt->close();
-        }
-        
         // delete related rows (translations, media, pricing, categories, etc.)
         $this->mysqli->query("DELETE FROM product_translations WHERE product_id = " . (int)$id);
         $this->mysqli->query("DELETE FROM product_media WHERE product_id = " . (int)$id);
@@ -545,18 +479,6 @@ class Product {
         $stmt->bind_param('i', $id);
         $ok = $stmt->execute();
         $stmt->close();
-        
-        // Update vendor product count
-        if ($ok && $vendorId > 0 && $this->tableExists('vendors') && $this->columnExists('vendors', 'product_count')) {
-            $updateVendorSql = "UPDATE vendors SET product_count = (SELECT COUNT(*) FROM products WHERE vendor_id = ?) WHERE id = ?";
-            $updateStmt = $this->mysqli->prepare($updateVendorSql);
-            if ($updateStmt) {
-                $updateStmt->bind_param('ii', $vendorId, $vendorId);
-                $updateStmt->execute();
-                $updateStmt->close();
-            }
-        }
-        
         if ($ok) Utils::log("Product permanently deleted: ID {$id}", 'WARNING');
         return $ok;
     }
