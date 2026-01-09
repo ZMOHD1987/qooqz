@@ -1,16 +1,24 @@
 <?php
-// htdocs/api/controllers/ProductController.php
+// api/controllers/ProductController.php
 // Controller لإدارة المنتجات (CRUD, الصور, التصنيفات, المخزون, قوائم للواجهة)
+// Uses bootstrap context for DB, auth, and config
+
+// Bootstrap should already be loaded by routes, but ensure dependencies
+if (!isset($GLOBALS['CONTAINER'])) {
+    require_once __DIR__ . '/../bootstrap.php';
+}
 
 // تحميل الملفات المطلوبة
 require_once __DIR__ . '/../models/Product.php';
-require_once __DIR__ . '/../models/Category.php';
-require_once __DIR__ . '/../helpers/validator.php';
-require_once __DIR__ . '/../helpers/response.php';
-require_once __DIR__ . '/../helpers/utils.php';
-require_once __DIR__ . '/../helpers/upload.php';
-require_once __DIR__ . '/../middleware/auth.php';
-require_once __DIR__ . '/../middleware/role.php';
+
+// Load these files safely (they may already be loaded by bootstrap)
+if (!class_exists('Validator')) {
+    if (file_exists(__DIR__ . '/../validators/ProductValidator.php')) {
+        require_once __DIR__ . '/../validators/ProductValidator.php';
+    } elseif (file_exists(__DIR__ . '/../helpers/validator.php')) {
+        require_once __DIR__ . '/../helpers/validator.php';
+    }
+}
 
 class ProductController
 {
@@ -20,13 +28,23 @@ class ProductController
      */
     public static function create()
     {
-        $user = AuthMiddleware::authenticate();
-        if (!$user) Response::unauthorized();
+        // Get current user from bootstrap context
+        $currentUser = $GLOBALS['CONTAINER']['current_user'] ?? null;
+        if (!$currentUser) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            exit;
+        }
+
+        $user = $currentUser;
 
         // إذا لم يكن admin، يجب أن يكون vendor
-        if (!AuthMiddleware::isAdmin()) {
-            if ($user['user_type'] !== USER_TYPE_VENDOR) {
-                Response::forbidden('Only vendors or admins can create products');
+        $isAdmin = isset($user['role_id']) && (int)$user['role_id'] === 1;
+        if (!$isAdmin) {
+            if (!isset($user['user_type']) || $user['user_type'] !== 'vendor') {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'message' => 'Only vendors or admins can create products']);
+                exit;
             }
         }
 

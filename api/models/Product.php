@@ -2,11 +2,19 @@
 // api/models/Product.php
 // Product model — cleaned & compatible with older PHP (no typed properties, no spread in bind_param)
 // Uses portable fetch helpers (works when mysqli_stmt::get_result is unavailable)
+// Updated to use bootstrap database connection
 
-require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/../config/constants.php';
-require_once __DIR__ . '/../config/db.php';
-require_once __DIR__ . '/../helpers/utils.php';
+// Load bootstrap if not already loaded (provides DB connection via $GLOBALS['CONTAINER'])
+if (!isset($GLOBALS['CONTAINER']) || empty($GLOBALS['CONTAINER'])) {
+    require_once __DIR__ . '/../bootstrap.php';
+}
+
+// Load utilities if not already loaded by bootstrap
+if (!function_exists('createSlug')) {
+    if (file_exists(__DIR__ . '/../helpers/utils.php')) {
+        require_once __DIR__ . '/../helpers/utils.php';
+    }
+}
 
 class Product {
 
@@ -44,7 +52,17 @@ class Product {
     public $published_at;
 
     public function __construct() {
-        $this->mysqli = connectDB();
+        // Get database connection from bootstrap context
+        $this->mysqli = $GLOBALS['CONTAINER']['db'] ?? null;
+        
+        // Fallback to connectDB() if available and bootstrap didn't provide connection
+        if (!$this->mysqli && function_exists('connectDB')) {
+            $this->mysqli = connectDB();
+        }
+        
+        if (!$this->mysqli instanceof mysqli) {
+            throw new Exception('Database connection not available');
+        }
     }
 
     // --- Portable helpers -------------------------------------------------
