@@ -3,7 +3,7 @@
 // Enhanced, defensive product metadata API (categories, brands, attributes, languages, product types).
 // - Returns translated fields for requested lang when translation tables exist.
 // - Graceful fallback if tables/columns missing.
-// - Logs errors to /tmp/product_meta.log
+// - Uses bootstrap for consistent DB, config, and auth
 //
 // GET params:
 // - lang=ar   => requested language code (falls back to session preferred or 'en')
@@ -12,7 +12,14 @@
 // { success: true, data: { languages:[], product_types:[], categories:[], brands:[], attributes:[] } }
 
 header('Content-Type: application/json; charset=utf-8');
-if (session_status() === PHP_SESSION_NONE) session_start();
+
+// Load bootstrap for DB connection and context
+if (!isset($GLOBALS['CONTAINER']) || empty($GLOBALS['CONTAINER'])) {
+    require_once __DIR__ . '/bootstrap.php';
+}
+
+// Get DB connection from bootstrap
+$conn = $GLOBALS['CONTAINER']['db'] ?? null;
 
 // simple logger
 function pm_log($msg) {
@@ -20,23 +27,8 @@ function pm_log($msg) {
 }
 
 try {
-    $dbFile = __DIR__ . '/config/db.php';
-    if (!is_readable($dbFile)) {
-        pm_log("DB config not found at {$dbFile}");
-        http_response_code(500);
-        echo json_encode(['success'=>false,'message'=>'DB config missing']);
-        exit;
-    }
-    require_once $dbFile;
-    if (!function_exists('connectDB')) {
-        pm_log("connectDB() not found in db.php");
-        http_response_code(500);
-        echo json_encode(['success'=>false,'message'=>'DB helper missing']);
-        exit;
-    }
-    $conn = connectDB();
     if (!($conn instanceof mysqli)) {
-        pm_log("connectDB() did not return mysqli");
+        pm_log("DB connection not available from bootstrap");
         http_response_code(500);
         echo json_encode(['success'=>false,'message'=>'DB connection failed']);
         exit;
