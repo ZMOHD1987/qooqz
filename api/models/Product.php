@@ -134,6 +134,27 @@ class Product {
         return $out;
     }
 
+    private function tableExists($table) {
+        try {
+            $t = $this->mysqli->real_escape_string($table);
+            $res = $this->mysqli->query("SHOW TABLES LIKE '{$t}'");
+            return ($res && $res->num_rows > 0);
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
+    private function columnExists($table, $column) {
+        try {
+            $t = $this->mysqli->real_escape_string($table);
+            $c = $this->mysqli->real_escape_string($column);
+            $res = $this->mysqli->query("SHOW COLUMNS FROM `{$t}` LIKE '{$c}'");
+            return ($res && $res->num_rows > 0);
+        } catch (Throwable $e) {
+            return false;
+        }
+    }
+
     // --- Create -----------------------------------------------------------
 
     public function create($data) {
@@ -233,7 +254,20 @@ class Product {
 
         if ($stmt->execute()) {
             $productId = $stmt->insert_id;
+            $vendorId = isset($data['vendor_id']) ? (int)$data['vendor_id'] : 0;
             $stmt->close();
+            
+            // Update vendor product count
+            if ($vendorId > 0 && $this->tableExists('vendors') && $this->columnExists('vendors', 'product_count')) {
+                $updateVendorSql = "UPDATE vendors SET product_count = (SELECT COUNT(*) FROM products WHERE vendor_id = ?) WHERE id = ?";
+                $updateStmt = $this->mysqli->prepare($updateVendorSql);
+                if ($updateStmt) {
+                    $updateStmt->bind_param('ii', $vendorId, $vendorId);
+                    $updateStmt->execute();
+                    $updateStmt->close();
+                }
+            }
+            
             Utils::log("Product created: ID {$productId}, SKU: " . (isset($data['sku']) ? $data['sku'] : ''), 'INFO');
             return $this->findById($productId);
         }
@@ -485,6 +519,20 @@ class Product {
     }
 
     public function delete($id) {
+        // Get vendor_id before deleting (for updating vendor count)
+        $vendorId = null;
+        $getVendorSql = "SELECT vendor_id FROM products WHERE id = ?";
+        $getStmt = $this->mysqli->prepare($getVendorSql);
+        if ($getStmt) {
+            $getStmt->bind_param('i', $id);
+            $getStmt->execute();
+            $result = $getStmt->get_result();
+            if ($row = $result->fetch_assoc()) {
+                $vendorId = (int)$row['vendor_id'];
+            }
+            $getStmt->close();
+        }
+        
         // delete related rows (translations, media, pricing, categories, etc.)
         $this->mysqli->query("DELETE FROM product_translations WHERE product_id = " . (int)$id);
         $this->mysqli->query("DELETE FROM product_media WHERE product_id = " . (int)$id);
@@ -497,6 +545,18 @@ class Product {
         $stmt->bind_param('i', $id);
         $ok = $stmt->execute();
         $stmt->close();
+        
+        // Update vendor product count
+        if ($ok && $vendorId > 0 && $this->tableExists('vendors') && $this->columnExists('vendors', 'product_count')) {
+            $updateVendorSql = "UPDATE vendors SET product_count = (SELECT COUNT(*) FROM products WHERE vendor_id = ?) WHERE id = ?";
+            $updateStmt = $this->mysqli->prepare($updateVendorSql);
+            if ($updateStmt) {
+                $updateStmt->bind_param('ii', $vendorId, $vendorId);
+                $updateStmt->execute();
+                $updateStmt->close();
+            }
+        }
+        
         if ($ok) Utils::log("Product permanently deleted: ID {$id}", 'WARNING');
         return $ok;
     }
