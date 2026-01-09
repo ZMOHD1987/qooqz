@@ -1,24 +1,72 @@
 <?php
 declare(strict_types=1);
-session_start();
+/**
+ * frontend/index.php
+ * Main frontend page that displays products, vendors, and home content
+ * Uses bootstrap for consistent configuration and API access
+ */
 
-// 1. إعدادات اللغة (بناءً على طلبك السابق)
-$lang = $_SESSION['lang'] ?? 'ar';
-$rtlLanguages = ['ar', 'fa', 'ur'];
+// Load bootstrap for session, config, and API access
+require_once __DIR__ . '/../api/bootstrap.php';
+
+// Get language from session or default
+$lang = $_SESSION['lang'] ?? $_SESSION['preferred_language'] ?? 'ar';
+$rtlLanguages = ['ar', 'fa', 'ur', 'he'];
 $direction = in_array($lang, $rtlLanguages) ? 'rtl' : 'ltr';
 
-// 2. محاكاة جلب البيانات (أو استخدم curl الفعلي)
-$json_data = '{"status":"ok","data":{"ui":{"theme":{"name":"default","mode":"light"},"colors":{"primary":"#0d6efd","secondary":"#6c757d","background":"#ffffff"},"fonts":{"base":"Cairo, sans-serif"},"buttons":{"radius":"6px"},"cards":{"shadow":true}},"data":{"sections":["featured_products","new_products","hot_products","featured_vendors"],"banners":[],"products":{"featured":[{"id":1,"slug":"iphone-14-pro-max-256gb","is_featured":1,"name":"iPhone 15"},{"id":2,"slug":"samsung-galaxy-s23-ultra","is_featured":1,"name":"samsung-galaxy-s23-ultra"},{"id":3,"slug":"nike-air-max-black","is_featured":1,"name":"nike-air-max-black"}],"new":[{"id":25,"slug":"52jhgv","created_at":"2025-12-21 14:46:54","name":"52jhgv"},{"id":24,"slug":"gg6h-ddd","created_at":"2025-12-21 14:44:48","name":"gg6h-ddd"}],"hot":[]},"vendors":{"featured":[{"id":2,"store_name":"Fashion Hub","slug":"fashion-hub","logo_url":"\/vendors\/fashion-logo.png","rating_average":"0.00","total_products":0},{"id":35,"store_name":"بيب-55","slug":"تتنت-ى","logo_url":"\/uploads\/vendors\/v35_logo_url_1766597294_f2e1ea80.jpg","rating_average":"0.00","total_products":0}]}}}}';
+// Fetch data from HomeController/HomeService
+try {
+    require_once __DIR__ . '/../api/controllers/HomeController.php';
+    
+    // Create controller and get data
+    $controller = new HomeController();
+    
+    // Capture output from controller
+    ob_start();
+    $controller->index();
+    $jsonOutput = ob_get_clean();
+    
+    $apiResponse = json_decode($jsonOutput, true);
+    
+    if (!$apiResponse || $apiResponse['status'] !== 'ok') {
+        throw new Exception('Failed to load home data');
+    }
+    
+    $homeData = $apiResponse['data'] ?? [];
+} catch (Throwable $e) {
+    error_log('Frontend index error: ' . $e->getMessage());
+    // Fallback to empty data
+    $homeData = [
+        'theme' => ['name' => 'default', 'mode' => 'light'],
+        'colors' => ['primary' => '#0d6efd', 'secondary' => '#6c757d', 'background' => '#ffffff'],
+        'fonts' => ['base' => 'Cairo, sans-serif'],
+        'buttons' => ['radius' => '6px'],
+        'cards' => ['shadow' => true],
+        'sections' => [],
+        'banners' => [],
+        'featured_products' => [],
+        'new_products' => [],
+        'hot_products' => [],
+        'featured_vendors' => [],
+        'categories' => []
+    ];
+}
 
-$apiResponse = json_decode($json_data, true);
-$ui = $apiResponse['data']['ui'] ?? [];
-$content = $apiResponse['data']['data'] ?? [];
-$sections = $content['sections'] ?? []; // الترتيب المطلوب من الـ API
+// Extract UI and content data
+$ui = [
+    'theme' => $homeData['theme'] ?? ['name' => 'default'],
+    'colors' => $homeData['colors'] ?? [],
+    'fonts' => $homeData['fonts'] ?? [],
+    'buttons' => $homeData['buttons'] ?? [],
+    'cards' => $homeData['cards'] ?? []
+];
 
-// تمرير البيانات للـ Partials عبر Global
-$GLOBALS['PUBLIC_UI'] = $ui;
-$banners = $content['banners'] ?? [];
+$sections = $homeData['sections'] ?? [];
+$banners = $homeData['banners'] ?? [];
 $breadcrumbs = [['label' => ($lang == 'ar' ? 'الرئيسية' : 'Home'), 'url' => '/']];
+
+// Set globals for partials
+$GLOBALS['PUBLIC_UI'] = $ui;
 ?>
 
 <!DOCTYPE html>
@@ -50,25 +98,25 @@ $breadcrumbs = [['label' => ($lang == 'ar' ? 'الرئيسية' : 'Home'), 'url'
 
     <?php foreach ($sections as $sectionKey): ?>
         
-        <?php if ($sectionKey === 'featured_products' && !empty($content['products']['featured'])): ?>
+        <?php if ($sectionKey === 'featured_products' && !empty($homeData['featured_products'])): ?>
             <section>
-                <h2>المنتجات المميزة</h2>
+                <h2><?= $lang === 'ar' ? 'المنتجات المميزة' : 'Featured Products' ?></h2>
                 <div class="grid">
-                    <?php foreach ($content['products']['featured'] as $p): ?>
+                    <?php foreach ($homeData['featured_products'] as $p): ?>
                         <div class="card">
                             <h4><?= htmlspecialchars($p['name']) ?></h4>
-                            <a href="/product/<?= $p['slug'] ?>">عرض</a>
+                            <a href="/product/<?= $p['slug'] ?>"><?= $lang === 'ar' ? 'عرض' : 'View' ?></a>
                         </div>
                     <?php endforeach; ?>
                 </div>
             </section>
         <?php endif; ?>
 
-        <?php if ($sectionKey === 'new_products' && !empty($content['products']['new'])): ?>
+        <?php if ($sectionKey === 'new_products' && !empty($homeData['new_products'])): ?>
             <section>
-                <h2>أحدث المنتجات</h2>
+                <h2><?= $lang === 'ar' ? 'أحدث المنتجات' : 'New Products' ?></h2>
                 <div class="grid">
-                    <?php foreach ($content['products']['new'] as $p): ?>
+                    <?php foreach ($homeData['new_products'] as $p): ?>
                         <div class="card">
                             <h4><?= htmlspecialchars($p['name']) ?></h4>
                             <small><?= $p['created_at'] ?></small>
@@ -78,15 +126,15 @@ $breadcrumbs = [['label' => ($lang == 'ar' ? 'الرئيسية' : 'Home'), 'url'
             </section>
         <?php endif; ?>
 
-        <?php if ($sectionKey === 'featured_vendors' && !empty($content['vendors']['featured'])): ?>
+        <?php if ($sectionKey === 'featured_vendors' && !empty($homeData['featured_vendors'])): ?>
             <section>
-                <h2>أفضل المتاجر</h2>
+                <h2><?= $lang === 'ar' ? 'أفضل المتاجر' : 'Featured Stores' ?></h2>
                 <div class="grid">
-                    <?php foreach ($content['vendors']['featured'] as $v): ?>
+                    <?php foreach ($homeData['featured_vendors'] as $v): ?>
                         <div class="card">
                             <img src="<?= $v['logo_url'] ?>" style="width: 60px; height: 60px; border-radius: 50%;">
                             <h4><?= htmlspecialchars($v['store_name']) ?></h4>
-                            <p>التقييم: <?= $v['rating_average'] ?> ★</p>
+                            <p><?= $lang === 'ar' ? 'التقييم' : 'Rating' ?>: <?= $v['rating_average'] ?> ★</p>
                         </div>
                     <?php endforeach; ?>
                 </div>
