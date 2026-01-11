@@ -1,209 +1,75 @@
-/* admin/assets/css/pages/users.css
- * User management styles - Uses CSS variables from admin theme
- * Respects colors and settings from bootstrap_admin_ui.php
- */
+/* htdocs/admin/assets/css/pages/users.css */
 
 .users-fragment {
-    direction: inherit; /* Respects RTL/LTR direction from system */
+    direction: inherit; /* يحترم اتجاه النص RTL/LTR الممرر من النظام */
 }
 
-/* Table styling using theme variables */
+/* الجدول المرن */
 .users-fragment .table {
     width: 100%;
     border-collapse: collapse;
-    background: var(--theme-background-secondary, #1A1A1A);
-    color: var(--theme-text-primary, #FFFFFF);
-    border: 1px solid var(--theme-border, #333333);
-    border-radius: var(--theme-card-radius, 8px);
+    background: var(--background-secondary); /* يتغير بتغير السمة */
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
 }
 
-/* Table header */
+/* رأس الجدول - Header */
 .users-fragment .table thead th {
-    background: var(--theme-background, rgba(59, 130, 246, 0.1));
-    color: var(--theme-primary, #3B82F6);
+    background: rgba(var(--primary-rgb), 0.1); /* يأخذ لون السمة الرئيسي بشفافية */
+    color: var(--primary-color); /* اللون الرئيسي للسمة المختارة */
     padding: 15px;
     text-align: start;
-    border-bottom: 2px solid var(--theme-primary, #3B82F6);
+    border-bottom: 2px solid var(--primary-color);
 }
 
-/* Table cells */
+/* الخلايا */
 .users-fragment .table tbody td {
     padding: 12px 15px;
-    border-bottom: 1px solid var(--theme-border, #333333);
-    color: var(--theme-text-primary, #FFFFFF);
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
 }
 
-.users-fragment .table tbody tr:hover {
-    background: var(--theme-background, rgba(51, 65, 85, 0.3));
-}
-
-/* Status toggle switch - Responsive to theme */
+/* مفتاح التنشيط (Toggle) - مرن */
 .users-fragment .v-switch {
     position: relative;
     display: inline-block;
     width: 40px;
     height: 20px;
 }
-
-.users-fragment .v-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
+.users-fragment .v-switch input { opacity: 0; width: 0; height: 0; }
 .users-fragment .v-slider {
     position: absolute;
     cursor: pointer;
     inset: 0;
-    background-color: var(--theme-border, #333333);
+    background-color: var(--border-color);
     transition: .4s;
     border-radius: 34px;
 }
-
 .users-fragment .v-slider:before {
-    position: absolute;
-    content: "";
-    height: 14px;
-    width: 14px;
-    left: 3px;
-    bottom: 3px;
+    position: absolute; content: "";
+    height: 14px; width: 14px; left: 3px; bottom: 3px;
     background-color: #fff;
-    transition: .4s;
-    border-radius: 50%;
+    transition: .4s; border-radius: 50%;
 }
-
 .users-fragment input:checked + .v-slider {
-    background-color: var(--theme-success, #10B981);
+    background-color: var(--success-color); /* لون النجاح في السمة */
 }
-
 .users-fragment input:checked + .v-slider:before {
     transform: translateX(20px);
 }
 
-/* Delete button - Uses theme error color */
+/* زر الحذف - يعتمد على لون الخطأ في السمة */
 .users-fragment .btn-delete {
     background: transparent;
-    color: var(--theme-error, #EF4444);
-    border: 1px solid var(--theme-error, #EF4444);
+    color: var(--error-color);
+    border: 1px solid var(--error-color);
     padding: 5px 10px;
-    border-radius: var(--theme-btn-radius, 4px);
+    border-radius: 4px;
     cursor: pointer;
     transition: 0.3s;
 }
-
 .users-fragment .btn-delete:hover {
-    background: var(--theme-error, #EF4444);
+    background: var(--error-color);
     color: #fff;
-}
-
-/* Edit button - Uses theme primary color */
-.users-fragment .btn-edit {
-    background: transparent;
-    color: var(--theme-primary, #3B82F6);
-    border: 1px solid var(--theme-primary, #3B82F6);
-    padding: 5px 10px;
-    border-radius: var(--theme-btn-radius, 4px);
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.users-fragment .btn-edit:hover {
-    background: var(--theme-primary, #3B82F6);
-    color: #fff;
-}
-
-/* Badge styles using theme colors */
-.users-fragment .badge {
-    padding: 4px 8px;
-    border-radius: var(--theme-btn-radius, 4px);
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.users-fragment .badge-active {
-    background-color: rgba(16, 185, 129, 0.2);
-    color: var(--theme-success, #10B981);
-}
-
-.users-fragment .badge-inactive {
-    background-color: rgba(239, 68, 68, 0.2);
-    color: var(--theme-error, #EF4444);
-}
-
-/* Form inputs using theme */
-.users-fragment .form-input {
-    width: 100%;
-    padding: 10px;
-    background: var(--theme-background, #0A0A0A);
-    border: 1px solid var(--theme-border, #333333);
-    color: var(--theme-text-primary, #FFFFFF);
-    border-radius: var(--theme-btn-radius, 6px);
-    font-size: 0.9rem;
-}
-
-.users-fragment .form-input:focus {
-    border-color: var(--theme-primary, #3B82F6);
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-}
-
-/* Buttons using theme button styles */
-.users-fragment .btn-primary {
-    background: var(--theme-primary, #3B82F6);
-    color: var(--theme-text-primary, #FFFFFF);
-    border: none;
-    padding: var(--theme-btn-padding, 10px 16px);
-    border-radius: var(--theme-btn-radius, 6px);
-    cursor: pointer;
-    transition: 0.3s;
-    font-weight: 600;
-}
-
-.users-fragment .btn-primary:hover {
-    background: var(--theme-primary-hover, #2563EB);
-}
-
-.users-fragment .btn-secondary {
-    background: var(--theme-secondary, #10B981);
-    color: var(--theme-text-primary, #FFFFFF);
-    border: none;
-    padding: var(--theme-btn-padding, 10px 16px);
-    border-radius: var(--theme-btn-radius, 6px);
-    cursor: pointer;
-    transition: 0.3s;
-    font-weight: 600;
-}
-
-.users-fragment .btn-secondary:hover {
-    opacity: 0.9;
-}
-
-/* Modal styles */
-.users-fragment .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(8px);
-    z-index: 9999;
-}
-
-.users-fragment .modal-content {
-    background: var(--theme-background-secondary, #1A1A1A);
-    border: 1px solid var(--theme-border, #333333);
-    border-radius: var(--theme-card-radius, 12px);
-    padding: 30px;
-    max-width: 800px;
-    margin: 20px auto;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-    .users-fragment .table {
-        font-size: 0.85rem;
-    }
-    
-    .users-fragment .table thead th,
-    .users-fragment .table tbody td {
-        padding: 8px 10px;
-    }
 }

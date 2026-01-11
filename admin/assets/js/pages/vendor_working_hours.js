@@ -1,7 +1,3 @@
-/**
- * admin/assets/js/pages/vendor_working_hours.js
- * Vendor Working Hours Management - Respects translations and theme from ADMIN_UI_PAYLOAD
- */
 (function () {
     'use strict';
 
@@ -11,272 +7,383 @@
         return;
     }
 
-    const trans = cfg.translations || {};
-    const days = cfg.days || {};
-
-    // Translation helper with fallback
-    const t = (key, fallback = '') => {
-        const parts = key.split('.');
-        let value = trans;
-        for (const part of parts) {
-            if (value && typeof value === 'object' && part in value) {
-                value = value[part];
-            } else {
-                return fallback || key;
-            }
-        }
-        return typeof value === 'string' ? value : fallback || key;
-    };
-
-    // Get day name
-    const getDayName = (dayNumber) => days[dayNumber] || dayNumber;
-
-    const dom = {
-        tbody: document.getElementById('vwhTbody'),
-        formWrap: document.getElementById('vwhFormWrap'),
-        form: document.getElementById('vwhForm'),
-        vendorFilter: document.getElementById('vwhVendorFilter'),
-        dayFilter: document.getElementById('vwhDayFilter'),
-        vendorSelect: document.getElementById('vwhVendor'),
-        idInput: document.getElementById('vwhId'),
-        daySelect: document.getElementById('vwhDay'),
-        openInput: document.getElementById('vwhOpen'),
-        closeInput: document.getElementById('vwhClose'),
-        closedCheck: document.getElementById('vwhClosed'),
-        formTitle: document.getElementById('vwhFormTitle'),
-        newBtn: document.getElementById('vwhNew'),
-        refreshBtn: document.getElementById('vwhRefresh'),
-        resetBtn: document.getElementById('vwhResetFilters'),
-        cancelBtn: document.getElementById('vwhCancel')
-    };
-
-    if (!dom.tbody || !dom.form) {
-        console.warn('Required DOM elements not found');
-        return;
+    // دالة للحصول على اسم اليوم
+    function getDayName(dayNumber) {
+        return cfg.days?.[dayNumber] || dayNumber;
     }
 
-    let select2Initialized = false;
+    // دالة للحصول على نص مترجم مع قيمة افتراضية بسيطة
+    function t(key, fallback = '') {
+        return cfg.translations?.[key] || fallback;
+    }
 
-    /* Initialize Select2 */
-    function initSelect2() {
-        if (select2Initialized || typeof jQuery === 'undefined' || !jQuery().select2) {
+    function initApp() {
+        const dom = {
+            tbody: document.getElementById('vwhTbody'),
+            formWrap: document.getElementById('vwhFormWrap'),
+            form: document.getElementById('vwhForm'),
+
+            vendorFilter: document.getElementById('vwhVendorFilter'),
+            dayFilter: document.getElementById('vwhDayFilter'),
+
+            vendorSelect: document.getElementById('vwhVendor'),
+            daySelect: document.getElementById('vwhDay'),
+            openInput: document.getElementById('vwhOpen'),
+            closeInput: document.getElementById('vwhClose'),
+            closedCheck: document.getElementById('vwhClosed'),
+            
+            resetBtn: document.getElementById('vwhResetFilters')
+        };
+
+        if (!dom.tbody || !dom.form) {
+            console.warn('Vendor Working Hours: Required DOM elements not found');
             return;
         }
 
-        if (dom.vendorFilter) {
-            $(dom.vendorFilter).select2({
-                placeholder: t('all_vendors', 'All Vendors'),
-                allowClear: true,
-                width: '100%'
-            }).on('change', loadTable);
-        }
+        // تتبع حالة تهيئة Select2
+        let select2Initialized = false;
 
-        if (dom.vendorSelect) {
-            $(dom.vendorSelect).select2({
-                dropdownParent: $(dom.formWrap),
-                width: '100%',
-                placeholder: t('select_vendor', 'Select Vendor')
-            });
-        }
-
-        select2Initialized = true;
-    }
-
-    /* Load Vendors */
-    async function loadVendors() {
-        try {
-            const r = await fetch(cfg.vendorsUrl);
-            const j = await r.json();
-            
-            if (j.success && j.data) {
-                const options = j.data.map(v =>
-                    `<option value="${v.id}">${v.store_name || v.name || 'Vendor ' + v.id}</option>`
-                ).join('');
-
-                if (dom.vendorFilter) {
-                    dom.vendorFilter.innerHTML = `<option value="">${t('all_vendors', 'All Vendors')}</option>` + options;
-                }
-                if (dom.vendorSelect) {
-                    dom.vendorSelect.innerHTML = `<option value="">${t('select_vendor', 'Select Vendor')}</option>` + options;
-                }
-
-                initSelect2();
+        /* =======================
+           تهيئة Select2 بشكل آمن (مرة واحدة فقط)
+        ======================= */
+        function initSelect2Once() {
+            if (select2Initialized || typeof jQuery === 'undefined' || !jQuery().select2) {
+                return;
             }
-        } catch (e) {
-            console.error('Error loading vendors:', e);
-        }
-    }
 
-    /* Load Working Hours Table */
-    async function loadTable() {
-        dom.tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;">${t('loading', 'Loading...')}</td></tr>`;
+            // تهيئة الفلتر
+            if (dom.vendorFilter) {
+                $(dom.vendorFilter).select2({
+                    placeholder: t('all_vendors', 'All Vendors'),
+                    allowClear: true,
+                    width: '100%',
+                    dir: cfg.isRTL ? 'rtl' : 'ltr'
+                }).on('change', loadTable);
+            }
 
-        const params = new URLSearchParams({
-            vendor_id: dom.vendorFilter.value,
-            day_of_week: dom.dayFilter.value
-        });
-
-        try {
-            const r = await fetch(`${cfg.apiUrl}?${params.toString()}`);
-            const j = await r.json();
-
-            dom.tbody.innerHTML = '';
-
-            if (j.success && j.data && j.data.length > 0) {
-                j.data.forEach(row => {
-                    const tr = document.createElement('tr');
-                    const vendorName = row.vendor_name || row.store_name || `Vendor ${row.vendor_id}`;
-                    const dayName = getDayName(row.day_of_week);
-                    const openTime = row.open_time || '-';
-                    const closeTime = row.close_time || '-';
-                    const isClosed = row.is_closed == 1;
-                    const closedBadge = isClosed ? 
-                        `<span style="color: var(--theme-error);">✓</span>` : 
-                        `<span style="color: var(--theme-text-secondary);">—</span>`;
-
-                    tr.innerHTML = `
-                        <td>${row.id}</td>
-                        <td>${vendorName}</td>
-                        <td>${dayName}</td>
-                        <td>${openTime}</td>
-                        <td>${closeTime}</td>
-                        <td style="text-align:center;">${closedBadge}</td>
-                        <td style="text-align:center;">
-                            <button class="vwh-btn btn-blue edit-btn" style="padding:4px 12px;font-size:0.85rem;" title="${t('edit', 'Edit')}">
-                                ✏️
-                            </button>
-                            <button class="vwh-btn btn-gray delete-btn" style="padding:4px 12px;font-size:0.85rem;background: var(--theme-error);" title="${t('delete', 'Delete')}">
-                                🗑
-                            </button>
-                        </td>
-                    `;
-
-                    tr.querySelector('.edit-btn').onclick = () => editRow(row);
-                    tr.querySelector('.delete-btn').onclick = () => deleteRow(row.id);
-
-                    dom.tbody.appendChild(tr);
+            // تهيئة النموذج
+            if (dom.vendorSelect) {
+                $(dom.vendorSelect).select2({
+                    dropdownParent: cfg.isStandalone ? null : $(dom.formWrap),
+                    width: '100%',
+                    placeholder: t('select_vendor', 'Select Vendor'),
+                    dir: cfg.isRTL ? 'rtl' : 'ltr'
                 });
-            } else {
-                dom.tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color: var(--theme-text-secondary);">${t('no_data', 'No data found')}</td></tr>`;
             }
-        } catch (e) {
-            console.error('Error loading data:', e);
-            dom.tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color: var(--theme-error);">${t('error_loading', 'Error loading data')}</td></tr>`;
+
+            select2Initialized = true;
+            console.log('Select2 initialized successfully for', cfg.lang, 'language');
         }
-    }
 
-    /* Open Form for New Entry */
-    function openFormNew() {
-        dom.formTitle.textContent = t('add_hours', 'Add Working Hours');
-        dom.form.reset();
-        dom.idInput.value = '';
-        dom.formWrap.style.display = 'flex';
-    }
-
-    /* Open Form for Edit */
-    function editRow(row) {
-        dom.formTitle.textContent = t('edit_hours', 'Edit Working Hours');
-        dom.idInput.value = row.id;
-        
-        if (dom.vendorSelect) {
-            dom.vendorSelect.value = row.vendor_id;
-            if (select2Initialized && $(dom.vendorSelect).data('select2')) {
-                $(dom.vendorSelect).trigger('change');
+        /* =======================
+           تحديث قائمة التجار (بدون destroy)
+        ======================= */
+        function updateVendorsDropdowns(vendorsData) {
+            if (!vendorsData || !Array.isArray(vendorsData)) {
+                console.error('Invalid vendors data');
+                return false;
             }
-        }
-        
-        if (dom.daySelect) dom.daySelect.value = row.day_of_week;
-        if (dom.openInput) dom.openInput.value = row.open_time || '';
-        if (dom.closeInput) dom.closeInput.value = row.close_time || '';
-        if (dom.closedCheck) dom.closedCheck.checked = row.is_closed == 1;
 
-        dom.formWrap.style.display = 'flex';
-    }
+            const options = vendorsData.map(v =>
+                `<option value="${v.id}">[ID: ${v.id}] ${v.store_name || 'Unknown'}</option>`
+            ).join('');
 
-    /* Close Form */
-    function closeForm() {
-        dom.formWrap.style.display = 'none';
-        dom.form.reset();
-        dom.idInput.value = '';
-    }
+            // تحديث الفلتر
+            if (dom.vendorFilter) {
+                const currentValue = dom.vendorFilter.value;
+                
+                // تحديث HTML مباشرة
+                dom.vendorFilter.innerHTML = '<option></option>' + options;
+                
+                // استعادة القيمة المحددة
+                if (currentValue) {
+                    dom.vendorFilter.value = currentValue;
+                }
+                
+                // تحديث Select2 إذا كان نشطًا
+                if (select2Initialized) {
+                    $(dom.vendorFilter).trigger('change');
+                }
+            }
 
-    /* Submit Form */
-    dom.form.onsubmit = async (e) => {
-        e.preventDefault();
-        const fd = new FormData(dom.form);
-        const id = dom.idInput.value;
-        fd.append('action', id ? 'update' : 'create');
-        fd.set('csrf_token', cfg.csrfToken);
-
-        try {
-            const r = await fetch(cfg.apiUrl, { method: 'POST', body: fd });
-            const j = await r.json();
+            // تحديث النموذج
+            if (dom.vendorSelect) {
+                const currentValue = dom.vendorSelect.value;
+                const selectOption = `<option value="">${t('select_vendor', 'Select Vendor')}</option>`;
+                
+                // تحديث HTML مباشرة
+                dom.vendorSelect.innerHTML = selectOption + options;
+                
+                // استعادة القيمة المحددة
+                if (currentValue) {
+                    dom.vendorSelect.value = currentValue;
+                }
+                
+                // تحديث Select2 إذا كان نشطًا
+                if (select2Initialized) {
+                    $(dom.vendorSelect).trigger('change');
+                }
+            }
             
-            if (j.success) {
-                closeForm();
-                loadTable();
-            } else {
-                alert(j.message || t('error_save', 'Error saving data'));
+            return true;
+        }
+
+        /* =======================
+           تحميل التجار
+        ======================= */
+        async function loadVendors() {
+            try {
+                console.log('Loading vendors from:', cfg.vendorsUrl);
+                const res = await fetch(cfg.vendorsUrl);
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP error: ${res.status}`);
+                }
+                
+                const json = await res.json();
+                console.log('Vendors API response:', json);
+
+                if (json.success && json.data && Array.isArray(json.data)) {
+                    updateVendorsDropdowns(json.data);
+                    console.log(`Loaded ${json.data.length} vendors for language: ${cfg.lang}`);
+                    return json.data;
+                } else {
+                    throw new Error(json.message || 'Failed to load vendors');
+                }
+            } catch (e) {
+                console.error('Error loading vendors:', e);
+                return null;
             }
-        } catch (err) {
-            console.error('Submit error:', err);
-            alert(t('error_save', 'Error saving data'));
-        }
-    };
-
-    /* Delete Row */
-    async function deleteRow(id) {
-        if (!confirm(t('confirm_delete', 'Are you sure you want to delete this entry?'))) {
-            return;
         }
 
-        const fd = new FormData();
-        fd.append('id', id);
-        fd.append('action', 'delete');
-        fd.set('csrf_token', cfg.csrfToken);
-
-        try {
-            const r = await fetch(cfg.apiUrl, { method: 'POST', body: fd });
-            const j = await r.json();
+        /* =======================
+           تحميل الجدول
+        ======================= */
+        async function loadTable() {
+            if (!dom.tbody) return;
             
-            if (j.success) {
-                loadTable();
-            } else {
-                alert(j.message || t('error_delete', 'Error deleting entry'));
-            }
-        } catch (err) {
-            console.error('Delete error:', err);
-            alert(t('error_delete', 'Error deleting entry'));
-        }
-    }
+            dom.tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#666;padding:30px;">${t('loading', 'Loading...')}</td></tr>`;
 
-    /* Event Listeners */
-    if (dom.newBtn) dom.newBtn.onclick = openFormNew;
-    if (dom.refreshBtn) dom.refreshBtn.onclick = () => { loadTable(); loadVendors(); };
-    if (dom.cancelBtn) dom.cancelBtn.onclick = closeForm;
-    if (dom.resetBtn) {
-        dom.resetBtn.onclick = () => {
-            if (dom.vendorFilter) dom.vendorFilter.value = '';
-            if (dom.dayFilter) dom.dayFilter.value = '';
-            if (select2Initialized && $(dom.vendorFilter).data('select2')) {
-                $(dom.vendorFilter).val(null).trigger('change');
+            let vendorId = '';
+            if (dom.vendorFilter) {
+                vendorId = dom.vendorFilter.value;
             }
+
+            const day = dom.dayFilter ? dom.dayFilter.value : '';
+
+            const params = new URLSearchParams({
+                vendor_id: vendorId,
+                day_of_week: day
+            });
+
+            try {
+                const res = await fetch(`${cfg.apiUrl}?${params}`);
+                const json = await res.json();
+
+                if (json.success && json.data && json.data.length) {
+                    dom.tbody.innerHTML = json.data.map(r => `
+                        <tr>
+                            <td>${r.id}</td>
+                            <td><span style="color:#fff;font-weight:600;">${r.vendor_name || 'N/A'}</span></td>
+                            <td style="color:#3b82f6;">${getDayName(r.day_of_week)}</td>
+                            <td>${r.open_time || '-'}</td>
+                            <td>${r.close_time || '-'}</td>
+                            <td style="text-align:center;">${r.is_closed == 1 ? '✔' : ''}</td>
+                            <td style="text-align:center;">
+                                <button class="vwh-btn btn-gray"
+                                    onclick="vwhEditRow(
+                                        ${r.id},
+                                        ${r.vendor_id},
+                                        ${r.day_of_week},
+                                        '${(r.open_time || '').replace(/'/g, "\\'")}',
+                                        '${(r.close_time || '').replace(/'/g, "\\'")}',
+                                        ${r.is_closed || 0}
+                                    )">${t('edit', 'Edit')}</button>
+                                <button class="vwh-btn"
+                                    style="background:#450a0a;color:#f87171;margin-inline-start:6px;"
+                                    onclick="vwhDeleteRow(${r.id})">${t('delete', 'Delete')}</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    dom.tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#666;padding:40px;">${t('no_data', 'No data found')}</td></tr>`;
+                }
+            } catch (e) {
+                console.error('Load table error:', e);
+                dom.tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:red;padding:40px;">${t('error_loading', 'Error loading data')}</td></tr>`;
+            }
+        }
+
+        /* =======================
+           إعادة ضبط الفلاتر
+        ======================= */
+        if (dom.resetBtn) {
+            dom.resetBtn.onclick = () => {
+                if (dom.vendorFilter) {
+                    dom.vendorFilter.value = '';
+                    if (select2Initialized) {
+                        $(dom.vendorFilter).val(null).trigger('change');
+                    }
+                }
+                
+                if (dom.dayFilter) {
+                    dom.dayFilter.value = '';
+                }
+                
+                loadTable();
+            };
+        }
+
+        /* =======================
+           إضافة جديد
+        ======================= */
+        document.getElementById('vwhNew').onclick = () => {
+            dom.form.reset();
+            document.getElementById('vwhId').value = '';
+
+            if (dom.vendorSelect) {
+                dom.vendorSelect.value = '';
+                if (select2Initialized) {
+                    $(dom.vendorSelect).val(null).trigger('change');
+                }
+            }
+            
+            if (dom.daySelect) dom.daySelect.value = '0';
+            if (dom.openInput) dom.openInput.value = '';
+            if (dom.closeInput) dom.closeInput.value = '';
+            if (dom.closedCheck) dom.closedCheck.checked = false;
+
+            document.getElementById('vwhFormTitle').innerText = t('add_hours', 'Add Working Hours');
+            dom.formWrap.style.display = 'flex';
+        };
+
+        if (document.getElementById('vwhCancel')) {
+            document.getElementById('vwhCancel').onclick = () => dom.formWrap.style.display = 'none';
+        }
+
+        /* =======================
+           الحفظ
+        ======================= */
+        dom.form.onsubmit = async (e) => {
+            e.preventDefault();
+
+            const fd = new FormData(dom.form);
+            fd.append('action', 'save');
+
+            if (dom.closedCheck && !dom.closedCheck.checked) {
+                fd.set('is_closed', '0');
+            }
+
+            try {
+                const res = await fetch(cfg.apiUrl, {
+                    method: 'POST',
+                    body: fd,
+                    headers: { 
+                        'X-CSRF-Token': cfg.csrfToken,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const json = await res.json();
+                if (json.success) {
+                    dom.formWrap.style.display = 'none';
+                    loadTable();
+                } else {
+                    alert(json.message || t('save_error', 'Save error'));
+                }
+            } catch (e) {
+                console.error('Save error:', e);
+                alert(t('save_error', 'Save error'));
+            }
+        };
+
+        /* =======================
+           التعديل
+        ======================= */
+        window.vwhEditRow = (id, vendorId, day, open, close, closed) => {
+            document.getElementById('vwhId').value = id;
+            
+            if (dom.daySelect) dom.daySelect.value = day;
+            if (dom.openInput) dom.openInput.value = open;
+            if (dom.closeInput) dom.closeInput.value = close;
+            if (dom.closedCheck) dom.closedCheck.checked = closed == 1;
+
+            if (dom.vendorSelect) {
+                dom.vendorSelect.value = vendorId;
+                if (select2Initialized) {
+                    $(dom.vendorSelect).val(vendorId).trigger('change');
+                }
+            }
+
+            document.getElementById('vwhFormTitle').innerText = t('edit_hours', 'Edit Working Hours');
+            dom.formWrap.style.display = 'flex';
+        };
+
+        /* =======================
+           الحذف
+        ======================= */
+        window.vwhDeleteRow = async (id) => {
+            if (!confirm(t('confirm_delete', 'Are you sure you want to delete?'))) return;
+
+            const fd = new FormData();
+            fd.append('action', 'delete');
+            fd.append('id', id);
+            fd.append('csrf_token', cfg.csrfToken);
+
+            try {
+                const res = await fetch(cfg.apiUrl, {
+                    method: 'POST',
+                    body: fd,
+                    headers: { 
+                        'X-CSRF-Token': cfg.csrfToken,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const json = await res.json();
+                if (!json.success) {
+                    alert(json.message || t('delete_error', 'Delete error'));
+                }
+            } catch (e) {
+                console.error('Delete error:', e);
+                alert(t('delete_error', 'Delete error'));
+            }
+
             loadTable();
         };
+
+        if (document.getElementById('vwhRefresh')) {
+            document.getElementById('vwhRefresh').onclick = () => {
+                loadVendors().then(loadTable);
+            };
+        }
+
+        /* =======================
+           البدء
+        ======================= */
+        console.log('Initializing Vendor Working Hours app...');
+        console.log('Language:', cfg.lang);
+        console.log('Direction:', cfg.direction);
+        console.log('Is RTL:', cfg.isRTL);
+        
+        // 1. تهيئة Select2 (مرة واحدة فقط)
+        initSelect2Once();
+        
+        // 2. تحميل التجار
+        loadVendors().then(() => {
+            // 3. تحميل الجدول
+            loadTable();
+            console.log('App initialized successfully for language:', cfg.lang);
+        }).catch(e => {
+            console.error('Initialization error:', e);
+            // حاول تحميل الجدول على أي حال
+            loadTable();
+        });
     }
 
-    if (dom.dayFilter) dom.dayFilter.onchange = loadTable;
-
-    // Handle checkbox to disable/enable time inputs
-    if (dom.closedCheck) {
-        dom.closedCheck.onchange = () => {
-            const disabled = dom.closedCheck.checked;
-            if (dom.openInput) dom.openInput.disabled = disabled;
-            if (dom.closeInput) dom.closeInput.disabled = disabled;
-        };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+        initApp();
     }
-
-    // Initialize
-    loadVendors();
-    loadTable();
 })();
