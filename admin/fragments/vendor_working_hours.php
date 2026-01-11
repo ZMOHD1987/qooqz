@@ -3,172 +3,77 @@ declare(strict_types=1);
 
 /**
  * admin/fragments/vendor_working_hours.php
- * UI لإدارة ساعات عمل التجار
- * يعمل Standalone أو داخل Dashboard تلقائيًا
- * يدعم جميع لغات العالم عبر نظام الترجمة الخاص بك
+ * Vendor Working Hours Management
  */
 
-/* =======================
-   اكتشاف بيئة التشغيل
-======================= */
 $isInDashboard = false;
 $standaloneMode = true;
+$translations = [];
+$themeColors = [];
 
-// القيم الافتراضية
-$userLang = 'ar';
-$direction = 'rtl';
-$csrfToken = '';
-$apiUrl = '/api/routes/vendor_working_hours.php';
-$vendorsApi = '/api/routes/vendors.php';
-
-if (defined('ADMIN_HEADER_INCLUDED') || isset($ADMIN_UI_PAYLOAD) || function_exists('is_in_admin_scope')) {
+if (defined('ADMIN_HEADER_INCLUDED') || isset($ADMIN_UI_PAYLOAD)) {
     $isInDashboard = true;
     $standaloneMode = false;
 
     if (isset($ADMIN_UI_PAYLOAD)) {
-        // تحديد اللغة من الـ payload
-        if (isset($ADMIN_UI_PAYLOAD['user_lang'])) {
-            $userLang = $ADMIN_UI_PAYLOAD['user_lang'];
-        } elseif (isset($ADMIN_UI_PAYLOAD['user_info']['preferred_language'])) {
-            $userLang = $ADMIN_UI_PAYLOAD['user_info']['preferred_language'];
-        } elseif (isset($ADMIN_UI_PAYLOAD['lang'])) {
-            $userLang = $ADMIN_UI_PAYLOAD['lang'];
-        }
-        
-        // تحديد الاتجاه من اللغة
-        $rtlLangs = ['ar', 'fa', 'he', 'ur']; // أضف اللغات RTL الأخرى التي تدعمها
-        $direction = in_array($userLang, $rtlLangs) ? 'rtl' : 'ltr';
-        
+        $userLang = $ADMIN_UI_PAYLOAD['lang'] ?? 'en';
+        $direction = $ADMIN_UI_PAYLOAD['direction'] ?? 'ltr';
         $csrfToken = $ADMIN_UI_PAYLOAD['csrf_token'] ?? '';
         $apiUrls = $ADMIN_UI_PAYLOAD['apiUrls'] ?? [];
         $apiUrl = $apiUrls['vendorWorkingHours'] ?? '/api/routes/vendor_working_hours.php';
         $vendorsApi = $apiUrls['vendors'] ?? '/api/routes/vendors.php';
+        $translations = $ADMIN_UI_PAYLOAD['strings'] ?? [];
+        $themeColors = $ADMIN_UI_PAYLOAD['theme']['colors_map'] ?? [];
     }
 }
 
-/* =======================
-   Standalone Mode
-======================= */
 if ($standaloneMode) {
     if (session_status() === PHP_SESSION_NONE) session_start();
-
-    // من الجلسة أو القيمة الافتراضية
-    if (isset($_SESSION['user_lang'])) {
-        $userLang = $_SESSION['user_lang'];
-        $rtlLangs = ['ar', 'fa', 'he', 'ur'];
-        $direction = in_array($userLang, $rtlLangs) ? 'rtl' : 'ltr';
-    }
-
+    $userLang = $_SESSION['user_lang'] ?? 'ar';
+    $rtlLangs = ['ar', 'fa', 'he', 'ur'];
+    $direction = in_array($userLang, $rtlLangs) ? 'rtl' : 'ltr';
+    
     if (!isset($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
     }
     $csrfToken = $_SESSION['csrf_token'];
-
     $apiUrl = '/api/routes/vendor_working_hours.php';
     $vendorsApi = '/api/routes/vendors.php';
 }
 
-/* =======================
-   محاولة تحميل الترجمة
-======================= */
-$translations = [];
-$daysTranslations = [];
-
-if ($standaloneMode) {
-    // في الوضع المنفصل: حاول تحميل ملف الترجمة
-    $langFile = $_SERVER['DOCUMENT_ROOT'] . '/languages/vendors/' . $userLang . '.json';
-    
-    if (file_exists($langFile)) {
-        $langContent = file_get_contents($langFile);
-        $langData = json_decode($langContent, true);
-        
-        if (json_last_error() === JSON_ERROR_NONE && isset($langData['strings'])) {
-            $translations = $langData['strings'];
+// Translation helper function
+function t($key, $default = '') {
+    global $translations;
+    if (empty($translations)) return $default ?: $key;
+    $keys = explode('.', $key);
+    $value = $translations;
+    foreach ($keys as $k) {
+        if (!is_array($value) || !isset($value[$k])) {
+            return $default ?: $key;
         }
+        $value = $value[$k];
     }
-} elseif ($isInDashboard && isset($ADMIN_UI_PAYLOAD['translations'])) {
-    // في الداشبورد: استخدم الترجمات من الـ payload
-    $translations = $ADMIN_UI_PAYLOAD['translations'];
+    return is_string($value) ? $value : ($default ?: $key);
 }
 
-// استخراج نصوص ساعات العمل وأيام الأسبوع من الترجمات
-$texts = [];
-$days = [];
+// Days of week
+$days = [
+    0 => t('days.sunday', 'Sunday'),
+    1 => t('days.monday', 'Monday'),
+    2 => t('days.tuesday', 'Tuesday'),
+    3 => t('days.wednesday', 'Wednesday'),
+    4 => t('days.thursday', 'Thursday'),
+    5 => t('days.friday', 'Friday'),
+    6 => t('days.saturday', 'Saturday')
+];
 
-if (!empty($translations)) {
-    // البحث عن النصوص باستخدام المفاتيح المتوقعة
-    $textKeys = [
-        'title' => ['vendor_working_hours_title', 'title'],
-        'filter_vendor' => ['filter_by_vendor', 'filter_vendor'],
-        'filter_day' => ['filter_by_day', 'filter_day'],
-        'reset_filters' => ['reset_filters', 'reset'],
-        'refresh' => ['refresh', 'reload'],
-        'add_new' => ['add_new', 'new'],
-        'id' => ['id', 'ID'],
-        'vendor' => ['vendor', 'merchant'],
-        'day' => ['day', 'Day'],
-        'open' => ['open', 'Open'],
-        'close' => ['close', 'Close'],
-        'closed' => ['closed', 'Closed'],
-        'actions' => ['actions', 'Actions'],
-        'all_days' => ['all_days', 'All Days'],
-        'add_hours' => ['add_working_hours', 'Add Working Hours'],
-        'edit_hours' => ['edit_working_hours', 'Edit Working Hours'],
-        'select_vendor' => ['select_vendor', 'Select Vendor'],
-        'open_time' => ['open_time', 'Open Time'],
-        'close_time' => ['close_time', 'Close Time'],
-        'cancel' => ['cancel', 'Cancel'],
-        'save_data' => ['save_data', 'Save Data'],
-        'loading' => ['loading', 'Loading'],
-        'no_data' => ['no_data', 'No data'],
-        'error_loading' => ['error_loading', 'Error loading'],
-        'confirm_delete' => ['confirm_delete', 'Confirm delete'],
-        'all_vendors' => ['all_vendors', 'All Vendors'],
-        'edit' => ['edit', 'Edit'],
-        'delete' => ['delete', 'Delete']
-    ];
-    
-    foreach ($textKeys as $key => $possibleKeys) {
-        foreach ($possibleKeys as $possibleKey) {
-            if (isset($translations[$possibleKey])) {
-                $texts[$key] = $translations[$possibleKey];
-                break;
-            }
-        }
-    }
-    
-    // أيام الأسبوع
-    $daysKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    foreach ($daysKeys as $index => $dayKey) {
-        if (isset($translations[$dayKey])) {
-            $days[$index] = $translations[$dayKey];
-        }
-    }
-}
-
-// إذا لم تكن هناك أيام مترجمة، استخدم أسماء افتراضية بالإنجليزية
-if (empty($days)) {
-    $days = [
-        0 => 'Sunday',
-        1 => 'Monday',
-        2 => 'Tuesday',
-        3 => 'Wednesday',
-        4 => 'Thursday',
-        5 => 'Friday',
-        6 => 'Saturday'
-    ];
-}
-
-/* =======================
-   HTML Header (Standalone)
-======================= */
 if ($standaloneMode): ?>
 <!doctype html>
 <html lang="<?= htmlspecialchars($userLang) ?>" dir="<?= htmlspecialchars($direction) ?>">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= htmlspecialchars($texts['title'] ?? 'Vendor Working Hours') ?></title>
+<title><?= t('vendor_working_hours_title', 'Vendor Working Hours') ?></title>
 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -197,33 +102,30 @@ if ($standaloneMode): ?>
 <body class="vwh-scope" dir="<?= $direction ?>">
 <?php endif; ?>
 
-<!-- =======================
-     CONTENT
-======================= -->
 <div class="vwh-card">
     <div class="vwh-header">
         <h2 style="color:#2563eb;margin:0;">
-            <?= htmlspecialchars($texts['title'] ?? 'Vendor Working Hours') ?>
+            <?= t('vendor_working_hours_title', 'Vendor Working Hours') ?>
         </h2>
         <div style="display:flex;gap:10px;">
-            <button id="vwhRefresh" class="vwh-btn btn-gray"><?= htmlspecialchars($texts['refresh'] ?? 'Refresh') ?></button>
-            <button id="vwhNew" class="vwh-btn btn-blue"><?= htmlspecialchars($texts['add_new'] ?? 'Add +') ?></button>
+            <button id="vwhRefresh" class="vwh-btn btn-gray"><?= t('refresh', 'Refresh') ?></button>
+            <button id="vwhNew" class="vwh-btn btn-blue"><?= t('add_new', 'Add +') ?></button>
         </div>
     </div>
 
     <div class="vwh-grid">
         <div>
             <label style="display:block;font-size:0.75rem;color:#888;margin-bottom:5px;">
-                <?= htmlspecialchars($texts['filter_vendor'] ?? 'Filter by Vendor') ?>
+                <?= t('filter_by_vendor', 'Filter by Vendor') ?>
             </label>
             <select id="vwhVendorFilter" class="vwh-input"></select>
         </div>
         <div>
             <label style="display:block;font-size:0.75rem;color:#888;margin-bottom:5px;">
-                <?= htmlspecialchars($texts['filter_day'] ?? 'Filter by Day') ?>
+                <?= t('filter_by_day', 'Filter by Day') ?>
             </label>
             <select id="vwhDayFilter" class="vwh-input">
-                <option value=""><?= htmlspecialchars($texts['all_days'] ?? 'All Days') ?></option>
+                <option value=""><?= t('all_days', 'All Days') ?></option>
                 <?php foreach ($days as $k => $dayName): ?>
                 <option value="<?= $k ?>"><?= htmlspecialchars($dayName) ?></option>
                 <?php endforeach; ?>
@@ -231,7 +133,7 @@ if ($standaloneMode): ?>
         </div>
         <div>
             <button type="button" id="vwhResetFilters" class="vwh-btn btn-gray" style="height:42px;width:100%;">
-                <?= htmlspecialchars($texts['reset_filters'] ?? 'Reset Filters') ?>
+                <?= t('reset_filters', 'Reset Filters') ?>
             </button>
         </div>
     </div>
@@ -240,27 +142,24 @@ if ($standaloneMode): ?>
         <table class="vwh-table">
             <thead>
                 <tr>
-                    <th style="width:60px;"><?= htmlspecialchars($texts['id'] ?? 'ID') ?></th>
-                    <th><?= htmlspecialchars($texts['vendor'] ?? 'Vendor') ?></th>
-                    <th><?= htmlspecialchars($texts['day'] ?? 'Day') ?></th>
-                    <th><?= htmlspecialchars($texts['open'] ?? 'Open') ?></th>
-                    <th><?= htmlspecialchars($texts['close'] ?? 'Close') ?></th>
-                    <th style="text-align:center;"><?= htmlspecialchars($texts['closed'] ?? 'Closed') ?></th>
-                    <th style="text-align:center;width:160px;"><?= htmlspecialchars($texts['actions'] ?? 'Actions') ?></th>
+                    <th style="width:60px;"><?= t('id', 'ID') ?></th>
+                    <th><?= t('vendor', 'Vendor') ?></th>
+                    <th><?= t('day', 'Day') ?></th>
+                    <th><?= t('open', 'Open') ?></th>
+                    <th><?= t('close', 'Close') ?></th>
+                    <th style="text-align:center;"><?= t('closed', 'Closed') ?></th>
+                    <th style="text-align:center;width:160px;"><?= t('actions', 'Actions') ?></th>
                 </tr>
             </thead>
             <tbody id="vwhTbody">
                 <tr><td colspan="7" style="text-align:center;color:#666;padding:40px;">
-                    <?= htmlspecialchars($texts['loading'] ?? 'Loading...') ?>
+                    <?= t('loading', 'Loading...') ?>
                 </td></tr>
             </tbody>
         </table>
     </div>
 </div>
 
-<!-- =======================
-     MODAL FORM
-======================= -->
 <div id="vwhFormWrap">
     <div class="vwh-modal">
         <h3 id="vwhFormTitle" style="color:#2563eb;margin-top:0;margin-bottom:20px;border-bottom:1px solid #333;padding-bottom:10px;"></h3>
@@ -270,16 +169,16 @@ if ($standaloneMode): ?>
 
             <div style="margin-bottom:15px;">
                 <label style="color:#aaa;font-size:0.85rem;display:block;margin-bottom:5px;">
-                    <?= htmlspecialchars($texts['vendor'] ?? 'Vendor') ?>
+                    <?= t('vendor', 'Vendor') ?>
                 </label>
                 <select name="vendor_id" id="vwhVendor" class="vwh-input" required style="width:100%;">
-                    <option value=""><?= htmlspecialchars($texts['select_vendor'] ?? 'Select Vendor') ?></option>
+                    <option value=""><?= t('select_vendor', 'Select Vendor') ?></option>
                 </select>
             </div>
 
             <div style="margin-bottom:15px;">
                 <label style="color:#aaa;font-size:0.85rem;display:block;margin-bottom:5px;">
-                    <?= htmlspecialchars($texts['day'] ?? 'Day') ?>
+                    <?= t('day', 'Day') ?>
                 </label>
                 <select name="day_of_week" id="vwhDay" class="vwh-input" required style="width:100%;">
                     <?php foreach ($days as $k => $dayName): ?>
@@ -290,31 +189,31 @@ if ($standaloneMode): ?>
 
             <div style="margin-bottom:15px;">
                 <label style="color:#aaa;font-size:0.85rem;display:block;margin-bottom:5px;">
-                    <?= htmlspecialchars($texts['open_time'] ?? 'Open Time') ?>
+                    <?= t('open_time', 'Open Time') ?>
                 </label>
                 <input type="time" name="open_time" id="vwhOpen" class="vwh-input">
             </div>
 
             <div style="margin-bottom:15px;">
                 <label style="color:#aaa;font-size:0.85rem;display:block;margin-bottom:5px;">
-                    <?= htmlspecialchars($texts['close_time'] ?? 'Close Time') ?>
+                    <?= t('close_time', 'Close Time') ?>
                 </label>
                 <input type="time" name="close_time" id="vwhClose" class="vwh-input">
             </div>
 
             <div style="margin-bottom:25px;display:flex;align-items:center;">
                 <input type="checkbox" name="is_closed" id="vwhClosed" value="1" style="margin-inline-end:8px;">
-                <label style="color:#aaa;font-size:0.85rem;cursor:pointer;">
-                    <?= htmlspecialchars($texts['closed'] ?? 'Closed') ?>
+                <label for="vwhClosed" style="color:#aaa;font-size:0.85rem;cursor:pointer;">
+                    <?= t('closed', 'Closed') ?>
                 </label>
             </div>
 
             <div style="display:flex;justify-content:flex-end;gap:10px;">
                 <button type="button" id="vwhCancel" class="vwh-btn btn-gray">
-                    <?= htmlspecialchars($texts['cancel'] ?? 'Cancel') ?>
+                    <?= t('cancel', 'Cancel') ?>
                 </button>
                 <button type="submit" class="vwh-btn btn-blue">
-                    <?= htmlspecialchars($texts['save_data'] ?? 'Save Data') ?>
+                    <?= t('save_data', 'Save Data') ?>
                 </button>
             </div>
         </form>
@@ -331,10 +230,9 @@ window.VWH_CONFIG = {
     csrfToken: "<?= $csrfToken ?>",
     lang: "<?= $userLang ?>",
     direction: "<?= $direction ?>",
-    isStandalone: <?= $standaloneMode ? 'true' : 'false' ?>,
-    isRTL: <?= ($direction === 'rtl') ? 'true' : 'false' ?>,
-    days: <?= json_encode($days, JSON_UNESCAPED_UNICODE) ?>,
-    translations: <?= json_encode($texts, JSON_UNESCAPED_UNICODE) ?>
+    translations: <?= json_encode($translations, JSON_UNESCAPED_UNICODE) ?>,
+    themeColors: <?= json_encode($themeColors, JSON_UNESCAPED_UNICODE) ?>,
+    days: <?= json_encode($days, JSON_UNESCAPED_UNICODE) ?>
 };
 </script>
 
