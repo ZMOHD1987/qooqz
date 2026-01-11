@@ -1,314 +1,222 @@
 <?php
-// htdocs/api/controllers/UserController.php
-// Controller لإدارة المستخدمين (ملفات التعريف، تحديث، كلمات المرور، إدارة بواسطة المدير)
+// api/controllers/UserController.php
+declare(strict_types=1);
 
-// تحميل الملفات المطلوبة
 require_once __DIR__ . '/../models/User.php';
-require_once __DIR__ . '/../helpers/validator.php';
+require_once __DIR__ . '/../validators/UserValidator.php';
+require_once __DIR__ . '/../helpers/auth_helper.php';
 require_once __DIR__ . '/../helpers/response.php';
-require_once __DIR__ . '/../helpers/security.php';
-require_once __DIR__ . '/../helpers/upload.php';
-require_once __DIR__ . '/../middleware/auth.php';
-require_once __DIR__ . '/../middleware/role.php';
+
+if (is_readable(__DIR__ . '/../helpers/RBAC.php')) {
+    require_once __DIR__ . '/../helpers/RBAC.php';
+}
 
 class UserController
 {
-    /**
-     * جلب الملف الشخصي للمستخدم المصادق عليه
-     * GET /api/user/me
-     */
-    public static function me()
+    private static function checkPermission(): bool
     {
-        $user = AuthMiddleware::authenticate();
-        if (!$user) {
-            Response::unauthorized();
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
         }
 
-        // تحديث آخر نشاط (اختياري)
-        AuthMiddleware::updateLastActivity($user['id']);
+        if (!empty($_SESSION['user']['role_id']) && (int)$_SESSION['user']['role_id'] === 1) {
+            return true;
+        }
 
-        // أزل الحقول الحساسة
-        unset($user['password']);
+        if (function_exists('has_permission') && has_permission('manage_users')) {
+            return true;
+        }
 
-        Response::success($user);
+        return false;
+    }
+
+    private static function validateCSRF(array $input): bool
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        $token = $input['csrf_token'] 
+              ?? $_SERVER['HTTP_X_CSRF_TOKEN'] 
+              ?? $_SERVER['HTTP_X_CSRF-TOKEN'] 
+              ?? '';
+
+        $sessionToken = $_SESSION['csrf_token'] ?? '';
+        return !empty($token) && !empty($sessionToken) && hash_equals($sessionToken, $token);
+    }
+
+    private static function logDebug(string $message): void
+    {
+        $logFile = __DIR__ . '/../logs/user_controller_debug.log';
+        $timestamp = date('Y-m-d H:i:s');
+        $entry = "[$timestamp] UserController: $message\n";
+        @file_put_contents($logFile, $entry, FILE_APPEND);
     }
 
     /**
-     * تحديث الملف الشخصي للمستخدم المصادق عليه
-     * PUT /api/user/profile
+     * جلب القائمة مع دعم الفلاتر الكاملة
      */
-    public static function updateProfile()
+    public static function list(array $input = []): void
     {
-        $user = AuthMiddleware::authenticate();
-        if (!$user) Response::unauthorized();
-
-        $input = $_POST;
-
-        $rules = [
-            'username' => "optional|string|min:3|max:50|alpha_dash|unique:users,username,{$user['id']}",
-            'email' => "optional|email|unique:users,email,{$user['id']}",
-            'phone' => "optional|saudi_phone|unique:users,phone,{$user['id']}",
-            'first_name' => 'optional|string|max:60',
-            'last_name' => 'optional|string|max:60',
-            'language' => 'optional|string',
-            'currency' => 'optional|string',
-            'timezone' => 'optional|string',
-            'bio' => 'optional|string|max:1000'
-        ];
-
-        $validated = Validator::make($input, $rules)->validated();
-
-        $userModel = new User();
-        $ok = $userModel->update($user['id'], $validated);
-
-        if ($ok) {
-            $updated = $userModel->findById($user['id']);
-            unset($updated['password']);
-            Response::success($updated, 'Profile updated successfully');
+        if (!self::checkPermission()) {
+            respond_error('غير مصرح لك بالوصول لهذه الصفحة', 401);
+            return;
         }
 
-        Response::error('Failed to update profile', 500);
+        try {
+            // تجميع خيارات التصفية من المدخلات
+            $opts = [
+                'q'                  => trim((string)($input['q'] ?? '')),
+                'role_id'            => isset($input['role_id']) && $input['role_id'] !== '' ? (int)$input['role_id'] : null,
+                'is_active'          => isset($input['is_active']) && $input['is_active'] !== '' ? (int)$input['is_active'] : null,
+                'country_id'         => isset($input['country_id']) && $input['country_id'] !== '' ? (int)$input['country_id'] : null,
+                'city_id'            => isset($input['city_id']) && $input['city_id'] !== '' ? (int)$input['city_id'] : null,
+                'preferred_language' => trim((string)($input['lang'] ?? $input['preferred_language'] ?? '')),
+                'timezone'           => trim((string)($input['timezone'] ?? '')),
+                'limit'              => max(10, min(500, (int)($input['limit'] ?? 100))),
+            ];
+
+            // استدعاء الموديل مع الفلاتر
+            $rows = User::all($opts);
+
+            respond([
+                'success' => true,
+                'data'    => $rows ?: [],
+                'total'   => count($rows),
+                'filters' => $opts // نرسل الفلاتر المطبقة للتأكيد في الواجهة
+            ]);
+
+        } catch (Throwable $e) {
+            self::logDebug("list() error: " . $e->getMessage());
+            respond_error('حدث خطأ أثناء جلب قائمة المستخدمين', 500);
+        }
+    }
+
+    public static function get(array $input): void
+    {
+        if (!self::checkPermission()) {
+            respond_error('غير مصرح', 401);
+            return;
+        }
+
+        $id = (int)($input['id'] ?? 0);
+        if ($id <= 0) {
+            respond_error('معرف المستخدم غير صالح', 400);
+            return;
+        }
+
+        $row = User::find($id);
+        if (!$row) {
+            respond_error('لم يتم العثور على المستخدم', 404);
+            return;
+        }
+
+        respond(['success' => true, 'data' => $row]);
     }
 
     /**
-     * تغيير كلمة المرور
-     * POST /api/user/change-password
+     * الحفظ والتحديث الذكي
      */
-    public static function changePassword()
+    public static function save(array $input): void
     {
-        $user = AuthMiddleware::authenticate();
-        if (!$user) Response::unauthorized();
-
-        $input = $_POST;
-        $rules = [
-            'current_password' => 'required|string',
-            'new_password' => 'required|min:8|strong_password',
-            'new_password_confirmation' => 'required|same:new_password'
-        ];
-
-        Validator::make($input, $rules)->validated();
-
-        $userModel = new User();
-        $dbUser = $userModel->findById($user['id']);
-
-        if (!Security::verifyPassword($input['current_password'], $dbUser['password'])) {
-            Response::validationError(['current_password' => ['Current password is incorrect']]);
+        if (!self::checkPermission()) {
+            respond_error('غير مصرح', 401);
+            return;
         }
 
-        $ok = $userModel->updatePassword($user['id'], $input['new_password']);
-        if ($ok) {
-            // إنهاء جميع الجلسات بعد تغيير كلمة المرور
-            AuthMiddleware::terminateAllSessions($user['id']);
-            Response::success(null, 'Password changed successfully');
+        if (!self::validateCSRF($input)) {
+            respond_error('توكن CSRF غير صالح', 403);
+            return;
         }
 
-        Response::error('Failed to change password', 500);
+        try {
+            $id = (int)($input['id'] ?? 0);
+            $mode = $id > 0 ? 'update' : 'create';
+
+            $errors = UserValidator::validate($input, $mode);
+            if (!empty($errors)) {
+                respond(['success' => false, 'errors' => $errors, 'message' => 'فشل التحقق من البيانات'], 422);
+                return;
+            }
+
+            $data = [];
+            // الحقول المسموح بتحديثها
+            $fields = ['username', 'email', 'phone', 'role_id', 'country_id', 'city_id', 'preferred_language', 'timezone'];
+            
+            foreach ($fields as $field) {
+                if (isset($input[$field]) && trim((string)$input[$field]) !== '') {
+                    $data[$field] = in_array($field, ['role_id', 'country_id', 'city_id']) 
+                                    ? (int)$input[$field] 
+                                    : trim((string)$input[$field]);
+                }
+            }
+
+            // التعامل الخاص مع الحالات المنطقية التي قد تكون 0
+            if (isset($input['is_active'])) {
+                $data['is_active'] = (int)$input['is_active'];
+            }
+
+            // كلمة المرور
+            if (!empty($input['password'])) {
+                $data['password'] = $input['password'];
+            } elseif ($mode === 'create') {
+                respond_error('كلمة المرور مطلوبة للمستخدم الجديد', 422);
+                return;
+            }
+
+            if ($mode === 'update') {
+                if (empty($data)) {
+                    respond(['success' => true, 'message' => 'لا توجد بيانات جديدة للتحديث']);
+                    return;
+                }
+                $success = User::update($id, $data);
+                $message = $success ? 'تم تحديث البيانات بنجاح' : 'لم يتم تغيير أي بيانات';
+            } else {
+                $newId = User::create($data);
+                $success = $newId !== null;
+                $id = $newId;
+                $message = $success ? 'تم إنشاء المستخدم بنجاح' : 'فشل إنشاء المستخدم';
+            }
+
+            respond([
+                'success' => $success,
+                'message' => $message,
+                'data'    => ['id' => $id]
+            ]);
+
+        } catch (Throwable $e) {
+            self::logDebug("save() error: " . $e->getMessage());
+            respond_error('خطأ أثناء حفظ البيانات: ' . $e->getMessage(), 500);
+        }
     }
 
-    /**
-     * رفع / تحديث الصورة الشخصية
-     * POST /api/user/avatar
-     * يتوقع ملف باسم "avatar"
-     */
-    public static function uploadAvatar()
+    public static function delete(array $input): void
     {
-        $user = AuthMiddleware::authenticate();
-        if (!$user) Response::unauthorized();
-
-        if (!isset($_FILES['avatar'])) {
-            Response::validationError(['avatar' => ['Avatar file is required']]);
+        if (!self::checkPermission()) {
+            respond_error('غير مصرح', 401);
+            return;
         }
 
-        // استخدم Upload helper
-        $result = Upload::uploadImage($_FILES['avatar'], 'users', 800, 800, true);
-
-        if (!$result['success']) {
-            Response::error($result['message'] ?? 'Upload failed', 400);
+        if (!self::validateCSRF($input)) {
+            respond_error('توكن CSRF غير صالح', 403);
+            return;
         }
 
-        $avatarUrl = $result['file_url'];
-
-        $userModel = new User();
-        $ok = $userModel->updateAvatar($user['id'], $avatarUrl);
-
-        if ($ok) {
-            $updated = $userModel->findById($user['id']);
-            unset($updated['password']);
-            Response::success($updated, 'Avatar uploaded successfully');
+        $id = (int)($input['id'] ?? 0);
+        if ($id <= 0) {
+            respond_error('معرف المستخدم غير صالح', 400);
+            return;
         }
 
-        Response::error('Failed to update avatar', 500);
-    }
-
-    /**
-     * الحصول على قائمة المستخدمين (للـ Admin)
-     * GET /api/admin/users
-     */
-    public static function listUsers()
-    {
-        $admin = RoleMiddleware::canRead('users'); // throws if not allowed
-
-        $q = $_GET;
-        $page = isset($q['page']) ? (int)$q['page'] : 1;
-        $perPage = isset($q['per_page']) ? (int)$q['per_page'] : 20;
-
-        $filters = [];
-        if (!empty($q['user_type'])) $filters['user_type'] = $q['user_type'];
-        if (!empty($q['status'])) $filters['status'] = $q['status'];
-        if (!empty($q['search'])) $filters['search'] = $q['search'];
-        if (isset($q['is_verified'])) $filters['is_verified'] = (int)$q['is_verified'];
-
-        $userModel = new User();
-        $result = $userModel->getAll($filters, $page, $perPage);
-
-        Response::success($result);
-    }
-
-    /**
-     * جلب مستخدم حسب ID (Admin)
-     * GET /api/admin/users/{id}
-     */
-    public static function getUser($id = null)
-    {
-        RoleMiddleware::canRead('users');
-
-        if (!$id) {
-            Response::validationError(['id' => ['User id is required']]);
+        try {
+            $success = User::delete($id);
+            respond([
+                'success' => $success,
+                'message' => $success ? 'تم حذف المستخدم بنجاح' : 'فشل حذف المستخدم'
+            ]);
+        } catch (Throwable $e) {
+            self::logDebug("delete() error: " . $e->getMessage());
+            respond_error('خطأ أثناء عملية الحذف', 500);
         }
-
-        $userModel = new User();
-        $u = $userModel->findById((int)$id);
-        if (!$u) Response::error('User not found', 404);
-        unset($u['password']);
-        Response::success($u);
-    }
-
-    /**
-     * تحديث مستخدم بواسطة Admin
-     * PUT /api/admin/users/{id}
-     */
-    public static function updateUser($id = null)
-    {
-        RoleMiddleware::canUpdate('users');
-
-        if (!$id) Response::validationError(['id' => ['User id is required']]);
-        $input = $_POST;
-
-        $userModel = new User();
-        $existing = $userModel->findById((int)$id);
-        if (!$existing) Response::error('User not found', 404);
-
-        $rules = [
-            'username' => "optional|string|min:3|max:50|alpha_dash|unique:users,username,{$id}",
-            'email' => "optional|email|unique:users,email,{$id}",
-            'phone' => "optional|saudi_phone|unique:users,phone,{$id}",
-            'first_name' => 'optional|string|max:60',
-            'last_name' => 'optional|string|max:60',
-            'user_type' => 'optional|in:customer,vendor,admin,super_admin,support,moderator',
-            'status' => 'optional|string',
-            'is_verified' => 'optional|boolean'
-        ];
-
-        $validated = Validator::make($input, $rules)->validated();
-
-        $ok = $userModel->update((int)$id, $validated);
-        if ($ok) {
-            $updated = $userModel->findById((int)$id);
-            unset($updated['password']);
-            Response::success($updated, 'User updated successfully');
-        }
-
-        Response::error('Failed to update user', 500);
-    }
-
-    /**
-     * حذف مستخدم (soft/hard) بواسطة Admin
-     * DELETE /api/admin/users/{id}
-     */
-    public static function deleteUser($id = null)
-    {
-        RoleMiddleware::canDelete('users');
-
-        if (!$id) Response::validationError(['id' => ['User id is required']]);
-
-        $hard = isset($_GET['hard']) && $_GET['hard'] == '1';
-
-        $userModel = new User();
-        $exists = $userModel->findById((int)$id);
-        if (!$exists) Response::error('User not found', 404);
-
-        $success = $hard ? $userModel->delete((int)$id) : $userModel->softDelete((int)$id);
-
-        if ($success) {
-            Response::success(null, $hard ? 'User permanently deleted' : 'User soft deleted');
-        }
-
-        Response::error('Failed to delete user', 500);
-    }
-
-    /**
-     * تعليق / رفع تعليق عن مستخدم (Admin)
-     * POST /api/admin/users/{id}/suspend
-     */
-    public static function suspendUser($id = null)
-    {
-        RoleMiddleware::canUpdate('users');
-
-        if (!$id) Response::validationError(['id' => ['User id is required']]);
-
-        $input = $_POST;
-        $reason = $input['reason'] ?? null;
-
-        $userModel = new User();
-        $exists = $userModel->findById((int)$id);
-        if (!$exists) Response::error('User not found', 404);
-
-        $ok = $userModel->suspend((int)$id, $reason);
-        if ($ok) {
-            Response::success(null, 'User suspended');
-        }
-
-        Response::error('Failed to suspend user', 500);
-    }
-
-    /**
-     * إلغاء تعليق مستخدم (Admin)
-     * POST /api/admin/users/{id}/unsuspend
-     */
-    public static function unsuspendUser($id = null)
-    {
-        RoleMiddleware::canUpdate('users');
-
-        if (!$id) Response::validationError(['id' => ['User id is required']]);
-
-        $userModel = new User();
-        $exists = $userModel->findById((int)$id);
-        if (!$exists) Response::error('User not found', 404);
-
-        $ok = $userModel->unsuspend((int)$id);
-        if ($ok) {
-            Response::success(null, 'User unsuspended');
-        }
-
-        Response::error('Failed to unsuspend user', 500);
-    }
-
-    /**
-     * إحصائيات المستخدمين (Admin)
-     * GET /api/admin/users/stats
-     */
-    public static function stats()
-    {
-        RoleMiddleware::canRead('users');
-
-        $userModel = new User();
-        $stats = $userModel->getStatistics();
-
-        Response::success($stats);
     }
 }
-
-// الملاحظة: الطرق هنا مهيأة للاستخدام مع الراوتر العام.
-// مثال: if ($path === '/api/user/me') UserController::me();
-
-?>
