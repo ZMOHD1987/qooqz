@@ -24,6 +24,13 @@ if (isset($ADMIN_UI_PAYLOAD)) {
     $userLang = $ADMIN_UI_PAYLOAD['lang'] ?? 'en';
     $direction = $ADMIN_UI_PAYLOAD['direction'] ?? 'ltr';
     $csrfToken = $_SESSION['csrf_token'] ?? '';
+    if (empty($csrfToken) && session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    if (empty($csrfToken)) {
+        $csrfToken = $_SESSION['csrf_token'] ?? bin2hex(random_bytes(16));
+        $_SESSION['csrf_token'] = $csrfToken;
+    }
     $apiUrl = '/api/routes/vendor_attributes_values.php';
     $vendorsApi = '/api/routes/vendors.php';
     $attrApi = '/api/routes/attributes.php';
@@ -33,7 +40,10 @@ if (isset($ADMIN_UI_PAYLOAD)) {
     if (session_status() === PHP_SESSION_NONE) session_start();
     $userLang = $_SESSION['lang'] ?? $_SESSION['preferred_language'] ?? 'en';
     $direction = in_array(strtolower(substr($userLang, 0, 2)), ['ar', 'fa', 'he', 'ur']) ? 'rtl' : 'ltr';
-    $csrfToken = $_SESSION['csrf_token'] ?? bin2hex(random_bytes(16));
+    if (!isset($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
+    }
+    $csrfToken = $_SESSION['csrf_token'];
     $apiUrl = '/api/routes/vendor_attributes_values.php';
     $vendorsApi = '/api/routes/vendors.php';
     $attrApi = '/api/routes/attributes.php';

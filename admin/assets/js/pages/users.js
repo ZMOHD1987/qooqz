@@ -28,6 +28,13 @@
 
     const getCsrf = () => cfg.csrfToken || form.querySelector('[name="csrf_token"]')?.value || "";
 
+    // HTML escape helper for XSS prevention
+    const escapeHtml = (str) => {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    };
+
     /* ================= Load Roles ================= */
     async function loadRoles(selectedId = null) {
         try {
@@ -41,8 +48,8 @@
                     const roleTitle = role.display_name || role.key_name || role.name || 'Role ' + role.id;
                     const sel = (role.id == selectedId) ? 'selected' : '';
                     
-                    html += `<option value="${role.id}" ${sel}>${roleTitle}</option>`;
-                    filterHtml += `<option value="${role.id}">${roleTitle}</option>`;
+                    html += `<option value="${escapeHtml(String(role.id))}" ${sel}>${escapeHtml(roleTitle)}</option>`;
+                    filterHtml += `<option value="${escapeHtml(String(role.id))}">${escapeHtml(roleTitle)}</option>`;
                 });
                 
                 if (el('vusersRole')) el('vusersRole').innerHTML = html;
@@ -63,8 +70,8 @@
                 let fHtml = `<option value="">${t('filters.all_countries', 'All Countries')}</option>`;
                 j.data.forEach(c => {
                     const sel = (c.id == selectedId) ? 'selected' : '';
-                    html += `<option value="${c.id}" ${sel}>${c.name}</option>`;
-                    fHtml += `<option value="${c.id}">${c.name}</option>`;
+                    html += `<option value="${escapeHtml(String(c.id))}" ${sel}>${escapeHtml(c.name)}</option>`;
+                    fHtml += `<option value="${escapeHtml(String(c.id))}">${escapeHtml(c.name)}</option>`;
                 });
                 el('vusersCountry').innerHTML = html;
                 if (el('vusersCountryFilter').options.length <= 1) el('vusersCountryFilter').innerHTML = fHtml;
@@ -86,7 +93,7 @@
             if (j.success) {
                 j.data.forEach(c => {
                     const sel = (c.id == selectedId) ? 'selected' : '';
-                    html += `<option value="${c.id}" ${sel}>${c.name}</option>`;
+                    html += `<option value="${escapeHtml(String(c.id))}" ${sel}>${escapeHtml(c.name)}</option>`;
                 });
             }
             citySel.innerHTML = html;
@@ -109,8 +116,8 @@
                     const langName = lang.name || lang.display_name || langCode;
                     const sel = (langCode == selectedLang) ? 'selected' : '';
                     
-                    html += `<option value="${langCode}" ${sel}>${langName}</option>`;
-                    filterHtml += `<option value="${langCode}">${langName}</option>`;
+                    html += `<option value="${escapeHtml(String(langCode))}" ${sel}>${escapeHtml(langName)}</option>`;
+                    filterHtml += `<option value="${escapeHtml(String(langCode))}">${escapeHtml(langName)}</option>`;
                 });
                 
                 if (el('vusersLang')) el('vusersLang').innerHTML = html;
@@ -128,7 +135,7 @@
             let html = `<option value="">${t('form.select_language', 'Select Language')}</option>`;
             basicLangs.forEach(lang => {
                 const sel = (lang.code == selectedLang) ? 'selected' : '';
-                html += `<option value="${lang.code}" ${sel}>${lang.name}</option>`;
+                html += `<option value="${escapeHtml(lang.code)}" ${sel}>${escapeHtml(lang.name)}</option>`;
             });
             if (el('vusersLang')) el('vusersLang').innerHTML = html;
         }
@@ -160,24 +167,24 @@
 
                     tr.innerHTML = `
                         <td>
-                            <div style="font-weight:700; color: var(--theme-text-primary);">${u.username}</div>
-                            <div style="font-size:0.75rem; color: var(--theme-text-secondary);">${u.email}</div>
+                            <div style="font-weight:700; color: var(--theme-text-primary);">${escapeHtml(u.username)}</div>
+                            <div style="font-size:0.75rem; color: var(--theme-text-secondary);">${escapeHtml(u.email)}</div>
                         </td>
                         <td>
                             <span class="badge" style="background:rgba(59,130,246,0.1); color: var(--theme-primary); padding:4px 10px; border-radius:6px; font-size:0.75rem;">
-                                ${displayRole}
+                                ${escapeHtml(displayRole)}
                             </span>
                         </td>
                         <td>
-                            <div style="font-size:0.85rem; color: var(--theme-text-primary);">${u.country_name || t('no_country', 'No Country')}</div>
-                            <div style="font-size:0.75rem; color: var(--theme-text-secondary);">${u.city_name || t('no_city', 'No City')}</div>
+                            <div style="font-size:0.85rem; color: var(--theme-text-primary);">${escapeHtml(u.country_name || t('no_country', 'No Country'))}</div>
+                            <div style="font-size:0.75rem; color: var(--theme-text-secondary);">${escapeHtml(u.city_name || t('no_city', 'No City'))}</div>
                         </td>
                         <td>
-                            <span class="badge ${statusClass}">${statusLabel}</span>
+                            <span class="badge ${statusClass}">${escapeHtml(statusLabel)}</span>
                         </td>
                         <td style="text-align:center;">
-                            <button class="btn-icon edit-btn" title="${t('edit', 'Edit')}">✏️</button>
-                            <button class="btn-icon delete delete-btn" title="${t('delete', 'Delete')}">🗑</button>
+                            <button class="btn-icon edit-btn" title="${escapeHtml(t('edit', 'Edit'))}">✏️</button>
+                            <button class="btn-icon delete delete-btn" title="${escapeHtml(t('delete', 'Delete'))}">🗑</button>
                         </td>
                     `;
 
