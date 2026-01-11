@@ -1,274 +1,257 @@
 <?php
-// htdocs/admin/fragments/users.php
-// Users fragment (list + inline edit) — updated to ensure:
-// - CSS (/admin/assets/css/pages/users.css) and JS (/admin/assets/js/pages/users.js) are injected when fragment is embedded
-// - Translation loader runs to apply data-i18n keys (works with AdminI18n if present or loads /admin/languages/admin/{lang}.json)
-// - Uses users.headers.* keys for table headers
-//
-// Save as UTF-8 without BOM.
+declare(strict_types=1);
 
-if (session_status() === PHP_SESSION_NONE) session_start();
+/**
+ * htdocs/admin/fragments/users.php
+ * واجهة إدارة المستخدمين الشاملة - تدعم كافة الحقول والفلاتر
+ */
 
-$authFile = __DIR__ . '/../_auth.php';
-if (!is_readable($authFile)) {
-    http_response_code(500);
-    echo "<div class='err'>Missing auth bootstrap: _auth.php</div>";
-    exit;
+// 1. تضمين ملفات السياق والنظام
+require_once __DIR__ . '/../../api/bootstrap_admin_context.php';
+
+$isInDashboard = false;
+$standaloneMode = true;
+
+// التحقق من وجود Payload الواجهة الإدارية
+if (defined('ADMIN_HEADER_INCLUDED') || isset($ADMIN_UI_PAYLOAD)) {
+    $isInDashboard = true;
+    $standaloneMode = false;
+    if (isset($ADMIN_UI_PAYLOAD)) {
+        $userLang = $ADMIN_UI_PAYLOAD['lang'] ?? 'en';
+        $direction = $ADMIN_UI_PAYLOAD['direction'] ?? 'ltr';
+        $csrfToken = $ADMIN_UI_PAYLOAD['csrf_token'] ?? '';
+        $apiUrl = $ADMIN_UI_PAYLOAD['apiUrls']['users'] ?? '/api/routes/users.php';
+    }
 }
-require_once $authFile;
 
-// permission
-if (isset($rbac) && method_exists($rbac,'requirePermission')) {
-    try { $rbac->requirePermission(['manage_users']); }
-    catch (Throwable $e) { echo "<div class='err'>Forbidden</div>"; exit; }
+if ($standaloneMode) {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    $userLang = $_SESSION['user_lang'] ?? 'ar';
+    $direction = ($userLang === 'ar') ? 'rtl' : 'ltr';
+    $csrfToken = $_SESSION['csrf_token'] ?? '';
+    $apiUrl = '/api/routes/users.php';
 }
 
-// CSRF
-if (empty($_SESSION['csrf_token'])) $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
-$CSRF = $_SESSION['csrf_token'];
+if ($standaloneMode): ?>
+<!doctype html>
+<html lang="<?= $userLang ?>" dir="<?= $direction ?>">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>User Management System</title>
+    <link rel="stylesheet" href="/admin/assets/css/admin-theme.css">
+    <style>
+        :root { --primary: #3b82f6; --success: #10b981; --danger: #ef4444; --bg: #0b1120; --card: #1e293b; --text: #f1f5f9; --border: #334155; }
+        body.vusers-scope { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
+<?php endif; ?>
 
-// assets (adjust base if needed)
-$cssPath = '/admin/assets/css/pages/users.css';
-$jsPath  = '/admin/assets/js/pages/users.js';
-$langBase = '/languages/admin'; // translation files: en.json, ar.json
+        /* التنسيقات المتقدمة */
+        .vusers-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .vusers-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
+        .vusers-title { font-size: 1.5rem; margin: 0; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+        
+        /* الفلاتر المارنة */
+        .vusers-filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; background: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 10px; }
+        .vusers-filter-group { flex: 1; min-width: 180px; }
+        .vusers-input { width: 100%; padding: 10px; background: #0f172a; border: 1px solid var(--border); color: white; border-radius: 8px; font-size: 0.85rem; transition: 0.3s; }
+        .vusers-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
 
-?>
-<!-- Fragment root -->
-<div id="adminUsers" class="admin-fragment users-fragment" data-csrf="<?= htmlspecialchars($CSRF, ENT_QUOTES, 'UTF-8') ?>">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-    <h2 data-i18n="users.title">Users</h2>
-    <div>
-      <button id="usersRefresh" class="btn" data-i18n="buttons.refresh">Refresh</button>
+        /* الجدول المطور */
+        .vusers-table-wrap { overflow-x: auto; background: #0f172a; border-radius: 8px; border: 1px solid var(--border); }
+        .vusers-table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        .vusers-table th { background: #1e293b; padding: 14px; text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; border-bottom: 2px solid var(--border); }
+        [dir="rtl"] .vusers-table th { text-align: right; }
+        .vusers-table td { padding: 14px; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: middle; }
+        .vusers-table tr:hover { background: rgba(51, 65, 85, 0.3); }
+        
+        .user-info { display: flex; flex-direction: column; }
+        .user-info .main { font-weight: 600; color: #fff; }
+        .user-info .sub { font-size: 0.75rem; color: #64748b; }
+
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+        .badge-active { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .badge-inactive { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+        /* Modal & Form Grid */
+        #vusersFormWrap { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(8px); padding: 20px; }
+        .vusers-modal { background: var(--card); width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; padding: 30px; border-radius: 16px; border: 1px solid var(--border); position: relative; }
+        .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px; }
+        @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+        
+        .vusers-label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 6px; font-weight: 500; }
+
+<?php if ($standaloneMode): ?>
+    </style>
+</head>
+<body class="vusers-scope">
+<?php endif; ?>
+
+<div class="vusers-card">
+    <div class="vusers-header">
+        <h2 class="vusers-title">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"></path></svg>
+            User Directory
+        </h2>
+        <button id="vusersNew" class="admin-btn-primary" style="padding: 10px 20px; border-radius: 8px; cursor: pointer;">+ Add New User</button>
     </div>
-  </div>
 
-  <div id="usersStatus" class="status" aria-live="polite"></div>
-
-  <div style="overflow:auto;">
-    <table id="usersTable" class="table">
-      <thead>
-        <tr>
-          <th data-i18n="users.headers.id">ID</th>
-          <th data-i18n="users.headers.username">Username</th>
-          <th data-i18n="users.headers.email">Email</th>
-          <th data-i18n="users.headers.language">Language</th>
-          <th data-i18n="users.headers.role">Role</th>
-          <th data-i18n="users.headers.is_active">Active</th>
-          <th data-i18n="users.headers.actions">Actions</th>
-        </tr>
-      </thead>
-      <tbody id="usersTbody">
-        <tr><td colspan="7" data-i18n="loading">Loading...</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Inline edit / change password form -->
-  <div id="userFormWrap" class="inline-form" style="display:none;margin-top:16px;">
-    <h3 id="userFormTitle" data-i18n="users.edit_title">Edit user</h3>
-    <form id="userForm">
-      <input type="hidden" name="action" value="save">
-      <input type="hidden" name="id" id="user_id" value="0">
-      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($CSRF, ENT_QUOTES, 'UTF-8') ?>">
-
-      <div class="form-grid">
-        <label>
-          <div data-i18n="users.username">Username</div>
-          <input type="text" name="username" id="user_username" class="input" required>
-        </label>
-        <label>
-          <div data-i18n="users.email">Email</div>
-          <input type="email" name="email" id="user_email" class="input" required>
-        </label>
-        <label>
-          <div data-i18n="users.preferred_language">Language</div>
-          <input type="text" name="preferred_language" id="user_lang" class="input">
-        </label>
-        <label>
-          <div data-i18n="users.role">Role ID</div>
-          <input type="number" name="role_id" id="user_role" class="input">
-        </label>
-        <label>
-          <div data-i18n="users.phone">Phone</div>
-          <input type="text" name="phone" id="user_phone" class="input">
-        </label>
-        <label>
-          <div data-i18n="users.timezone">Timezone</div>
-          <input type="text" name="timezone" id="user_timezone" class="input">
-        </label>
-      </div>
-
-      <div class="form-actions" style="margin-top:12px;">
-        <button type="submit" class="btn primary" id="userSaveBtn" data-i18n="buttons.save">Save</button>
-        <button type="button" class="btn" id="userCancelBtn" data-i18n="buttons.cancel">Cancel</button>
-        <button type="button" class="btn danger" id="userDeleteBtn" data-i18n="actions.delete">Delete</button>
-        <button type="button" class="btn" id="userPwdBtn" data-i18n="users.change_password_btn">Change password</button>
-      </div>
-    </form>
-
-    <!-- Change password panel -->
-    <div id="changePwdWrap" style="display:none;margin-top:12px;">
-      <h4 data-i18n="users.change_password_title">Change password</h4>
-      <form id="changePwdForm">
-        <input type="hidden" name="action" value="change_password">
-        <input type="hidden" name="id" id="pwd_user_id" value="0">
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($CSRF, ENT_QUOTES, 'UTF-8') ?>">
-        <label>
-          <div data-i18n="users.new_password">New password</div>
-          <input type="password" name="new_password" id="new_password" class="input" required>
-        </label>
-        <div style="margin-top:8px;">
-          <button type="submit" class="btn primary" data-i18n="buttons.save">Save password</button>
-          <button type="button" class="btn" id="cancelPwdBtn" data-i18n="buttons.cancel">Cancel</button>
+    <div class="vusers-filters">
+        <div class="vusers-filter-group" style="flex: 2;">
+            <input type="text" id="vusersSearch" class="vusers-input" placeholder="Search by name, email or phone...">
         </div>
-      </form>
+        <div class="vusers-filter-group">
+            <select id="vusersRoleFilter" class="vusers-input">
+                <option value="">All Roles</option>
+            </select>
+        </div>
+        <div class="vusers-filter-group">
+            <select id="vusersCountryFilter" class="vusers-input">
+                <option value="">All Countries</option>
+            </select>
+        </div>
+        <div class="vusers-filter-group">
+            <select id="vusersLangFilter" class="vusers-input">
+                <option value="">All Languages</option>
+            </select>
+        </div>
+        <div class="vusers-filter-group">
+            <select id="vusersStatusFilter" class="vusers-input">
+                <option value="">All Status</option>
+                <option value="1">Active</option>
+                <option value="0">Inactive</option>
+            </select>
+        </div>
+        <button id="vusersRefresh" class="vusers-input" style="width: auto; cursor: pointer; background: var(--border);">Reset</button>
     </div>
-  </div>
+
+    <div class="vusers-table-wrap">
+        <table class="vusers-table">
+            <thead>
+                <tr>
+                    <th>User Detail</th>
+                    <th>Role & Contact</th>
+                    <th>Location & Lang</th>
+                    <th>Status</th>
+                    <th style="text-align:center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="vusersTbody">
+                <tr><td colspan="5" style="text-align:center; padding:60px;">
+                    <div class="spinner"></div> 
+                    <p style="color:#64748b; margin-top:10px;">Loading users data...</p>
+                </td></tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
-<!-- Loader: inject CSS/JS and ensure translations applied -->
+<div id="vusersFormWrap">
+    <div class="vusers-modal">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+            <h3 id="vusersFormTitle" style="margin:0; color:var(--primary);">User Profile</h3>
+            <button type="button" id="vusersCloseX" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:1.5rem;">&times;</button>
+        </div>
+
+        <form id="vusersForm">
+            <input type="hidden" name="id" id="vusersId">
+            <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+
+            <div class="form-grid">
+                <div>
+                    <label class="vusers-label">Username</label>
+                    <input type="text" name="username" id="vusersUsername" class="vusers-input" placeholder="e.g. jsmith" required>
+                </div>
+                <div>
+                    <label class="vusers-label">Full Name / Display Name</label>
+                    <input type="text" name="display_name" id="vusersDisplayName" class="vusers-input">
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div>
+                    <label class="vusers-label">Email Address</label>
+                    <input type="email" name="email" id="vusersEmail" class="vusers-input" placeholder="name@domain.com" required>
+                </div>
+                <div>
+                    <label class="vusers-label">Phone Number</label>
+                    <input type="text" name="phone" id="vusersPhone" class="vusers-input" placeholder="+1234567890">
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div>
+                    <label class="vusers-label">Password</label>
+                    <input type="password" name="password" id="vusersPassword" class="vusers-input" placeholder="Min 8 characters">
+                    <small style="color:#64748b; font-size:0.7rem;">Leave blank if you don't want to change password</small>
+                </div>
+                <div>
+                    <label class="vusers-label">System Role</label>
+                    <select name="role_id" id="vusersRole" class="vusers-input" required></select>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div>
+                    <label class="vusers-label">Country</label>
+                    <select name="country_id" id="vusersCountry" class="vusers-input"></select>
+                </div>
+                <div>
+                    <label class="vusers-label">City</label>
+                    <select name="city_id" id="vusersCity" class="vusers-input">
+                        <option value="">Select Country First</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div>
+                    <label class="vusers-label">Preferred Language</label>
+                    <select name="preferred_language" id="vusersLang" class="vusers-input"></select>
+                </div>
+                <div>
+                    <label class="vusers-label">Timezone</label>
+                    <select name="timezone" id="vusersTimezone" class="vusers-input"></select>
+                </div>
+            </div>
+
+            <div style="margin-bottom:25px; padding:15px; background:rgba(15,23,42,0.5); border-radius:10px;">
+                <label class="vusers-label">Account Status</label>
+                <div style="display:flex; align-items:center; gap:20px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="radio" name="is_active" value="1" checked> Active
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="radio" name="is_active" value="0"> Inactive / Suspended
+                    </label>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:12px;">
+                <button type="button" id="vusersCancel" class="vusers-input" style="width:auto; padding:10px 25px; cursor:pointer; background:transparent;">Cancel</button>
+                <button type="submit" class="admin-btn-primary" style="padding:10px 30px; border-radius:8px; cursor:pointer; font-weight:600;">Save User Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
-(function(){
-  'use strict';
-  var cssHref = '<?= addslashes($cssPath) ?>';
-  var jsSrc   = '<?= addslashes($jsPath) ?>';
-  var langBase = '<?= addslashes($langBase) ?>';
-
-  // inject CSS once
-  function ensureCss() {
-    if (document.querySelector('link[data-admin-users-css]')) return;
-    var links = document.querySelectorAll('link[rel="stylesheet"]');
-    for (var i=0;i<links.length;i++){
-      if (links[i].href && links[i].href.indexOf(cssHref) !== -1) {
-        links[i].setAttribute('data-admin-users-css','1');
-        return;
-      }
-    }
-    var l = document.createElement('link');
-    l.rel = 'stylesheet';
-    l.href = cssHref + '?v=1';
-    l.setAttribute('data-admin-users-css','1');
-    document.head.appendChild(l);
-  }
-
-  // inject JS once
-  function ensureJs(cb) {
-    if (document.querySelector('script[data-admin-users-js]')) { if (cb) cb(); return; }
-    var s = document.createElement('script');
-    s.src = jsSrc + '?v=1';
-    s.defer = true;
-    s.setAttribute('data-admin-users-js','1');
-    s.onload = function(){ if (cb) cb(); };
-    s.onerror = function(){ console.warn('Failed to load users.js'); if (cb) cb(); };
-    document.head.appendChild(s);
-  }
-
-  // simple translator: prefer AdminI18n if available, otherwise load language JSON and apply to nodes with data-i18n
-  function resolveKey(obj, key) {
-    if (!obj || !key) return null;
-    var parts = key.split('.');
-    var cur = obj;
-    for (var i=0;i<parts.length;i++){
-      if (!cur) return null;
-      cur = cur[parts[i]];
-    }
-    return cur;
-  }
-
-  function translateFragment(root, translations) {
-    root = root || document;
-    var nodes = root.querySelectorAll('[data-i18n]');
-    nodes.forEach(function(node){
-      var key = node.getAttribute('data-i18n');
-      var val = null;
-      if (window.AdminI18n && typeof window.AdminI18n.tKey === 'function') {
-        try { val = window.AdminI18n.tKey(key, null); } catch(e){ val = null; }
-      }
-      if (val === null) val = resolveKey(translations, key) || resolveKey(window.ADMIN_UI, key);
-      if (val != null) {
-        var attr = node.getAttribute('data-i18n-attr');
-        if (attr) node.setAttribute(attr, val);
-        else {
-          var tag = node.tagName && node.tagName.toLowerCase();
-          if (tag === 'input' || tag === 'textarea') {
-            if (node.hasAttribute('data-i18n-placeholder')) node.placeholder = val;
-            else node.value = val;
-          } else node.textContent = val;
+    /**
+     * إعدادات النظام الممررة من PHP للـ JS
+     */
+    window.USERS_CONFIG = {
+        apiUrl: "<?= $apiUrl ?>",
+        csrfToken: "<?= $csrfToken ?>",
+        lang: "<?= $userLang ?>",
+        direction: "<?= $direction ?>",
+        assets: {
+            placeholder: "/admin/assets/img/user-placeholder.png"
         }
-      }
-    });
-  }
-
-  function loadLangAndApply(cb) {
-    var htmlLang = (document.documentElement.lang || 'en').split('-')[0];
-    var lang = window.ADMIN_LANG || htmlLang || 'en';
-    var url = langBase + '/' + lang + '.json';
-    // if ADMIN_UI already populated for this lang, apply immediately
-    if (window.ADMIN_UI && window.ADMIN_UI.lang && window.ADMIN_UI.lang.split && window.ADMIN_UI.lang.split('-')[0] === lang) {
-      translateFragment(document, window.ADMIN_UI);
-      if (cb) cb();
-      return;
-    }
-    fetch(url, { credentials:'same-origin' }).then(function(res){
-      if (!res.ok) throw new Error('Lang file load failed');
-      return res.json();
-    }).then(function(json){
-      window.ADMIN_UI = window.ADMIN_UI || {};
-      // merge shallow
-      Object.keys(json).forEach(function(k){ window.ADMIN_UI[k] = json[k]; });
-      translateFragment(document, window.ADMIN_UI);
-      if (cb) cb();
-    }).catch(function(err){
-      // fallback: if AdminI18n present, try to use it
-      if (window.AdminI18n && typeof window.AdminI18n.loadLanguage === 'function') {
-        window.AdminI18n.loadLanguage(lang).then(function(){ if (typeof window.AdminI18n.translateFragment === 'function') window.AdminI18n.translateFragment(document); if (cb) cb(); }).catch(function(){ if (cb) cb(); });
-      } else {
-        console.warn('Could not load translations', err);
-        if (cb) cb();
-      }
-    });
-  }
-
-  // apply minimal fallback styles if stylesheet doesn't apply within short time
-  function applyFallbackStylesIfNeeded(){
-    setTimeout(function(){
-      var el = document.querySelector('.users-fragment .btn');
-      var applied = false;
-      if (el) {
-        var bg = window.getComputedStyle(el).backgroundColor || '';
-        applied = bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent';
-      }
-      if (!applied) {
-        var fid = 'users-fallback-styles';
-        if (document.getElementById(fid)) return;
-        var style = document.createElement('style');
-        style.id = fid;
-        style.textContent = "\
-.users-fragment .table{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px}\
-.users-fragment .table th,.users-fragment .table td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left}\
-.users-fragment .btn{display:inline-block;padding:6px 10px;border-radius:6px;background:#f3f4f6;border:1px solid #e5e7eb;color:#111;text-decoration:none;cursor:pointer}\
-.users-fragment .btn.primary{background:#0b6ea8;color:#fff}\
-.users-fragment .inline-form{margin-top:16px;padding:12px;border:1px solid #eee;border-radius:8px;background:#fff}\
-.users-fragment .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}\
-.users-fragment .input{width:100%;padding:8px;border:1px solid #ddd;border-radius:6px}\
-";
-        document.head.appendChild(style);
-      }
-    }, 350);
-  }
-
-  // Run
-  ensureCss();
-  ensureJs(function(){
-    loadLangAndApply(function(){
-      applyFallbackStylesIfNeeded();
-    });
-  });
-
-  // re-apply on language change
-  window.addEventListener('language:changed', function(e){
-    loadLangAndApply();
-  });
-
-})();
+    };
 </script>
+
+<?php if ($standaloneMode): ?>
+<script src="/admin/assets/js/admin_core.js"></script>
+<script src="/admin/assets/js/pages/users.js"></script>
+</body>
+</html>
+<?php endif; ?>
