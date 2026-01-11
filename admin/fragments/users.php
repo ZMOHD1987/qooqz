@@ -11,6 +11,8 @@ require_once __DIR__ . '/../../api/bootstrap_admin_context.php';
 
 $isInDashboard = false;
 $standaloneMode = true;
+$translations = [];
+$themeColors = [];
 
 // التحقق من وجود Payload الواجهة الإدارية
 if (defined('ADMIN_HEADER_INCLUDED') || isset($ADMIN_UI_PAYLOAD)) {
@@ -21,6 +23,8 @@ if (defined('ADMIN_HEADER_INCLUDED') || isset($ADMIN_UI_PAYLOAD)) {
         $direction = $ADMIN_UI_PAYLOAD['direction'] ?? 'ltr';
         $csrfToken = $ADMIN_UI_PAYLOAD['csrf_token'] ?? '';
         $apiUrl = $ADMIN_UI_PAYLOAD['apiUrls']['users'] ?? '/api/routes/users.php';
+        $translations = $ADMIN_UI_PAYLOAD['strings'] ?? [];
+        $themeColors = $ADMIN_UI_PAYLOAD['theme']['colors_map'] ?? [];
     }
 }
 
@@ -32,13 +36,28 @@ if ($standaloneMode) {
     $apiUrl = '/api/routes/users.php';
 }
 
+// Translation helper function
+function t($key, $default = '') {
+    global $translations;
+    if (empty($translations)) return $default ?: $key;
+    $keys = explode('.', $key);
+    $value = $translations;
+    foreach ($keys as $k) {
+        if (!is_array($value) || !isset($value[$k])) {
+            return $default ?: $key;
+        }
+        $value = $value[$k];
+    }
+    return is_string($value) ? $value : ($default ?: $key);
+}
+
 if ($standaloneMode): ?>
 <!doctype html>
 <html lang="<?= $userLang ?>" dir="<?= $direction ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>User Management System</title>
+    <title><?= t('page_title', 'User Management') ?></title>
     <link rel="stylesheet" href="/admin/assets/css/admin-theme.css">
     <style>
         :root { --primary: #3b82f6; --success: #10b981; --danger: #ef4444; --bg: #0b1120; --card: #1e293b; --text: #f1f5f9; --border: #334155; }
@@ -90,55 +109,55 @@ if ($standaloneMode): ?>
     <div class="vusers-header">
         <h2 class="vusers-title">
             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"></path></svg>
-            User Directory
+            <?= t('page_title', 'User Directory') ?>
         </h2>
-        <button id="vusersNew" class="admin-btn-primary" style="padding: 10px 20px; border-radius: 8px; cursor: pointer;">+ Add New User</button>
+        <button id="vusersNew" class="admin-btn-primary" style="padding: 10px 20px; border-radius: 8px; cursor: pointer;"><?= t('add_user', '+ Add New User') ?></button>
     </div>
 
     <div class="vusers-filters">
         <div class="vusers-filter-group" style="flex: 2;">
-            <input type="text" id="vusersSearch" class="vusers-input" placeholder="Search by name, email or phone...">
+            <input type="text" id="vusersSearch" class="vusers-input" placeholder="<?= t('search_placeholder', 'Search by name, email or phone...') ?>">
         </div>
         <div class="vusers-filter-group">
             <select id="vusersRoleFilter" class="vusers-input">
-                <option value="">All Roles</option>
+                <option value=""><?= t('filters.all_roles', 'All Roles') ?></option>
             </select>
         </div>
         <div class="vusers-filter-group">
             <select id="vusersCountryFilter" class="vusers-input">
-                <option value="">All Countries</option>
+                <option value=""><?= t('filters.all_countries', 'All Countries') ?></option>
             </select>
         </div>
         <div class="vusers-filter-group">
             <select id="vusersLangFilter" class="vusers-input">
-                <option value="">All Languages</option>
+                <option value=""><?= t('filters.all_languages', 'All Languages') ?></option>
             </select>
         </div>
         <div class="vusers-filter-group">
             <select id="vusersStatusFilter" class="vusers-input">
-                <option value="">All Status</option>
-                <option value="1">Active</option>
-                <option value="0">Inactive</option>
+                <option value=""><?= t('filters.all_status', 'All Status') ?></option>
+                <option value="1"><?= t('status.active', 'Active') ?></option>
+                <option value="0"><?= t('status.inactive', 'Inactive') ?></option>
             </select>
         </div>
-        <button id="vusersRefresh" class="vusers-input" style="width: auto; cursor: pointer; background: var(--border);">Reset</button>
+        <button id="vusersRefresh" class="vusers-input" style="width: auto; cursor: pointer; background: var(--border);"><?= t('filters.reset', 'Reset') ?></button>
     </div>
 
     <div class="vusers-table-wrap">
         <table class="vusers-table">
             <thead>
                 <tr>
-                    <th>User Detail</th>
-                    <th>Role & Contact</th>
-                    <th>Location & Lang</th>
-                    <th>Status</th>
-                    <th style="text-align:center;">Actions</th>
+                    <th><?= t('table.username', 'User Detail') ?></th>
+                    <th><?= t('table.role', 'Role & Contact') ?></th>
+                    <th><?= t('table.location', 'Location & Lang') ?></th>
+                    <th><?= t('table.status', 'Status') ?></th>
+                    <th style="text-align:center;"><?= t('table.actions', 'Actions') ?></th>
                 </tr>
             </thead>
             <tbody id="vusersTbody">
                 <tr><td colspan="5" style="text-align:center; padding:60px;">
                     <div class="spinner"></div> 
-                    <p style="color:#64748b; margin-top:10px;">Loading users data...</p>
+                    <p style="color:#64748b; margin-top:10px;"><?= t('messages.loading', 'Loading users data...') ?></p>
                 </td></tr>
             </tbody>
         </table>
@@ -148,7 +167,7 @@ if ($standaloneMode): ?>
 <div id="vusersFormWrap">
     <div class="vusers-modal">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
-            <h3 id="vusersFormTitle" style="margin:0; color:var(--primary);">User Profile</h3>
+            <h3 id="vusersFormTitle" style="margin:0; color:var(--primary);"><?= t('edit_user', 'User Profile') ?></h3>
             <button type="button" id="vusersCloseX" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:1.5rem;">&times;</button>
         </div>
 
@@ -158,77 +177,77 @@ if ($standaloneMode): ?>
 
             <div class="form-grid">
                 <div>
-                    <label class="vusers-label">Username</label>
-                    <input type="text" name="username" id="vusersUsername" class="vusers-input" placeholder="e.g. jsmith" required>
+                    <label class="vusers-label"><?= t('form.username_label', 'Username') ?></label>
+                    <input type="text" name="username" id="vusersUsername" class="vusers-input" required>
                 </div>
                 <div>
-                    <label class="vusers-label">Full Name / Display Name</label>
+                    <label class="vusers-label"><?= t('form.display_name_label', 'Full Name / Display Name') ?></label>
                     <input type="text" name="display_name" id="vusersDisplayName" class="vusers-input">
                 </div>
             </div>
 
             <div class="form-grid">
                 <div>
-                    <label class="vusers-label">Email Address</label>
-                    <input type="email" name="email" id="vusersEmail" class="vusers-input" placeholder="name@domain.com" required>
+                    <label class="vusers-label"><?= t('form.email_label', 'Email Address') ?></label>
+                    <input type="email" name="email" id="vusersEmail" class="vusers-input" required>
                 </div>
                 <div>
-                    <label class="vusers-label">Phone Number</label>
-                    <input type="text" name="phone" id="vusersPhone" class="vusers-input" placeholder="+1234567890">
+                    <label class="vusers-label"><?= t('form.phone_label', 'Phone Number') ?></label>
+                    <input type="text" name="phone" id="vusersPhone" class="vusers-input">
                 </div>
             </div>
 
             <div class="form-grid">
                 <div>
-                    <label class="vusers-label">Password</label>
-                    <input type="password" name="password" id="vusersPassword" class="vusers-input" placeholder="Min 8 characters">
-                    <small style="color:#64748b; font-size:0.7rem;">Leave blank if you don't want to change password</small>
+                    <label class="vusers-label"><?= t('form.password_label', 'Password') ?></label>
+                    <input type="password" name="password" id="vusersPassword" class="vusers-input">
+                    <small style="color:#64748b; font-size:0.7rem;"><?= t('form.password_help', 'Leave blank if you don\'t want to change password') ?></small>
                 </div>
                 <div>
-                    <label class="vusers-label">System Role</label>
+                    <label class="vusers-label"><?= t('form.role_label', 'System Role') ?></label>
                     <select name="role_id" id="vusersRole" class="vusers-input" required></select>
                 </div>
             </div>
 
             <div class="form-grid">
                 <div>
-                    <label class="vusers-label">Country</label>
+                    <label class="vusers-label"><?= t('form.country_label', 'Country') ?></label>
                     <select name="country_id" id="vusersCountry" class="vusers-input"></select>
                 </div>
                 <div>
-                    <label class="vusers-label">City</label>
+                    <label class="vusers-label"><?= t('form.city_label', 'City') ?></label>
                     <select name="city_id" id="vusersCity" class="vusers-input">
-                        <option value="">Select Country First</option>
+                        <option value=""><?= t('form.select_country_first', 'Select Country First') ?></option>
                     </select>
                 </div>
             </div>
 
             <div class="form-grid">
                 <div>
-                    <label class="vusers-label">Preferred Language</label>
+                    <label class="vusers-label"><?= t('form.language_label', 'Preferred Language') ?></label>
                     <select name="preferred_language" id="vusersLang" class="vusers-input"></select>
                 </div>
                 <div>
-                    <label class="vusers-label">Timezone</label>
+                    <label class="vusers-label"><?= t('form.timezone_label', 'Timezone') ?></label>
                     <select name="timezone" id="vusersTimezone" class="vusers-input"></select>
                 </div>
             </div>
 
             <div style="margin-bottom:25px; padding:15px; background:rgba(15,23,42,0.5); border-radius:10px;">
-                <label class="vusers-label">Account Status</label>
+                <label class="vusers-label"><?= t('form.status_label', 'Account Status') ?></label>
                 <div style="display:flex; align-items:center; gap:20px;">
                     <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                        <input type="radio" name="is_active" value="1" checked> Active
+                        <input type="radio" name="is_active" value="1" checked> <?= t('status.active', 'Active') ?>
                     </label>
                     <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                        <input type="radio" name="is_active" value="0"> Inactive / Suspended
+                        <input type="radio" name="is_active" value="0"> <?= t('status.inactive', 'Inactive / Suspended') ?>
                     </label>
                 </div>
             </div>
 
             <div style="display:flex; justify-content:flex-end; gap:12px;">
-                <button type="button" id="vusersCancel" class="vusers-input" style="width:auto; padding:10px 25px; cursor:pointer; background:transparent;">Cancel</button>
-                <button type="submit" class="admin-btn-primary" style="padding:10px 30px; border-radius:8px; cursor:pointer; font-weight:600;">Save User Changes</button>
+                <button type="button" id="vusersCancel" class="vusers-input" style="width:auto; padding:10px 25px; cursor:pointer; background:transparent;"><?= t('form.cancel_btn', 'Cancel') ?></button>
+                <button type="submit" class="admin-btn-primary" style="padding:10px 30px; border-radius:8px; cursor:pointer; font-weight:600;"><?= t('form.save_btn', 'Save User Changes') ?></button>
             </div>
         </form>
     </div>
@@ -236,13 +255,15 @@ if ($standaloneMode): ?>
 
 <script>
     /**
-     * إعدادات النظام الممررة من PHP للـ JS
+     * Settings passed from PHP to JS
      */
     window.USERS_CONFIG = {
         apiUrl: "<?= $apiUrl ?>",
         csrfToken: "<?= $csrfToken ?>",
         lang: "<?= $userLang ?>",
         direction: "<?= $direction ?>",
+        translations: <?= json_encode($translations, JSON_UNESCAPED_UNICODE) ?>,
+        themeColors: <?= json_encode($themeColors, JSON_UNESCAPED_UNICODE) ?>,
         assets: {
             placeholder: "/admin/assets/img/user-placeholder.png"
         }
