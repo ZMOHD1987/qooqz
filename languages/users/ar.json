@@ -1,0 +1,48 @@
+{
+    "page_title": "إدارة المستخدمين",
+    "add_user": "إضافة مستخدم جديد",
+    "edit_user": "تعديل مستخدم",
+    "search_placeholder": "بحث بالاسم، البريد، أو الهاتف...",
+    "table": {
+        "id": "الرقم",
+        "username": "اسم المستخدم",
+        "email": "البريد الإلكتروني",
+        "phone": "رقم الهاتف",
+        "role": "الدور",
+        "location": "الموقع (الدولة/المدينة)",
+        "language": "اللغة",
+        "status": "الحالة",
+        "created_at": "تاريخ الإنشاء",
+        "actions": "الإجراءات"
+    },
+    "form": {
+        "username_label": "اسم المستخدم",
+        "email_label": "البريد الإلكتروني",
+        "password_label": "كلمة المرور",
+        "password_help": "اتركه فارغاً إذا كنت لا تريد التغيير",
+        "phone_label": "رقم الهاتف",
+        "role_label": "دور المستخدم",
+        "country_label": "الدولة",
+        "city_label": "المدينة",
+        "language_label": "اللغة المفضلة",
+        "timezone_label": "المنطقة الزمنية",
+        "status_label": "حالة الحساب (نشط)",
+        "save_btn": "حفظ البيانات",
+        "cancel_btn": "إلغاء"
+    },
+    "status": {
+        "active": "نشط",
+        "inactive": "معطل",
+        "toggle_on": "تفعيل",
+        "toggle_off": "إلغاء التفعيل"
+    },
+    "messages": {
+        "loading": "جاري تحميل البيانات...",
+        "no_data": "لا يوجد مستخدمين لعرضهم",
+        "save_success": "تم حفظ بيانات المستخدم بنجاح",
+        "delete_confirm": "هل أنت متأكد من حذف هذا المستخدم نهائياً؟",
+        "delete_success": "تم حذف المستخدم بنجاح",
+        "error_fetch": "فشل في جلب البيانات من السيرفر",
+        "error_save": "حدث خطأ أثناء محاولة الحفظ"
+    }
+}
