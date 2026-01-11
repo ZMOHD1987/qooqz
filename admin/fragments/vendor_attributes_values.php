@@ -1,64 +1,77 @@
 <?php
 declare(strict_types=1);
 
-// التحقق مما إذا كان ملف الرأس تم تضمينه (في الداشبورد) أم لا
+/**
+ * admin/fragments/vendor_attributes_values.php
+ * Vendor Attributes Values Management
+ */
+
 $isInDashboard = false;
 $standaloneMode = true;
+$translations = [];
+$themeColors = [];
 
-// محاولة اكتشاف ما إذا كنا في بيئة الداشبورد
-if (defined('ADMIN_HEADER_INCLUDED') || isset($ADMIN_UI_PAYLOAD) || function_exists('is_in_admin_scope')) {
+if (defined('ADMIN_HEADER_INCLUDED') || isset($ADMIN_UI_PAYLOAD)) {
     $isInDashboard = true;
     $standaloneMode = false;
     
-    // استخدام بيانات من الداشبورد إذا كانت متوفرة
     if (isset($ADMIN_UI_PAYLOAD)) {
         $userLang = $ADMIN_UI_PAYLOAD['lang'] ?? 'en';
         $direction = $ADMIN_UI_PAYLOAD['direction'] ?? 'ltr';
         $csrfToken = $ADMIN_UI_PAYLOAD['csrf_token'] ?? '';
         
-        // مسارات API من الداشبورد إذا كانت متوفرة
         $apiUrls = $ADMIN_UI_PAYLOAD['apiUrls'] ?? [];
         $apiUrl = $apiUrls['vendorAttributes'] ?? '/api/routes/vendor_attributes_values.php';
         $vendorsApi = $apiUrls['vendors'] ?? '/api/routes/vendors.php';
         $attrApi = $apiUrls['attributes'] ?? '/api/routes/attributes.php';
+        $translations = $ADMIN_UI_PAYLOAD['strings'] ?? [];
+        $themeColors = $ADMIN_UI_PAYLOAD['theme']['colors_map'] ?? [];
     }
 }
 
-// إذا لم نكن في الداشبورد، نستخدم الجلسة
 if ($standaloneMode) {
     if (session_status() === PHP_SESSION_NONE) session_start();
-
-    // إعدادات اللغة والاتجاه
     $userLang = $_SESSION['user_lang'] ?? 'ar';
     $direction = ($userLang === 'ar') ? 'rtl' : 'ltr';
 
-    // إنشاء توكن الحماية CSRF
     if (!isset($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
     }
     $csrfToken = $_SESSION['csrf_token'];
 
-    // المسارات
     $apiUrl = '/api/routes/vendor_attributes_values.php';
     $vendorsApi = '/api/routes/vendors.php';
     $attrApi = '/api/routes/attributes.php';
 }
 
-// إذا كنا في وضع منفصل، نعرض HTML كامل
+// Translation helper function
+function t($key, $default = '') {
+    global $translations;
+    if (empty($translations)) return $default ?: $key;
+    $keys = explode('.', $key);
+    $value = $translations;
+    foreach ($keys as $k) {
+        if (!is_array($value) || !isset($value[$k])) {
+            return $default ?: $key;
+        }
+        $value = $value[$k];
+    }
+    return is_string($value) ? $value : ($default ?: $key);
+}
+
 if ($standaloneMode): ?>
 <!doctype html>
 <html lang="<?= $userLang ?>" dir="<?= $direction ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title><?= $userLang == 'ar' ? 'قيم خصائص الموردين' : 'Vendor Attributes' ?></title>
+    <title><?= t('vendor_attributes_values_title', 'Vendor Attributes') ?></title>
     
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     
     <style>
-        /* CSS يبقى كما هو */
         .vav-scope { background: #0f0f0f; color: #eee; padding: 20px; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
         .vav-card { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .vav-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
@@ -88,34 +101,33 @@ if ($standaloneMode): ?>
 <body class="vav-scope" dir="<?= $direction ?>">
 <?php endif; ?>
 
-<!-- المحتوى يبقى كما هو في كلا الحالتين -->
 <div class="vav-card">
     <div class="vav-header">
         <h2 style="margin:0; font-size:1.5rem; font-weight: bold; color: #3b82f6;">
-            <?= $userLang == 'ar' ? 'قيم خصائص الموردين' : 'Vendor Attributes' ?>
+            <?= t('vendor_attributes.title', 'Vendor Attributes') ?>
         </h2>
         <div style="display:flex; gap:10px;">
-            <button type="button" id="vavRefresh" class="vav-btn btn-gray"><?= $userLang == 'ar' ? 'تحديث' : 'Refresh' ?></button>
-            <button type="button" id="vavNew" class="vav-btn btn-blue"><?= $userLang == 'ar' ? 'إضافة جديد +' : 'Add New +' ?></button>
+            <button type="button" id="vavRefresh" class="vav-btn btn-gray"><?= t('refresh', 'Refresh') ?></button>
+            <button type="button" id="vavNew" class="vav-btn btn-blue"><?= t('add_new', 'Add New +') ?></button>
         </div>
     </div>
 
     <div class="vav-grid">
         <div style="flex: 1;">
-            <label style="display:block; font-size:0.75rem; color:#888; margin-bottom:5px;"><?= $userLang == 'ar' ? 'فلترة حسب المورد' : 'Filter by Vendor' ?></label>
+            <label style="display:block; font-size:0.75rem; color:#888; margin-bottom:5px;"><?= t('filter_by_vendor', 'Filter by Vendor') ?></label>
             <select id="vavVendorFilter" class="vav-input"><option></option></select>
         </div>
         <div style="flex: 1;">
-            <label style="display:block; font-size:0.75rem; color:#888; margin-bottom:5px;"><?= $userLang == 'ar' ? 'فلترة حسب الخاصية' : 'Filter by Attribute' ?></label>
+            <label style="display:block; font-size:0.75rem; color:#888; margin-bottom:5px;"><?= t('filter_by_attribute', 'Filter by Attribute') ?></label>
             <select id="vavAttributeFilter" class="vav-input"><option></option></select>
         </div>
         <div style="flex: 1;">
-            <label style="display:block; font-size:0.75rem; color:#888; margin-bottom:5px;"><?= $userLang == 'ar' ? 'البحث في القيم' : 'Search Values' ?></label>
-            <input type="text" id="vavSearch" class="vav-input" placeholder="<?= $userLang == 'ar' ? 'ابحث هنا...' : 'Search...' ?>">
+            <label style="display:block; font-size:0.75rem; color:#888; margin-bottom:5px;"><?= t('search_values', 'Search Values') ?></label>
+            <input type="text" id="vavSearch" class="vav-input" placeholder="<?= t('search_placeholder', 'Search...') ?>">
         </div>
         <div>
             <button type="button" id="vavResetFilters" class="vav-btn btn-gray" style="height:42px; width:100%;">
-                <?= $userLang == 'ar' ? 'إلغاء الفلاتر' : 'Reset' ?>
+                <?= t('reset_filters', 'Reset') ?>
             </button>
         </div>
     </div>
@@ -124,15 +136,15 @@ if ($standaloneMode): ?>
         <table class="vav-table">
             <thead>
                 <tr>
-                    <th style="width: 60px;">ID</th>
-                    <th><?= $userLang == 'ar' ? 'المورد' : 'Vendor' ?></th>
-                    <th><?= $userLang == 'ar' ? 'الخاصية' : 'Attribute' ?></th>
-                    <th><?= $userLang == 'ar' ? 'القيمة' : 'Value' ?></th>
-                    <th style="text-align:center; width: 160px;"><?= $userLang == 'ar' ? 'الإجراءات' : 'Actions' ?></th>
+                    <th style="width: 60px;"><?= t('id', 'ID') ?></th>
+                    <th><?= t('vendor', 'Vendor') ?></th>
+                    <th><?= t('attribute', 'Attribute') ?></th>
+                    <th><?= t('value', 'Value') ?></th>
+                    <th style="text-align:center; width: 160px;"><?= t('actions', 'Actions') ?></th>
                 </tr>
             </thead>
             <tbody id="vavTbody">
-                <tr><td colspan="5" style="text-align:center; padding:40px; color:#666;">...</td></tr>
+                <tr><td colspan="5" style="text-align:center; padding:40px; color:#666;"><?= t('loading', 'Loading...') ?></td></tr>
             </tbody>
         </table>
     </div>
@@ -146,29 +158,28 @@ if ($standaloneMode): ?>
             <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
             
             <div style="margin-bottom:15px;">
-                <label style="color:#aaa; font-size:0.85rem; display:block; margin-bottom:5px;"><?= $userLang == 'ar' ? 'المورد' : 'Vendor' ?></label>
+                <label style="color:#aaa; font-size:0.85rem; display:block; margin-bottom:5px;"><?= t('vendor', 'Vendor') ?></label>
                 <select name="vendor_id" id="vavVendor" class="vav-input" required style="width:100%;"></select>
             </div>
 
             <div style="margin-bottom:15px;">
-                <label style="color:#aaa; font-size:0.85rem; display:block; margin-bottom:5px;"><?= $userLang == 'ar' ? 'الخاصية' : 'Attribute' ?></label>
+                <label style="color:#aaa; font-size:0.85rem; display:block; margin-bottom:5px;"><?= t('attribute', 'Attribute') ?></label>
                 <select name="attribute_id" id="vavAttribute" class="vav-input" required style="width:100%;"></select>
             </div>
 
             <div style="margin-bottom:25px;">
-                <label style="color:#aaa; font-size:0.85rem; display:block; margin-bottom:5px;"><?= $userLang == 'ar' ? 'القيمة' : 'Value' ?></label>
-                <input type="text" name="value" id="vavValue" class="vav-input" required placeholder="Ex: 10%, Red, Extra Large">
+                <label style="color:#aaa; font-size:0.85rem; display:block; margin-bottom:5px;"><?= t('value', 'Value') ?></label>
+                <input type="text" name="value" id="vavValue" class="vav-input" required placeholder="<?= t('value_placeholder', 'Ex: 10%, Red, Extra Large') ?>">
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                <button type="button" id="vavCancel" class="vav-btn btn-gray"><?= $userLang == 'ar' ? 'إلغاء' : 'Cancel' ?></button>
-                <button type="submit" class="vav-btn btn-blue"><?= $userLang == 'ar' ? 'حفظ البيانات' : 'Save Data' ?></button>
+                <button type="button" id="vavCancel" class="vav-btn btn-gray"><?= t('cancel', 'Cancel') ?></button>
+                <button type="submit" class="vav-btn btn-blue"><?= t('save_data', 'Save Data') ?></button>
             </div>
         </form>
     </div>
 </div>
 
-<?php if ($standaloneMode): ?>
 <script>
 window.VAV_CONFIG = {
     apiUrl: "<?= $apiUrl ?>",
@@ -176,23 +187,14 @@ window.VAV_CONFIG = {
     attrsUrl: "<?= $attrApi ?>",
     csrfToken: "<?= $csrfToken ?>",
     lang: "<?= $userLang ?>",
-    isStandalone: true
+    direction: "<?= $direction ?>",
+    translations: <?= json_encode($translations, JSON_UNESCAPED_UNICODE) ?>,
+    themeColors: <?= json_encode($themeColors, JSON_UNESCAPED_UNICODE) ?>
 };
 </script>
+
+<?php if ($standaloneMode): ?>
 <script src="/admin/assets/js/pages/vendor_attributes_values.js"></script>
 </body>
 </html>
-<?php else: ?>
-<!-- في الداشبورد، نحتاج فقط إلى إضافة التكوين -->
-<script>
-// التكوين للداشبورد
-window.VAV_CONFIG = window.VAV_CONFIG || {
-    apiUrl: "<?= $apiUrl ?>",
-    vendorsUrl: "<?= $vendorsApi ?>",
-    attrsUrl: "<?= $attrApi ?>",
-    csrfToken: "<?= $csrfToken ?>",
-    lang: "<?= $userLang ?>",
-    isStandalone: false
-};
-</script>
 <?php endif; ?>
