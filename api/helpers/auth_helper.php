@@ -190,68 +190,47 @@ if (!function_exists('refresh_permissions_from_db')) {
             if (!($db instanceof mysqli)) return false;
             $perms = [];
 
-            // Strategy:
-            // 1) If user_permissions table exists and has permission_id -> join permissions to get key_name/name
-            // 2) If user_permissions has direct 'permission' column, use it
-            // 3) If user_roles & role_permissions exist, join to permissions
-            // 4) Fallback: users.role_id => roles.name (set as role-based string), and for role_id==1 add super_admin
-
-            // 1) user_permissions mapping to permissions table (permission_id)
-            if (table_exists($db,'user_permissions') && table_exists($db,'permissions')) {
-                // determine permission name column in permissions table
-                $permCol = discover_permission_column($db, 'permissions') ?: 'name';
-                $sql = "SELECT p.`{$permCol}` AS perm FROM permissions p JOIN user_permissions up ON up.permission_id = p.id WHERE up.user_id = ?";
-                $stmt = $db->prepare($sql);
+            // Strategy: Use standard RBAC schema
+            // users.role_id -> role_permissions -> permissions.key_name
+            // This matches the database schema: users, roles, role_permissions, permissions tables
+            
+            // Get user's role_id from users table
+            $roleId = 0;
+            if (table_exists($db,'users') && column_exists($db,'users','role_id')) {
+                $stmt = $db->prepare("SELECT role_id FROM users WHERE id = ? LIMIT 1");
                 if ($stmt) {
                     $stmt->bind_param('i', $user_id);
-                    $rows = stmt_fetch_all_assoc($stmt);
-                    foreach ($rows as $r) if (!empty($r['perm'])) $perms[] = $r['perm'];
+                    $row = stmt_fetch_one_assoc($stmt);
+                    if (!empty($row['role_id'])) {
+                        $roleId = (int)$row['role_id'];
+                    }
                 }
             }
-
-            // 2) direct permission strings in user_permissions.permission
-            if (empty($perms) && table_exists($db,'user_permissions') && column_exists($db,'user_permissions','permission')) {
-                $stmt = $db->prepare("SELECT permission FROM user_permissions WHERE user_id = ?");
-                if ($stmt) {
-                    $stmt->bind_param('i',$user_id);
-                    $rows = stmt_fetch_all_assoc($stmt);
-                    foreach ($rows as $r) if (!empty($r['permission'])) $perms[] = $r['permission'];
-                }
-            }
-
-            // 3) role-based via role_permissions -> permissions
-            if (empty($perms) && table_exists($db,'user_roles') && table_exists($db,'role_permissions') && table_exists($db,'permissions')) {
-                $permCol = discover_permission_column($db, 'permissions') ?: 'name';
-                $sql = "SELECT DISTINCT p.`{$permCol}` AS perm
+            
+            // Fetch permissions for user's role via role_permissions
+            if ($roleId && table_exists($db,'role_permissions') && table_exists($db,'permissions')) {
+                $permCol = discover_permission_column($db, 'permissions') ?: 'key_name';
+                $sql = "SELECT p.`{$permCol}` AS perm
                         FROM permissions p
                         JOIN role_permissions rp ON rp.permission_id = p.id
-                        JOIN user_roles ur ON ur.role_id = rp.role_id
-                        WHERE ur.user_id = ?";
+                        WHERE rp.role_id = ?";
                 $stmt = $db->prepare($sql);
                 if ($stmt) {
-                    $stmt->bind_param('i',$user_id);
+                    $stmt->bind_param('i', $roleId);
                     $rows = stmt_fetch_all_assoc($stmt);
                     foreach ($rows as $r) if (!empty($r['perm'])) $perms[] = $r['perm'];
                 }
             }
 
-            // 4) fallback role_id -> roles.name (useful to set roles)
+            // Get role name from roles table
             $roles = [];
-            if (table_exists($db,'user_roles') && table_exists($db,'roles')) {
-                $stmt = $db->prepare("SELECT r.name AS role_name FROM roles r JOIN user_roles ur ON ur.role_id = r.id WHERE ur.user_id = ?");
+            if ($roleId && table_exists($db,'roles') && column_exists($db,'roles','key_name')) {
+                $stmt = $db->prepare("SELECT key_name FROM roles WHERE id = ? LIMIT 1");
                 if ($stmt) {
-                    $stmt->bind_param('i',$user_id);
-                    $rows = stmt_fetch_all_assoc($stmt);
-                    foreach ($rows as $r) if (!empty($r['role_name'])) $roles[] = $r['role_name'];
-                }
-            } else {
-                // try users.role_id -> roles.name
-                if (table_exists($db,'users') && column_exists($db,'users','role_id') && table_exists($db,'roles') && column_exists($db,'roles','name')) {
-                    $stmt = $db->prepare("SELECT u.role_id, r.name FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.id = ? LIMIT 1");
-                    if ($stmt) {
-                        $stmt->bind_param('i',$user_id);
-                        $row = stmt_fetch_one_assoc($stmt);
-                        if (!empty($row['name'])) $roles[] = $row['name'];
+                    $stmt->bind_param('i', $roleId);
+                    $row = stmt_fetch_one_assoc($stmt);
+                    if (!empty($row['key_name'])) {
+                        $roles[] = $row['key_name'];
                     }
                 }
             }
@@ -399,21 +378,13 @@ if (!function_exists('auth_get_user_roles')) {
         if (!($db instanceof mysqli)) return $_SESSION['roles'] ?? [];
         $out = [];
 
-        // try user_roles join
+        // Get role from users.role_id -> roles.key_name (standard RBAC schema)
         try {
-            $stmt = $db->prepare("SELECT r.name AS role_name FROM roles r JOIN user_roles ur ON ur.role_id = r.id WHERE ur.user_id = ?");
+            $stmt = $db->prepare("SELECT r.key_name FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id = ? LIMIT 1");
             if ($stmt) {
                 $stmt->bind_param('i', $user_id);
-                $rows = stmt_fetch_all_assoc($stmt);
-                foreach ($rows as $r) if (!empty($r['role_name'])) $out[] = $r['role_name'];
-            } else {
-                // fallback users.role_id -> roles.name
-                $s = $db->prepare("SELECT u.role_id, r.name FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.id = ? LIMIT 1");
-                if ($s) {
-                    $s->bind_param('i', $user_id);
-                    $row = stmt_fetch_one_assoc($s);
-                    if (!empty($row['name'])) $out[] = $row['name'];
-                }
+                $row = stmt_fetch_one_assoc($stmt);
+                if (!empty($row['key_name'])) $out[] = $row['key_name'];
             }
         } catch (Throwable $e) { /* ignore */ }
 

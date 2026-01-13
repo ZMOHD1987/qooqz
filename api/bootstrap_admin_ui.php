@@ -216,25 +216,8 @@ if (!empty($currentUser['id'])) {
     $perms = $_SESSION['permissions'] ?? [];
     $roles = $_SESSION['roles'] ?? [];
     
-    // If session cache is empty and DB is available, fetch from database
-    if (empty($perms) && $db && table_exists($db, 'user_permissions')) {
-        try {
-            $rows = safe_query_all($db, "
-                SELECT p.key_name 
-                FROM permissions p
-                JOIN user_permissions up ON up.permission_id = p.id
-                WHERE up.user_id = ?
-            ", [$uid], 'i');
-            foreach ($rows as $r) {
-                $perms[] = $r['key_name'];
-            }
-            _admin_ui_log("loaded permissions from user_permissions for user {$uid}: " . count($perms) . " permissions");
-        } catch (Throwable $e) {
-            _admin_ui_log("user_permissions query failed: " . $e->getMessage());
-        }
-    }
-    
-    // If still empty, try role_permissions
+    // If session cache is empty and DB is available, fetch from database using standard RBAC schema
+    // users.role_id -> role_permissions -> permissions.key_name
     if (empty($perms) && $db && !empty($userInfo['role_id']) && table_exists($db, 'role_permissions')) {
         try {
             $rows = safe_query_all($db, "

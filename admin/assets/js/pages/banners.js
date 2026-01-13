@@ -1,30 +1,73 @@
 // admin/assets/js/pages/banners.js
-// COMPLETE client script for banners admin UI
-// - Uses JSON translations provided in window.I18N (nested) and window.I18N_FLAT (flat map).
-// - Full features: list, search, filter, create/edit/save/delete, translations inline inputs, image upload, active toggle.
-// - Safe DOM operations and fallbacks.
+// Banner management JavaScript - uses ONLY window.ADMIN_UI (from bootstrap_admin_ui.php)
+// Gets translations, theme, permissions, and settings from ADMIN_UI_PAYLOAD
 
 (function(){
   'use strict';
 
-  // Translations accessors
-  var I18N = window.I18N || {};
-  var I18N_FLAT = window.I18N_FLAT || {};
-  var FALLBACK = {
-    loading: 'Loading...', no_banners: 'No banners', btn_edit: 'Edit', btn_delete: 'Delete',
-    btn_save: 'Save', btn_new: 'Create Banner', btn_refresh: 'Refresh', btn_translations: 'Translations',
-    btn_cancel: 'Cancel', yes: 'Yes', no: 'No', confirm_delete: 'Are you sure?', processing: 'Processing...'
-  };
+  // Get data from ADMIN_UI (provided by bootstrap_admin_ui.php)
+  var ADMIN_UI = window.ADMIN_UI || {};
+  var I18N = ADMIN_UI.strings || {};
+  var USER_INFO = ADMIN_UI.user || {};
+  var THEME = ADMIN_UI.theme || {};
+  var LANG = window.LANG || 'en';
+  var DIRECTION = window.DIRECTION || 'ltr';
+  var CSRF_TOKEN = window.CSRF_TOKEN || '';
 
+  // Translation helper with fallbacks
   function t(key){
     if (!key) return '';
-    if (I18N_FLAT && typeof I18N_FLAT[key] !== 'undefined' && I18N_FLAT[key] !== '') return I18N_FLAT[key];
-    var containers = ['banners','strings','buttons','labels','actions','status','forms','table','menu'];
-    for (var i=0;i<containers.length;i++){
-      var c = containers[i];
-      if (I18N[c] && typeof I18N[c][key] !== 'undefined' && I18N[c][key] !== '') return I18N[c][key];
+    
+    // Fallback translations (Arabic)
+    var fallbacks = {
+      'banners.loading': 'جاري التحميل...',
+      'banners.no_banners': 'لا توجد بانرات',
+      'banners.btn_edit': 'تعديل',
+      'banners.btn_delete': 'حذف',
+      'banners.btn_toggle': 'تبديل',
+      'banners.btn_save': 'حفظ',
+      'banners.btn_new': 'إضافة بانر',
+      'banners.btn_refresh': 'تحديث',
+      'banners.btn_cancel': 'إلغاء',
+      'banners.yes': 'نعم',
+      'banners.no': 'لا',
+      'banners.confirm_delete': 'هل أنت متأكد؟',
+      'banners.processing': 'جاري المعالجة...',
+      'banners.saved_success': 'تم الحفظ بنجاح',
+      'banners.deleted_success': 'تم الحذف بنجاح',
+      'banners.toggled_success': 'تم التبديل بنجاح',
+      'banners.error_loading': 'خطأ في التحميل',
+      'banners.error_save': 'خطأ في الحفظ',
+      'banners.error_delete': 'خطأ في الحذف',
+      'banners.error_toggle': 'خطأ في التبديل',
+      'banners.error_fetch': 'خطأ في جلب البيانات',
+      'banners.add_banner': 'إضافة بانر',
+      'banners.edit_banner': 'تعديل بانر'
+    };
+    
+    // Try direct key
+    if (I18N[key]) return I18N[key];
+    
+    // Try nested key (e.g., "banners.title")
+    var parts = key.split('.');
+    var val = I18N;
+    for (var i = 0; i < parts.length; i++) {
+      if (val && typeof val === 'object' && val[parts[i]]) {
+        val = val[parts[i]];
+      } else {
+        // Not found in I18N, check fallbacks
+        if (fallbacks[key]) return fallbacks[key];
+        return key.replace(/_/g, ' ');
+      }
     }
-    return FALLBACK[key] || key.replace(/_/g,' ');
+    
+    // If we got a string value, return it
+    if (typeof val === 'string') return val;
+    
+    // Otherwise check fallbacks
+    if (fallbacks[key]) return fallbacks[key];
+    
+    return key.replace(/_/g, ' ');
   }
 
   // DOM helpers
@@ -32,7 +75,6 @@
   function qs(sel, ctx){ ctx = ctx || document; return ctx.querySelector(sel); }
   function qsa(sel, ctx){ ctx = ctx || document; return Array.prototype.slice.call(ctx.querySelectorAll(sel || '')); }
   function escapeHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-  function escapeAttr(s){ return escapeHtml(s).replace(/'/g, '&#39;'); }
 
   var API = '/api/banners';
 
@@ -41,13 +83,198 @@
   var statusEl = getEl('bannersStatus');
   var searchEl = getEl('bannerSearch');
   var formWrap = getEl('bannerFormWrap');
-  var translationsArea = getEl('translationsArea');
 
   var bannersCache = [];
 
   function setStatus(msg, isError){
     if (!statusEl) return;
     statusEl.textContent = msg || '';
+    statusEl.style.color = isError ? '#DC2626' : '#064e3b';
+  }
+
+  function fetchJson(url, opts){
+    opts = opts || {};
+    opts.headers = opts.headers || {};
+    opts.headers['Content-Type'] = 'application/json';
+    opts.credentials = 'same-origin';
+    return fetch(url, opts).then(function(r){
+      if (!r.ok) throw new Error(t('banners.error_fetch') || 'Not Found');
+      return r.json();
+    });
+  }
+
+  function loadBanners(){
+    setStatus(t('banners.loading') || 'Loading...');
+    fetchJson(API + '?format=json')
+      .then(function(data){
+        bannersCache = data.data || [];
+        renderBanners(bannersCache);
+        setStatus('');
+      })
+      .catch(function(err){
+        setStatus(t('banners.error_loading') || 'Error: ' + err.message, true);
+      });
+  }
+
+  function renderBanners(banners){
+    if (!tbody) return;
+    if (!countEl) countEl = getEl('bannersCount');
+    if (countEl) countEl.textContent = banners.length;
+
+    if (banners.length === 0){
+      tbody.innerHTML = '<tr><td colspan="6" style="padding:12px;text-align:center;color:#666;">' + escapeHtml(t('banners.no_banners') || 'No banners found') + '</td></tr>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < banners.length; i++){
+      var b = banners[i];
+      var activeLabel = b.is_active ? (t('banners.yes') || 'Yes') : (t('banners.no') || 'No');
+      html += '<tr>';
+      html += '<td style="padding:8px;border:1px solid #ddd;">' + escapeHtml(b.id) + '</td>';
+      html += '<td style="padding:8px;border:1px solid #ddd;">' + escapeHtml(b.title) + '</td>';
+      html += '<td style="padding:8px;border:1px solid #ddd;"><img src="' + escapeHtml(b.image_url) + '" style="max-width:60px;max-height:40px;" alt=""></td>';
+      html += '<td style="padding:8px;border:1px solid #ddd;">' + escapeHtml(b.position) + '</td>';
+      html += '<td style="padding:8px;border:1px solid #ddd;">' + activeLabel + '</td>';
+      html += '<td style="padding:8px;border:1px solid #ddd;">';
+      html += '<button class="btnEdit" data-id="' + b.id + '" style="padding:4px 8px;margin:2px;background:#3B82F6;color:#fff;border:none;border-radius:4px;cursor:pointer;">' + escapeHtml(t('banners.btn_edit') || 'Edit') + '</button>';
+      html += '<button class="btnDelete" data-id="' + b.id + '" style="padding:4px 8px;margin:2px;background:#DC2626;color:#fff;border:none;border-radius:4px;cursor:pointer;">' + escapeHtml(t('banners.btn_delete') || 'Delete') + '</button>';
+      html += '<button class="btnToggle" data-id="' + b.id + '" style="padding:4px 8px;margin:2px;background:#059669;color:#fff;border:none;border-radius:4px;cursor:pointer;">' + escapeHtml(t('banners.btn_toggle') || 'Toggle') + '</button>';
+      html += '</td>';
+      html += '</tr>';
+    }
+    tbody.innerHTML = html;
+
+    // Attach handlers
+    var editBtns = qsa('.btnEdit', tbody);
+    for (var j = 0; j < editBtns.length; j++){
+      editBtns[j].addEventListener('click', function(){ editBanner(this.getAttribute('data-id')); });
+    }
+    var delBtns = qsa('.btnDelete', tbody);
+    for (var k = 0; k < delBtns.length; k++){
+      delBtns[k].addEventListener('click', function(){ deleteBanner(this.getAttribute('data-id')); });
+    }
+    var toggleBtns = qsa('.btnToggle', tbody);
+    for (var m = 0; m < toggleBtns.length; m++){
+      toggleBtns[m].addEventListener('click', function(){ toggleActive(this.getAttribute('data-id')); });
+    }
+  }
+
+  function showForm(banner){
+    if (!formWrap) return;
+    formWrap.style.display = 'block';
+    var titleEl = getEl('formTitle');
+    if (titleEl) titleEl.textContent = banner ? (t('banners.edit_banner') || 'Edit Banner') : (t('banners.add_banner') || 'Add Banner');
+    
+    var idEl = getEl('bannerId');
+    var titleInput = getEl('bannerTitle');
+    var subtitleInput = getEl('bannerSubtitle');
+    var imageInput = getEl('bannerImageUrl');
+    var positionInput = getEl('bannerPosition');
+    var activeInput = getEl('bannerIsActive');
+
+    if (banner){
+      if (idEl) idEl.value = banner.id;
+      if (titleInput) titleInput.value = banner.title || '';
+      if (subtitleInput) subtitleInput.value = banner.subtitle || '';
+      if (imageInput) imageInput.value = banner.image_url || '';
+      if (positionInput) positionInput.value = banner.position || 'homepage_main';
+      if (activeInput) activeInput.checked = !!banner.is_active;
+    } else {
+      if (idEl) idEl.value = '';
+      if (titleInput) titleInput.value = '';
+      if (subtitleInput) subtitleInput.value = '';
+      if (imageInput) imageInput.value = '';
+      if (positionInput) positionInput.value = 'homepage_main';
+      if (activeInput) activeInput.checked = true;
+    }
+  }
+
+  function editBanner(id){
+    var banner = bannersCache.find(function(b){ return b.id == id; });
+    if (banner) showForm(banner);
+  }
+
+  function deleteBanner(id){
+    if (!confirm(t('banners.confirm_delete') || 'Are you sure?')) return;
+    setStatus(t('banners.processing') || 'Processing...');
+    var data = { action: 'delete', id: id, csrf_token: CSRF_TOKEN };
+    fetchJson(API, {method: 'POST', body: JSON.stringify(data)})
+      .then(function(){
+        setStatus(t('banners.deleted_success') || 'Deleted successfully');
+        loadBanners();
+      })
+      .catch(function(err){
+        setStatus(t('banners.error_delete') || 'Error: ' + err.message, true);
+      });
+  }
+
+  function toggleActive(id){
+    setStatus(t('banners.processing') || 'Processing...');
+    var data = { action: 'toggle_active', id: id, csrf_token: CSRF_TOKEN };
+    fetchJson(API, {method: 'POST', body: JSON.stringify(data)})
+      .then(function(){
+        setStatus(t('banners.toggled_success') || 'Toggled successfully');
+        loadBanners();
+      })
+      .catch(function(err){
+        setStatus(t('banners.error_toggle') || 'Error: ' + err.message, true);
+      });
+  }
+
+  function saveBanner(formData){
+    setStatus(t('banners.processing') || 'Processing...');
+    fetchJson(API, {method: 'POST', body: JSON.stringify(formData)})
+      .then(function(){
+        setStatus(t('banners.saved_success') || 'Saved successfully');
+        if (formWrap) formWrap.style.display = 'none';
+        loadBanners();
+      })
+      .catch(function(err){
+        setStatus(t('banners.error_save') || 'Error: ' + err.message, true);
+      });
+  }
+
+  // Event handlers
+  var btnRefresh = getEl('btnRefresh');
+  if (btnRefresh) btnRefresh.addEventListener('click', loadBanners);
+
+  var btnNew = getEl('btnNew');
+  if (btnNew) btnNew.addEventListener('click', function(){ showForm(null); });
+
+  var btnCancelForm = getEl('btnCancelForm');
+  if (btnCancelForm) btnCancelForm.addEventListener('click', function(){ if (formWrap) formWrap.style.display = 'none'; });
+
+  var bannerForm = getEl('bannerForm');
+  if (bannerForm){
+    bannerForm.addEventListener('submit', function(e){
+      e.preventDefault();
+      var data = {};
+      var inputs = qsa('input, select, textarea', bannerForm);
+      for (var i = 0; i < inputs.length; i++){
+        var inp = inputs[i];
+        if (inp.type === 'checkbox') data[inp.name] = inp.checked ? 1 : 0;
+        else if (inp.name) data[inp.name] = inp.value;
+      }
+      data.csrf_token = CSRF_TOKEN;
+      saveBanner(data);
+    });
+  }
+
+  if (searchEl){
+    searchEl.addEventListener('input', function(){
+      var q = this.value.toLowerCase();
+      var filtered = bannersCache.filter(function(b){
+        return (b.title || '').toLowerCase().indexOf(q) >= 0 || (b.subtitle || '').toLowerCase().indexOf(q) >= 0;
+      });
+      renderBanners(filtered);
+    });
+  }
+
+  // Initial load
+  loadBanners();
+
+})();
     statusEl.style.color = isError ? '#b91c1c' : '#064e3b';
   }
 
