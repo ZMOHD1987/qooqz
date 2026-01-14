@@ -198,7 +198,7 @@ function Permissions_store($container)
         // SAVE
         $input = function_exists('get_json_input') ? get_json_input() : $_POST;
         $validation = PermissionsValidator::validate($input);
-        if ($validation !== true) {
+        if (!empty($validation)) {
             respond(['success' => false, 'errors' => $validation], HTTP_UNPROCESSABLE_ENTITY);
             return;
         }
