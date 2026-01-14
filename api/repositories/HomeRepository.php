@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 class HomeRepository
 {
-    private mysqli $conn;
-    private string $lang;
+    private $conn;
+    private $lang;
 
-    public function __construct(mysqli $conn, string $lang = 'en')
+    public function __construct($conn, $lang = 'en')
     {
         $this->conn = $conn;
         $this->lang = $lang;

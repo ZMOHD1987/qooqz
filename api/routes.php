@@ -99,6 +99,63 @@ $routes = [
         }
     ],
 
+    // -------- Products Routes --------
+    [
+        'method'  => 'GET',
+        'pattern' => '#^/products/?$#',
+        'handler' => function ($c) {
+            require_once __DIR__ . '/routes/products.php';
+        }
+    ],
+    [
+        'method'  => 'POST',
+        'pattern' => '#^/products/?$#',
+        'handler' => function ($c) {
+            require_once __DIR__ . '/routes/products.php';
+        }
+    ],
+    [
+        'method'  => 'GET',
+        'pattern' => '#^/products/(.+)$#',
+        'handler' => function ($c, $id) {
+            $_SERVER['PRODUCT_ID_FROM_ROUTE'] = $id;
+            require_once __DIR__ . '/routes/products.php';
+        }
+    ],
+    [
+        'method'  => 'POST',
+        'pattern' => '#^/products/(.+)$#',
+        'handler' => function ($c, $id) {
+            $_SERVER['PRODUCT_ID_FROM_ROUTE'] = $id;
+            require_once __DIR__ . '/routes/products.php';
+        }
+    ],
+    [
+        'method'  => 'PUT',
+        'pattern' => '#^/products/(.+)$#',
+        'handler' => function ($c, $id) {
+            $_SERVER['PRODUCT_ID_FROM_ROUTE'] = $id;
+            require_once __DIR__ . '/routes/products.php';
+        }
+    ],
+    [
+        'method'  => 'DELETE',
+        'pattern' => '#^/products/(.+)$#',
+        'handler' => function ($c, $id) {
+            $_SERVER['PRODUCT_ID_FROM_ROUTE'] = $id;
+            require_once __DIR__ . '/routes/products.php';
+        }
+    ],
+    
+    // -------- Product Meta (categories, brands, attributes) --------
+    [
+        'method'  => 'GET',
+        'pattern' => '#^/product_meta$#',
+        'handler' => function ($c) {
+            require_once __DIR__ . '/product_meta.php';
+        }
+    ],
+
     [
     'method'  => 'GET',
     'pattern' => '#^/home$#',

@@ -1,20 +1,31 @@
 <?php
 declare(strict_types=1);
 
+// Load bootstrap for consistent DB and context
+if (!isset($GLOBALS['CONTAINER']) || empty($GLOBALS['CONTAINER'])) {
+    require_once __DIR__ . '/../bootstrap.php';
+}
+
 require_once __DIR__ . '/../services/HomeService.php';
-require_once __DIR__ . '/../helpers/response.php';
+
+// Response helper should be loaded by bootstrap
+if (!function_exists('jsonResponse')) {
+    require_once __DIR__ . '/../helpers/response.php';
+}
 
 class HomeController
 {
-    private HomeService $service;
+    private $service;
 
     public function __construct()
     {
-        if (!function_exists('connectDB')) {
-            throw new Exception('connectDB() not found');
+        // Get DB connection from bootstrap context
+        $conn = $GLOBALS['CONTAINER']['db'] ?? null;
+        
+        // Fallback to connectDB if needed
+        if (!$conn && function_exists('connectDB')) {
+            $conn = connectDB();
         }
-
-        $conn = connectDB();
 
         if (!$conn instanceof mysqli) {
             throw new Exception('Database not available');
@@ -23,7 +34,7 @@ class HomeController
         $this->service = new HomeService($conn);
     }
 
-    public function index(): void
+    public function index()
     {
         try {
             jsonResponse([
