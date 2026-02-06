@@ -1,0 +1,177 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * CSRF Protection – Production Grade
+ * ==================================
+ * ✔ Web Forms (Session-based, safe)
+ * ✔ API / Admin / SPA (Stateless Double Submit Cookie)
+ * ✔ No session locks for API
+ * ✔ Cloudflare / Load Balancer safe
+ * ✔ Scales to millions of requests
+ */
+
+final class CSRF
+{
+    /* =========================================================
+     * CONFIG
+     * ========================================================= */
+
+    private const WEB_TOKEN_KEY  = '_csrf_token';
+    private const WEB_TIME_KEY   = '_csrf_time';
+
+    private const API_COOKIE     = 'XSRF-TOKEN';
+    private const API_HEADER     = 'X-XSRF-TOKEN';
+
+    private const TTL            = 3600; // 1 hour
+
+    /* =========================================================
+     * INTERNAL HELPERS
+     * ========================================================= */
+
+    private static function ensureSession(): void
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+    }
+
+    private static function randomToken(int $bytes = 32): string
+    {
+        return bin2hex(random_bytes($bytes));
+    }
+
+    private static function now(): int
+    {
+        return time();
+    }
+
+    /* =========================================================
+     * WEB CSRF (SESSION BASED)
+     * ========================================================= */
+
+    public static function webToken(bool $regenerate = false): string
+    {
+        self::ensureSession();
+
+        if (
+            $regenerate ||
+            empty($_SESSION[self::WEB_TOKEN_KEY]) ||
+            empty($_SESSION[self::WEB_TIME_KEY]) ||
+            (self::now() - $_SESSION[self::WEB_TIME_KEY]) > self::TTL
+        ) {
+            $_SESSION[self::WEB_TOKEN_KEY] = self::randomToken();
+            $_SESSION[self::WEB_TIME_KEY]  = self::now();
+        }
+
+        $token = (string) $_SESSION[self::WEB_TOKEN_KEY];
+
+        // 🔐 مهم جدًا: تحرير قفل الـ session فورًا
+        session_write_close();
+
+        return $token;
+    }
+
+    public static function webInput(string $name = 'csrf_token'): string
+    {
+        $token = htmlspecialchars(self::webToken(), ENT_QUOTES, 'UTF-8');
+        $name  = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+
+        return '<input type="hidden" name="'.$name.'" value="'.$token.'">';
+    }
+
+    public static function validateWeb(?string $token): bool
+    {
+        self::ensureSession();
+
+        if (
+            empty($token) ||
+            empty($_SESSION[self::WEB_TOKEN_KEY]) ||
+            empty($_SESSION[self::WEB_TIME_KEY])
+        ) {
+            return false;
+        }
+
+        if (!hash_equals($_SESSION[self::WEB_TOKEN_KEY], (string)$token)) {
+            return false;
+        }
+
+        if ((self::now() - $_SESSION[self::WEB_TIME_KEY]) > self::TTL) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /* =========================================================
+     * API / ADMIN CSRF (STATELESS)
+     * ========================================================= */
+
+    public static function issueApiToken(): void
+    {
+        if (isset($_COOKIE[self::API_COOKIE])) {
+            return;
+        }
+
+        $token = self::randomToken();
+
+        setcookie(
+            self::API_COOKIE,
+            $token,
+            [
+                'expires'  => self::now() + self::TTL,
+                'path'     => '/',
+                'secure'   => isset($_SERVER['HTTPS']),
+                'httponly' => false, // required for JS
+                'samesite' => 'Lax',
+            ]
+        );
+    }
+
+    public static function validateApi(): bool
+    {
+        $cookie = $_COOKIE[self::API_COOKIE] ?? null;
+        $header = $_SERVER['HTTP_' . str_replace('-', '_', self::API_HEADER)] ?? null;
+
+        if (!$cookie || !$header) {
+            return false;
+        }
+
+        return hash_equals($cookie, $header);
+    }
+
+    /* =========================================================
+     * AUTO DETECTION
+     * ========================================================= */
+
+    public static function validateAuto(?string $token = null): bool
+    {
+        // API / Admin (JSON, Authorization header)
+        if (
+            isset($_SERVER['HTTP_AUTHORIZATION']) ||
+            isset($_SERVER['HTTP_X_REQUESTED_WITH'])
+        ) {
+            return self::validateApi();
+        }
+
+        // Web Forms
+        return self::validateWeb($token);
+    }
+
+    /* =========================================================
+     * ENFORCE
+     * ========================================================= */
+
+    public static function enforce(?string $token = null): void
+    {
+        if (!self::validateAuto($token)) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => false,
+                'message' => 'CSRF validation failed'
+            ]);
+            exit;
+        }
+    }
+}

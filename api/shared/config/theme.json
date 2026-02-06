@@ -1,0 +1,17 @@
+{
+  "colors": {
+    "primary": "#1abc9c",
+    "primary_dark": "#16a085",
+    "accent": "#06b6d4",
+    "bg": "#ffffff",
+    "surface": "#ffffff",
+    "text": "#0f1720",
+    "muted": "#6b7280"
+  },
+  "font": {
+    "family": "\"Inter\", system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial",
+    "size": "14px",
+    "heading_weight": 700
+  },
+  "direction": "rtl"
+}

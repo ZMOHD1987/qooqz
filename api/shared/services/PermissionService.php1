@@ -1,0 +1,415 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * Centralized Permission Management Service
+ * Handles RBAC with Row-Level Security
+ * Version: 2.0.0 - Fixed for tenants and flexible ownership columns
+ */
+final class PermissionService
+{
+    private PDO $pdo;
+    private ?int $currentUserId = null;
+    private ?int $currentTenantId = null;
+    private array $userPermissions = [];
+    private array $userRoles = [];
+    private array $resourcePermissions = [];
+
+    public function __construct(PDO $pdo)
+    {
+        $this->pdo = $pdo;
+        $this->loadCurrentUser();
+    }
+
+    /**
+     * Load current user context from session
+     */
+    private function loadCurrentUser(): void
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        $this->currentUserId = $_SESSION['user_id'] ?? null;
+        $this->currentTenantId = $_SESSION['tenant_id'] ?? null;
+        $this->userPermissions = $_SESSION['permissions'] ?? [];
+        $this->userRoles = $_SESSION['roles'] ?? [];
+
+        error_log('[PermissionService] Context loaded - User: ' . ($this->currentUserId ?? 'guest') . ', Tenant: ' . ($this->currentTenantId ?? 'none'));
+    }
+
+    /**
+     * Check if user is super admin
+     */
+    public function isSuperAdmin(): bool
+    {
+        return in_array('super_admin', $this->userRoles, true);
+    }
+
+    /**
+     * Check if user has a specific permission
+     */
+    public function hasPermission(string $permissionKey): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return in_array($permissionKey, $this->userPermissions, true);
+    }
+
+    /**
+     * Get resource permissions for current user
+     */
+    public function getResourcePermissions(string $resource, string $permissionKey): array
+    {
+        // Super admin has all permissions
+        if ($this->isSuperAdmin()) {
+            return [
+                'can_view_all' => true,
+                'can_view_own' => true,
+                'can_view_tenant' => true,
+                'can_create' => true,
+                'can_edit_all' => true,
+                'can_edit_own' => true,
+                'can_delete_all' => true,
+                'can_delete_own' => true
+            ];
+        }
+
+        // Check if basic permission exists
+        if (!$this->hasPermission($permissionKey)) {
+            return [
+                'can_view_all' => false,
+                'can_view_own' => false,
+                'can_view_tenant' => false,
+                'can_create' => false,
+                'can_edit_all' => false,
+                'can_edit_own' => false,
+                'can_delete_all' => false,
+                'can_delete_own' => false
+            ];
+        }
+
+        // Get detailed resource permissions
+        $cacheKey = "{$resource}:{$permissionKey}";
+        if (isset($this->resourcePermissions[$cacheKey])) {
+            return $this->resourcePermissions[$cacheKey];
+        }
+
+        $stmt = $this->pdo->prepare("
+            SELECT rp.*
+            FROM resource_permissions rp
+            INNER JOIN permissions p ON p.id = rp.permission_id
+            WHERE p.key_name = :permission_key
+            AND rp.resource_type = :resource
+            LIMIT 1
+        ");
+
+        $stmt->execute([
+            'permission_key' => $permissionKey,
+            'resource' => $resource
+        ]);
+
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$result) {
+            // Default permissions if not configured
+            $result = [
+                'can_view_all' => false,
+                'can_view_own' => true,
+                'can_view_tenant' => false,
+                'can_create' => false,
+                'can_edit_all' => false,
+                'can_edit_own' => true,
+                'can_delete_all' => false,
+                'can_delete_own' => false
+            ];
+        }
+
+        // Convert to boolean
+        foreach ($result as $key => $value) {
+            if (strpos($key, 'can_') === 0) {
+                $result[$key] = (bool)$value;
+            }
+        }
+
+        $this->resourcePermissions[$cacheKey] = $result;
+
+        error_log('[PermissionService] Resource permissions for ' . $cacheKey . ': ' . json_encode($result));
+
+        return $result;
+    }
+
+    /**
+     * Can user view resource?
+     * ✅ Fixed: Special handling for tenants resource
+     */
+    public function canView(string $resource, string $permissionKey, ?int $resourceOwnerId = null, ?int $resourceTenantId = null): bool
+    {
+        $perms = $this->getResourcePermissions($resource, $permissionKey);
+
+        // Can view all
+        if ($perms['can_view_all']) {
+            return true;
+        }
+
+        // ✅ Special handling for tenants
+        if ($resource === 'tenants') {
+            // Can view own tenant (owner_user_id)
+            if ($perms['can_view_own'] && $resourceOwnerId !== null && $resourceOwnerId === $this->currentUserId) {
+                return true;
+            }
+
+            // Can view current tenant (id = tenant_id for tenants)
+            if ($perms['can_view_tenant'] && $resourceTenantId !== null && $resourceTenantId === $this->currentTenantId) {
+                return true;
+            }
+        }
+        // ✅ For other resources
+        else {
+            // Can view own
+            if ($perms['can_view_own'] && $resourceOwnerId !== null && $resourceOwnerId === $this->currentUserId) {
+                return true;
+            }
+
+            // Can view tenant
+            if ($perms['can_view_tenant'] && $resourceTenantId !== null && $resourceTenantId === $this->currentTenantId) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Can user create resource?
+     */
+    public function canCreate(string $resource, string $permissionKey): bool
+    {
+        $perms = $this->getResourcePermissions($resource, $permissionKey);
+        return $perms['can_create'];
+    }
+
+    /**
+     * Can user edit resource?
+     */
+    public function canEdit(string $resource, string $permissionKey, ?int $resourceOwnerId = null): bool
+    {
+        $perms = $this->getResourcePermissions($resource, $permissionKey);
+
+        // Can edit all
+        if ($perms['can_edit_all']) {
+            return true;
+        }
+
+        // Can edit own
+        if ($perms['can_edit_own'] && $resourceOwnerId !== null && $resourceOwnerId === $this->currentUserId) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Can user delete resource?
+     */
+    public function canDelete(string $resource, string $permissionKey, ?int $resourceOwnerId = null): bool
+    {
+        $perms = $this->getResourcePermissions($resource, $permissionKey);
+
+        // Can delete all
+        if ($perms['can_delete_all']) {
+            return true;
+        }
+
+        // Can delete own
+        if ($perms['can_delete_own'] && $resourceOwnerId !== null && $resourceOwnerId === $this->currentUserId) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Build WHERE clause for list queries with permissions
+     * ✅ Fixed: Special handling for tenants and flexible ownership columns
+     */
+    public function buildListWhereClause(string $resource, string $permissionKey, string $tableAlias = ''): array
+    {
+        $perms = $this->getResourcePermissions($resource, $permissionKey);
+        
+        $prefix = $tableAlias ? "{$tableAlias}." : '';
+        
+        $conditions = [];
+        $params = [];
+
+        // Super admin or can view all
+        if ($this->isSuperAdmin() || $perms['can_view_all']) {
+            error_log('[PermissionService] buildListWhereClause: User has view_all access');
+            return ['where' => '', 'params' => []];
+        }
+
+        // ✅ Special handling for tenants resource
+        if ($resource === 'tenants') {
+            error_log('[PermissionService] buildListWhereClause: Handling tenants resource');
+            
+            // Can view tenant (for tenants, id = tenant_id)
+            if ($perms['can_view_tenant'] && $this->currentTenantId) {
+                $conditions[] = "{$prefix}id = :current_tenant_id";
+                $params['current_tenant_id'] = $this->currentTenantId;
+                error_log('[PermissionService] buildListWhereClause: Added tenant condition (id)');
+            }
+
+            // Can view own (owned tenants)
+            if ($perms['can_view_own'] && $this->currentUserId) {
+                $conditions[] = "{$prefix}owner_user_id = :current_user_id";
+                $params['current_user_id'] = $this->currentUserId;
+                error_log('[PermissionService] buildListWhereClause: Added ownership condition (owner_user_id)');
+            }
+        }
+        // ✅ For other resources
+        else {
+            error_log('[PermissionService] buildListWhereClause: Handling standard resource: ' . $resource);
+            
+            // Can view tenant
+            if ($perms['can_view_tenant'] && $this->currentTenantId) {
+                $conditions[] = "{$prefix}tenant_id = :current_tenant_id";
+                $params['current_tenant_id'] = $this->currentTenantId;
+                error_log('[PermissionService] buildListWhereClause: Added tenant condition (tenant_id)');
+            }
+
+            // Can view own (try multiple ownership columns)
+            if ($perms['can_view_own'] && $this->currentUserId) {
+                // Common ownership column names
+                $ownershipColumns = ['user_id', 'created_by', 'owner_id', 'owner_user_id'];
+                $ownerConditions = [];
+                
+                foreach ($ownershipColumns as $col) {
+                    $ownerConditions[] = "{$prefix}{$col} = :current_user_id";
+                }
+                
+                // Try all possible ownership columns (DB will ignore non-existent ones)
+                $conditions[] = '(' . implode(' OR ', $ownerConditions) . ')';
+                $params['current_user_id'] = $this->currentUserId;
+                error_log('[PermissionService] buildListWhereClause: Added flexible ownership conditions');
+            }
+        }
+
+        if (empty($conditions)) {
+            // No view permissions - return impossible condition
+            error_log('[PermissionService] buildListWhereClause: No permissions, returning impossible condition');
+            return ['where' => '1 = 0', 'params' => []];
+        }
+
+        $where = '(' . implode(' OR ', $conditions) . ')';
+
+        error_log('[PermissionService] buildListWhereClause: Final WHERE: ' . $where);
+        error_log('[PermissionService] buildListWhereClause: Params: ' . json_encode($params));
+
+        return ['where' => $where, 'params' => $params];
+    }
+
+    /**
+     * Get current user ID
+     */
+    public function getCurrentUserId(): ?int
+    {
+        return $this->currentUserId;
+    }
+
+    /**
+     * Get current tenant ID
+     */
+    public function getCurrentTenantId(): ?int
+    {
+        return $this->currentTenantId;
+    }
+
+    /**
+     * Get user permissions summary
+     */
+    public function getPermissionsSummary(string $resource): array
+    {
+        $summary = [];
+
+        foreach ($this->userPermissions as $perm) {
+            $resourcePerms = $this->getResourcePermissions($resource, $perm);
+            if (array_filter($resourcePerms)) {
+                $summary[$perm] = $resourcePerms;
+            }
+        }
+
+        return $summary;
+    }
+
+    /**
+     * ✅ NEW: Check if column exists in table (to avoid SQL errors)
+     */
+    private function columnExists(string $table, string $column): bool
+    {
+        static $cache = [];
+        
+        $key = "{$table}.{$column}";
+        if (isset($cache[$key])) {
+            return $cache[$key];
+        }
+
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT COUNT(*) 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_SCHEMA = DATABASE()
+                AND TABLE_NAME = :table
+                AND COLUMN_NAME = :column
+            ");
+            
+            $stmt->execute([
+                'table' => $table,
+                'column' => $column
+            ]);
+
+            $exists = (bool)$stmt->fetchColumn();
+            $cache[$key] = $exists;
+
+            return $exists;
+        } catch (Exception $e) {
+            error_log('[PermissionService] columnExists error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * ✅ NEW: Get ownership column for a resource
+     */
+    public function getOwnershipColumn(string $resource): ?string
+    {
+        static $ownershipMap = [
+            'tenants' => 'owner_user_id',
+            'users' => 'id',
+            'products' => 'created_by',
+            'orders' => 'user_id',
+            'tenant_users' => 'user_id',
+            'categories' => 'created_by',
+            'banners' => 'created_by',
+            'suppliers' => 'created_by',
+            'drivers' => 'user_id',
+            'disputes' => 'user_id',
+        ];
+
+        return $ownershipMap[$resource] ?? 'created_by';
+    }
+
+    /**
+     * ✅ NEW: Get tenant column for a resource
+     */
+    public function getTenantColumn(string $resource): string
+    {
+        // Special case: tenants table uses 'id' as tenant identifier
+        if ($resource === 'tenants') {
+            return 'id';
+        }
+
+        return 'tenant_id';
+    }
+}
