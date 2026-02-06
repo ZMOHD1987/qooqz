@@ -1,0 +1,135 @@
+{
+  "name": "English",
+  "direction": "ltr",
+  "strings": {
+    "vendors_title": "Vendors",
+    "advanced_filters": "Advanced Filters",
+    "status": "Status",
+    "all": "All",
+    "verified": "Verified",
+    "yes": "Yes",
+    "no": "No",
+    "country": "Country",
+    "city": "City",
+    "phone": "Phone",
+    "email": "Email",
+    "clear_filters": "Clear Filters",
+    "search_placeholder": "Search store, email, slug...",
+    "refresh": "Refresh",
+    "new_vendor": "New Vendor",
+    "total_label": "Total:",
+    "loading": "Loading...",
+    "create_edit": "Create / Edit Vendor",
+    "save": "Save",
+    "reset": "Reset",
+
+    "vendor_attributes": {
+      "title": "Vendor Attributes",
+      "subtitle": "Custom attributes for this vendor",
+      "section_heading": "Additional Attributes",
+
+      "buttons": {
+        "btn_add": "Add Attribute",
+        "edit": "Edit",
+        "delete": "Delete",
+        "save": "Save",
+        "cancel": "Cancel"
+      },
+
+      "filters": {
+        "vendor": "Vendor",
+        "attribute": "Attribute",
+        "search": "Search",
+        "all_vendors": "All Vendors",
+        "all_attributes": "All Attributes"
+      },
+
+      "table": {
+        "id": "ID",
+        "attribute": "Attribute",
+        "value": "Value",
+        "actions": "Actions"
+      },
+
+      "form": {
+        "add_title": "Add Attribute",
+        "edit_title": "Edit Attribute",
+        "attribute_label": "Attribute",
+        "value_label": "Value",
+        "select_attribute": "Select attribute",
+        "value_placeholder": "Enter attribute value"
+      },
+
+      "messages": {
+        "loading": "Loading...",
+        "no_data": "No attributes found",
+        "saved_success": "Attribute saved successfully",
+        "deleted_success": "Attribute deleted successfully",
+        "confirm_delete": "Are you sure you want to delete?",
+        "error_load": "Failed to load attributes",
+        "error_save": "Error while saving",
+        "error_delete": "Error while deleting",
+        "error_attribute_required": "Please select an attribute",
+        "error_value_required": "Value is required"
+      }
+    },
+
+    "vendor_attribute_values": {
+      "page_title": "Vendor Attribute Values",
+
+      "buttons": {
+        "new": "New Value",
+        "clear_filters": "Clear Filters",
+        "refresh": "Refresh",
+        "cancel": "Cancel",
+        "save": "Save",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+
+      "filters": {
+        "vendor": "Vendor",
+        "attribute": "Attribute",
+        "search": "Search",
+        "all_vendors": "All Vendors",
+        "all_attributes": "All Attributes"
+      },
+
+      "table": {
+        "id": "ID",
+        "vendor": "Vendor",
+        "attribute": "Attribute",
+        "value": "Value",
+        "actions": "Actions"
+      },
+
+      "form": {
+        "add_title": "Add New Value",
+        "edit_title": "Edit Value",
+        "vendor_label": "Vendor",
+        "attribute_label": "Attribute",
+        "value_label": "Value",
+        "select_vendor": "Select vendor",
+        "select_attribute": "Select attribute",
+        "value_placeholder": "Enter value..."
+      },
+
+      "messages": {
+        "loading": "Loading...",
+        "loading_data": "Loading data...",
+        "no_data": "No data found",
+        "created_successfully": "Value created successfully",
+        "updated_successfully": "Value updated successfully",
+        "deleted_successfully": "Value deleted successfully",
+        "delete_confirm": "Are you sure you want to delete this value?",
+        "save_error": "Error saving",
+        "delete_error": "Error deleting",
+        "error_loading_table": "Error loading data",
+        "error_loading_resources": "Error loading resources",
+        "initialization_failed": "Failed to initialize page"
+      },
+
+      "search_placeholder": "Search in values..."
+    }
+  }
+}
