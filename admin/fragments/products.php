@@ -262,7 +262,25 @@ $apiBase = '/api';
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="prodIsActive" data-i18n="form.fields.status.label">
+                            <label for="prodMainCategory" data-i18n="form.fields.main_category.label">
+                                <?= __t('form.fields.main_category.label', 'Main Category') ?>
+                            </label>
+                            <select id="prodMainCategory" class="form-control">
+                                <option value=""><?= __t('form.fields.main_category.select', 'Select main category') ?></option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodSubCategory" data-i18n="form.fields.sub_category.label">
+                                <?= __t('form.fields.sub_category.label', 'Sub Category') ?>
+                            </label>
+                            <select id="prodSubCategory" class="form-control">
+                                <option value=""><?= __t('form.fields.sub_category.select', 'Select sub category') ?></option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
                                 <?= __t('form.fields.status.label', 'Status') ?>
                             </label>
                             <select id="prodIsActive" name="is_active" class="form-control">
@@ -342,9 +360,7 @@ $apiBase = '/api';
                                 <?= __t('form.fields.currency.label', 'Currency') ?>
                             </label>
                             <select id="prodCurrency" name="currency_code" class="form-control">
-                                <option value="SAR">SAR</option>
-                                <option value="USD">USD</option>
-                                <option value="EUR">EUR</option>
+                                <option value=""><?= __t('form.fields.currency.select', 'Select currency') ?></option>
                             </select>
                         </div>
 
@@ -700,6 +716,8 @@ window.PRODUCTS_CONFIG = {
     brandsApi: '<?= $apiBase ?>/brands',
     productTypesApi: '<?= $apiBase ?>/product_types',
     attributesApi: '<?= $apiBase ?>/product_attributes',
+    attributeValuesApi: '<?= $apiBase ?>/product_attribute_values',
+    currenciesApi: '<?= $apiBase ?>/currencies',
     languagesApi: '<?= $apiBase ?>/languages',
     imagesApi: '<?= $apiBase ?>/images',
     tenantsApi: '<?= $apiBase ?>/tenants',
@@ -811,6 +829,21 @@ window.PRODUCTS_CONFIG = {
 </script>
 <?php else: ?>
 <script src="/admin/assets/js/pages/products.js?v=<?= time() ?>"></script>
+<script>
+// Standalone mode init
+(function(){
+    function tryInit() {
+        if (window.Products && typeof window.Products.init === 'function') {
+            window.Products.init().catch(function(e){ console.error('[Products] Init failed', e); });
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', tryInit);
+    } else {
+        tryInit();
+    }
+})();
+</script>
 <?php endif; ?>
 
 <?php

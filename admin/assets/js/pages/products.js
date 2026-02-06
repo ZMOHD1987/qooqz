@@ -21,6 +21,7 @@
         productTypes: CONFIG.productTypesApi || '/api/product_types',
         attributes: CONFIG.attributesApi || '/api/product_attributes',
         attributeValues: CONFIG.attributeValuesApi || '/api/product_attribute_values',
+        currencies: CONFIG.currenciesApi || '/api/currencies',
         languages: CONFIG.languagesApi || '/api/languages',
         images: CONFIG.imagesApi || '/api/images',
         tenants: CONFIG.tenantsApi || '/api/tenants'
@@ -36,6 +37,7 @@
         productTypes: [],
         attributes: [],
         languages: [],
+        currencies: [],
         filters: {},
         currentProduct: null,
         selectedImages: [],
@@ -253,9 +255,31 @@
                     const categoriesData = categoriesResult.data?.items || categoriesResult.data;
                     state.categories = Array.isArray(categoriesData) ? categoriesData : [];
                     renderCategoriesTree();
+                    populateMainCategoryDropdown();
                 }
             } catch (err) {
                 console.warn('[Products] Failed to load categories:', err);
+            }
+
+            // Load currencies from API
+            try {
+                const currenciesResult = await apiCall(`${API.currencies}?format=json`);
+                if (currenciesResult.success) {
+                    const currData = Array.isArray(currenciesResult.data) ? currenciesResult.data : (currenciesResult.data?.items || currenciesResult.data?.data || []);
+                    state.currencies = currData;
+                    populateDropdown(el.prodCurrency, state.currencies, 'code', 'name', t('form.fields.currency.select', 'Select currency'));
+                }
+            } catch (err) {
+                console.warn('[Products] Failed to load currencies from API:', err);
+                // Fallback: populate with common currencies
+                state.currencies = [
+                    { code: 'SAR', name: 'SAR - Saudi Riyal' },
+                    { code: 'USD', name: 'USD - US Dollar' },
+                    { code: 'EUR', name: 'EUR - Euro' },
+                    { code: 'GBP', name: 'GBP - British Pound' },
+                    { code: 'AED', name: 'AED - UAE Dirham' }
+                ];
+                populateDropdown(el.prodCurrency, state.currencies, 'code', 'name', t('form.fields.currency.select', 'Select currency'));
             }
 
             // Load attributes
@@ -480,6 +504,11 @@
             if (el.prodVariantsList) el.prodVariantsList.innerHTML = '';
             // Clear translations
             if (el.prodTranslations) el.prodTranslations.innerHTML = '';
+            // Reset category dropdowns
+            if (el.prodMainCategory) el.prodMainCategory.value = '';
+            if (el.prodSubCategory) {
+                el.prodSubCategory.innerHTML = '<option value="">' + t('form.fields.sub_category.select', 'Select sub category') + '</option>';
+            }
             // Render categories tree for new product
             renderCategoriesTree();
         }
@@ -1003,6 +1032,76 @@
     }
 
     // ════════════════════════════════════════════════════════════
+    // CATEGORIES DROPDOWNS (Main / Sub)
+    // ════════════════════════════════════════════════════════════
+    function populateMainCategoryDropdown() {
+        if (!el.prodMainCategory) return;
+
+        // القوائم الرئيسية = التي ليس لها أب (parent_id = null)
+        const mainCategories = state.categories.filter(cat => !cat.parent_id);
+        
+        el.prodMainCategory.innerHTML = '<option value="">' + t('form.fields.main_category.select', 'Select main category') + '</option>';
+        
+        mainCategories.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat.id;
+            opt.textContent = cat.name;
+            el.prodMainCategory.appendChild(opt);
+        });
+
+        // Clear sub category
+        if (el.prodSubCategory) {
+            el.prodSubCategory.innerHTML = '<option value="">' + t('form.fields.sub_category.select', 'Select sub category') + '</option>';
+        }
+    }
+
+    function onMainCategoryChange() {
+        const mainCatId = el.prodMainCategory ? el.prodMainCategory.value : '';
+        
+        if (!el.prodSubCategory) return;
+
+        el.prodSubCategory.innerHTML = '<option value="">' + t('form.fields.sub_category.select', 'Select sub category') + '</option>';
+
+        if (!mainCatId) return;
+
+        // القوائم الفرعية = التي parent_id = القائمة الرئيسية المختارة (+ أحفادها)
+        const subCategories = state.categories.filter(cat => String(cat.parent_id) === String(mainCatId));
+        
+        subCategories.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat.id;
+            opt.textContent = cat.name;
+            el.prodSubCategory.appendChild(opt);
+
+            // إضافة الأحفاد (المستوى الثاني)
+            const grandChildren = state.categories.filter(gc => String(gc.parent_id) === String(cat.id));
+            grandChildren.forEach(gc => {
+                const gcOpt = document.createElement('option');
+                gcOpt.value = gc.id;
+                gcOpt.textContent = '  ↳ ' + gc.name;
+                el.prodSubCategory.appendChild(gcOpt);
+            });
+        });
+
+        // Also sync with selectedCategories - add main category
+        if (!state.selectedCategories.includes(parseInt(mainCatId))) {
+            state.selectedCategories.push(parseInt(mainCatId));
+        }
+        renderCategoriesTree();
+    }
+
+    function onSubCategoryChange() {
+        const subCatId = el.prodSubCategory ? el.prodSubCategory.value : '';
+        if (subCatId) {
+            const numId = parseInt(subCatId);
+            if (!state.selectedCategories.includes(numId)) {
+                state.selectedCategories.push(numId);
+            }
+            renderCategoriesTree();
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════
     // CATEGORIES TREE
     // ════════════════════════════════════════════════════════════
     function renderCategoriesTree() {
@@ -1039,6 +1138,34 @@
             }
         } else {
             state.selectedCategories = state.selectedCategories.filter(id => id != categoryId);
+        }
+        syncCategoryDropdownsFromSelection();
+    }
+
+    function syncCategoryDropdownsFromSelection() {
+        // Sync dropdowns with selectedCategories
+        if (!el.prodMainCategory || !el.prodSubCategory) return;
+
+        // Find if any selected category is a main category (no parent)
+        let mainCatId = '';
+        let subCatId = '';
+        for (const catId of state.selectedCategories) {
+            const cat = state.categories.find(c => c.id == catId);
+            if (cat && !cat.parent_id) {
+                mainCatId = String(catId);
+            } else if (cat && cat.parent_id) {
+                subCatId = String(catId);
+                // Also select the parent as main if not already
+                if (!mainCatId) mainCatId = String(cat.parent_id);
+            }
+        }
+
+        el.prodMainCategory.value = mainCatId;
+        if (mainCatId) {
+            onMainCategoryChange();
+            if (subCatId) {
+                el.prodSubCategory.value = subCatId;
+            }
         }
     }
 
@@ -1163,6 +1290,7 @@
                 const items = result.data?.items || (Array.isArray(result.data) ? result.data : []);
                 state.selectedCategories = items.map(item => parseInt(item.category_id));
                 renderCategoriesTree();
+                syncCategoryDropdownsFromSelection();
             }
         } catch (err) {
             console.warn('[Products] Failed to load categories:', err);
@@ -1429,15 +1557,7 @@
     // ════════════════════════════════════════════════════════════
     // INITIALIZATION
     // ════════════════════════════════════════════════════════════
-    let _initialized = false;
-
     async function init() {
-        // منع التهيئة المزدوجة
-        if (_initialized) {
-            console.log('[Products] Already initialized, skipping');
-            return;
-        }
-        _initialized = true;
         console.log('[Products] Initializing...');
 
         // Use document.getElementById as fallback if AF.$ not available
@@ -1465,6 +1585,8 @@
             prodBarcode: $id('prodBarcode'),
             prodType: $id('prodType'),
             prodBrand: $id('prodBrand'),
+            prodMainCategory: $id('prodMainCategory'),
+            prodSubCategory: $id('prodSubCategory'),
             prodIsActive: $id('prodIsActive'),
             prodIsFeatured: $id('prodIsFeatured'),
             prodIsBestseller: $id('prodIsBestseller'),
@@ -1570,6 +1692,10 @@
         
         // Translations
         if (el.prodAddLangBtn) el.prodAddLangBtn.addEventListener('click', addTranslation);
+
+        // Main category → Sub category cascade
+        if (el.prodMainCategory) el.prodMainCategory.addEventListener('change', onMainCategoryChange);
+        if (el.prodSubCategory) el.prodSubCategory.addEventListener('change', onSubCategoryChange);
         
         // Media Studio message listener
         window.addEventListener('message', (e) => {
@@ -1631,20 +1757,9 @@
 
     // Fragment support
     window.page = { run: init };
-    
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.AdminFramework && !window.page.__fragment_init) {
-                init().catch(err => console.error('[Products] Init failed:', err));
-            }
-        });
-    } else {
-        if (window.AdminFramework && !window.page.__fragment_init) {
-            init().catch(err => console.error('[Products] Init failed:', err));
-        }
-    }
-    
-    window.page.__fragment_init = false;
+
+    // Do NOT auto-init here. Let the fragment embed script (lines 784-810 in PHP)
+    // or standalone page handle initialization after DOM is fully ready.
 
     console.log('[Products] Module loaded');
 
