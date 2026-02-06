@@ -1,1385 +1,1248 @@
-(function () {
+(function(){
     'use strict';
 
-    // Configuration from PHP
-    const API = window.API_BASE || '/api/product';
-    const META_API = window.PRODUCT_META_API || '/api/product_meta';
-    const CATEGORIES_API = window.CATEGORIES_API || '/api/categories';
-    const MEDIA_API = window.MEDIA_API || '/api/media';
-    const VENDORS_API = window.VENDORS_API || '/api/vendors';
-    const CSRF_TOKEN = window.CSRF_TOKEN || '';
-    const USER = window.CURRENT_USER || {};
-    const USER_VENDOR_ID = window.USER_VENDOR_ID || 0;
-    const IS_ADMIN = window.IS_ADMIN || false;
-    const TRANSLATIONS = window.TRANSLATIONS || {};
-    const AVAILABLE_LANGUAGES = window.AVAILABLE_LANGUAGES || [
-        { code: 'en', name: 'English' },
-        { code: 'ar', name: 'العربية' }
-    ];
+    /**
+     * /admin/assets/js/pages/products.js
+     * Products Management Module - Complete Implementation
+     * Based on Categories pattern with advanced product features
+     */
 
-    // DOM Elements
-    const noticeEl = document.getElementById('productsNotice');
-    const productsTbody = document.getElementById('productsTbody');
-    const productsCount = document.getElementById('productsCount');
-    const productSearch = document.getElementById('productSearch');
-    const productRefresh = document.getElementById('productRefresh');
-    const productNewBtn = document.getElementById('productNewBtn');
-    const productNewBtn2 = document.getElementById('productNewBtn2');
-    const formWrap = document.getElementById('productFormWrap');
-    const productForm = document.getElementById('productForm');
-    const saveBtn = document.getElementById('productSaveBtn');
-    const cancelBtn = document.getElementById('productCancelBtn');
-    const deleteBtn = document.getElementById('productDeleteBtn');
-    const errorsBox = document.getElementById('productErrors');
+    // ════════════════════════════════════════════════════════════
+    // CONFIGURATION & STATE
+    // ════════════════════════════════════════════════════════════
+    const CONFIG = window.PRODUCTS_CONFIG || {};
+    const AF = window.AdminFramework || {};
+    const PERMS = window.PAGE_PERMISSIONS || {};
+    
+    const API = {
+        products: CONFIG.apiUrl || '/api/products',
+        categories: CONFIG.categoriesApi || '/api/categories',
+        brands: CONFIG.brandsApi || '/api/brands',
+        productTypes: CONFIG.productTypesApi || '/api/product_types',
+        attributes: CONFIG.attributesApi || '/api/product_attributes',
+        attributeValues: CONFIG.attributeValuesApi || '/api/product_attribute_values',
+        languages: CONFIG.languagesApi || '/api/languages',
+        images: CONFIG.imagesApi || '/api/images',
+        tenants: CONFIG.tenantsApi || '/api/tenants'
+    };
 
-    // Form fields
-    const inputId = document.getElementById('product_id');
-    const inputVendorId = document.getElementById('product_vendor_id');
-    const inputVendorSelect = document.getElementById('product_vendor_select');
-    const inputName = document.getElementById('product_name');
-    const inputSku = document.getElementById('product_sku');
-    const inputSlug = document.getElementById('product_slug');
-    const inputBarcode = document.getElementById('product_barcode');
-    const selectType = document.getElementById('product_type');
-    const selectBrand = document.getElementById('product_brand_id');
-    const selectManufacturer = document.getElementById('product_manufacturer_id');
-    const inputPublishedAt = document.getElementById('product_published_at');
-    const inputDescription = document.getElementById('product_description');
-    const inputPrice = document.getElementById('product_price');
-    const inputComparePrice = document.getElementById('product_compare_at_price');
-    const inputCostPrice = document.getElementById('product_cost_price');
-    const inputStock = document.getElementById('product_stock_quantity');
-    const inputLowStock = document.getElementById('product_low_stock_threshold');
-    const selectStockStatus = document.getElementById('product_stock_status');
-    const selectManageStock = document.getElementById('product_manage_stock');
-    const selectAllowBackorder = document.getElementById('product_allow_backorder');
-    const inputTax = document.getElementById('product_tax_rate');
-    const inputWeight = document.getElementById('product_weight');
-    const inputLength = document.getElementById('product_length');
-    const inputWidth = document.getElementById('product_width');
-    const inputHeight = document.getElementById('product_height');
+    const state = {
+        page: 1,
+        perPage: CONFIG.itemsPerPage || 25,
+        total: 0,
+        products: [],
+        categories: [],
+        brands: [],
+        productTypes: [],
+        attributes: [],
+        languages: [],
+        filters: {},
+        currentProduct: null,
+        selectedImages: [],
+        selectedCategories: [],
+        productAttributes: [],
+        productVariants: [],
+        permissions: PERMS,
+        language: window.USER_LANGUAGE || CONFIG.lang || 'en',
+        direction: window.USER_DIRECTION || 'ltr',
+        csrfToken: window.CSRF_TOKEN || CONFIG.csrfToken || '',
+        tenantId: window.APP_CONFIG?.TENANT_ID || 1
+    };
 
-    // Media
-    const imagesInput = document.getElementById('product_images_files');
-    const imagesPreview = document.getElementById('product_images_preview');
-    const mediaStudioBtn = document.getElementById('mediaStudioBtn');
+    let el = {}; // DOM elements cache
+    let translations = {}; // i18n translations
 
-    // Categories
-    const categoryList = document.getElementById('categoryList');
-
-    // Attributes
-    const attrSelect = document.getElementById('attr_select');
-    const attrAddBtn = document.getElementById('attr_add_btn');
-    const attributesList = document.getElementById('product_attributes_list');
-
-    // Translations
-    const translationsArea = document.getElementById('product_translations_area');
-    const toggleTranslationsBtn = document.getElementById('toggleTranslationsBtn');
-    const fillFromDefaultBtn = document.getElementById('fillFromDefaultBtn');
-    const addLangBtn = document.getElementById('addLangBtn');
-
-    // Variants
-    const generateVariantsBtn = document.getElementById('generateVariantsBtn');
-    const variantsList = document.getElementById('product_variants_list');
-    const variantsSection = document.getElementById('variantsSection');
-
-    // State
-    let metaData = null;
-    let mediaItems = [];
-    let vendorsList = [];
-
-    // Utility Functions
-    function showNotice(message, type = 'info') {
-        if (!noticeEl) return;
-        
-        noticeEl.textContent = message;
-        noticeEl.className = 'status-notice';
-        
-        if (type === 'success') {
-            noticeEl.classList.add('success');
-        } else if (type === 'error') {
-            noticeEl.classList.add('error');
-        }
-        
-        if (type === 'success') {
-            setTimeout(() => {
-                noticeEl.textContent = '';
-                noticeEl.className = 'status-notice';
-            }, 3000);
+    // ════════════════════════════════════════════════════════════
+    // TRANSLATIONS
+    // ════════════════════════════════════════════════════════════
+    async function loadTranslations(lang) {
+        try {
+            const url = `/languages/Products/${encodeURIComponent(lang || state.language)}.json`;
+            console.log('[Products] Loading translations:', url);
+            const res = await fetch(url, { credentials: 'same-origin' });
+            if (!res.ok) throw new Error(`Failed to load translations: ${res.status}`);
+            translations = await res.json();
+            console.log('[Products] Translations loaded');
+            applyTranslations();
+        } catch (err) {
+            console.warn('[Products] Translation load failed:', err);
+            translations = {};
         }
     }
 
-    function showErrors(errors) {
-        if (!errorsBox) return;
-        
-        if (!errors) {
-            errorsBox.style.display = 'none';
-            errorsBox.innerHTML = '';
-            return;
-        }
-        
-        let html = '';
-        if (typeof errors === 'string') {
-            html = `<p>${escapeHtml(errors)}</p>`;
-        } else if (Array.isArray(errors)) {
-            html = '<ul>';
-            errors.forEach(error => {
-                html += `<li>${escapeHtml(error)}</li>`;
-            });
-            html += '</ul>';
-        } else if (typeof errors === 'object') {
-            html = '<ul>';
-            Object.entries(errors).forEach(([field, message]) => {
-                html += `<li><strong>${escapeHtml(field)}</strong>: ${escapeHtml(message)}</li>`;
-            });
-            html += '</ul>';
-        }
-        
-        errorsBox.innerHTML = html;
-        errorsBox.style.display = 'block';
-        formWrap.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    function getPreferredLanguage() {
-        return USER.preferred_language || 'en';
-    }
-
-    function getTranslation(key, fallback = '') {
+    function t(key, fallback = '') {
         const keys = key.split('.');
-        let value = TRANSLATIONS;
-        
+        let val = translations;
         for (const k of keys) {
-            if (value && typeof value === 'object' && k in value) {
-                value = value[k];
+            if (val && typeof val === 'object' && k in val) {
+                val = val[k];
             } else {
                 return fallback || key;
             }
         }
-        
-        return value || fallback || key;
+        return val !== undefined && val !== null ? String(val) : (fallback || key);
     }
 
-    // API Functions
-    async function fetchJson(url, options = {}) {
-        const defaultOptions = {
-            credentials: 'include',
+    function applyTranslations() {
+        const container = document.getElementById('productsPageContainer');
+        if (!container) return;
+        
+        container.querySelectorAll('[data-i18n]').forEach(elem => {
+            const key = elem.getAttribute('data-i18n');
+            const txt = t(key);
+            if (txt !== key) {
+                if (elem.tagName === 'INPUT' && elem.type !== 'submit' && elem.type !== 'button') {
+                    if (elem.hasAttribute('placeholder')) elem.placeholder = txt;
+                } else {
+                    elem.textContent = txt;
+                }
+            }
+        });
+
+        container.querySelectorAll('[data-i18n-placeholder]').forEach(elem => {
+            const key = elem.getAttribute('data-i18n-placeholder');
+            const txt = t(key);
+            if (txt !== key) elem.placeholder = txt;
+        });
+
+        console.log('[Products] Translations applied to DOM');
+    }
+
+    function setDirectionForLang(lang) {
+        const container = document.getElementById('productsPageContainer');
+        if (container) {
+            container.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+        }
+        state.direction = lang === 'ar' ? 'rtl' : 'ltr';
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // API HELPERS
+    // ════════════════════════════════════════════════════════════
+    async function apiCall(url, options = {}) {
+        const defaults = {
+            credentials: 'same-origin',
             headers: {
-                'Accept': 'application/json',
-                'X-CSRF-Token': CSRF_TOKEN
+                'X-Requested-With': 'XMLHttpRequest'
             }
         };
 
-        const mergedOptions = { ...defaultOptions, ...options };
-        
-        try {
-            const response = await fetch(url, mergedOptions);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            const text = await response.text();
-            
-            try {
-                return JSON.parse(text);
-            } catch {
-                return {
-                    success: false,
-                    message: text || 'Invalid JSON response'
-                };
-            }
-        } catch (error) {
-            console.error('Fetch error:', error);
-            return {
-                success: false,
-                message: error.message || 'Network error'
-            };
+        if (options.method && options.method !== 'GET') {
+            defaults.headers['X-CSRF-Token'] = state.csrfToken;
         }
-    }
 
-    async function postFormData(url, formData) {
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                body: formData,
-                credentials: 'include'
-            });
-            
-            const text = await response.text();
-            
-            try {
-                return JSON.parse(text);
-            } catch {
-                return {
-                    success: false,
-                    message: text || 'Invalid JSON response'
-                };
-            }
-        } catch (error) {
-            console.error('Post error:', error);
-            return {
-                success: false,
-                message: error.message || 'Network error'
-            };
+        const config = { ...defaults, ...options };
+        if (config.headers && options.headers) {
+            config.headers = { ...defaults.headers, ...options.headers };
         }
-    }
 
-    // Load Vendors (for admin)
-    async function loadVendors() {
-        if (!IS_ADMIN) return;
-        
         try {
-            const result = await fetchJson(`${VENDORS_API}?format=json`);
-            if (result.success) {
-                vendorsList = result.data || [];
-                if (inputVendorSelect) {
-                    inputVendorSelect.innerHTML = '<option value="">' + getTranslation('vendor.choose', '— اختر تاجر —') + '</option>';
-                    vendorsList.forEach(vendor => {
-                        const option = document.createElement('option');
-                        option.value = vendor.id;
-                        option.textContent = vendor.name || vendor.shop_name || `Vendor ${vendor.id}`;
-                        inputVendorSelect.appendChild(option);
-                    });
+            const res = await fetch(url, config);
+            const contentType = res.headers.get('content-type');
+            
+            if (contentType && contentType.includes('application/json')) {
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || data.message || `HTTP ${res.status}`);
+                }
+                return data;
+            } else {
+                const text = await res.text();
+                if (!res.ok) {
+                    throw new Error(text || `HTTP ${res.status}`);
+                }
+                try {
+                    return JSON.parse(text);
+                } catch {
+                    return { success: true, data: text };
                 }
             }
-        } catch (error) {
-            console.error('Error loading vendors:', error);
+        } catch (err) {
+            console.error('[Products] API call failed:', url, err);
+            throw err;
         }
     }
 
-    // Meta Data Loading
-    async function loadMetaData() {
-        showNotice(getTranslation('loading', 'Loading...'));
-        
-        const lang = getPreferredLanguage();
-        const url = `${META_API}?lang=${encodeURIComponent(lang)}`;
-        
-        const result = await fetchJson(url);
-        
-        if (result.success) {
-            metaData = result.data || {};
-            populateMetaData();
-            showNotice('', 'info');
-        } else {
-            showNotice(result.message || getTranslation('meta_load_failed', 'Failed to load metadata'), 'error');
-        }
-        
-        return metaData;
-    }
+    // ════════════════════════════════════════════════════════════
+    // DATA LOADING
+    // ════════════════════════════════════════════════════════════
+    async function loadProducts(page = 1) {
+        try {
+            console.log('[Products] Loading page:', page);
 
-    function populateMetaData() {
-        // Populate brands
-        if (selectBrand && metaData.brands) {
-            selectBrand.innerHTML = '<option value="">' + getTranslation('general.choose', '— Choose —') + '</option>';
-            metaData.brands.forEach(brand => {
-                const option = document.createElement('option');
-                option.value = brand.id;
-                option.textContent = brand.name_translated || brand.name || brand.slug || `Brand ${brand.id}`;
-                selectBrand.appendChild(option);
+            showLoading();
+
+            state.page = page;
+            const params = new URLSearchParams({
+                page: page,
+                limit: state.perPage,
+                tenant_id: state.tenantId,
+                lang: state.language,
+                format: 'json',
+                ...state.filters
             });
-        }
 
-        // Populate manufacturers
-        if (selectManufacturer && metaData.manufacturers) {
-            selectManufacturer.innerHTML = '<option value="">' + getTranslation('general.choose', '— Choose —') + '</option>';
-            metaData.manufacturers.forEach(manufacturer => {
-                const option = document.createElement('option');
-                option.value = manufacturer.id;
-                option.textContent = manufacturer.name || manufacturer.slug || `Manufacturer ${manufacturer.id}`;
-                selectManufacturer.appendChild(option);
-            });
-        }
+            console.log('[Products] API URL:', `${API.products}?${params}`);
 
-        // Populate attributes
-        if (attrSelect && metaData.attributes) {
-            attrSelect.innerHTML = '<option value="">' + getTranslation('attributes.choose_attribute', '— Choose Attribute —') + '</option>';
-            metaData.attributes.forEach(attr => {
-                const option = document.createElement('option');
-                option.value = attr.id;
-                option.textContent = attr.name_translated || attr.name || attr.slug || `Attribute ${attr.id}`;
-                option.dataset.isVariation = attr.is_variation ? '1' : '0';
-                attrSelect.appendChild(option);
-            });
-        }
+            const result = await apiCall(`${API.products}?${params}`);
+            console.log('[Products] API response:', result);
 
-        // Build category tree
-        if (categoryList && metaData.categories) {
-            buildCategoryTree(metaData.categories);
+            if (result.success && Array.isArray(result.data)) {
+                state.products = result.data;
+                state.total = result.meta?.total || result.data.length;
+                
+                await renderTable(result.data);
+                updatePagination(result.meta || { page, per_page: state.perPage, total: state.total });
+                updateResultsCount(state.total);
+                
+                showTable();
+            } else {
+                throw new Error(result.error || 'Invalid response format');
+            }
+        } catch (err) {
+            console.error('[Products] Load failed:', err);
+            showError(err.message || t('messages.error.load_failed', 'Failed to load products'));
         }
     }
 
-    function buildCategoryTree(categories, parentUl = categoryList, level = 0) {
-        categories.forEach(category => {
-            const li = document.createElement('li');
-            li.style.marginLeft = `${level * 20}px`;
-            li.style.marginTop = '5px';
-
-            // Radio button for primary category
-            const radio = document.createElement('input');
-            radio.type = 'radio';
-            radio.name = 'primary_category';
-            radio.value = category.id;
-            radio.id = `cat_radio_${category.id}`;
-            radio.style.marginRight = '8px';
-
-            // Checkbox for category selection
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.value = category.id;
-            checkbox.id = `cat_check_${category.id}`;
-            checkbox.style.marginRight = '8px';
-
-            // Label
-            const label = document.createElement('label');
-            label.htmlFor = `cat_check_${category.id}`;
-            label.textContent = category.name_translated || category.name || category.slug || `Category ${category.id}`;
-            label.style.cursor = 'pointer';
-            label.style.fontSize = '14px';
-
-            li.appendChild(radio);
-            li.appendChild(checkbox);
-            li.appendChild(label);
-
-            // Add toggle button for children
-            if (category.children && category.children.length > 0) {
-                const toggleBtn = document.createElement('button');
-                toggleBtn.type = 'button';
-                toggleBtn.textContent = '+';
-                toggleBtn.style.marginLeft = '10px';
-                toggleBtn.style.padding = '2px 6px';
-                toggleBtn.style.fontSize = '12px';
-                toggleBtn.style.borderRadius = '3px';
-                toggleBtn.style.border = '1px solid var(--border)';
-                toggleBtn.style.background = 'white';
-                toggleBtn.style.cursor = 'pointer';
-
-                const childUl = document.createElement('ul');
-                childUl.style.listStyle = 'none';
-                childUl.style.paddingLeft = '0';
-                childUl.style.marginTop = '5px';
-                childUl.style.display = 'none';
-
-                toggleBtn.addEventListener('click', () => {
-                    if (childUl.style.display === 'none') {
-                        childUl.style.display = 'block';
-                        toggleBtn.textContent = '-';
-                    } else {
-                        childUl.style.display = 'none';
-                        toggleBtn.textContent = '+';
-                    }
-                });
-
-                li.appendChild(toggleBtn);
-                li.appendChild(childUl);
-                buildCategoryTree(category.children, childUl, level + 1);
+    async function loadDropdownData() {
+        try {
+            // Load product types
+            const typesResult = await apiCall(`${API.productTypes}?format=json&lang=${state.language}`);
+            if (typesResult.success && Array.isArray(typesResult.data)) {
+                state.productTypes = typesResult.data;
+                populateDropdown(el.prodType, typesResult.data, 'id', 'name', t('form.fields.product_type.select', 'Select product type'));
+                populateDropdown(el.typeFilter, typesResult.data, 'id', 'name', t('filters.all_types', 'All Types'));
             }
 
-            parentUl.appendChild(li);
+            // Load brands
+            const brandsResult = await apiCall(`${API.brands}?format=json&tenant_id=${state.tenantId}&lang=${state.language}`);
+            if (brandsResult.success && Array.isArray(brandsResult.data)) {
+                state.brands = brandsResult.data;
+                populateDropdown(el.prodBrand, brandsResult.data, 'id', 'name', t('form.fields.brand.select', 'Select brand'));
+                populateDropdown(el.brandFilter, brandsResult.data, 'id', 'name', t('filters.all_brands', 'All Brands'));
+            }
+
+            // Load categories
+            const categoriesResult = await apiCall(`${API.categories}?format=json&tenant_id=${state.tenantId}&lang=${state.language}`);
+            if (categoriesResult.success && Array.isArray(categoriesResult.data)) {
+                state.categories = categoriesResult.data;
+            }
+
+            // Load attributes
+            const attributesResult = await apiCall(`${API.attributes}?format=json&lang=${state.language}`);
+            if (attributesResult.success && Array.isArray(attributesResult.data)) {
+                state.attributes = attributesResult.data;
+                populateAttributeSelect(attributesResult.data);
+            }
+
+            // Load languages
+            const languagesResult = await apiCall(`${API.languages}?format=json`);
+            if (languagesResult.success && Array.isArray(languagesResult.data)) {
+                state.languages = languagesResult.data;
+                populateDropdown(el.prodLangSelect, languagesResult.data, 'code', 'name', t('form.translations.select_lang', 'Select language'));
+            }
+
+            console.log('[Products] Dropdown data loaded');
+        } catch (err) {
+            console.error('[Products] Failed to load dropdown data:', err);
+        }
+    }
+
+    function populateDropdown(selectEl, data, valueKey, textKey, placeholder = '') {
+        if (!selectEl) return;
+        
+        selectEl.innerHTML = '';
+        
+        if (placeholder) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = placeholder;
+            selectEl.appendChild(opt);
+        }
+
+        data.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item[valueKey];
+            opt.textContent = item[textKey];
+            selectEl.appendChild(opt);
         });
     }
 
-    // Product List Management
-    async function loadProducts(search = '') {
-        showNotice(getTranslation('loading', 'Loading...'));
+    function populateAttributeSelect(attributes) {
+        if (!el.attrSelect) return;
         
-        let url = `${API}?format=json`;
-        if (search) {
-            url += `&q=${encodeURIComponent(search)}`;
-        }
+        el.attrSelect.innerHTML = '<option value="">' + t('form.attributes.select', 'Select attribute') + '</option>';
         
-        // Add vendor filter for non-admin users
-        if (!IS_ADMIN && USER_VENDOR_ID) {
-            url += `&vendor_id=${USER_VENDOR_ID}`;
-        }
-        
-        const result = await fetchJson(url);
-        
-        if (result.success) {
-            const products = Array.isArray(result.data) ? result.data : 
-                           (result.data && Array.isArray(result.data.data) ? result.data.data : []);
-            renderProductsTable(products);
-            showNotice('', 'info');
-        } else {
-            showNotice(result.message || getTranslation('load_failed', 'Failed to load products'), 'error');
-            renderProductsTable([]);
-        }
+        attributes.forEach(attr => {
+            const opt = document.createElement('option');
+            opt.value = attr.id;
+            opt.textContent = attr.name || attr.slug;
+            opt.dataset.type = attr.attribute_type_id;
+            opt.dataset.isVariation = attr.is_variation || 0;
+            el.attrSelect.appendChild(opt);
+        });
     }
 
-    function renderProductsTable(products) {
-        if (!productsTbody) return;
-        
-        productsTbody.innerHTML = '';
-        
-        if (!products || products.length === 0) {
-            productsTbody.innerHTML = `
-                <tr>
-                    <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-secondary);">
-                        ${getTranslation('no_products', 'No products found')}
+    // ════════════════════════════════════════════════════════════
+    // RENDERING
+    // ════════════════════════════════════════════════════════════
+    async function renderTable(items) {
+        console.log('[Products] Rendering table with', items?.length || 0, 'items');
+
+        if (!el.tbody) {
+            console.error('[Products] tbody element not found!');
+            return;
+        }
+
+        if (!items || !items.length) {
+            console.log('[Products] No items, showing empty state');
+            showEmpty();
+            return;
+        }
+
+        const isSuperAdmin = state.permissions.isSuperAdmin;
+
+        el.tbody.innerHTML = items.map(prod => {
+            const image = prod.main_image_url || prod.image_url || '';
+            const name = prod.name || prod.slug || `Product #${prod.id}`;
+            const price = prod.price ? Number(prod.price).toFixed(2) : '0.00';
+            const currency = prod.currency_code || 'SAR';
+            const stock = prod.stock_quantity || 0;
+            const statusBadge = prod.is_active == 1 
+                ? `<span class="badge badge-active">${t('table.status.active', 'Active')}</span>`
+                : `<span class="badge badge-inactive">${t('table.status.inactive', 'Inactive')}</span>`;
+
+            const canEdit = state.permissions.canEdit || state.permissions.canEditAll || 
+                           (state.permissions.canEditOwn && prod.created_by_user_id == window.APP_CONFIG?.USER_ID);
+            const canDelete = state.permissions.canDelete || state.permissions.canDeleteAll || 
+                             (state.permissions.canDeleteOwn && prod.created_by_user_id == window.APP_CONFIG?.USER_ID);
+            
+            return `
+                <tr data-id="${prod.id}">
+                    <td>${esc(prod.id)}</td>
+                    ${isSuperAdmin ? `<td>${esc(prod.tenant_id || '')}</td>` : ''}
+                    <td>
+                        ${image ? `<img src="${esc(image)}" alt="${esc(name)}" style="width:50px;height:50px;object-fit:cover;border-radius:4px;">` : '📦'}
+                    </td>
+                    <td><strong>${esc(name)}</strong><br><small style="color:var(--text-secondary,#94a3b8);">${esc(prod.sku || '')}</small></td>
+                    <td>${esc(prod.sku || '-')}</td>
+                    <td>${esc(prod.product_type_name || '-')}</td>
+                    <td>${price} ${esc(currency)}</td>
+                    <td>${esc(stock)}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <div class="table-actions">
+                            ${canEdit ? `<button class="btn btn-sm btn-secondary" onclick="Products.edit(${prod.id})" title="${t('table.actions.edit', 'Edit')}">
+                                <i class="fas fa-edit"></i>
+                            </button>` : ''}
+                            ${state.permissions.canDuplicate ? `<button class="btn btn-sm btn-secondary" onclick="Products.duplicate(${prod.id})" title="${t('table.actions.duplicate', 'Duplicate')}">
+                                <i class="fas fa-copy"></i>
+                            </button>` : ''}
+                            ${canDelete ? `<button class="btn btn-sm btn-danger" onclick="Products.remove(${prod.id})" title="${t('table.actions.delete', 'Delete')}">
+                                <i class="fas fa-trash"></i>
+                            </button>` : ''}
+                        </div>
                     </td>
                 </tr>
             `;
-            productsCount.textContent = '0';
-            return;
-        }
-        
-        productsCount.textContent = products.length.toString();
-        
-        products.forEach(product => {
-            const tr = document.createElement('tr');
-            
-            // Get translated name
-            const lang = getPreferredLanguage();
-            let productName = product.name || product.title || '';
-            if (product.translations && product.translations[lang]) {
-                productName = product.translations[lang].name || productName;
-            }
-            
-            tr.innerHTML = `
-                <td>${escapeHtml(product.id)}</td>
-                <td>
-                    <div style="font-weight: 500; color: var(--text-primary);">${escapeHtml(productName)}</div>
-                    ${product.slug ? `<div style="font-size: 12px; color: var(--text-secondary);">/${escapeHtml(product.slug)}</div>` : ''}
-                </td>
-                <td>${escapeHtml(product.sku || '')}</td>
-                <td>
-                    <span style="padding: 4px 8px; background: #f0f9ff; color: #0369a1; border-radius: 4px; font-size: 12px;">
-                        ${escapeHtml(product.product_type || 'simple')}
-                    </span>
-                </td>
-                <td style="text-align: center; font-weight: 500;">
-                    ${product.stock_quantity || 0}
-                </td>
-                <td style="text-align: center;">
-                    <button class="toggleActiveBtn btn small ${product.is_active ? 'primary' : 'outline'}" 
-                            data-id="${escapeHtml(product.id)}" 
-                            data-active="${product.is_active ? 1 : 0}">
-                        ${product.is_active ? getTranslation('general.yes', 'Yes') : getTranslation('general.no', 'No')}
-                    </button>
-                </td>
-                <td>
-                    <button class="editBtn btn small outline" data-id="${escapeHtml(product.id)}">
-                        ${getTranslation('table.edit', 'Edit')}
-                    </button>
-                    ${IS_ADMIN || USER_VENDOR_ID === product.vendor_id ? `
-                    <button class="deleteBtn btn small danger" data-id="${escapeHtml(product.id)}">
-                        ${getTranslation('table.delete', 'Delete')}
-                    </button>
-                    ` : ''}
-                </td>
-            `;
-            
-            productsTbody.appendChild(tr);
-        });
-        
-        // Add event listeners
-        document.querySelectorAll('.editBtn').forEach(btn => {
-            btn.addEventListener('click', () => openEdit(btn.dataset.id));
-        });
-        
-        document.querySelectorAll('.deleteBtn').forEach(btn => {
-            btn.addEventListener('click', () => deleteProduct(btn.dataset.id));
-        });
-        
-        document.querySelectorAll('.toggleActiveBtn').forEach(btn => {
-            btn.addEventListener('click', () => toggleActive(btn.dataset.id, btn.dataset.active === '1' ? 0 : 1));
-        });
+        }).join('');
+
+        console.log('[Products] Table rendered');
     }
 
-    // Product Form Management
-    function openNew() {
-        resetForm();
-        inputId.value = '0';
-        
-        // Set vendor ID
-        if (IS_ADMIN && inputVendorSelect) {
-            // Admin can select vendor
-            inputVendorSelect.value = '';
-        } else if (!IS_ADMIN && USER_VENDOR_ID) {
-            // Non-admin uses their vendor_id
-            inputVendorId.value = USER_VENDOR_ID;
-        }
-        
-        formWrap.style.display = 'block';
-        deleteBtn.style.display = 'none';
-        updateFormVisibility();
-        showErrors(null);
-        
-        // Scroll to form
-        formWrap.scrollIntoView({ behavior: 'smooth' });
-    }
+    // ════════════════════════════════════════════════════════════
+    // FORM MANAGEMENT
+    // ════════════════════════════════════════════════════════════
+    function showForm(product = null) {
+        if (!el.formContainer || !el.form) return;
 
-    async function openEdit(id) {
-        showNotice(getTranslation('loading', 'Loading...'));
+        state.currentProduct = product;
+        state.selectedImages = [];
+        state.selectedCategories = [];
+        state.productAttributes = [];
+        state.productVariants = [];
+
+        el.form.reset();
         
-        const result = await fetchJson(`${API}?_fetch_row=1&id=${encodeURIComponent(id)}`);
-        
-        if (result.success) {
-            const product = result.data || result.data?.product || result.data;
+        if (product) {
+            el.formTitle.textContent = t('form.edit_title', 'Edit Product');
+            el.formId.value = product.id || '';
+            el.prodName.value = product.name || '';
+            el.prodSku.value = product.sku || '';
+            el.prodSlug.value = product.slug || '';
+            el.prodBarcode.value = product.barcode || '';
+            el.prodType.value = product.product_type_id || '';
+            el.prodBrand.value = product.brand_id || '';
+            el.prodIsActive.value = product.is_active || '1';
+            el.prodIsFeatured.value = product.is_featured || '0';
+            el.prodIsBestseller.value = product.is_bestseller || '0';
+            el.prodIsNew.value = product.is_new || '0';
             
-            // Check permission (non-admin can only edit their own products)
-            if (!IS_ADMIN && product.vendor_id != USER_VENDOR_ID) {
-                showNotice(getTranslation('permission_denied', 'Permission denied'), 'error');
-                return;
-            }
+            // Pricing
+            el.prodPrice.value = product.price || '';
+            el.prodComparePrice.value = product.compare_at_price || '';
+            el.prodCostPrice.value = product.cost_price || '';
+            el.prodCurrency.value = product.currency_code || 'SAR';
+            el.prodTaxRate.value = product.tax_rate || '';
             
-            populateForm(product);
-            formWrap.style.display = 'block';
-            deleteBtn.style.display = IS_ADMIN || product.vendor_id == USER_VENDOR_ID ? 'inline-block' : 'none';
-            updateFormVisibility();
-            showErrors(null);
-            showNotice('', 'info');
+            // Inventory
+            el.prodStockQty.value = product.stock_quantity || '0';
+            el.prodLowStock.value = product.low_stock_threshold || '5';
+            el.prodStockStatus.value = product.stock_status || 'in_stock';
+            el.prodManageStock.value = product.manage_stock || '1';
+            el.prodAllowBackorder.value = product.allow_backorder || '0';
             
-            // Scroll to form
-            formWrap.scrollIntoView({ behavior: 'smooth' });
+            // Physical attributes
+            el.prodWeight.value = product.weight || '';
+            el.prodLength.value = product.length || '';
+            el.prodWidth.value = product.width || '';
+            el.prodHeight.value = product.height || '';
+
+            if (el.btnDeleteProduct) el.btnDeleteProduct.style.display = state.permissions.canDelete ? 'inline-block' : 'none';
+
+            // Load related data
+            loadProductImages(product.id);
+            loadProductCategories(product.id);
+            loadProductAttributes(product.id);
+            loadProductVariants(product.id);
+            loadProductTranslations(product.id);
         } else {
-            showNotice(result.message || getTranslation('load_error', 'Failed to load product'), 'error');
+            el.formTitle.textContent = t('form.add_title', 'Add Product');
+            el.formId.value = '';
+            if (el.btnDeleteProduct) el.btnDeleteProduct.style.display = 'none';
+            el.prodTenantId.value = state.tenantId;
+        }
+
+        el.formContainer.style.display = 'block';
+        el.formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function hideForm() {
+        if (el.formContainer) {
+            el.formContainer.style.display = 'none';
+        }
+        state.currentProduct = null;
+        if (el.form) el.form.reset();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // TAB MANAGEMENT
+    // ════════════════════════════════════════════════════════════
+    function initTabs() {
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.dataset.tab;
+                
+                tabButtons.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.style.display = 'none');
+                
+                btn.classList.add('active');
+                const targetContent = document.getElementById(`tab-${targetTab}`);
+                if (targetContent) targetContent.style.display = 'block';
+            });
+        });
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // FORM SUBMISSION
+    // ════════════════════════════════════════════════════════════
+    async function saveProduct(e) {
+        e.preventDefault();
+
+        if (!validateForm()) {
+            showNotification(t('messages.validation_failed', 'Please fill all required fields'), 'error');
+            return;
+        }
+
+        try {
+            const formData = new FormData(el.form);
+            const productId = el.formId.value;
+            const isEdit = !!productId;
+
+            // Build product data object
+            const productData = {
+                name: formData.get('name'),
+                sku: formData.get('sku'),
+                slug: formData.get('slug'),
+                barcode: formData.get('barcode'),
+                product_type_id: formData.get('product_type_id'),
+                brand_id: formData.get('brand_id'),
+                tenant_id: formData.get('tenant_id') || state.tenantId,
+                is_active: formData.get('is_active'),
+                is_featured: formData.get('is_featured'),
+                is_bestseller: formData.get('is_bestseller'),
+                is_new: formData.get('is_new'),
+                
+                // Pricing
+                price: formData.get('price'),
+                compare_at_price: formData.get('compare_at_price'),
+                cost_price: formData.get('cost_price'),
+                currency_code: formData.get('currency_code'),
+                tax_rate: formData.get('tax_rate'),
+                
+                // Inventory
+                stock_quantity: formData.get('stock_quantity'),
+                low_stock_threshold: formData.get('low_stock_threshold'),
+                stock_status: formData.get('stock_status'),
+                manage_stock: formData.get('manage_stock'),
+                allow_backorder: formData.get('allow_backorder'),
+                
+                // Physical attributes
+                weight: formData.get('weight'),
+                length: formData.get('length'),
+                width: formData.get('width'),
+                height: formData.get('height'),
+                
+                // Related data
+                translations: collectTranslations(),
+                images: state.selectedImages,
+                categories: state.selectedCategories,
+                attributes: state.productAttributes,
+                variants: state.productVariants
+            };
+
+            const url = isEdit ? `${API.products}/${productId}` : API.products;
+            const method = isEdit ? 'PUT' : 'POST';
+
+            const result = await apiCall(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(productData)
+            });
+
+            if (result.success) {
+                showNotification(
+                    isEdit ? t('messages.updated', 'Product updated successfully') : t('messages.created', 'Product created successfully'),
+                    'success'
+                );
+                hideForm();
+                loadProducts(state.page);
+            } else {
+                throw new Error(result.error || result.message || 'Save failed');
+            }
+        } catch (err) {
+            console.error('[Products] Save failed:', err);
+            showNotification(err.message || t('messages.error.save_failed', 'Failed to save product'), 'error');
         }
     }
 
-    function populateForm(product) {
-        // Reset form first
-        resetForm();
+    function validateForm() {
+        let isValid = true;
+
+        // Validate required fields
+        const requiredFields = [el.prodName, el.prodSku];
         
-        // Basic info
-        inputId.value = product.id || '0';
-        inputName.value = product.name || product.title || '';
-        inputSku.value = product.sku || '';
-        inputSlug.value = product.slug || '';
-        inputBarcode.value = product.barcode || '';
-        selectType.value = product.product_type || 'simple';
-        selectBrand.value = product.brand_id || '';
-        selectManufacturer.value = product.manufacturer_id || '';
-        
-        // Set vendor ID
-        if (IS_ADMIN && inputVendorSelect && product.vendor_id) {
-            inputVendorSelect.value = product.vendor_id;
-        } else if (inputVendorId && product.vendor_id) {
-            inputVendorId.value = product.vendor_id;
-        }
-        
-        // Dates
-        if (product.published_at) {
-            try {
-                const date = new Date(product.published_at);
-                if (!isNaN(date.getTime())) {
-                    inputPublishedAt.value = date.toISOString().slice(0, 16);
+        requiredFields.forEach(field => {
+            if (!field || !field.value.trim()) {
+                isValid = false;
+                if (field) {
+                    field.classList.add('is-invalid');
+                    field.addEventListener('input', () => field.classList.remove('is-invalid'), { once: true });
                 }
-            } catch (e) {
-                console.error('Error parsing date:', e);
             }
+        });
+
+        return isValid;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // ATTRIBUTES MANAGEMENT
+    // ════════════════════════════════════════════════════════════
+    function addAttribute() {
+        if (!el.attrSelect || !el.attrSelect.value) return;
+
+        const attrId = el.attrSelect.value;
+        const attrOption = el.attrSelect.options[el.attrSelect.selectedIndex];
+        const attrName = attrOption.textContent;
+        const attrType = attrOption.dataset.type;
+
+        // Check if already added
+        if (state.productAttributes.find(a => a.attribute_id == attrId)) {
+            showNotification(t('messages.attribute_exists', 'Attribute already added'), 'warning');
+            return;
         }
-        
-        // Description - use default language first
-        inputDescription.value = product.description || '';
-        
-        // Pricing
-        if (product.pricing && typeof product.pricing === 'object') {
-            inputPrice.value = product.pricing.price || '';
-            inputComparePrice.value = product.pricing.compare_at_price || '';
-            inputCostPrice.value = product.pricing.cost_price || '';
+
+        const attr = {
+            attribute_id: attrId,
+            attribute_name: attrName,
+            attribute_type: attrType,
+            value: ''
+        };
+
+        state.productAttributes.push(attr);
+        renderAttributes();
+        el.attrSelect.value = '';
+    }
+
+    function renderAttributes() {
+        if (!el.prodAttributesList) return;
+
+        el.prodAttributesList.innerHTML = state.productAttributes.map((attr, idx) => `
+            <div class="attribute-item" data-index="${idx}">
+                <label>${esc(attr.attribute_name)}</label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="text" class="form-control" value="${esc(attr.value || '')}" 
+                           onchange="Products.updateAttributeValue(${idx}, this.value)">
+                    <button type="button" class="btn btn-sm btn-danger" onclick="Products.removeAttribute(${idx})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function updateAttributeValue(index, value) {
+        if (state.productAttributes[index]) {
+            state.productAttributes[index].value = value;
+        }
+    }
+
+    function removeAttribute(index) {
+        state.productAttributes.splice(index, 1);
+        renderAttributes();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // VARIANTS MANAGEMENT
+    // ════════════════════════════════════════════════════════════
+    function addVariant() {
+        const variant = {
+            id: null,
+            sku: '',
+            barcode: '',
+            name: '',
+            stock_quantity: 0,
+            price: '',
+            is_active: 1,
+            is_default: 0
+        };
+
+        state.productVariants.push(variant);
+        renderVariants();
+    }
+
+    function renderVariants() {
+        if (!el.prodVariantsList) return;
+
+        el.prodVariantsList.innerHTML = state.productVariants.map((variant, idx) => `
+            <div class="variant-item card" data-index="${idx}" style="margin-bottom:12px; padding:12px;">
+                <div class="form-row">
+                    <div class="form-group" style="flex:1;">
+                        <label>SKU</label>
+                        <input type="text" class="form-control" value="${esc(variant.sku || '')}"
+                               onchange="Products.updateVariantField(${idx}, 'sku', this.value)">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Name</label>
+                        <input type="text" class="form-control" value="${esc(variant.name || '')}"
+                               onchange="Products.updateVariantField(${idx}, 'name', this.value)">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Price</label>
+                        <input type="number" step="0.01" class="form-control" value="${esc(variant.price || '')}"
+                               onchange="Products.updateVariantField(${idx}, 'price', this.value)">
+                    </div>
+                    <div class="form-group" style="width:100px;">
+                        <label>Stock</label>
+                        <input type="number" class="form-control" value="${esc(variant.stock_quantity || 0)}"
+                               onchange="Products.updateVariantField(${idx}, 'stock_quantity', this.value)">
+                    </div>
+                    <div style="display:flex;align-items:flex-end;padding-bottom:8px;">
+                        <button type="button" class="btn btn-sm btn-danger" onclick="Products.removeVariant(${idx})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function updateVariantField(index, field, value) {
+        if (state.productVariants[index]) {
+            state.productVariants[index][field] = value;
+        }
+    }
+
+    function removeVariant(index) {
+        state.productVariants.splice(index, 1);
+        renderVariants();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // IMAGES MANAGEMENT
+    // ════════════════════════════════════════════════════════════
+    function openMediaStudio() {
+        if (el.mediaModal && el.mediaFrame) {
+            el.mediaModal.style.display = 'block';
+            el.mediaFrame.src = `/admin/fragments/media_studio.php?embedded=1&tenant_id=${state.tenantId}&lang=${state.language}`;
+        }
+    }
+
+    function closeMediaStudio() {
+        if (el.mediaModal) {
+            el.mediaModal.style.display = 'none';
+        }
+    }
+
+    function renderProductImages() {
+        if (!el.prodImagesPreview) return;
+
+        el.prodImagesPreview.innerHTML = state.selectedImages.map((img, idx) => `
+            <div class="image-item" data-index="${idx}" style="position:relative; display:inline-block; margin:8px;">
+                <img src="${esc(img.url || img.thumb_url)}" style="width:100px; height:100px; object-fit:cover; border-radius:4px;">
+                <button type="button" class="btn btn-sm btn-danger" 
+                        style="position:absolute; top:4px; right:4px; padding:2px 6px;"
+                        onclick="Products.removeImage(${idx})">
+                    <i class="fas fa-times"></i>
+                </button>
+                ${idx === 0 ? '<span style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.7);color:white;padding:2px 6px;border-radius:4px;font-size:10px;">Main</span>' : ''}
+            </div>
+        `).join('');
+    }
+
+    function removeImage(index) {
+        state.selectedImages.splice(index, 1);
+        renderProductImages();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // CATEGORIES TREE
+    // ════════════════════════════════════════════════════════════
+    function renderCategoriesTree() {
+        if (!el.prodCategoriesTree) return;
+
+        const buildTree = (categories, parentId = null) => {
+            return categories
+                .filter(cat => cat.parent_id == parentId)
+                .map(cat => {
+                    const isSelected = state.selectedCategories.includes(cat.id);
+                    const children = buildTree(categories, cat.id);
+                    
+                    return `
+                        <div class="category-node" style="margin-left:${parentId ? '20px' : '0'};">
+                            <label style="display:flex;align-items:center;gap:8px;padding:4px 0;">
+                                <input type="checkbox" value="${cat.id}" 
+                                       ${isSelected ? 'checked' : ''}
+                                       onchange="Products.toggleCategory(${cat.id}, this.checked)">
+                                <span>${esc(cat.name)}</span>
+                            </label>
+                            ${children.length > 0 ? `<div class="category-children">${children.join('')}</div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+        };
+
+        el.prodCategoriesTree.innerHTML = buildTree(state.categories);
+    }
+
+    function toggleCategory(categoryId, checked) {
+        if (checked) {
+            if (!state.selectedCategories.includes(categoryId)) {
+                state.selectedCategories.push(categoryId);
+            }
         } else {
-            // Try direct fields
-            inputPrice.value = product.price || '';
-            inputComparePrice.value = product.compare_at_price || '';
-            inputCostPrice.value = product.cost_price || '';
-        }
-        
-        // Inventory
-        inputStock.value = product.stock_quantity || 0;
-        inputLowStock.value = product.low_stock_threshold || 5;
-        selectStockStatus.value = product.stock_status || 'in_stock';
-        selectManageStock.value = product.manage_stock ? '1' : '0';
-        selectAllowBackorder.value = product.allow_backorder ? '1' : '0';
-        inputTax.value = product.tax_rate || '15.00';
-        
-        // Dimensions
-        inputWeight.value = product.weight || '';
-        inputLength.value = product.length || '';
-        inputWidth.value = product.width || '';
-        inputHeight.value = product.height || '';
-        
-        // Categories
-        if (product.categories && Array.isArray(product.categories)) {
-            product.categories.forEach(cat => {
-                const radio = document.querySelector(`input[type="radio"][value="${cat.category_id}"]`);
-                const checkbox = document.querySelector(`input[type="checkbox"][value="${cat.category_id}"]`);
-                
-                if (radio) radio.checked = cat.is_primary == 1;
-                if (checkbox) checkbox.checked = true;
-                
-                if (cat.is_primary == 1) {
-                    document.getElementById('product_category_primary').value = cat.category_id;
-                }
-            });
-        }
-        
-        // Attributes
-        if (product.attributes && Array.isArray(product.attributes)) {
-            product.attributes.forEach(attr => {
-                addAttributeItem(attr.attribute_id, attr.attribute_value_id, attr.custom_value);
-            });
-        }
-        
-        // Translations
-        if (product.translations && typeof product.translations === 'object') {
-            Object.entries(product.translations).forEach(([langCode, translation]) => {
-                updateTranslationPanel(langCode, translation);
-            });
-        }
-        
-        // Variants
-        if (product.variants && Array.isArray(product.variants)) {
-            product.variants.forEach(variant => {
-                addVariantRow(variant);
-            });
-        }
-        
-        // Media
-        if (product.media && Array.isArray(product.media)) {
-            product.media.forEach(media => {
-                const url = media.file_url || media.image_url || media.url;
-                if (url) {
-                    addMediaPreview(url);
-                }
-            });
+            state.selectedCategories = state.selectedCategories.filter(id => id != categoryId);
         }
     }
 
-    function updateTranslationPanel(langCode, translation) {
-        let panel = translationsArea.querySelector(`.tr-lang-panel[data-lang="${langCode}"]`);
-        
-        if (!panel) {
-            // Create new panel if doesn't exist
-            const langInfo = AVAILABLE_LANGUAGES.find(l => l.code === langCode) || { name: langCode };
-            addLanguagePanel(langCode, langInfo.name);
-            panel = translationsArea.querySelector(`.tr-lang-panel[data-lang="${langCode}"]`);
-        }
-        
-        if (panel) {
-            panel.querySelector('.tr-name').value = translation.name || '';
-            panel.querySelector('.tr-short').value = translation.short_description || '';
-            panel.querySelector('.tr-desc').value = translation.description || '';
-            panel.querySelector('.tr-spec').value = translation.specifications || '';
-            panel.querySelector('.tr-meta-title').value = translation.meta_title || '';
-            panel.querySelector('.tr-meta-keys').value = translation.meta_keywords || '';
-            panel.querySelector('.tr-meta-desc').value = translation.meta_description || '';
-        }
-    }
+    // ════════════════════════════════════════════════════════════
+    // TRANSLATIONS
+    // ════════════════════════════════════════════════════════════
+    function addTranslation() {
+        const langCode = el.prodLangSelect?.value;
+        if (!langCode) return;
 
-    function resetForm() {
-        productForm.reset();
-        imagesPreview.innerHTML = '';
-        attributesList.innerHTML = '';
-        variantsList.innerHTML = '';
+        const langName = el.prodLangSelect.options[el.prodLangSelect.selectedIndex].textContent;
         
-        // Reset category selections
-        if (categoryList) {
-            categoryList.querySelectorAll('input').forEach(input => {
-                input.checked = false;
-            });
-        }
-        
-        // Reset translations
-        translationsArea.querySelectorAll('.tr-lang-panel').forEach(panel => {
-            panel.querySelector('.tr-name').value = '';
-            panel.querySelector('.tr-short').value = '';
-            panel.querySelector('.tr-desc').value = '';
-            panel.querySelector('.tr-spec').value = '';
-            panel.querySelector('.tr-meta-title').value = '';
-            panel.querySelector('.tr-meta-keys').value = '';
-            panel.querySelector('.tr-meta-desc').value = '';
-        });
-        
-        // Reset vendor selection for admin
-        if (IS_ADMIN && inputVendorSelect) {
-            inputVendorSelect.value = '';
-        }
-    }
-
-    function updateFormVisibility() {
-        const type = selectType.value;
-        
-        // Show/hide variants section
-        if (variantsSection) {
-            variantsSection.style.display = type === 'variable' ? 'block' : 'none';
-        }
-    }
-
-    // Attribute Management
-    function addAttributeItem(attributeId = '', valueId = '', customValue = '') {
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'attr-item';
-        
-        // Attribute select
-        const attrSelect = document.createElement('select');
-        attrSelect.className = 'form-select';
-        attrSelect.style.flex = '1';
-        attrSelect.innerHTML = '<option value="">' + getTranslation('attributes.choose_attribute', '— Choose Attribute —') + '</option>';
-        
-        if (metaData && metaData.attributes) {
-            metaData.attributes.forEach(attr => {
-                const option = document.createElement('option');
-                option.value = attr.id;
-                option.textContent = attr.name_translated || attr.name || attr.slug || `Attribute ${attr.id}`;
-                if (attr.id == attributeId) option.selected = true;
-                attrSelect.appendChild(option);
-            });
-        }
-        
-        // Value select
-        const valueSelect = document.createElement('select');
-        valueSelect.className = 'form-select';
-        valueSelect.style.flex = '1';
-        valueSelect.innerHTML = '<option value="">' + getTranslation('attributes.choose_value', '— Choose Value —') + '</option>';
-        
-        // Custom value input
-        const customInput = document.createElement('input');
-        customInput.type = 'text';
-        customInput.className = 'form-input';
-        customInput.style.flex = '2';
-        customInput.placeholder = getTranslation('attributes.custom_value', 'Custom value');
-        customInput.value = customValue || '';
-        
-        // Remove button
-        const removeBtn = document.createElement('button');
-        removeBtn.type = 'button';
-        removeBtn.className = 'btn small danger';
-        removeBtn.textContent = getTranslation('attributes.remove', 'Remove');
-        removeBtn.addEventListener('click', () => itemDiv.remove());
-        
-        // Populate values when attribute is selected
-        attrSelect.addEventListener('change', function() {
-            valueSelect.innerHTML = '<option value="">' + getTranslation('attributes.choose_value', '— Choose Value —') + '</option>';
-            
-            if (this.value && metaData && metaData.attributes) {
-                const attr = metaData.attributes.find(a => a.id == this.value);
-                if (attr && attr.values) {
-                    attr.values.forEach(val => {
-                        const option = document.createElement('option');
-                        option.value = val.id;
-                        option.textContent = val.label_translated || val.value;
-                        if (val.id == valueId) option.selected = true;
-                        valueSelect.appendChild(option);
-                    });
-                }
-            }
-        });
-        
-        // Trigger change if attribute is pre-selected
-        if (attributeId) {
-            setTimeout(() => {
-                attrSelect.value = attributeId;
-                const event = new Event('change');
-                attrSelect.dispatchEvent(event);
-                
-                // Set value after a delay to ensure options are loaded
-                setTimeout(() => {
-                    if (valueId && valueSelect) {
-                        valueSelect.value = valueId;
-                    }
-                }, 100);
-            }, 100);
-        }
-        
-        itemDiv.appendChild(attrSelect);
-        itemDiv.appendChild(valueSelect);
-        itemDiv.appendChild(customInput);
-        itemDiv.appendChild(removeBtn);
-        attributesList.appendChild(itemDiv);
-    }
-
-    function collectAttributes() {
-        const attributes = [];
-        document.querySelectorAll('.attr-item').forEach(item => {
-            const attrSelect = item.querySelector('select');
-            const valueSelect = item.querySelectorAll('select')[1];
-            const customInput = item.querySelector('input[type="text"]');
-            
-            if (attrSelect && attrSelect.value) {
-                attributes.push({
-                    attribute_id: parseInt(attrSelect.value),
-                    attribute_value_id: valueSelect && valueSelect.value ? parseInt(valueSelect.value) : null,
-                    custom_value: customInput ? customInput.value : ''
-                });
-            }
-        });
-        
-        document.getElementById('product_attributes').value = JSON.stringify(attributes);
-        return attributes;
-    }
-
-    // Variant Management
-    function addVariantRow(variant = {}) {
-        const rowDiv = document.createElement('div');
-        rowDiv.className = 'variant-row';
-        
-        const skuInput = document.createElement('input');
-        skuInput.type = 'text';
-        skuInput.className = 'form-input';
-        skuInput.placeholder = getTranslation('general.sku', 'SKU');
-        skuInput.value = variant.sku || '';
-        skuInput.style.flex = '1';
-        
-        const stockInput = document.createElement('input');
-        stockInput.type = 'number';
-        stockInput.className = 'form-input';
-        stockInput.placeholder = getTranslation('inventory.stock', 'Stock');
-        stockInput.value = variant.stock_quantity || 0;
-        stockInput.style.flex = '1';
-        
-        const priceInput = document.createElement('input');
-        priceInput.type = 'text';
-        priceInput.className = 'form-input';
-        priceInput.placeholder = getTranslation('pricing.price', 'Price');
-        priceInput.value = variant.price || '';
-        priceInput.style.flex = '1';
-        
-        const activeLabel = document.createElement('label');
-        activeLabel.style.display = 'flex';
-        activeLabel.style.alignItems = 'center';
-        activeLabel.style.gap = '5px';
-        activeLabel.style.flex = '1';
-        
-        const activeCheckbox = document.createElement('input');
-        activeCheckbox.type = 'checkbox';
-        activeCheckbox.checked = variant.is_active !== 0;
-        activeLabel.appendChild(activeCheckbox);
-        activeLabel.appendChild(document.createTextNode(getTranslation('products.active', 'Active')));
-        
-        const removeBtn = document.createElement('button');
-        removeBtn.type = 'button';
-        removeBtn.className = 'btn small danger';
-        removeBtn.textContent = getTranslation('attributes.remove', 'Remove');
-        removeBtn.addEventListener('click', () => rowDiv.remove());
-        
-        rowDiv.appendChild(skuInput);
-        rowDiv.appendChild(stockInput);
-        rowDiv.appendChild(priceInput);
-        rowDiv.appendChild(activeLabel);
-        rowDiv.appendChild(removeBtn);
-        
-        variantsList.appendChild(rowDiv);
-    }
-
-    function generateVariants() {
-        const attributes = collectAttributes().filter(attr => {
-            const attrOption = Array.from(attrSelect.options).find(opt => opt.value == attr.attribute_id);
-            return attrOption && attrOption.dataset.isVariation == '1' && attr.attribute_value_id;
-        });
-        
-        if (attributes.length === 0) {
-            alert(getTranslation('variants.no_variation_attributes', 'No variation attributes selected'));
+        // Check if already added
+        const existingPanel = document.querySelector(`[data-lang="${langCode}"]`);
+        if (existingPanel) {
+            showNotification(t('messages.translation_exists', 'Translation already added'), 'warning');
             return;
         }
-        
-        // Clear existing variants
-        variantsList.innerHTML = '';
-        
-        // Generate variants (simplified - in real app, generate all combinations)
-        addVariantRow({ sku: '', stock_quantity: 0, price: '', is_active: 1 });
-        addVariantRow({ sku: '', stock_quantity: 0, price: '', is_active: 1 });
-    }
 
-    function collectVariants() {
-        const variants = [];
-        document.querySelectorAll('.variant-row').forEach(row => {
-            const inputs = row.querySelectorAll('input');
-            variants.push({
-                sku: inputs[0]?.value || '',
-                stock_quantity: parseInt(inputs[1]?.value || 0),
-                price: inputs[2]?.value || '',
-                is_active: inputs[3]?.checked ? 1 : 0
-            });
-        });
-        
-        document.getElementById('product_variants').value = JSON.stringify(variants);
-        return variants;
-    }
-
-    // Category Management
-    function collectCategories() {
-        const categories = [];
-        const primary = document.querySelector('input[name="primary_category"]:checked');
-        
-        if (primary) {
-            categories.push(parseInt(primary.value));
-            document.getElementById('product_category_primary').value = primary.value;
+        const panel = createTranslationPanel(langCode, langName, {});
+        if (el.prodTranslations) {
+            el.prodTranslations.appendChild(panel);
         }
         
-        document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
-            if (primary && checkbox.value === primary.value) return;
-            categories.push(parseInt(checkbox.value));
-        });
-        
-        document.getElementById('product_categories_json').value = JSON.stringify(categories);
-        return categories;
+        el.prodLangSelect.value = '';
     }
 
-    // Translation Management
-    function collectTranslations() {
-        const translations = {};
-        
-        document.querySelectorAll('.tr-lang-panel').forEach(panel => {
-            const lang = panel.dataset.lang;
-            const name = panel.querySelector('.tr-name')?.value.trim() || '';
-            const shortDesc = panel.querySelector('.tr-short')?.value.trim() || '';
-            const desc = panel.querySelector('.tr-desc')?.value.trim() || '';
-            const spec = panel.querySelector('.tr-spec')?.value.trim() || '';
-            const metaTitle = panel.querySelector('.tr-meta-title')?.value.trim() || '';
-            const metaKeywords = panel.querySelector('.tr-meta-keys')?.value.trim() || '';
-            const metaDesc = panel.querySelector('.tr-meta-desc')?.value.trim() || '';
-            
-            if (name || shortDesc || desc || spec || metaTitle || metaKeywords || metaDesc) {
-                translations[lang] = {
-                    name,
-                    short_description: shortDesc,
-                    description: desc,
-                    specifications: spec,
-                    meta_title: metaTitle,
-                    meta_keywords: metaKeywords,
-                    meta_description: metaDesc
-                };
-            }
-        });
-        
-        document.getElementById('product_translations').value = JSON.stringify(translations);
-        return translations;
-    }
-
-    function addLanguagePanel(langCode, displayName) {
-        if (translationsArea.querySelector(`[data-lang="${langCode}"]`)) {
-            alert(getTranslation('translations.language_exists', 'Language already exists'));
-            return;
-        }
-        
+    function createTranslationPanel(langCode, langName, data) {
         const panel = document.createElement('div');
-        panel.className = 'tr-lang-panel';
+        panel.className = 'translation-panel';
         panel.dataset.lang = langCode;
         
         panel.innerHTML = `
-            <div class="tr-lang-header">
-                <strong>${escapeHtml(displayName)} (${escapeHtml(langCode)})</strong>
-                <button type="button" class="btn small toggle-lang" data-lang="${escapeHtml(langCode)}">
-                    ${getTranslation('translations.collapse', 'Collapse')}
+            <div class="translation-panel-header">
+                <h5><i class="fas fa-language"></i> ${esc(langName)} (${esc(langCode)})</h5>
+                <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('.translation-panel').remove()">
+                    <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="tr-lang-body">
-                <div style="display: grid; gap: 10px;">
-                    <div>
-                        <label class="form-label">${getTranslation('general.name', 'Name')}</label>
-                        <input class="tr-name form-input" data-lang="${escapeHtml(langCode)}">
-                    </div>
-                    <div>
-                        <label class="form-label">${getTranslation('translations.short_description', 'Short Description')}</label>
-                        <input class="tr-short form-input" data-lang="${escapeHtml(langCode)}">
-                    </div>
-                    <div>
-                        <label class="form-label">${getTranslation('general.description', 'Description')}</label>
-                        <textarea class="tr-desc form-textarea" data-lang="${escapeHtml(langCode)}" rows="3"></textarea>
-                    </div>
-                    <div>
-                        <label class="form-label">${getTranslation('translations.specifications', 'Specifications')}</label>
-                        <textarea class="tr-spec form-textarea" data-lang="${escapeHtml(langCode)}" rows="2"></textarea>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <div>
-                            <label class="form-label">${getTranslation('translations.meta_title', 'Meta Title')}</label>
-                            <input class="tr-meta-title form-input" data-lang="${escapeHtml(langCode)}">
-                        </div>
-                        <div>
-                            <label class="form-label">${getTranslation('translations.meta_keywords', 'Meta Keywords')}</label>
-                            <input class="tr-meta-keys form-input" data-lang="${escapeHtml(langCode)}">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="form-label">${getTranslation('translations.meta_description', 'Meta Description')}</label>
-                        <input class="tr-meta-desc form-input" data-lang="${escapeHtml(langCode)}">
-                    </div>
+            <div class="translation-panel-body">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" class="form-control trans-name" value="${esc(data.name || '')}" data-lang="${langCode}">
+                </div>
+                <div class="form-group">
+                    <label>Short Description</label>
+                    <textarea class="form-control trans-short-desc" rows="2" data-lang="${langCode}">${esc(data.short_description || '')}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea class="form-control trans-desc" rows="4" data-lang="${langCode}">${esc(data.description || '')}</textarea>
                 </div>
             </div>
         `;
         
-        translationsArea.appendChild(panel);
+        return panel;
     }
 
-    // Media Management
-    function addMediaPreview(url) {
-        const mediaItem = document.createElement('div');
-        mediaItem.className = 'media-item';
+    function collectTranslations() {
+        const translations = {};
         
-        const img = document.createElement('img');
-        img.src = url;
-        img.alt = '';
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.objectFit = 'cover';
-        
-        mediaItem.appendChild(img);
-        imagesPreview.appendChild(mediaItem);
-    }
-
-    async function openMediaStudio() {
-        // Load media items
-        const result = await fetchJson(MEDIA_API);
-        
-        if (!result.success) {
-            alert(getTranslation('media.load_failed', 'Failed to load media'));
-            return;
-        }
-        
-        mediaItems = result.data || [];
-        
-        // Create modal
-        const modal = document.createElement('div');
-        modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        `;
-        
-        const modalContent = document.createElement('div');
-        modalContent.style.cssText = `
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            max-width: 800px;
-            max-height: 80vh;
-            overflow: auto;
-            width: 90%;
-        `;
-        
-        const title = document.createElement('h3');
-        title.textContent = getTranslation('media.studio', 'Media Studio');
-        title.style.marginBottom = '20px';
-        
-        const grid = document.createElement('div');
-        grid.style.cssText = `
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 10px;
-            margin-bottom: 20px;
-        `;
-        
-        mediaItems.forEach(media => {
-            const item = document.createElement('div');
-            item.style.cssText = `
-                cursor: pointer;
-                border: 2px solid transparent;
-                border-radius: 6px;
-                overflow: hidden;
-                transition: border-color 0.2s;
-            `;
+        document.querySelectorAll('.translation-panel').forEach(panel => {
+            const lang = panel.dataset.lang;
+            const name = panel.querySelector('.trans-name')?.value || '';
+            const shortDesc = panel.querySelector('.trans-short-desc')?.value || '';
+            const desc = panel.querySelector('.trans-desc')?.value || '';
             
-            item.addEventListener('click', () => {
-                addMediaPreview(media.url);
-                modal.remove();
-            });
-            
-            const img = document.createElement('img');
-            img.src = media.thumbnail_url || media.url;
-            img.style.width = '100%';
-            img.style.height = '80px';
-            img.style.objectFit = 'cover';
-            
-            item.appendChild(img);
-            grid.appendChild(item);
+            if (name || shortDesc || desc) {
+                translations[lang] = {
+                    name: name,
+                    short_description: shortDesc,
+                    description: desc
+                };
+            }
         });
         
-        const closeBtn = document.createElement('button');
-        closeBtn.textContent = getTranslation('general.close', 'Close');
-        closeBtn.className = 'btn outline';
-        closeBtn.style.marginLeft = 'auto';
-        closeBtn.addEventListener('click', () => modal.remove());
-        
-        modalContent.appendChild(title);
-        modalContent.appendChild(grid);
-        modalContent.appendChild(closeBtn);
-        modal.appendChild(modalContent);
-        
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.remove();
-        });
-        
-        document.body.appendChild(modal);
+        return translations;
     }
 
-    // Save Product
-    async function saveProduct(e) {
-        e.preventDefault();
-        
-        // Validate required fields
-        if (!inputName.value.trim()) {
-            showErrors(getTranslation('validation.name_required', 'Product name is required'));
+    async function loadProductTranslations(productId) {
+        // Implementation depends on your API structure
+        // This is a placeholder
+        console.log('[Products] Loading translations for product:', productId);
+    }
+
+    async function loadProductImages(productId) {
+        // Load images for this product
+        console.log('[Products] Loading images for product:', productId);
+    }
+
+    async function loadProductCategories(productId) {
+        // Load categories for this product
+        console.log('[Products] Loading categories for product:', productId);
+    }
+
+    async function loadProductAttributes(productId) {
+        // Load attributes for this product
+        console.log('[Products] Loading attributes for product:', productId);
+    }
+
+    async function loadProductVariants(productId) {
+        // Load variants for this product
+        console.log('[Products] Loading variants for product:', productId);
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // DELETE & DUPLICATE
+    // ══════════════════���═════════════════════════════════════════
+    async function deleteProduct(id) {
+        if (!confirm(t('messages.confirm_delete', 'Are you sure you want to delete this product?'))) {
             return;
         }
-        
-        if (!inputPrice.value.trim()) {
-            showErrors(getTranslation('validation.price_required', 'Price is required'));
-            return;
-        }
-        
-        showNotice(getTranslation('saving', 'Saving...'));
-        showErrors(null);
-        
-        // Collect all data
-        collectTranslations();
-        collectAttributes();
-        collectVariants();
-        collectCategories();
-        
-        // Update vendor_id if admin selected one
-        if (IS_ADMIN && inputVendorSelect && inputVendorSelect.value) {
-            inputVendorId.value = inputVendorSelect.value;
-        }
-        
-        const formData = new FormData(productForm);
-        
-        // Log form data for debugging
-        console.log('Sending form data:');
-        for (let [key, value] of formData.entries()) {
-            console.log(key + ':', value);
-        }
-        
+
         try {
-            const result = await postFormData(API, formData);
-            
-            console.log('Save result:', result);
+            const result = await apiCall(`${API.products}/${id}`, { method: 'DELETE' });
             
             if (result.success) {
-                showNotice(result.message || getTranslation('save_success', 'Product saved successfully'), 'success');
-                formWrap.style.display = 'none';
-                await loadProducts(productSearch.value);
+                showNotification(t('messages.deleted', 'Product deleted successfully'), 'success');
+                hideForm();
+                loadProducts(state.page);
             } else {
-                showNotice(result.message || getTranslation('save_failed', 'Failed to save product'), 'error');
-                showErrors(result.errors || result.message);
+                throw new Error(result.error || 'Delete failed');
             }
-        } catch (error) {
-            console.error('Save error:', error);
-            showNotice(error.message || getTranslation('network_error', 'Network error'), 'error');
+        } catch (err) {
+            console.error('[Products] Delete failed:', err);
+            showNotification(err.message || t('messages.error.delete_failed', 'Failed to delete product'), 'error');
         }
     }
 
-    // Delete Product
-    async function deleteProduct(id) {
-        if (!confirm(getTranslation('confirm_delete', 'Are you sure you want to delete this product?'))) {
+    async function duplicateProduct(id) {
+        try {
+            const result = await apiCall(`${API.products}/${id}?format=json&lang=${state.language}`);
+            
+            if (result.success && result.data && result.data.length > 0) {
+                const product = { ...result.data[0] };
+                delete product.id;
+                product.name = `${product.name} (Copy)`;
+                product.sku = `${product.sku}-copy`;
+                product.slug = `${product.slug}-copy`;
+                
+                showForm(product);
+            } else {
+                throw new Error('Failed to load product for duplication');
+            }
+        } catch (err) {
+            console.error('[Products] Duplicate failed:', err);
+            showNotification(err.message || t('messages.error.duplicate_failed', 'Failed to duplicate product'), 'error');
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // FILTERS & PAGINATION
+    // ════════════════════════════════════════════════════════════
+    function applyFilters() {
+        state.filters = {};
+        
+        if (el.searchInput?.value) state.filters.search = el.searchInput.value;
+        if (el.tenantFilter?.value) state.filters.tenant_id = el.tenantFilter.value;
+        if (el.typeFilter?.value) state.filters.product_type_id = el.typeFilter.value;
+        if (el.brandFilter?.value) state.filters.brand_id = el.brandFilter.value;
+        if (el.statusFilter?.value) state.filters.is_active = el.statusFilter.value;
+
+        loadProducts(1);
+    }
+
+    function resetFilters() {
+        state.filters = {};
+        
+        if (el.searchInput) el.searchInput.value = '';
+        if (el.tenantFilter) el.tenantFilter.value = state.tenantId;
+        if (el.typeFilter) el.typeFilter.value = '';
+        if (el.brandFilter) el.brandFilter.value = '';
+        if (el.statusFilter) el.statusFilter.value = '';
+
+        loadProducts(1);
+    }
+
+    function updatePagination(meta) {
+        if (!el.pagination || !el.paginationInfo) return;
+
+        const { page = 1, per_page = 25, total = 0 } = meta;
+        const totalPages = Math.ceil(total / per_page);
+        const start = total > 0 ? (page - 1) * per_page + 1 : 0;
+        const end = Math.min(page * per_page, total);
+
+        el.paginationInfo.textContent = `${start}-${end} of ${total}`;
+
+        if (totalPages <= 1) {
+            el.pagination.innerHTML = '';
             return;
         }
-        
-        showNotice(getTranslation('deleting', 'Deleting...'));
-        
-        const formData = new FormData();
-        formData.append('action', 'delete');
-        formData.append('id', id);
-        formData.append('csrf_token', CSRF_TOKEN);
-        
-        const result = await postFormData(API, formData);
-        
-        if (result.success) {
-            showNotice(result.message || getTranslation('delete_success', 'Product deleted successfully'), 'success');
-            await loadProducts(productSearch.value);
-            formWrap.style.display = 'none';
-        } else {
-            showNotice(result.message || getTranslation('delete_failed', 'Failed to delete product'), 'error');
-        }
-    }
 
-    // Toggle Active Status
-    async function toggleActive(id, newState) {
-        const formData = new FormData();
-        formData.append('action', 'toggle_active');
-        formData.append('id', id);
-        formData.append('is_active', newState);
-        formData.append('csrf_token', CSRF_TOKEN);
-        
-        const result = await postFormData(API, formData);
-        
-        if (result.success) {
-            showNotice(getTranslation('update_success', 'Updated successfully'), 'success');
-            await loadProducts(productSearch.value);
-        } else {
-            showNotice(result.message || getTranslation('update_failed', 'Update failed'), 'error');
-        }
-    }
+        let html = '';
 
-    // Event Listeners
-    function setupEventListeners() {
-        // New product buttons
-        if (productNewBtn) {
-            productNewBtn.addEventListener('click', openNew);
-        }
-        if (productNewBtn2) {
-            productNewBtn2.addEventListener('click', openNew);
-        }
-        
-        // Refresh button
-        if (productRefresh) {
-            productRefresh.addEventListener('click', () => loadProducts(productSearch.value));
-        }
-        
-        // Search input
-        if (productSearch) {
-            let searchTimeout;
-            productSearch.addEventListener('input', () => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    loadProducts(productSearch.value);
-                }, 500);
-            });
-        }
-        
-        // Save button
-        if (saveBtn) {
-            saveBtn.addEventListener('click', saveProduct);
-        }
-        
-        // Cancel button
-        if (cancelBtn) {
-            cancelBtn.addEventListener('click', () => {
-                formWrap.style.display = 'none';
-                showErrors(null);
-            });
-        }
-        
-        // Delete button
-        if (deleteBtn) {
-            deleteBtn.addEventListener('click', () => {
-                const id = inputId.value;
-                if (id && id !== '0') {
-                    deleteProduct(id);
-                }
-            });
-        }
-        
-        // Product type change
-        if (selectType) {
-            selectType.addEventListener('change', updateFormVisibility);
-        }
-        
-        // Add attribute button
-        if (attrAddBtn) {
-            attrAddBtn.addEventListener('click', () => {
-                if (!attrSelect.value) {
-                    alert(getTranslation('attributes.choose_first', 'Please choose an attribute first'));
-                    return;
-                }
-                addAttributeItem();
-            });
-        }
-        
-        // Generate variants button
-        if (generateVariantsBtn) {
-            generateVariantsBtn.addEventListener('click', generateVariants);
-        }
-        
-        // Media studio button
-        if (mediaStudioBtn) {
-            mediaStudioBtn.addEventListener('click', openMediaStudio);
-        }
-        
-        // Toggle translations
-        if (toggleTranslationsBtn) {
-            toggleTranslationsBtn.addEventListener('click', () => {
-                if (translationsArea.style.display === 'none') {
-                    translationsArea.style.display = 'block';
-                    toggleTranslationsBtn.textContent = getTranslation('translations.hide_translations', 'Hide Translations');
-                } else {
-                    translationsArea.style.display = 'none';
-                    toggleTranslationsBtn.textContent = getTranslation('translations.show_translations', 'Show Translations');
-                }
-            });
-        }
-        
-        // Fill from default
-        if (fillFromDefaultBtn) {
-            fillFromDefaultBtn.addEventListener('click', () => {
-                const defaultName = inputName.value;
-                if (!defaultName) {
-                    alert(getTranslation('translations.empty_default', 'Default name is empty'));
-                    return;
-                }
-                
-                document.querySelectorAll('.tr-name').forEach(input => {
-                    if (!input.value) {
-                        input.value = defaultName;
-                    }
-                });
-            });
-        }
-        
-        // Add language
-        if (addLangBtn) {
-            addLangBtn.addEventListener('click', () => {
-                const langCode = prompt(getTranslation('translations.enter_code', 'Enter language code (e.g., fr):'), '');
-                if (!langCode) return;
-                
-                const langName = prompt(getTranslation('translations.enter_name', 'Enter language name:'), langCode);
-                if (!langName) return;
-                
-                addLanguagePanel(langCode, langName);
-            });
-        }
-        
-        // Toggle language panels
-        translationsArea.addEventListener('click', (e) => {
-            if (e.target.classList.contains('toggle-lang')) {
-                const lang = e.target.dataset.lang;
-                const body = e.target.closest('.tr-lang-panel').querySelector('.tr-lang-body');
-                
-                if (body.style.display === 'none') {
-                    body.style.display = 'block';
-                    e.target.textContent = getTranslation('translations.collapse', 'Collapse');
-                } else {
-                    body.style.display = 'none';
-                    e.target.textContent = getTranslation('translations.expand', 'Expand');
-                }
+        // Previous button
+        html += `<button class="pagination-btn" ${page <= 1 ? 'disabled' : ''} onclick="Products.load(${page - 1})">
+            <i class="fas fa-chevron-left"></i>
+        </button>`;
+
+        // Page numbers
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= page - 2 && i <= page + 2)) {
+                html += `<button class="pagination-btn ${i === page ? 'active' : ''}" onclick="Products.load(${i})">${i}</button>`;
+            } else if (i === page - 3 || i === page + 3) {
+                html += `<span class="pagination-ellipsis">...</span>`;
             }
+        }
+
+        // Next button
+        html += `<button class="pagination-btn" ${page >= totalPages ? 'disabled' : ''} onclick="Products.load(${page + 1})">
+            <i class="fas fa-chevron-right"></i>
+        </button>`;
+
+        el.pagination.innerHTML = html;
+    }
+
+    function updateResultsCount(total) {
+        if (el.resultsCount && el.resultsCountText) {
+            el.resultsCountText.textContent = `${total} ${t('products.found', 'products found')}`;
+            el.resultsCount.style.display = total > 0 ? 'block' : 'none';
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // UI STATE HELPERS
+    // ════════════════════════════════════════════════════════════
+    function showLoading() {
+        if (el.loading) {
+            el.loading.innerHTML = `<div class="spinner"></div><p>${t('products.loading', 'Loading...')}</p>`;
+            el.loading.style.display = 'flex';
+        }
+        if (el.container) el.container.style.display = 'none';
+        if (el.empty) el.empty.style.display = 'none';
+        if (el.error) el.error.style.display = 'none';
+    }
+
+    function showTable() {
+        if (el.loading) el.loading.style.display = 'none';
+        if (el.container) el.container.style.display = 'block';
+        if (el.empty) el.empty.style.display = 'none';
+        if (el.error) el.error.style.display = 'none';
+    }
+
+    function showEmpty() {
+        if (el.loading) el.loading.style.display = 'none';
+        if (el.container) el.container.style.display = 'none';
+        if (el.error) el.error.style.display = 'none';
+        if (el.empty) {
+            el.empty.innerHTML = `
+                <div class="empty-icon">📦</div>
+                <h3>${t('table.empty.title', 'No Products Found')}</h3>
+                <p>${t('table.empty.message', 'Start by adding your first product')}</p>
+                ${state.permissions.canCreate ? `<button class="btn btn-primary" onclick="Products.add()">
+                    <i class="fas fa-plus"></i> ${t('table.empty.add_first', 'Add First Product')}
+                </button>` : ''}
+            `;
+            el.empty.style.display = 'flex';
+        }
+        if (el.tbody) el.tbody.innerHTML = '';
+    }
+
+    function showError(message) {
+        if (el.loading) el.loading.style.display = 'none';
+        if (el.container) el.container.style.display = 'none';
+        if (el.empty) el.empty.style.display = 'none';
+        if (el.error) {
+            if (el.errorMessage) el.errorMessage.textContent = message;
+            el.error.style.display = 'flex';
+        }
+    }
+
+    function showNotification(message, type = 'info') {
+        if (AF.notify) {
+            AF.notify(message, type);
+        } else {
+            alert(message);
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // UTILITIES
+    // ════════════════════════════════════════════════════════════
+    function esc(text) {
+        if (text === null || text === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = String(text);
+        return div.innerHTML;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // INITIALIZATION
+    // ════════════════════════════════════════════════════════════
+    async function init() {
+        console.log('[Products] Initializing...');
+
+        // Cache DOM elements
+        el = {
+            // Containers
+            container: AF.$('tableContainer'),
+            loading: AF.$('tableLoading'),
+            empty: AF.$('emptyState'),
+            error: AF.$('errorState'),
+            errorMessage: AF.$('errorMessage'),
+            
+            // Form
+            formContainer: AF.$('productFormContainer'),
+            form: AF.$('productForm'),
+            formTitle: AF.$('formTitle'),
+            formId: AF.$('formId'),
+            
+            // Form fields - General
+            prodName: AF.$('prodName'),
+            prodSku: AF.$('prodSku'),
+            prodSlug: AF.$('prodSlug'),
+            prodBarcode: AF.$('prodBarcode'),
+            prodType: AF.$('prodType'),
+            prodBrand: AF.$('prodBrand'),
+            prodIsActive: AF.$('prodIsActive'),
+            prodIsFeatured: AF.$('prodIsFeatured'),
+            prodIsBestseller: AF.$('prodIsBestseller'),
+            prodIsNew: AF.$('prodIsNew'),
+            prodTenantId: AF.$('prodTenantId'),
+            
+            // Form fields - Pricing
+            prodPrice: AF.$('prodPrice'),
+            prodComparePrice: AF.$('prodComparePrice'),
+            prodCostPrice: AF.$('prodCostPrice'),
+            prodCurrency: AF.$('prodCurrency'),
+            prodTaxRate: AF.$('prodTaxRate'),
+            
+            // Form fields - Inventory
+            prodStockQty: AF.$('prodStockQty'),
+            prodLowStock: AF.$('prodLowStock'),
+            prodStockStatus: AF.$('prodStockStatus'),
+            prodManageStock: AF.$('prodManageStock'),
+            prodAllowBackorder: AF.$('prodAllowBackorder'),
+            
+            // Form fields - Physical
+            prodWeight: AF.$('prodWeight'),
+            prodLength: AF.$('prodLength'),
+            prodWidth: AF.$('prodWidth'),
+            prodHeight: AF.$('prodHeight'),
+            
+            // Attributes
+            attrSelect: AF.$('attrSelect'),
+            btnAddAttribute: AF.$('btnAddAttribute'),
+            prodAttributesList: AF.$('prodAttributesList'),
+            
+            // Variants
+            btnGenerateVariants: AF.$('btnGenerateVariants'),
+            btnAddVariant: AF.$('btnAddVariant'),
+            prodVariantsList: AF.$('prodVariantsList'),
+            
+            // Images
+            prodSelectImageBtn: AF.$('prodSelectImageBtn'),
+            prodImagesPreview: AF.$('prodImagesPreview'),
+            mediaModal: AF.$('prodMediaStudioModal'),
+            mediaFrame: AF.$('prodMediaStudioFrame'),
+            mediaClose: AF.$('prodMediaStudioClose'),
+            
+            // Categories
+            prodCategoriesTree: AF.$('prodCategoriesTree'),
+            
+            // Translations
+            prodTranslations: AF.$('prodTranslations'),
+            prodLangSelect: AF.$('prodLangSelect'),
+            prodAddLangBtn: AF.$('prodAddLangBtn'),
+            
+            // Table
+            tbody: AF.$('tableBody'),
+            
+            // Filters
+            searchInput: AF.$('searchInput'),
+            tenantFilter: AF.$('tenantFilter'),
+            typeFilter: AF.$('typeFilter'),
+            brandFilter: AF.$('brandFilter'),
+            statusFilter: AF.$('statusFilter'),
+            
+            // Buttons
+            btnSubmit: AF.$('btnSubmitForm'),
+            btnAdd: AF.$('btnAddProduct'),
+            btnClose: AF.$('btnCloseForm'),
+            btnCancel: AF.$('btnCancelForm'),
+            btnApply: AF.$('btnApplyFilters'),
+            btnReset: AF.$('btnResetFilters'),
+            btnRetry: AF.$('btnRetry'),
+            btnDeleteProduct: AF.$('btnDeleteProduct'),
+            
+            // Pagination
+            pagination: AF.$('pagination'),
+            paginationInfo: AF.$('paginationInfo'),
+            resultsCount: AF.$('resultsCount'),
+            resultsCountText: AF.$('resultsCountText')
+        };
+
+        // Load translations
+        await loadTranslations(state.language);
+
+        // Setup event listeners
+        if (el.form) el.form.addEventListener('submit', saveProduct);
+        if (el.btnAdd) el.btnAdd.addEventListener('click', () => showForm());
+        if (el.btnClose) el.btnClose.addEventListener('click', hideForm);
+        if (el.btnCancel) el.btnCancel.addEventListener('click', hideForm);
+        if (el.btnApply) el.btnApply.addEventListener('click', applyFilters);
+        if (el.btnReset) el.btnReset.addEventListener('click', resetFilters);
+        if (el.btnRetry) el.btnRetry.addEventListener('click', () => loadProducts(state.page));
+        if (el.btnDeleteProduct) el.btnDeleteProduct.addEventListener('click', () => {
+            if (state.currentProduct) deleteProduct(state.currentProduct.id);
         });
         
-        // Image upload preview
-        if (imagesInput) {
-            imagesInput.addEventListener('change', function() {
-                const files = Array.from(this.files);
-                files.forEach(file => {
-                    if (file.type.startsWith('image/')) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            addMediaPreview(e.target.result);
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                });
-            });
+        // Attributes
+        if (el.btnAddAttribute) el.btnAddAttribute.addEventListener('click', addAttribute);
+        
+        // Variants
+        if (el.btnAddVariant) el.btnAddVariant.addEventListener('click', addVariant);
+        
+        // Images
+        if (el.prodSelectImageBtn) el.prodSelectImageBtn.addEventListener('click', openMediaStudio);
+        if (el.mediaClose) el.mediaClose.addEventListener('click', closeMediaStudio);
+        
+        // Translations
+        if (el.prodAddLangBtn) el.prodAddLangBtn.addEventListener('click', addTranslation);
+        
+        // Media Studio message listener
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'media-selected') {
+                state.selectedImages = e.data.images || [];
+                renderProductImages();
+                closeMediaStudio();
+            }
+        });
+
+        // Initialize tabs
+        initTabs();
+
+        // Load dropdown data
+        await loadDropdownData();
+
+        // Load initial data
+        await loadProducts(1);
+
+        console.log('[Products] Initialized successfully');
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // PUBLIC API
+    // ════════════════════════════════════════════════════════════
+    window.Products = {
+        init,
+        load: loadProducts,
+        add: () => showForm(),
+        edit: async (id) => {
+            try {
+                const result = await apiCall(`${API.products}/${id}?format=json&lang=${state.language}`);
+                if (result.success && result.data && result.data.length > 0) {
+                    showForm(result.data[0]);
+                } else {
+                    throw new Error('Product not found');
+                }
+            } catch (err) {
+                console.error('[Products] Edit failed:', err);
+                showNotification(err.message || t('messages.error.load_failed', 'Failed to load product'), 'error');
+            }
+        },
+        remove: deleteProduct,
+        duplicate: duplicateProduct,
+        updateAttributeValue,
+        removeAttribute,
+        updateVariantField,
+        removeVariant,
+        removeImage,
+        toggleCategory,
+        setLanguage: async (lang) => {
+            state.language = lang;
+            await loadTranslations(lang);
+            setDirectionForLang(lang);
+            loadProducts(state.page);
+        }
+    };
+
+    // Fragment support
+    window.page = { run: init };
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.AdminFramework && !window.page.__fragment_init) {
+                init().catch(err => console.error('[Products] Init failed:', err));
+            }
+        });
+    } else {
+        if (window.AdminFramework && !window.page.__fragment_init) {
+            init().catch(err => console.error('[Products] Init failed:', err));
         }
     }
+    
+    window.page.__fragment_init = false;
 
-    // Initialize
-    async function init() {
-        setupEventListeners();
-        await Promise.all([
-            loadMetaData(),
-            IS_ADMIN ? loadVendors() : Promise.resolve()
-        ]);
-        await loadProducts();
-    }
-
-    // Start when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
+    console.log('[Products] Module loaded');
 
 })();
