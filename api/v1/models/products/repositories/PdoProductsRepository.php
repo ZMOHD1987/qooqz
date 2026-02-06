@@ -10,7 +10,7 @@ final class PdoProductsRepository
         'id','sku','slug','barcode','brand_id','is_active',
         'is_featured','is_bestseller','is_new','stock_quantity',
         'low_stock_threshold','stock_status','manage_stock','allow_backorder',
-        'total_sales','rating_average','rating_count','tax_rate','views_count',
+        'total_sales','rating_average','rating_count','views_count',
         'created_at','updated_at','published_at'
     ];
 
@@ -34,19 +34,41 @@ final class PdoProductsRepository
         ?int $offset = null,
         array $filters = [],
         string $orderBy = 'id',
-        string $orderDir = 'DESC'
+        string $orderDir = 'DESC',
+        string $lang = 'ar'
     ): array {
-        $sql = "SELECT * FROM products WHERE tenant_id = :tenant_id";
-        $params = [':tenant_id' => $tenantId];
+        $sql = "
+            SELECT p.*,
+                   COALESCE(pt.name, '') AS name,
+                   pt.short_description,
+                   pt.description AS translated_description,
+                   pt.meta_title,
+                   pt.meta_description,
+                   pt.meta_keywords,
+                   i.id AS image_id,
+                   i.url AS image_url,
+                   i.thumb_url AS image_thumb_url
+            FROM products p
+            LEFT JOIN product_translations pt
+                ON p.id = pt.product_id AND pt.language_code = :lang
+            LEFT JOIN images i
+                ON i.owner_id = p.id
+               AND i.is_main = 1
+               AND i.image_type_id = (
+                   SELECT id FROM image_types WHERE name = 'product' LIMIT 1
+               )
+            WHERE p.tenant_id = :tenant_id
+        ";
+        $params = [':tenant_id' => $tenantId, ':lang' => $lang];
 
         // تطبيق كل الفلاتر بشكل ديناميكي
         foreach (self::FILTERABLE_COLUMNS as $col) {
             if (isset($filters[$col]) && $filters[$col] !== '') {
                 if (in_array($col, ['sku','slug','barcode'])) {
-                    $sql .= " AND {$col} LIKE :{$col}";
+                    $sql .= " AND p.{$col} LIKE :{$col}";
                     $params[":{$col}"] = '%' . $filters[$col] . '%';
                 } else {
-                    $sql .= " AND {$col} = :{$col}";
+                    $sql .= " AND p.{$col} = :{$col}";
                     $params[":{$col}"] = $filters[$col];
                 }
             }
@@ -55,7 +77,7 @@ final class PdoProductsRepository
         // الفرز
         $orderBy = in_array($orderBy, self::ALLOWED_ORDER_BY, true) ? $orderBy : 'id';
         $orderDir = strtoupper($orderDir) === 'ASC' ? 'ASC' : 'DESC';
-        $sql .= " ORDER BY {$orderBy} {$orderDir}";
+        $sql .= " ORDER BY p.{$orderBy} {$orderDir}";
 
         // Pagination
         if ($limit !== null) $sql .= " LIMIT :limit";
@@ -102,12 +124,33 @@ final class PdoProductsRepository
     // ================================
     // Find by ID
     // ================================
-    public function find(int $tenantId, int $id): ?array
+    public function find(int $tenantId, int $id, string $lang = 'ar'): ?array
     {
-        $stmt = $this->pdo->prepare(
-            "SELECT * FROM products WHERE tenant_id = :tenant_id AND id = :id LIMIT 1"
-        );
-        $stmt->execute([':tenant_id'=>$tenantId, ':id'=>$id]);
+        $stmt = $this->pdo->prepare("
+            SELECT p.*,
+                   COALESCE(pt.name, '') AS name,
+                   pt.short_description,
+                   pt.description AS translated_description,
+                   pt.specifications,
+                   pt.meta_title,
+                   pt.meta_description,
+                   pt.meta_keywords,
+                   i.id AS image_id,
+                   i.url AS image_url,
+                   i.thumb_url AS image_thumb_url
+            FROM products p
+            LEFT JOIN product_translations pt
+                ON p.id = pt.product_id AND pt.language_code = :lang
+            LEFT JOIN images i
+                ON i.owner_id = p.id
+               AND i.is_main = 1
+               AND i.image_type_id = (
+                   SELECT id FROM image_types WHERE name = 'product' LIMIT 1
+               )
+            WHERE p.tenant_id = :tenant_id AND p.id = :id
+            LIMIT 1
+        ");
+        $stmt->execute([':tenant_id'=>$tenantId, ':id'=>$id, ':lang'=>$lang]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
     }
@@ -139,7 +182,6 @@ final class PdoProductsRepository
                     total_sales = :total_sales,
                     rating_average = :rating_average,
                     rating_count = :rating_count,
-                    tax_rate = :tax_rate,
                     views_count = :views_count,
                     published_at = :published_at,
                     updated_at = CURRENT_TIMESTAMP
@@ -155,13 +197,13 @@ final class PdoProductsRepository
                 is_active, is_featured, is_bestseller, is_new,
                 stock_quantity, low_stock_threshold, stock_status,
                 manage_stock, allow_backorder, total_sales,
-                rating_average, rating_count, tax_rate, views_count, published_at
+                rating_average, rating_count, views_count, published_at
             ) VALUES (
                 :tenant_id, :product_type_id, :sku, :slug, :barcode, :brand_id,
                 :is_active, :is_featured, :is_bestseller, :is_new,
                 :stock_quantity, :low_stock_threshold, :stock_status,
                 :manage_stock, :allow_backorder, :total_sales,
-                :rating_average, :rating_count, :tax_rate, :views_count, :published_at
+                :rating_average, :rating_count, :views_count, :published_at
             )
         ");
         $stmt->execute(array_merge($data, [':tenant_id'=>$tenantId]));

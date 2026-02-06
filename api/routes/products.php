@@ -45,8 +45,10 @@ try {
     $raw = file_get_contents('php://input');
     $data = $raw ? json_decode($raw, true) : [];
 
-    $limit   = isset($_GET['limit']) ? (int)$_GET['limit'] : null;
-    $offset  = isset($_GET['offset']) ? (int)$_GET['offset'] : null;
+    $lang    = $_GET['lang'] ?? 'ar';
+    $page    = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+    $limit   = isset($_GET['limit']) ? min(1000, max(1, (int)$_GET['limit'])) : 25;
+    $offset  = ($page - 1) * $limit;
     $orderBy = $_GET['order_by'] ?? 'id';
     $orderDir = $_GET['order_dir'] ?? 'DESC';
 
@@ -70,11 +72,22 @@ try {
 
         case 'GET':
             if (isset($_GET['id']) && is_numeric($_GET['id'])) {
-                $item = $controller->get($tenantId, (int)$_GET['id']);
+                $item = $controller->get($tenantId, (int)$_GET['id'], $lang);
                 ResponseFormatter::success($item);
             } else {
-                $list = $controller->list($tenantId, $limit, $offset, $filters, $orderBy, $orderDir);
-                ResponseFormatter::success($list);
+                $result = $controller->list($tenantId, $limit, $offset, $filters, $orderBy, $orderDir, $lang);
+                $total = $result['total'];
+                ResponseFormatter::success([
+                    'items' => $result['items'],
+                    'meta'  => [
+                        'total'       => $total,
+                        'page'        => $page,
+                        'per_page'    => $limit,
+                        'total_pages' => $total > 0 ? (int)ceil($total / $limit) : 0,
+                        'from'        => $total > 0 ? $offset + 1 : 0,
+                        'to'          => $total > 0 ? min($offset + $limit, $total) : 0
+                    ]
+                ]);
             }
             break;
 
