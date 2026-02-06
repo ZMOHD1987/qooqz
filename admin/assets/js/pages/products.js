@@ -1275,7 +1275,7 @@
                 product.sku = `${product.sku || ''}-copy-${uid}`;
                 product.slug = `${product.slug || ''}-copy-${uid}`;
                 // مسح الباركود لتجنب خطأ الإدخال المكرر
-                product.barcode = '';
+                product.barcode = null;
                 
                 showForm(product);
             } else {

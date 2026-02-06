@@ -202,7 +202,7 @@ final class PdoProductsRepository
         }
 
         // product_type_id مطلوب (NOT NULL) - تعيين قيمة افتراضية 1 إذا لم يتم تحديده
-        if (empty($params[':product_type_id']) || $params[':product_type_id'] === null) {
+        if (empty($params[':product_type_id'])) {
             $params[':product_type_id'] = 1;
         }
 
