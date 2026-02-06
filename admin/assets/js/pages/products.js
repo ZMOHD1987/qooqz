@@ -53,6 +53,7 @@
 
     let el = {}; // DOM elements cache
     let translations = {}; // i18n translations
+    let _messageListenerAdded = false; // prevent duplicate message listeners
 
     // ════════════════════════════════════════════════════════════
     // TRANSLATIONS
@@ -1721,14 +1722,17 @@
         if (el.prodMainCategory) el.prodMainCategory.onchange = onMainCategoryChange;
         if (el.prodSubCategory) el.prodSubCategory.onchange = onSubCategoryChange;
         
-        // Media Studio message listener (use addEventListener since window events can't use onmessage safely)
-        window.addEventListener('message', function(e) {
-            if (e.data && e.data.type === 'media-selected') {
-                state.selectedImages = e.data.images || [];
-                renderProductImages();
-                closeMediaStudio();
-            }
-        });
+        // Media Studio message listener (only add once to prevent accumulation)
+        if (!_messageListenerAdded) {
+            _messageListenerAdded = true;
+            window.addEventListener('message', function(e) {
+                if (e.data && e.data.type === 'media-selected') {
+                    state.selectedImages = e.data.images || [];
+                    renderProductImages();
+                    closeMediaStudio();
+                }
+            });
+        }
 
         // Initialize tabs
         initTabs();

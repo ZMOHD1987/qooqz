@@ -802,7 +802,7 @@ window.PRODUCTS_CONFIG = {
 <script>
 (function(){
     console.log('[Products] Embedded mode - waiting for module...');
-    var attempts = 0, maxAttempts = 80;
+    var attempts = 0, maxAttempts = 50;
     var interval = setInterval(function(){
         attempts++;
         if (window.Products && typeof window.Products.init === 'function') {
