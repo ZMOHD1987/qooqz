@@ -1,0 +1,222 @@
+<?php
+declare(strict_types=1);
+
+final class PdoResourcePermissionsRepository
+{
+    private PDO $pdo;
+
+    public function __construct(PDO $pdo)
+    {
+        $this->pdo = $pdo;
+    }
+
+    /**
+     * Get all resource permissions
+     */
+    public function all(int $tenantId): array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT 
+                rp.id,
+                rp.permission_id,
+                rp.resource_type,
+                rp.can_view_all,
+                rp.can_view_own,
+                rp.can_view_tenant,
+                rp.can_create,
+                rp.can_edit_all,
+                rp.can_edit_own,
+                rp.can_delete_all,
+                rp.can_delete_own,
+                rp.created_at,
+                p.key_name,
+                p.display_name,
+                p.tenant_id
+            FROM resource_permissions rp
+            INNER JOIN permissions p ON p.id = rp.permission_id
+            WHERE p.tenant_id = :tenant_id
+            ORDER BY rp.resource_type, p.key_name
+        ");
+
+        $stmt->execute([':tenant_id' => $tenantId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get resource permissions for a specific role
+     */
+    public function getByRole(int $tenantId, int $roleId): array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT 
+                rp.id,
+                rp.permission_id,
+                rp.resource_type,
+                rp.can_view_all,
+                rp.can_view_own,
+                rp.can_view_tenant,
+                rp.can_create,
+                rp.can_edit_all,
+                rp.can_edit_own,
+                rp.can_delete_all,
+                rp.can_delete_own,
+                rp.created_at,
+                p.key_name,
+                p.display_name,
+                p.tenant_id
+            FROM resource_permissions rp
+            INNER JOIN permissions p ON p.id = rp.permission_id
+            INNER JOIN role_permissions role_perm ON role_perm.permission_id = p.id
+            WHERE role_perm.role_id = :role_id
+            AND role_perm.tenant_id = :tenant_id
+            ORDER BY rp.resource_type, p.key_name
+        ");
+
+        $stmt->execute([
+            ':role_id' => $roleId,
+            ':tenant_id' => $tenantId
+        ]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get resource permission by ID
+     */
+    public function getById(int $id): ?array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT 
+                rp.id,
+                rp.permission_id,
+                rp.resource_type,
+                rp.can_view_all,
+                rp.can_view_own,
+                rp.can_view_tenant,
+                rp.can_create,
+                rp.can_edit_all,
+                rp.can_edit_own,
+                rp.can_delete_all,
+                rp.can_delete_own,
+                rp.created_at
+            FROM resource_permissions rp
+            WHERE rp.id = :id
+            LIMIT 1
+        ");
+
+        $stmt->execute([':id' => $id]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $result ?: null;
+    }
+
+    /**
+     * Insert new resource permission
+     */
+    public function insert(array $data): int
+    {
+        $stmt = $this->pdo->prepare("
+            INSERT INTO resource_permissions (
+                permission_id,
+                resource_type,
+                can_view_all,
+                can_view_own,
+                can_view_tenant,
+                can_create,
+                can_edit_all,
+                can_edit_own,
+                can_delete_all,
+                can_delete_own,
+                created_at
+            ) VALUES (
+                :permission_id,
+                :resource_type,
+                :can_view_all,
+                :can_view_own,
+                :can_view_tenant,
+                :can_create,
+                :can_edit_all,
+                :can_edit_own,
+                :can_delete_all,
+                :can_delete_own,
+                NOW()
+            )
+        ");
+
+        $stmt->execute([
+            ':permission_id' => (int)$data['permission_id'],
+            ':resource_type' => $data['resource_type'],
+            ':can_view_all' => isset($data['can_view_all']) ? (int)$data['can_view_all'] : 0,
+            ':can_view_own' => isset($data['can_view_own']) ? (int)$data['can_view_own'] : 0,
+            ':can_view_tenant' => isset($data['can_view_tenant']) ? (int)$data['can_view_tenant'] : 0,
+            ':can_create' => isset($data['can_create']) ? (int)$data['can_create'] : 0,
+            ':can_edit_all' => isset($data['can_edit_all']) ? (int)$data['can_edit_all'] : 0,
+            ':can_edit_own' => isset($data['can_edit_own']) ? (int)$data['can_edit_own'] : 0,
+            ':can_delete_all' => isset($data['can_delete_all']) ? (int)$data['can_delete_all'] : 0,
+            ':can_delete_own' => isset($data['can_delete_own']) ? (int)$data['can_delete_own'] : 0
+        ]);
+
+        return (int)$this->pdo->lastInsertId();
+    }
+
+    /**
+     * Update resource permission
+     */
+    public function update(int $id, array $data): bool
+    {
+        $stmt = $this->pdo->prepare("
+            UPDATE resource_permissions 
+            SET 
+                can_view_all = :can_view_all,
+                can_view_own = :can_view_own,
+                can_view_tenant = :can_view_tenant,
+                can_create = :can_create,
+                can_edit_all = :can_edit_all,
+                can_edit_own = :can_edit_own,
+                can_delete_all = :can_delete_all,
+                can_delete_own = :can_delete_own
+            WHERE id = :id
+        ");
+
+        return $stmt->execute([
+            ':id' => $id,
+            ':can_view_all' => isset($data['can_view_all']) ? (int)$data['can_view_all'] : 0,
+            ':can_view_own' => isset($data['can_view_own']) ? (int)$data['can_view_own'] : 0,
+            ':can_view_tenant' => isset($data['can_view_tenant']) ? (int)$data['can_view_tenant'] : 0,
+            ':can_create' => isset($data['can_create']) ? (int)$data['can_create'] : 0,
+            ':can_edit_all' => isset($data['can_edit_all']) ? (int)$data['can_edit_all'] : 0,
+            ':can_edit_own' => isset($data['can_edit_own']) ? (int)$data['can_edit_own'] : 0,
+            ':can_delete_all' => isset($data['can_delete_all']) ? (int)$data['can_delete_all'] : 0,
+            ':can_delete_own' => isset($data['can_delete_own']) ? (int)$data['can_delete_own'] : 0
+        ]);
+    }
+
+    /**
+     * Bulk update multiple resource permissions
+     */
+    public function bulkUpdate(array $updates): int
+    {
+        $updatedCount = 0;
+
+        foreach ($updates as $update) {
+            if (!isset($update['id'])) {
+                continue;
+            }
+
+            if ($this->update((int)$update['id'], $update)) {
+                $updatedCount++;
+            }
+        }
+
+        return $updatedCount;
+    }
+
+    /**
+     * Delete resource permission
+     */
+    public function delete(int $id): bool
+    {
+        $stmt = $this->pdo->prepare("DELETE FROM resource_permissions WHERE id = :id");
+        return $stmt->execute([':id' => $id]);
+    }
+}

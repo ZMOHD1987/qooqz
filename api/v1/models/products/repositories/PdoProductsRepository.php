@@ -1,0 +1,181 @@
+<?php
+declare(strict_types=1);
+
+final class PdoProductsRepository
+{
+    private PDO $pdo;
+
+    // الأعمدة المسموح بها للفرز
+    private const ALLOWED_ORDER_BY = [
+        'id','sku','slug','barcode','brand_id','is_active',
+        'is_featured','is_bestseller','is_new','stock_quantity',
+        'low_stock_threshold','stock_status','manage_stock','allow_backorder',
+        'total_sales','rating_average','rating_count','tax_rate','views_count',
+        'created_at','updated_at','published_at'
+    ];
+
+    // الأعمدة القابلة للفلاتر
+    private const FILTERABLE_COLUMNS = [
+        'product_type_id','sku','slug','barcode','brand_id','is_active',
+        'is_featured','is_bestseller','is_new','stock_status','manage_stock','allow_backorder'
+    ];
+
+    public function __construct(PDO $pdo)
+    {
+        $this->pdo = $pdo;
+    }
+
+    // ================================
+    // List with dynamic filters, search, ordering, pagination
+    // ================================
+    public function all(
+        int $tenantId,
+        ?int $limit = null,
+        ?int $offset = null,
+        array $filters = [],
+        string $orderBy = 'id',
+        string $orderDir = 'DESC'
+    ): array {
+        $sql = "SELECT * FROM products WHERE tenant_id = :tenant_id";
+        $params = [':tenant_id' => $tenantId];
+
+        // تطبيق كل الفلاتر بشكل ديناميكي
+        foreach (self::FILTERABLE_COLUMNS as $col) {
+            if (isset($filters[$col]) && $filters[$col] !== '') {
+                if (in_array($col, ['sku','slug','barcode'])) {
+                    $sql .= " AND {$col} LIKE :{$col}";
+                    $params[":{$col}"] = '%' . $filters[$col] . '%';
+                } else {
+                    $sql .= " AND {$col} = :{$col}";
+                    $params[":{$col}"] = $filters[$col];
+                }
+            }
+        }
+
+        // الفرز
+        $orderBy = in_array($orderBy, self::ALLOWED_ORDER_BY, true) ? $orderBy : 'id';
+        $orderDir = strtoupper($orderDir) === 'ASC' ? 'ASC' : 'DESC';
+        $sql .= " ORDER BY {$orderBy} {$orderDir}";
+
+        // Pagination
+        if ($limit !== null) $sql .= " LIMIT :limit";
+        if ($offset !== null) $sql .= " OFFSET :offset";
+
+        $stmt = $this->pdo->prepare($sql);
+
+        foreach ($params as $key => $value) {
+            $type = is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR;
+            $stmt->bindValue($key, $value, $type);
+        }
+        if ($limit !== null) $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        if ($offset !== null) $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // ================================
+    // Count for pagination
+    // ================================
+    public function count(int $tenantId, array $filters = []): int
+    {
+        $sql = "SELECT COUNT(*) FROM products WHERE tenant_id = :tenant_id";
+        $params = [':tenant_id' => $tenantId];
+
+        foreach (self::FILTERABLE_COLUMNS as $col) {
+            if (isset($filters[$col]) && $filters[$col] !== '') {
+                if (in_array($col, ['sku','slug','barcode'])) {
+                    $sql .= " AND {$col} LIKE :{$col}";
+                    $params[":{$col}"] = '%' . $filters[$col] . '%';
+                } else {
+                    $sql .= " AND {$col} = :{$col}";
+                    $params[":{$col}"] = $filters[$col];
+                }
+            }
+        }
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return (int)$stmt->fetchColumn();
+    }
+
+    // ================================
+    // Find by ID
+    // ================================
+    public function find(int $tenantId, int $id): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT * FROM products WHERE tenant_id = :tenant_id AND id = :id LIMIT 1"
+        );
+        $stmt->execute([':tenant_id'=>$tenantId, ':id'=>$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
+    // ================================
+    // Create / Update
+    // ================================
+    public function save(int $tenantId, array $data): int
+    {
+        $isUpdate = !empty($data['id']);
+
+        if ($isUpdate) {
+            $stmt = $this->pdo->prepare("
+                UPDATE products SET
+                    product_type_id = :product_type_id,
+                    sku = :sku,
+                    slug = :slug,
+                    barcode = :barcode,
+                    brand_id = :brand_id,
+                    is_active = :is_active,
+                    is_featured = :is_featured,
+                    is_bestseller = :is_bestseller,
+                    is_new = :is_new,
+                    stock_quantity = :stock_quantity,
+                    low_stock_threshold = :low_stock_threshold,
+                    stock_status = :stock_status,
+                    manage_stock = :manage_stock,
+                    allow_backorder = :allow_backorder,
+                    total_sales = :total_sales,
+                    rating_average = :rating_average,
+                    rating_count = :rating_count,
+                    tax_rate = :tax_rate,
+                    views_count = :views_count,
+                    published_at = :published_at,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE tenant_id = :tenant_id AND id = :id
+            ");
+            $stmt->execute(array_merge($data, [':tenant_id'=>$tenantId, ':id'=>$data['id']]));
+            return (int)$data['id'];
+        }
+
+        $stmt = $this->pdo->prepare("
+            INSERT INTO products (
+                tenant_id, product_type_id, sku, slug, barcode, brand_id,
+                is_active, is_featured, is_bestseller, is_new,
+                stock_quantity, low_stock_threshold, stock_status,
+                manage_stock, allow_backorder, total_sales,
+                rating_average, rating_count, tax_rate, views_count, published_at
+            ) VALUES (
+                :tenant_id, :product_type_id, :sku, :slug, :barcode, :brand_id,
+                :is_active, :is_featured, :is_bestseller, :is_new,
+                :stock_quantity, :low_stock_threshold, :stock_status,
+                :manage_stock, :allow_backorder, :total_sales,
+                :rating_average, :rating_count, :tax_rate, :views_count, :published_at
+            )
+        ");
+        $stmt->execute(array_merge($data, [':tenant_id'=>$tenantId]));
+        return (int)$this->pdo->lastInsertId();
+    }
+
+    // ================================
+    // Delete
+    // ================================
+    public function delete(int $tenantId, int $id): bool
+    {
+        $stmt = $this->pdo->prepare(
+            "DELETE FROM products WHERE tenant_id = :tenant_id AND id = :id"
+        );
+        return $stmt->execute([':tenant_id'=>$tenantId, ':id'=>$id]);
+    }
+}

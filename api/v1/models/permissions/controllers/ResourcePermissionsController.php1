@@ -1,0 +1,68 @@
+<?php
+declare(strict_types=1);
+
+final class ResourcePermissionsController
+{
+    private ResourcePermissionsService $service;
+
+    public function __construct(ResourcePermissionsService $service)
+    {
+        $this->service = $service;
+    }
+
+    /**
+     * List resource permissions
+     */
+    public function list(int $tenantId, ?int $roleId = null): array
+    {
+        return $this->service->list($tenantId, $roleId);
+    }
+
+    /**
+     * Create new resource permission
+     */
+    public function store(array $data): array
+    {
+        if (empty($data['permission_id'])) {
+            throw new InvalidArgumentException('permission_id is required');
+        }
+
+        if (empty($data['resource_type'])) {
+            throw new InvalidArgumentException('resource_type is required');
+        }
+
+        return $this->service->create($data);
+    }
+
+    /**
+     * Update resource permissions (single or bulk)
+     */
+    public function update(array $data): array
+    {
+        // Check if bulk update
+        if (isset($data['updates']) && is_array($data['updates'])) {
+            return $this->service->bulkUpdate($data['updates']);
+        }
+
+        // Single update
+        if (empty($data['id'])) {
+            throw new InvalidArgumentException('id is required for update');
+        }
+
+        return $this->service->update((int)$data['id'], $data);
+    }
+
+    /**
+     * Delete resource permission
+     */
+    public function delete(array $data): array
+    {
+        if (empty($data['id'])) {
+            throw new InvalidArgumentException('id is required for delete');
+        }
+
+        $this->service->delete((int)$data['id']);
+
+        return ['deleted' => true, 'id' => (int)$data['id']];
+    }
+}
