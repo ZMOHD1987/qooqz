@@ -158,11 +158,53 @@ final class PdoProductsRepository
     // ================================
     // Create / Update
     // ================================
+
+    // الأعمدة المسموحة في جدول products فقط
+    private const PRODUCT_COLUMNS = [
+        'product_type_id', 'sku', 'slug', 'barcode', 'brand_id',
+        'is_active', 'is_featured', 'is_bestseller', 'is_new',
+        'stock_quantity', 'low_stock_threshold', 'stock_status',
+        'manage_stock', 'allow_backorder', 'total_sales',
+        'rating_average', 'rating_count', 'views_count', 'published_at'
+    ];
+
     public function save(int $tenantId, array $data): int
     {
         $isUpdate = !empty($data['id']);
 
+        // استخراج الأعمدة المسموح بها فقط من البيانات الواردة
+        $params = [];
+        foreach (self::PRODUCT_COLUMNS as $col) {
+            if (array_key_exists($col, $data)) {
+                $val = $data[$col];
+                // تحويل القيم الفارغة إلى null للأعمدة الاختيارية
+                $params[':' . $col] = ($val === '' || $val === null) ? null : $val;
+            } else {
+                $params[':' . $col] = null;
+            }
+        }
+
+        // توليد SKU تلقائياً إذا كان فارغاً
+        if (empty($params[':sku']) || $params[':sku'] === null) {
+            $params[':sku'] = 'PRD-' . strtoupper(bin2hex(random_bytes(4))) . '-' . time();
+        }
+
+        // توليد slug تلقائياً إذا كان فارغاً
+        if (empty($params[':slug']) || $params[':slug'] === null) {
+            $name = $data['name'] ?? $params[':sku'];
+            $params[':slug'] = preg_replace('/[^a-z0-9\p{Arabic}\-]+/u', '-', mb_strtolower(trim($name)));
+            $params[':slug'] = trim($params[':slug'], '-');
+            if (empty($params[':slug'])) {
+                $params[':slug'] = 'product-' . time();
+            }
+            // إضافة رقم عشوائي لتجنب التكرار
+            $params[':slug'] .= '-' . mt_rand(1000, 9999);
+        }
+
         if ($isUpdate) {
+            $params[':tenant_id'] = $tenantId;
+            $params[':id'] = (int)$data['id'];
+
             $stmt = $this->pdo->prepare("
                 UPDATE products SET
                     product_type_id = :product_type_id,
@@ -187,9 +229,11 @@ final class PdoProductsRepository
                     updated_at = CURRENT_TIMESTAMP
                 WHERE tenant_id = :tenant_id AND id = :id
             ");
-            $stmt->execute(array_merge($data, [':tenant_id'=>$tenantId, ':id'=>$data['id']]));
+            $stmt->execute($params);
             return (int)$data['id'];
         }
+
+        $params[':tenant_id'] = $tenantId;
 
         $stmt = $this->pdo->prepare("
             INSERT INTO products (
@@ -206,7 +250,7 @@ final class PdoProductsRepository
                 :rating_average, :rating_count, :views_count, :published_at
             )
         ");
-        $stmt->execute(array_merge($data, [':tenant_id'=>$tenantId]));
+        $stmt->execute($params);
         return (int)$this->pdo->lastInsertId();
     }
 

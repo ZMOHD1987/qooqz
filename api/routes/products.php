@@ -93,11 +93,55 @@ try {
 
         case 'POST':
             $newId = $controller->create($tenantId, $data);
+
+            // حفظ الترجمة الأساسية (الاسم) في product_translations إذا تم تقديم اسم
+            if (!empty($data['name']) && $newId) {
+                try {
+                    $langCode = $_GET['lang'] ?? 'ar';
+                    $transStmt = $pdo->prepare("
+                        INSERT INTO product_translations (product_id, language_code, name, short_description, description)
+                        VALUES (:product_id, :language_code, :name, :short_desc, :description)
+                        ON DUPLICATE KEY UPDATE name = VALUES(name), short_description = VALUES(short_description), description = VALUES(description)
+                    ");
+                    $transStmt->execute([
+                        ':product_id' => $newId,
+                        ':language_code' => $langCode,
+                        ':name' => $data['name'],
+                        ':short_desc' => $data['short_description'] ?? '',
+                        ':description' => $data['description'] ?? ''
+                    ]);
+                } catch (Throwable $e) {
+                    safe_log('warning','products.translation_save', ['error'=>$e->getMessage()]);
+                }
+            }
+
             ResponseFormatter::success(['id' => $newId], 'Created successfully', 201);
             break;
 
         case 'PUT':
             $updatedId = $controller->update($tenantId, $data);
+
+            // تحديث الترجمة الأساسية (الاسم)
+            if (!empty($data['name']) && $updatedId) {
+                try {
+                    $langCode = $_GET['lang'] ?? 'ar';
+                    $transStmt = $pdo->prepare("
+                        INSERT INTO product_translations (product_id, language_code, name, short_description, description)
+                        VALUES (:product_id, :language_code, :name, :short_desc, :description)
+                        ON DUPLICATE KEY UPDATE name = VALUES(name), short_description = VALUES(short_description), description = VALUES(description)
+                    ");
+                    $transStmt->execute([
+                        ':product_id' => $updatedId,
+                        ':language_code' => $langCode,
+                        ':name' => $data['name'],
+                        ':short_desc' => $data['short_description'] ?? '',
+                        ':description' => $data['description'] ?? ''
+                    ]);
+                } catch (Throwable $e) {
+                    safe_log('warning','products.translation_update', ['error'=>$e->getMessage()]);
+                }
+            }
+
             ResponseFormatter::success(['id' => $updatedId], 'Updated successfully');
             break;
 
@@ -120,5 +164,5 @@ try {
     ResponseFormatter::error($e->getMessage(), 400);
 } catch (Throwable $e) {
     safe_log('critical','products.fatal', ['error'=>$e->getMessage(),'trace'=>$e->getTraceAsString()]);
-    ResponseFormatter::error('Internal server error', 500);
+    ResponseFormatter::error($e->getMessage(), 500);
 }

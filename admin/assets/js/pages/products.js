@@ -688,8 +688,8 @@
     function validateForm() {
         let isValid = true;
 
-        // Validate required fields
-        const requiredFields = [el.prodName, el.prodSku];
+        // Validate required fields - only name is required, SKU is auto-generated
+        const requiredFields = [el.prodName];
         
         requiredFields.forEach(field => {
             if (!field || !field.value.trim()) {
@@ -707,7 +707,7 @@
     // ════════════════════════════════════════════════════════════
     // ATTRIBUTES MANAGEMENT
     // ════════════════════════════════════════════════════════════
-    function addAttribute() {
+    async function addAttribute() {
         if (!el.attrSelect || !el.attrSelect.value) return;
 
         const attrId = el.attrSelect.value;
@@ -721,11 +721,24 @@
             return;
         }
 
+        // تحميل قيم السمة من API
+        let attrValues = [];
+        try {
+            const valuesResult = await apiCall(`${API.attributeValues}?attribute_id=${attrId}&format=json`);
+            if (valuesResult.success) {
+                attrValues = Array.isArray(valuesResult.data) ? valuesResult.data : (valuesResult.data?.items || []);
+            }
+        } catch (err) {
+            console.warn('[Products] Failed to load attribute values:', err);
+        }
+
         const attr = {
             attribute_id: attrId,
             attribute_name: attrName,
             attribute_type: attrType,
-            value: ''
+            value: '',
+            attribute_value_id: null,
+            available_values: attrValues
         };
 
         state.productAttributes.push(attr);
@@ -736,23 +749,58 @@
     function renderAttributes() {
         if (!el.prodAttributesList) return;
 
-        el.prodAttributesList.innerHTML = state.productAttributes.map((attr, idx) => `
-            <div class="attribute-item" data-index="${idx}">
-                <label>${esc(attr.attribute_name)}</label>
-                <div style="display:flex;gap:8px;align-items:center;">
-                    <input type="text" class="form-control" value="${esc(attr.value || '')}" 
-                           onchange="Products.updateAttributeValue(${idx}, this.value)">
-                    <button type="button" class="btn btn-sm btn-danger" onclick="Products.removeAttribute(${idx})">
-                        <i class="fas fa-times"></i>
-                    </button>
+        el.prodAttributesList.innerHTML = state.productAttributes.map((attr, idx) => {
+            // إذا كانت هناك قيم محددة مسبقاً، عرضها كقائمة منسدلة
+            if (attr.available_values && attr.available_values.length > 0) {
+                const options = attr.available_values.map(v => 
+                    `<option value="${esc(v.id)}" ${v.id == attr.attribute_value_id ? 'selected' : ''}>${esc(v.label || v.value || v.name)}</option>`
+                ).join('');
+                return `
+                    <div class="attribute-item" data-index="${idx}">
+                        <label>${esc(attr.attribute_name)}</label>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <select class="form-control" onchange="Products.updateAttributeValueId(${idx}, this.value)">
+                                <option value="">${t('form.attributes.select_value', 'Select value')}</option>
+                                ${options}
+                            </select>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="Products.removeAttribute(${idx})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            // خلاف ذلك حقل نص حر
+            return `
+                <div class="attribute-item" data-index="${idx}">
+                    <label>${esc(attr.attribute_name)}</label>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input type="text" class="form-control" value="${esc(attr.value || '')}" 
+                               onchange="Products.updateAttributeValue(${idx}, this.value)">
+                        <button type="button" class="btn btn-sm btn-danger" onclick="Products.removeAttribute(${idx})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     function updateAttributeValue(index, value) {
         if (state.productAttributes[index]) {
             state.productAttributes[index].value = value;
+        }
+    }
+
+    function updateAttributeValueId(index, valueId) {
+        if (state.productAttributes[index]) {
+            state.productAttributes[index].attribute_value_id = valueId;
+            // البحث عن قيمة النص من القائمة
+            const vals = state.productAttributes[index].available_values || [];
+            const found = vals.find(v => v.id == valueId);
+            if (found) {
+                state.productAttributes[index].value = found.value || found.label || '';
+            }
         }
     }
 
@@ -1447,6 +1495,7 @@
         remove: deleteProduct,
         duplicate: duplicateProduct,
         updateAttributeValue,
+        updateAttributeValueId,
         removeAttribute,
         updateVariantField,
         removeVariant,

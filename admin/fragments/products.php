@@ -211,15 +211,12 @@ $apiBase = '/api';
                         </div>
 
                         <div class="form-group">
-                            <label for="prodSku" class="required" data-i18n="form.fields.sku.label">
+                            <label for="prodSku" data-i18n="form.fields.sku.label">
                                 <?= __t('form.fields.sku.label', 'SKU') ?>
                             </label>
-                            <input type="text" id="prodSku" name="sku" class="form-control" required
+                            <input type="text" id="prodSku" name="sku" class="form-control"
                                    data-i18n-placeholder="form.fields.sku.placeholder"
-                                   placeholder="<?= __t('form.fields.sku.placeholder', 'Enter SKU') ?>">
-                            <div class="invalid-feedback" data-i18n="form.fields.sku.required">
-                                <?= __t('form.fields.sku.required', 'SKU is required') ?>
-                            </div>
+                                   placeholder="<?= __t('form.fields.sku.placeholder', 'Auto-generated if empty') ?>">
                         </div>
                     </div>
 
