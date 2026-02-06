@@ -724,7 +724,7 @@
         // تحميل قيم السمة من API
         let attrValues = [];
         try {
-            const valuesResult = await apiCall(`${API.attributeValues}?attribute_id=${attrId}&format=json`);
+            const valuesResult = await apiCall(`${API.attributeValues}?attribute_id=${encodeURIComponent(attrId)}&format=json`);
             if (valuesResult.success) {
                 attrValues = Array.isArray(valuesResult.data) ? valuesResult.data : (valuesResult.data?.items || []);
             }
@@ -753,7 +753,7 @@
             // إذا كانت هناك قيم محددة مسبقاً، عرضها كقائمة منسدلة
             if (attr.available_values && attr.available_values.length > 0) {
                 const options = attr.available_values.map(v => 
-                    `<option value="${esc(v.id)}" ${v.id == attr.attribute_value_id ? 'selected' : ''}>${esc(v.label || v.value || v.name)}</option>`
+                    `<option value="${esc(v.id)}" ${String(v.id) === String(attr.attribute_value_id) ? 'selected' : ''}>${esc(v.label || v.value || v.name)}</option>`
                 ).join('');
                 return `
                     <div class="attribute-item" data-index="${idx}">
