@@ -395,7 +395,17 @@
     // FORM MANAGEMENT
     // ════════════════════════════════════════════════════════════
     function showForm(product = null) {
-        if (!el.formContainer || !el.form) return;
+        // Re-cache form elements in case they weren't found during init
+        if (!el.formContainer) el.formContainer = document.getElementById('productFormContainer');
+        if (!el.form) el.form = document.getElementById('productForm');
+        if (!el.formTitle) el.formTitle = document.getElementById('formTitle');
+        if (!el.formId) el.formId = document.getElementById('formId');
+        if (!el.prodTenantId) el.prodTenantId = document.getElementById('prodTenantId');
+
+        if (!el.formContainer || !el.form) {
+            console.error('[Products] showForm: formContainer or form not found in DOM');
+            return;
+        }
 
         state.currentProduct = product;
         state.selectedImages = [];
@@ -404,54 +414,72 @@
         state.productVariants = [];
 
         el.form.reset();
-        
+
+        // Reset all tabs to show General tab
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+        const generalTab = document.querySelector('.tab-btn[data-tab="general"]');
+        const generalContent = document.getElementById('tab-general');
+        if (generalTab) generalTab.classList.add('active');
+        if (generalContent) generalContent.style.display = 'block';
+
         if (product) {
-            el.formTitle.textContent = t('form.edit_title', 'Edit Product');
-            el.formId.value = product.id || '';
-            el.prodName.value = product.name || '';
-            el.prodSku.value = product.sku || '';
-            el.prodSlug.value = product.slug || '';
-            el.prodBarcode.value = product.barcode || '';
-            el.prodType.value = product.product_type_id || '';
-            el.prodBrand.value = product.brand_id || '';
-            el.prodIsActive.value = product.is_active || '1';
-            el.prodIsFeatured.value = product.is_featured || '0';
-            el.prodIsBestseller.value = product.is_bestseller || '0';
-            el.prodIsNew.value = product.is_new || '0';
+            if (el.formTitle) el.formTitle.textContent = t('form.edit_title', 'Edit Product');
+            if (el.formId) el.formId.value = product.id || '';
+            if (el.prodName) el.prodName.value = product.name || '';
+            if (el.prodSku) el.prodSku.value = product.sku || '';
+            if (el.prodSlug) el.prodSlug.value = product.slug || '';
+            if (el.prodBarcode) el.prodBarcode.value = product.barcode || '';
+            if (el.prodType) el.prodType.value = product.product_type_id || '';
+            if (el.prodBrand) el.prodBrand.value = product.brand_id || '';
+            if (el.prodIsActive) el.prodIsActive.value = product.is_active || '1';
+            if (el.prodIsFeatured) el.prodIsFeatured.value = product.is_featured || '0';
+            if (el.prodIsBestseller) el.prodIsBestseller.value = product.is_bestseller || '0';
+            if (el.prodIsNew) el.prodIsNew.value = product.is_new || '0';
             
             // Pricing
-            el.prodPrice.value = product.price || '';
-            el.prodComparePrice.value = product.compare_at_price || '';
-            el.prodCostPrice.value = product.cost_price || '';
-            el.prodCurrency.value = product.currency_code || 'SAR';
-            el.prodTaxRate.value = product.tax_rate || '';
+            if (el.prodPrice) el.prodPrice.value = product.price || '';
+            if (el.prodComparePrice) el.prodComparePrice.value = product.compare_at_price || '';
+            if (el.prodCostPrice) el.prodCostPrice.value = product.cost_price || '';
+            if (el.prodCurrency) el.prodCurrency.value = product.currency_code || 'SAR';
+            if (el.prodTaxRate) el.prodTaxRate.value = product.tax_rate || '';
             
             // Inventory
-            el.prodStockQty.value = product.stock_quantity || '0';
-            el.prodLowStock.value = product.low_stock_threshold || '5';
-            el.prodStockStatus.value = product.stock_status || 'in_stock';
-            el.prodManageStock.value = product.manage_stock || '1';
-            el.prodAllowBackorder.value = product.allow_backorder || '0';
+            if (el.prodStockQty) el.prodStockQty.value = product.stock_quantity || '0';
+            if (el.prodLowStock) el.prodLowStock.value = product.low_stock_threshold || '5';
+            if (el.prodStockStatus) el.prodStockStatus.value = product.stock_status || 'in_stock';
+            if (el.prodManageStock) el.prodManageStock.value = product.manage_stock || '1';
+            if (el.prodAllowBackorder) el.prodAllowBackorder.value = product.allow_backorder || '0';
             
             // Physical attributes
-            el.prodWeight.value = product.weight || '';
-            el.prodLength.value = product.length || '';
-            el.prodWidth.value = product.width || '';
-            el.prodHeight.value = product.height || '';
+            if (el.prodWeight) el.prodWeight.value = product.weight || '';
+            if (el.prodLength) el.prodLength.value = product.length || '';
+            if (el.prodWidth) el.prodWidth.value = product.width || '';
+            if (el.prodHeight) el.prodHeight.value = product.height || '';
 
             if (el.btnDeleteProduct) el.btnDeleteProduct.style.display = state.permissions.canDelete ? 'inline-block' : 'none';
 
             // Load related data
-            loadProductImages(product.id);
-            loadProductCategories(product.id);
-            loadProductAttributes(product.id);
-            loadProductVariants(product.id);
-            loadProductTranslations(product.id);
+            if (product.id) {
+                loadProductImages(product.id);
+                loadProductCategories(product.id);
+                loadProductAttributes(product.id);
+                loadProductVariants(product.id);
+                loadProductTranslations(product.id);
+            }
         } else {
-            el.formTitle.textContent = t('form.add_title', 'Add Product');
-            el.formId.value = '';
+            if (el.formTitle) el.formTitle.textContent = t('form.add_title', 'Add Product');
+            if (el.formId) el.formId.value = '';
             if (el.btnDeleteProduct) el.btnDeleteProduct.style.display = 'none';
-            el.prodTenantId.value = state.tenantId;
+            if (el.prodTenantId) el.prodTenantId.value = state.tenantId;
+            // Clear images preview
+            if (el.prodImagesPreview) el.prodImagesPreview.innerHTML = '';
+            // Clear attributes list
+            if (el.prodAttributesList) el.prodAttributesList.innerHTML = '';
+            // Clear variants list
+            if (el.prodVariantsList) el.prodVariantsList.innerHTML = '';
+            // Clear translations
+            if (el.prodTranslations) el.prodTranslations.innerHTML = '';
             // Render categories tree for new product
             renderCategoriesTree();
         }
@@ -508,9 +536,9 @@
             // Build product data object
             const productData = {
                 name: formData.get('name'),
-                sku: formData.get('sku'),
+                sku: formData.get('sku') || null,
                 slug: formData.get('slug') || generateSlug(formData.get('name')),
-                barcode: formData.get('barcode'),
+                barcode: formData.get('barcode') || null,
                 product_type_id: formData.get('product_type_id') || null,
                 brand_id: formData.get('brand_id') || null,
                 tenant_id: formData.get('tenant_id') || state.tenantId,
@@ -1246,6 +1274,8 @@
                 product.name = `${product.name || ''} (Copy)`;
                 product.sku = `${product.sku || ''}-copy-${uid}`;
                 product.slug = `${product.slug || ''}-copy-${uid}`;
+                // مسح الباركود لتجنب خطأ الإدخال المكرر
+                product.barcode = '';
                 
                 showForm(product);
             } else {
@@ -1399,107 +1429,118 @@
     // ════════════════════════════════════════════════════════════
     // INITIALIZATION
     // ════════════════════════════════════════════════════════════
+    let _initialized = false;
+
     async function init() {
+        // منع التهيئة المزدوجة
+        if (_initialized) {
+            console.log('[Products] Already initialized, skipping');
+            return;
+        }
+        _initialized = true;
         console.log('[Products] Initializing...');
+
+        // Use document.getElementById as fallback if AF.$ not available
+        const $id = (id) => (AF.$ ? AF.$(id) : document.getElementById(id));
 
         // Cache DOM elements
         el = {
             // Containers
-            container: AF.$('tableContainer'),
-            loading: AF.$('tableLoading'),
-            empty: AF.$('emptyState'),
-            error: AF.$('errorState'),
-            errorMessage: AF.$('errorMessage'),
+            container: $id('tableContainer'),
+            loading: $id('tableLoading'),
+            empty: $id('emptyState'),
+            error: $id('errorState'),
+            errorMessage: $id('errorMessage'),
             
             // Form
-            formContainer: AF.$('productFormContainer'),
-            form: AF.$('productForm'),
-            formTitle: AF.$('formTitle'),
-            formId: AF.$('formId'),
+            formContainer: $id('productFormContainer'),
+            form: $id('productForm'),
+            formTitle: $id('formTitle'),
+            formId: $id('formId'),
             
             // Form fields - General
-            prodName: AF.$('prodName'),
-            prodSku: AF.$('prodSku'),
-            prodSlug: AF.$('prodSlug'),
-            prodBarcode: AF.$('prodBarcode'),
-            prodType: AF.$('prodType'),
-            prodBrand: AF.$('prodBrand'),
-            prodIsActive: AF.$('prodIsActive'),
-            prodIsFeatured: AF.$('prodIsFeatured'),
-            prodIsBestseller: AF.$('prodIsBestseller'),
-            prodIsNew: AF.$('prodIsNew'),
-            prodTenantId: AF.$('prodTenantId'),
+            prodName: $id('prodName'),
+            prodSku: $id('prodSku'),
+            prodSlug: $id('prodSlug'),
+            prodBarcode: $id('prodBarcode'),
+            prodType: $id('prodType'),
+            prodBrand: $id('prodBrand'),
+            prodIsActive: $id('prodIsActive'),
+            prodIsFeatured: $id('prodIsFeatured'),
+            prodIsBestseller: $id('prodIsBestseller'),
+            prodIsNew: $id('prodIsNew'),
+            prodTenantId: $id('prodTenantId'),
             
             // Form fields - Pricing
-            prodPrice: AF.$('prodPrice'),
-            prodComparePrice: AF.$('prodComparePrice'),
-            prodCostPrice: AF.$('prodCostPrice'),
-            prodCurrency: AF.$('prodCurrency'),
-            prodTaxRate: AF.$('prodTaxRate'),
+            prodPrice: $id('prodPrice'),
+            prodComparePrice: $id('prodComparePrice'),
+            prodCostPrice: $id('prodCostPrice'),
+            prodCurrency: $id('prodCurrency'),
+            prodTaxRate: $id('prodTaxRate'),
             
             // Form fields - Inventory
-            prodStockQty: AF.$('prodStockQty'),
-            prodLowStock: AF.$('prodLowStock'),
-            prodStockStatus: AF.$('prodStockStatus'),
-            prodManageStock: AF.$('prodManageStock'),
-            prodAllowBackorder: AF.$('prodAllowBackorder'),
+            prodStockQty: $id('prodStockQty'),
+            prodLowStock: $id('prodLowStock'),
+            prodStockStatus: $id('prodStockStatus'),
+            prodManageStock: $id('prodManageStock'),
+            prodAllowBackorder: $id('prodAllowBackorder'),
             
             // Form fields - Physical
-            prodWeight: AF.$('prodWeight'),
-            prodLength: AF.$('prodLength'),
-            prodWidth: AF.$('prodWidth'),
-            prodHeight: AF.$('prodHeight'),
+            prodWeight: $id('prodWeight'),
+            prodLength: $id('prodLength'),
+            prodWidth: $id('prodWidth'),
+            prodHeight: $id('prodHeight'),
             
             // Attributes
-            attrSelect: AF.$('attrSelect'),
-            btnAddAttribute: AF.$('btnAddAttribute'),
-            prodAttributesList: AF.$('prodAttributesList'),
+            attrSelect: $id('attrSelect'),
+            btnAddAttribute: $id('btnAddAttribute'),
+            prodAttributesList: $id('prodAttributesList'),
             
             // Variants
-            btnGenerateVariants: AF.$('btnGenerateVariants'),
-            btnAddVariant: AF.$('btnAddVariant'),
-            prodVariantsList: AF.$('prodVariantsList'),
+            btnGenerateVariants: $id('btnGenerateVariants'),
+            btnAddVariant: $id('btnAddVariant'),
+            prodVariantsList: $id('prodVariantsList'),
             
             // Images
-            prodSelectImageBtn: AF.$('prodSelectImageBtn'),
-            prodImagesPreview: AF.$('prodImagesPreview'),
-            mediaModal: AF.$('prodMediaStudioModal'),
-            mediaFrame: AF.$('prodMediaStudioFrame'),
-            mediaClose: AF.$('prodMediaStudioClose'),
+            prodSelectImageBtn: $id('prodSelectImageBtn'),
+            prodImagesPreview: $id('prodImagesPreview'),
+            mediaModal: $id('prodMediaStudioModal'),
+            mediaFrame: $id('prodMediaStudioFrame'),
+            mediaClose: $id('prodMediaStudioClose'),
             
             // Categories
-            prodCategoriesTree: AF.$('prodCategoriesTree'),
+            prodCategoriesTree: $id('prodCategoriesTree'),
             
             // Translations
-            prodTranslations: AF.$('prodTranslations'),
-            prodLangSelect: AF.$('prodLangSelect'),
-            prodAddLangBtn: AF.$('prodAddLangBtn'),
+            prodTranslations: $id('prodTranslations'),
+            prodLangSelect: $id('prodLangSelect'),
+            prodAddLangBtn: $id('prodAddLangBtn'),
             
             // Table
-            tbody: AF.$('tableBody'),
+            tbody: $id('tableBody'),
             
             // Filters
-            searchInput: AF.$('searchInput'),
-            tenantFilter: AF.$('tenantFilter'),
-            typeFilter: AF.$('typeFilter'),
-            brandFilter: AF.$('brandFilter'),
-            statusFilter: AF.$('statusFilter'),
+            searchInput: $id('searchInput'),
+            tenantFilter: $id('tenantFilter'),
+            typeFilter: $id('typeFilter'),
+            brandFilter: $id('brandFilter'),
+            statusFilter: $id('statusFilter'),
             
             // Buttons
-            btnSubmit: AF.$('btnSubmitForm'),
-            btnAdd: AF.$('btnAddProduct'),
-            btnClose: AF.$('btnCloseForm'),
-            btnCancel: AF.$('btnCancelForm'),
-            btnApply: AF.$('btnApplyFilters'),
-            btnReset: AF.$('btnResetFilters'),
-            btnRetry: AF.$('btnRetry'),
-            btnDeleteProduct: AF.$('btnDeleteProduct'),
+            btnSubmit: $id('btnSubmitForm'),
+            btnAdd: $id('btnAddProduct'),
+            btnClose: $id('btnCloseForm'),
+            btnCancel: $id('btnCancelForm'),
+            btnApply: $id('btnApplyFilters'),
+            btnReset: $id('btnResetFilters'),
+            btnRetry: $id('btnRetry'),
+            btnDeleteProduct: $id('btnDeleteProduct'),
             
             // Pagination
-            pagination: AF.$('pagination'),
-            paginationInfo: AF.$('paginationInfo'),
-            resultsCount: AF.$('resultsCount'),
-            resultsCountText: AF.$('resultsCountText')
+            pagination: $id('pagination'),
+            paginationInfo: $id('paginationInfo'),
+            resultsCount: $id('resultsCount'),
+            resultsCountText: $id('resultsCountText')
         };
 
         // Load translations

@@ -201,6 +201,11 @@ final class PdoProductsRepository
             $params[':slug'] .= '-' . mt_rand(1000, 9999);
         }
 
+        // product_type_id مطلوب (NOT NULL) - تعيين قيمة افتراضية 1 إذا لم يتم تحديده
+        if (empty($params[':product_type_id']) || $params[':product_type_id'] === null) {
+            $params[':product_type_id'] = 1;
+        }
+
         if ($isUpdate) {
             $params[':tenant_id'] = $tenantId;
             $params[':id'] = (int)$data['id'];
