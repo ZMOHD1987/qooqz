@@ -5,120 +5,94 @@ declare(strict_types=1);
 // ملف الراوتر: api/routes/brands.php
 // ========================================================
 
-// عرض الأخطاء أثناء التطوير فقط
-ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
+$baseDir = dirname(__DIR__);
 
-// ---------------------------------------------------------
-// تحديد المسار الأساسي للمشروع
-// ---------------------------------------------------------
-$baseDir = $_SERVER['DOCUMENT_ROOT'];
+// ===== تحميل bootstrap =====
+require_once $baseDir . '/bootstrap.php';
+require_once $baseDir . '/shared/core/ResponseFormatter.php';
+require_once $baseDir . '/shared/helpers/safe_helpers.php';
+require_once $baseDir . '/shared/config/db.php';
 
-// ---------------------------------------------------------
-// تضمين الملفات المطلوبة
-// ---------------------------------------------------------
-$requiredFiles = [
-    $baseDir . '/api/config/db.php',
-    $baseDir . '/api/models/Brand.php',
-    $baseDir . '/api/validators/BrandValidator.php',
-    $baseDir . '/api/controllers/BrandController.php',
-];
+// ===== تحميل ملفات brands =====
+require_once API_VERSION_PATH . '/models/brands/repositories/PdoBrandsRepository.php';
+require_once API_VERSION_PATH . '/models/brands/validators/BrandsValidator.php';
+require_once API_VERSION_PATH . '/models/brands/services/BrandsService.php';
+require_once API_VERSION_PATH . '/models/brands/controllers/BrandsController.php';
 
-foreach ($requiredFiles as $file) {
-    if (!file_exists($file)) {
-        http_response_code(500);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode([
-            'success' => false,
-            'message' => 'خطأ في تهيئة النظام',
-            'detail'  => 'الملف غير موجود: ' . basename($file)
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+/** @var PDO $pdo */
+$pdo = $GLOBALS['ADMIN_DB'] ?? null;
+if (!$pdo instanceof PDO) {
+    ResponseFormatter::error('Database not initialized', 500);
+    return;
+}
+
+// ===== Init =====
+$repo       = new PdoBrandsRepository($pdo);
+$validator  = new BrandsValidator();
+$service    = new BrandsService($repo, $validator);
+$controller = new BrandsController($service);
+
+// ===== Tenant context =====
+$tenantId = isset($_GET['tenant_id']) && is_numeric($_GET['tenant_id'])
+    ? (int)$_GET['tenant_id']
+    : ($_SESSION['tenant_id'] ?? 1);
+
+// ===== Parse URI for slug/id =====
+$uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+$segments = array_values(array_filter(explode('/', $uri)));
+$slug = null;
+if (!empty($segments)) {
+    $last = end($segments);
+    if ($last !== 'brands' && !is_numeric($last)) {
+        $slug = $last;
     }
-    require_once $file;
 }
 
-// ---------------------------------------------------------
-// إنشاء الـ Controller
-// ---------------------------------------------------------
 try {
-    $db = connectDB();
-    $controller = new BrandController($db);
+    $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+    $rawBody = file_get_contents('php://input');
+    $body = json_decode($rawBody, true) ?? [];
+
+    switch ($method) {
+        case 'GET':
+            if ($slug !== null) {
+                // GET /brands/{slug}
+                ResponseFormatter::success($controller->get($tenantId, $slug));
+            } elseif (str_contains($uri, '/brands/active')) {
+                ResponseFormatter::success($controller->getActive($tenantId));
+            } elseif (str_contains($uri, '/brands/featured')) {
+                ResponseFormatter::success($controller->getFeatured($tenantId));
+            } else {
+                // GET /brands (list all)
+                ResponseFormatter::success($controller->list($tenantId));
+            }
+            break;
+
+        case 'POST':
+            ResponseFormatter::success($controller->create($tenantId, $body), 'Created', 201);
+            break;
+
+        case 'PUT':
+            ResponseFormatter::success($controller->update($tenantId, $body));
+            break;
+
+        case 'DELETE':
+            $controller->delete($tenantId, $body);
+            ResponseFormatter::success(['deleted' => true]);
+            break;
+
+        default:
+            ResponseFormatter::error('Method not allowed', 405);
+    }
+} catch (InvalidArgumentException $e) {
+    ResponseFormatter::error($e->getMessage(), 422);
+} catch (RuntimeException $e) {
+    ResponseFormatter::error($e->getMessage(), 404);
 } catch (Throwable $e) {
-    http_response_code(500);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode([
-        'success' => false,
-        'message' => 'فشل تهيئة الـ Controller أو الاتصال بقاعدة البيانات',
-        'error'   => $e->getMessage()
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+    safe_log('error', 'Brands route failed', [
+        'error' => $e->getMessage(),
+        'file'  => $e->getFile(),
+        'line'  => $e->getLine(),
+    ]);
+    ResponseFormatter::error('Internal server error', 500);
 }
-
-// ---------------------------------------------------------
-// قراءة بيانات الطلب
-// ---------------------------------------------------------
-$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-
-// دعم تمرير id في المسار (مثال: /brands/5)
-$id = $_SERVER['ROUTE_ID'] ?? null;
-if ($id !== null) {
-    $id = filter_var($id, FILTER_VALIDATE_INT);
-    $id = ($id !== false && $id > 0) ? $id : null;
-}
-
-// قراءة البيانات الواردة (body أو query params)
-$input = match (true) {
-    in_array($method, ['POST', 'PUT', 'PATCH']) 
-        => json_decode(file_get_contents('php://input'), true) ?: ($_POST ?? []),
-    default => $_GET ?? []
-};
-
-// ---------------------------------------------------------
-// معالجة الطلب حسب الـ HTTP Method
-// ---------------------------------------------------------
-$response = match ($method) {
-    'GET'    => $id ? $controller->BrandController_show($id) : $controller->BrandController_index(),
-    
-    'POST'   => $controller->BrandController_save(),
-    
-    'PUT', 
-    'PATCH'  => $id 
-                ? $controller->BrandController_save($id)
-                : ['success' => false, 'message' => 'معرف الماركة مطلوب للتعديل'],
-    
-    'DELETE' => $id 
-                ? $controller->BrandController_delete($id)
-                : ['success' => false, 'message' => 'معرف الماركة مطلوب للحذف'],
-    
-    default  => [
-        'success' => false,
-        'message' => 'طريقة الطلب غير مدعومة',
-        'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
-    ]
-};
-
-// ---------------------------------------------------------
-// إرسال الرد النهائي
-// ---------------------------------------------------------
-header('Content-Type: application/json; charset=utf-8');
-
-// تحسين كود الحالة (status code) حسب نوع الرد
-http_response_code(match (true) {
-    isset($response['success']) && $response['success'] === true => 200,
-    isset($response['errors']) => 422,
-    str_contains($response['message'] ?? '', 'not found') => 404,
-    default => 400
-});
-
-// إذا كان الرد ليس JSON بالفعل (مثل echo من Controller) تجاهل
-if (!is_array($response)) {
-    exit;
-}
-
-echo json_encode(
-    $response,
-    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
-);
-exit;

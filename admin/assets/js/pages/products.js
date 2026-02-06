@@ -178,8 +178,14 @@
                 limit: state.perPage,
                 tenant_id: state.tenantId,
                 lang: state.language,
-                format: 'json',
-                ...state.filters
+                format: 'json'
+            });
+
+            // Add filters (skip empty values)
+            Object.entries(state.filters).forEach(([key, val]) => {
+                if (val !== undefined && val !== null && val !== '') {
+                    params.set(key, val);
+                }
             });
 
             console.log('[Products] API URL:', `${API.products}?${params}`);
@@ -187,17 +193,21 @@
             const result = await apiCall(`${API.products}?${params}`);
             console.log('[Products] API response:', result);
 
-            if (result.success && Array.isArray(result.data)) {
-                state.products = result.data;
-                state.total = result.meta?.total || result.data.length;
+            if (result.success && result.data) {
+                // API returns { data: { items: [], meta: {} } }
+                const items = result.data.items || result.data;
+                const meta = result.data.meta || result.meta || {};
                 
-                await renderTable(result.data);
-                updatePagination(result.meta || { page, per_page: state.perPage, total: state.total });
+                state.products = Array.isArray(items) ? items : [];
+                state.total = meta.total || state.products.length;
+                
+                await renderTable(state.products);
+                updatePagination(meta.total !== undefined ? meta : { page, per_page: state.perPage, total: state.total });
                 updateResultsCount(state.total);
                 
                 showTable();
             } else {
-                throw new Error(result.error || 'Invalid response format');
+                throw new Error(result.error || result.message || 'Invalid response format');
             }
         } catch (err) {
             console.error('[Products] Load failed:', err);
@@ -208,39 +218,69 @@
     async function loadDropdownData() {
         try {
             // Load product types
-            const typesResult = await apiCall(`${API.productTypes}?format=json&lang=${state.language}`);
-            if (typesResult.success && Array.isArray(typesResult.data)) {
-                state.productTypes = typesResult.data;
-                populateDropdown(el.prodType, typesResult.data, 'id', 'name', t('form.fields.product_type.select', 'Select product type'));
-                populateDropdown(el.typeFilter, typesResult.data, 'id', 'name', t('filters.all_types', 'All Types'));
+            try {
+                const typesResult = await apiCall(`${API.productTypes}?format=json&lang=${state.language}`);
+                if (typesResult.success) {
+                    // product_types returns { data: { data: [...], total: N } }
+                    const typesData = typesResult.data?.data || typesResult.data?.items || typesResult.data;
+                    state.productTypes = Array.isArray(typesData) ? typesData : [];
+                    populateDropdown(el.prodType, state.productTypes, 'id', 'name', t('form.fields.product_type.select', 'Select product type'));
+                    populateDropdown(el.typeFilter, state.productTypes, 'id', 'name', t('filters.all_types', 'All Types'));
+                }
+            } catch (err) {
+                console.warn('[Products] Failed to load product types:', err);
             }
 
             // Load brands
-            const brandsResult = await apiCall(`${API.brands}?format=json&tenant_id=${state.tenantId}&lang=${state.language}`);
-            if (brandsResult.success && Array.isArray(brandsResult.data)) {
-                state.brands = brandsResult.data;
-                populateDropdown(el.prodBrand, brandsResult.data, 'id', 'name', t('form.fields.brand.select', 'Select brand'));
-                populateDropdown(el.brandFilter, brandsResult.data, 'id', 'name', t('filters.all_brands', 'All Brands'));
+            try {
+                const brandsResult = await apiCall(`${API.brands}?format=json&tenant_id=${state.tenantId}&lang=${state.language}`);
+                if (brandsResult.success) {
+                    // brands returns { data: [...] } (array directly)
+                    const brandsData = Array.isArray(brandsResult.data) ? brandsResult.data : (brandsResult.data?.items || brandsResult.data?.data || []);
+                    state.brands = brandsData;
+                    populateDropdown(el.prodBrand, state.brands, 'id', 'name', t('form.fields.brand.select', 'Select brand'));
+                    populateDropdown(el.brandFilter, state.brands, 'id', 'name', t('filters.all_brands', 'All Brands'));
+                }
+            } catch (err) {
+                console.warn('[Products] Failed to load brands:', err);
             }
 
             // Load categories
-            const categoriesResult = await apiCall(`${API.categories}?format=json&tenant_id=${state.tenantId}&lang=${state.language}`);
-            if (categoriesResult.success && Array.isArray(categoriesResult.data)) {
-                state.categories = categoriesResult.data;
+            try {
+                const categoriesResult = await apiCall(`${API.categories}?format=json&tenant_id=${state.tenantId}&lang=${state.language}`);
+                if (categoriesResult.success) {
+                    // categories returns { data: { items: [...], meta: {} } }
+                    const categoriesData = categoriesResult.data?.items || categoriesResult.data;
+                    state.categories = Array.isArray(categoriesData) ? categoriesData : [];
+                    renderCategoriesTree();
+                }
+            } catch (err) {
+                console.warn('[Products] Failed to load categories:', err);
             }
 
             // Load attributes
-            const attributesResult = await apiCall(`${API.attributes}?format=json&lang=${state.language}`);
-            if (attributesResult.success && Array.isArray(attributesResult.data)) {
-                state.attributes = attributesResult.data;
-                populateAttributeSelect(attributesResult.data);
+            try {
+                const attributesResult = await apiCall(`${API.attributes}?format=json&lang=${state.language}`);
+                if (attributesResult.success) {
+                    const attrData = Array.isArray(attributesResult.data) ? attributesResult.data : (attributesResult.data?.items || attributesResult.data?.data || []);
+                    state.attributes = attrData;
+                    populateAttributeSelect(state.attributes);
+                }
+            } catch (err) {
+                console.warn('[Products] Failed to load attributes:', err);
             }
 
             // Load languages
-            const languagesResult = await apiCall(`${API.languages}?format=json`);
-            if (languagesResult.success && Array.isArray(languagesResult.data)) {
-                state.languages = languagesResult.data;
-                populateDropdown(el.prodLangSelect, languagesResult.data, 'code', 'name', t('form.translations.select_lang', 'Select language'));
+            try {
+                const languagesResult = await apiCall(`${API.languages}?format=json`);
+                if (languagesResult.success) {
+                    // languages returns { data: { items: [...], meta: {} } }
+                    const langsData = languagesResult.data?.items || languagesResult.data;
+                    state.languages = Array.isArray(langsData) ? langsData : [];
+                    populateDropdown(el.prodLangSelect, state.languages, 'code', 'name', t('form.translations.select_lang', 'Select language'));
+                }
+            } catch (err) {
+                console.warn('[Products] Failed to load languages:', err);
             }
 
             console.log('[Products] Dropdown data loaded');
@@ -412,6 +452,8 @@
             el.formId.value = '';
             if (el.btnDeleteProduct) el.btnDeleteProduct.style.display = 'none';
             el.prodTenantId.value = state.tenantId;
+            // Render categories tree for new product
+            renderCategoriesTree();
         }
 
         el.formContainer.style.display = 'block';
@@ -467,45 +509,36 @@
             const productData = {
                 name: formData.get('name'),
                 sku: formData.get('sku'),
-                slug: formData.get('slug'),
+                slug: formData.get('slug') || generateSlug(formData.get('name')),
                 barcode: formData.get('barcode'),
-                product_type_id: formData.get('product_type_id'),
-                brand_id: formData.get('brand_id'),
+                product_type_id: formData.get('product_type_id') || null,
+                brand_id: formData.get('brand_id') || null,
                 tenant_id: formData.get('tenant_id') || state.tenantId,
-                is_active: formData.get('is_active'),
-                is_featured: formData.get('is_featured'),
-                is_bestseller: formData.get('is_bestseller'),
-                is_new: formData.get('is_new'),
-                
-                // Pricing
-                price: formData.get('price'),
-                compare_at_price: formData.get('compare_at_price'),
-                cost_price: formData.get('cost_price'),
-                currency_code: formData.get('currency_code'),
-                tax_rate: formData.get('tax_rate'),
+                is_active: formData.get('is_active') || '1',
+                is_featured: formData.get('is_featured') || '0',
+                is_bestseller: formData.get('is_bestseller') || '0',
+                is_new: formData.get('is_new') || '0',
                 
                 // Inventory
-                stock_quantity: formData.get('stock_quantity'),
-                low_stock_threshold: formData.get('low_stock_threshold'),
-                stock_status: formData.get('stock_status'),
-                manage_stock: formData.get('manage_stock'),
-                allow_backorder: formData.get('allow_backorder'),
-                
-                // Physical attributes
-                weight: formData.get('weight'),
-                length: formData.get('length'),
-                width: formData.get('width'),
-                height: formData.get('height'),
+                stock_quantity: formData.get('stock_quantity') || '0',
+                low_stock_threshold: formData.get('low_stock_threshold') || '5',
+                stock_status: formData.get('stock_status') || 'in_stock',
+                manage_stock: formData.get('manage_stock') || '1',
+                allow_backorder: formData.get('allow_backorder') || '0',
                 
                 // Related data
                 translations: collectTranslations(),
-                images: state.selectedImages,
                 categories: state.selectedCategories,
                 attributes: state.productAttributes,
                 variants: state.productVariants
             };
 
-            const url = isEdit ? `${API.products}/${productId}` : API.products;
+            if (isEdit) {
+                productData.id = productId;
+            }
+
+            // Use the correct URL format (no path-based routing)
+            const url = API.products;
             const method = isEdit ? 'PUT' : 'POST';
 
             const result = await apiCall(url, {
@@ -515,6 +548,25 @@
             });
 
             if (result.success) {
+                const savedProductId = isEdit ? productId : (result.data?.id || result.data?.items?.[0]?.id);
+
+                // Save pricing data separately via product_pricing API
+                await savePricingData(savedProductId, formData);
+
+                // Save physical attributes separately
+                await savePhysicalAttributes(savedProductId, formData);
+
+                // Save product categories
+                if (state.selectedCategories.length > 0) {
+                    await saveProductCategories(savedProductId);
+                }
+
+                // Save product translations
+                const translations = collectTranslations();
+                if (Object.keys(translations).length > 0) {
+                    await saveProductTranslations(savedProductId, translations);
+                }
+
                 showNotification(
                     isEdit ? t('messages.updated', 'Product updated successfully') : t('messages.created', 'Product created successfully'),
                     'success'
@@ -527,6 +579,106 @@
         } catch (err) {
             console.error('[Products] Save failed:', err);
             showNotification(err.message || t('messages.error.save_failed', 'Failed to save product'), 'error');
+        }
+    }
+
+    function generateSlug(name) {
+        if (!name) return '';
+        return name.toLowerCase()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/[\s_]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .substring(0, 255);
+    }
+
+    async function savePricingData(productId, formData) {
+        try {
+            const price = formData.get('price');
+            if (!price && price !== '0') return;
+
+            const pricingData = {
+                product_id: parseInt(productId),
+                variant_id: null,
+                price: parseFloat(price) || 0,
+                compare_at_price: parseFloat(formData.get('compare_at_price')) || null,
+                cost_price: parseFloat(formData.get('cost_price')) || null,
+                currency_code: formData.get('currency_code') || 'SAR',
+                tax_rate: parseFloat(formData.get('tax_rate')) || null,
+                pricing_type: 'fixed',
+                is_active: 1
+            };
+
+            await apiCall('/api/product_pricing', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(pricingData)
+            });
+        } catch (err) {
+            console.warn('[Products] Failed to save pricing:', err);
+        }
+    }
+
+    async function savePhysicalAttributes(productId, formData) {
+        try {
+            const weight = formData.get('weight');
+            if (!weight && !formData.get('length') && !formData.get('width') && !formData.get('height')) return;
+
+            const physicalData = {
+                product_id: parseInt(productId),
+                weight: parseFloat(weight) || null,
+                length: parseFloat(formData.get('length')) || null,
+                width: parseFloat(formData.get('width')) || null,
+                height: parseFloat(formData.get('height')) || null,
+                weight_unit: 'kg',
+                dimension_unit: 'cm'
+            };
+
+            await apiCall('/api/product_physical_attributes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(physicalData)
+            });
+        } catch (err) {
+            console.warn('[Products] Failed to save physical attributes:', err);
+        }
+    }
+
+    async function saveProductCategories(productId) {
+        try {
+            for (const categoryId of state.selectedCategories) {
+                await apiCall('/api/product_categories', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        product_id: parseInt(productId),
+                        category_id: parseInt(categoryId),
+                        is_primary: state.selectedCategories.indexOf(categoryId) === 0 ? 1 : 0,
+                        sort_order: state.selectedCategories.indexOf(categoryId)
+                    })
+                });
+            }
+        } catch (err) {
+            console.warn('[Products] Failed to save categories:', err);
+        }
+    }
+
+    async function saveProductTranslations(productId, translations) {
+        try {
+            for (const [langCode, trans] of Object.entries(translations)) {
+                await apiCall('/api/product_translations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        product_id: parseInt(productId),
+                        language_code: langCode,
+                        name: trans.name || '',
+                        short_description: trans.short_description || '',
+                        description: trans.description || ''
+                    })
+                });
+            }
+        } catch (err) {
+            console.warn('[Products] Failed to save translations:', err);
         }
     }
 
@@ -676,9 +828,14 @@
     // IMAGES MANAGEMENT
     // ════════════════════════════════════════════════════════════
     function openMediaStudio() {
+        if (!state.currentProduct?.id) {
+            showNotification(t('messages.save_first', 'Please save the product first before adding images'), 'warning');
+            return;
+        }
         if (el.mediaModal && el.mediaFrame) {
             el.mediaModal.style.display = 'block';
-            el.mediaFrame.src = `/admin/fragments/media_studio.php?embedded=1&tenant_id=${state.tenantId}&lang=${state.language}`;
+            // Pass product id as owner_id and image_type_id=2 for product images
+            el.mediaFrame.src = `/admin/fragments/media_studio.php?embedded=1&tenant_id=${state.tenantId}&lang=${state.language}&owner_id=${state.currentProduct.id}&image_type_id=2`;
         }
     }
 
@@ -826,29 +983,97 @@
     }
 
     async function loadProductTranslations(productId) {
-        // Implementation depends on your API structure
-        // This is a placeholder
-        console.log('[Products] Loading translations for product:', productId);
+        try {
+            console.log('[Products] Loading translations for product:', productId);
+            const result = await apiCall(`/api/product_translations?product_id=${productId}&format=json`);
+            if (result.success) {
+                const items = Array.isArray(result.data) ? result.data : (result.data?.items || []);
+                if (el.prodTranslations) el.prodTranslations.innerHTML = '';
+                items.forEach(trans => {
+                    const langName = state.languages.find(l => l.code === trans.language_code)?.name || trans.language_code;
+                    const panel = createTranslationPanel(trans.language_code, langName, {
+                        name: trans.name || '',
+                        short_description: trans.short_description || '',
+                        description: trans.description || ''
+                    });
+                    if (el.prodTranslations) el.prodTranslations.appendChild(panel);
+                });
+            }
+        } catch (err) {
+            console.warn('[Products] Failed to load translations:', err);
+        }
     }
 
     async function loadProductImages(productId) {
-        // Load images for this product
-        console.log('[Products] Loading images for product:', productId);
+        try {
+            console.log('[Products] Loading images for product:', productId);
+            // image_type_id = 2 for products
+            const result = await apiCall(`/api/images/by_owner?owner_id=${productId}&image_type_id=2`);
+            if (result.success) {
+                const images = Array.isArray(result.data) ? result.data : [];
+                state.selectedImages = images;
+                renderProductImages();
+            }
+        } catch (err) {
+            console.warn('[Products] Failed to load images:', err);
+        }
     }
 
     async function loadProductCategories(productId) {
-        // Load categories for this product
-        console.log('[Products] Loading categories for product:', productId);
+        try {
+            console.log('[Products] Loading categories for product:', productId);
+            const result = await apiCall(`/api/product_categories?product_id=${productId}&format=json`);
+            if (result.success) {
+                const items = result.data?.items || (Array.isArray(result.data) ? result.data : []);
+                state.selectedCategories = items.map(item => parseInt(item.category_id));
+                renderCategoriesTree();
+            }
+        } catch (err) {
+            console.warn('[Products] Failed to load categories:', err);
+        }
     }
 
     async function loadProductAttributes(productId) {
-        // Load attributes for this product
-        console.log('[Products] Loading attributes for product:', productId);
+        try {
+            console.log('[Products] Loading attributes for product:', productId);
+            const result = await apiCall(`/api/product_attribute_assignments/by_product?product_id=${productId}`);
+            if (result.success) {
+                const items = Array.isArray(result.data) ? result.data : (result.data?.items || []);
+                state.productAttributes = items.map(item => ({
+                    attribute_id: item.attribute_id,
+                    attribute_name: item.attribute_name || item.name || `Attribute #${item.attribute_id}`,
+                    attribute_type: item.attribute_type_id || '',
+                    value: item.custom_value || '',
+                    attribute_value_id: item.attribute_value_id || null
+                }));
+                renderAttributes();
+            }
+        } catch (err) {
+            console.warn('[Products] Failed to load attributes:', err);
+        }
     }
 
     async function loadProductVariants(productId) {
-        // Load variants for this product
-        console.log('[Products] Loading variants for product:', productId);
+        try {
+            console.log('[Products] Loading variants for product:', productId);
+            const result = await apiCall(`/api/product_variants?product_id=${productId}&tenant_id=${state.tenantId}&language_code=${state.language}&format=json`);
+            if (result.success) {
+                const items = result.data?.items || (Array.isArray(result.data) ? result.data : []);
+                state.productVariants = items.map(v => ({
+                    id: v.id,
+                    sku: v.sku || '',
+                    barcode: v.barcode || '',
+                    name: v.name || '',
+                    stock_quantity: v.stock_quantity || 0,
+                    price: v.price || '',
+                    is_active: v.is_active || 1,
+                    is_default: v.is_default || 0
+                }));
+                renderVariants();
+            }
+        } catch (err) {
+            console.warn('[Products] Failed to load variants:', err);
+        }
     }
 
     // ════════════════════════════════════════════════════════════
@@ -860,7 +1085,11 @@
         }
 
         try {
-            const result = await apiCall(`${API.products}/${id}`, { method: 'DELETE' });
+            const result = await apiCall(API.products, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id })
+            });
             
             if (result.success) {
                 showNotification(t('messages.deleted', 'Product deleted successfully'), 'success');
@@ -877,14 +1106,15 @@
 
     async function duplicateProduct(id) {
         try {
-            const result = await apiCall(`${API.products}/${id}?format=json&lang=${state.language}`);
+            const result = await apiCall(`${API.products}?id=${id}&format=json&lang=${state.language}`);
             
-            if (result.success && result.data && result.data.length > 0) {
-                const product = { ...result.data[0] };
+            if (result.success && result.data) {
+                const productData = result.data;
+                const product = { ...productData };
                 delete product.id;
-                product.name = `${product.name} (Copy)`;
-                product.sku = `${product.sku}-copy`;
-                product.slug = `${product.slug}-copy`;
+                product.name = `${product.name || ''} (Copy)`;
+                product.sku = `${product.sku || ''}-copy-${Date.now()}`;
+                product.slug = `${product.slug || ''}-copy-${Date.now()}`;
                 
                 showForm(product);
             } else {
@@ -1199,9 +1429,9 @@
         add: () => showForm(),
         edit: async (id) => {
             try {
-                const result = await apiCall(`${API.products}/${id}?format=json&lang=${state.language}`);
-                if (result.success && result.data && result.data.length > 0) {
-                    showForm(result.data[0]);
+                const result = await apiCall(`${API.products}?id=${id}&format=json&lang=${state.language}&tenant_id=${state.tenantId}`);
+                if (result.success && result.data) {
+                    showForm(result.data);
                 } else {
                     throw new Error('Product not found');
                 }
