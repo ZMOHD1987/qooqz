@@ -1,0 +1,160 @@
+<?php
+/**
+ * admin/fragments/permissions.php
+ * Updated to use /api/permissions endpoint
+ */
+
+declare(strict_types=1);
+
+// Load admin UI bootstrap
+$bootstrap = __DIR__ . '/../../api/bootstrap_admin_ui.php';
+if (is_readable($bootstrap)) {
+    try { require_once $bootstrap; } catch (Throwable $e) { /* ignore */ }
+}
+
+$ADMIN_UI_PAYLOAD = $ADMIN_UI_PAYLOAD ?? ($GLOBALS['ADMIN_UI'] ?? []);
+$user = $ADMIN_UI_PAYLOAD['user'] ?? [];
+$lang = $ADMIN_UI_PAYLOAD['lang'] ?? 'en';
+$direction = $ADMIN_UI_PAYLOAD['direction'] ?? 'ltr';
+$strings = $ADMIN_UI_PAYLOAD['strings'] ?? [];
+$theme = $ADMIN_UI_PAYLOAD['theme'] ?? [];
+
+function flatten_strings(array $src): array {
+    $out = [];
+    $stack = [['prefix'=>'','node'=>$src]];
+    while ($stack) {
+        $it = array_pop($stack);
+        $prefix = $it['prefix']; $node = $it['node'];
+        if (!is_array($node)) continue;
+        foreach ($node as $k => $v) {
+            $key = $prefix === '' ? $k : ($prefix . '.' . $k);
+            if (is_array($v)) $stack[] = ['prefix'=>$key,'node'=>$v];
+            else { $out[$key] = (string)$v; $parts = explode('.',$key); $short = end($parts); if (!isset($out[$short])) $out[$short] = (string)$v; }
+        }
+    }
+    return $out;
+}
+$flat = flatten_strings($strings);
+
+function gs(string $k, array $flat, string $dflt = ''): string {
+    if (isset($flat[$k]) && $flat[$k] !== '') return $flat[$k];
+    $parts = explode('.', $k); $short = end($parts);
+    if (isset($flat[$short]) && $flat[$short] !== '') return $flat[$short];
+    return $dflt !== '' ? $dflt : $short;
+}
+
+$canManage = false;
+if (!empty($user['role_id']) && (int)$user['role_id'] === 1) $canManage = true;
+if (!$canManage && !empty($user['roles']) && is_array($user['roles'])) {
+    if (in_array('super_admin', $user['roles'], true) || in_array('admin', $user['roles'], true)) $canManage = true;
+}
+if (!$canManage && !empty($user['permissions']) && is_array($user['permissions'])) {
+    if (in_array('manage_permissions', $user['permissions'], true)) $canManage = true;
+}
+
+if (empty($_SESSION['csrf_token'])) {
+    try { $_SESSION['csrf_token'] = bin2hex(random_bytes(16)); } catch (Throwable $e) { $_SESSION['csrf_token'] = bin2hex(openssl_random_pseudo_bytes(16)); }
+}
+$csrf = htmlspecialchars((string)($_SESSION['csrf_token'] ?? ''), ENT_QUOTES);
+
+// API path - using /api/permissions endpoint
+$apiPath = '/api/permissions';
+
+?><!doctype html>
+<html lang="<?php echo htmlspecialchars($lang, ENT_QUOTES); ?>" dir="<?php echo htmlspecialchars($direction, ENT_QUOTES); ?>">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title><?php echo htmlspecialchars(gs('permissions.title',$flat,'Permissions'), ENT_QUOTES); ?></title>
+  <link rel="stylesheet" href="/admin/assets/css/pages/permissions.css">
+</head>
+<body>
+  <div id="adminPermissions" style="max-width:1200px;margin:16px auto;padding:12px;">
+    <h2 style="margin-bottom:8px;"><?php echo htmlspecialchars(gs('permissions.title',$flat,'Permissions'), ENT_QUOTES); ?></h2>
+
+    <?php if (!$canManage): ?>
+      <div class="alert"><?php echo htmlspecialchars(gs('permissions.no_permission_notice',$flat,'You do not have permission to manage permissions.'), ENT_QUOTES); ?></div>
+    <?php endif; ?>
+
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+      <input id="permSearch" type="search" placeholder="<?php echo htmlspecialchars(gs('permissions.search_placeholder',$flat,'Search permissions...'), ENT_QUOTES); ?>" style="flex:1;padding:8px;border:1px solid var(--theme-border, #ddd);border-radius:6px;">
+      <button id="permRefresh" class="btn primary" type="button"><?php echo htmlspecialchars(gs('permissions.btn_refresh',$flat,'Refresh'), ENT_QUOTES); ?></button>
+      <?php if ($canManage): ?>
+        <button id="permNew" class="btn primary" type="button"><?php echo htmlspecialchars(gs('permissions.btn_new',$flat,'New Permission'), ENT_QUOTES); ?></button>
+      <?php endif; ?>
+    </div>
+
+    <div id="permStatus" class="status" style="min-height:22px;margin-bottom:8px;"><?php echo htmlspecialchars(gs('permissions.loading',$flat,'Loading permissions...'), ENT_QUOTES); ?></div>
+
+    <div class="table-wrap" style="border-radius:8px;">
+      <table id="permTable" style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="background:var(--theme-card,#f8fafc);">
+            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);width:60px;text-align:left;"><?php echo htmlspecialchars(gs('permissions.id',$flat,'ID'), ENT_QUOTES); ?></th>
+            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);text-align:left;"><?php echo htmlspecialchars(gs('permissions.key',$flat,'Key'), ENT_QUOTES); ?></th>
+            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);text-align:left;"><?php echo htmlspecialchars(gs('permissions.display',$flat,'Display'), ENT_QUOTES); ?></th>
+            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);text-align:left;"><?php echo htmlspecialchars(gs('permissions.description',$flat,'Description'), ENT_QUOTES); ?></th>
+            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);text-align:left;"><?php echo htmlspecialchars(gs('permissions.created_at',$flat,'Created At'), ENT_QUOTES); ?></th>
+            <th style="padding:10px;border-bottom:1px solid var(--theme-border,#e5e7eb);text-align:right;"><?php echo htmlspecialchars(gs('permissions.actions',$flat,'Actions'), ENT_QUOTES); ?></th>
+          </tr>
+        </thead>
+        <tbody id="permTbody">
+          <tr><td colspan="6" style="padding:12px;text-align:center;color:#666;"><?php echo htmlspecialchars(gs('permissions.loading',$flat,'Loading permissions...'), ENT_QUOTES); ?></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="permPager" style="margin-top:12px;"></div>
+
+    <?php if ($canManage): ?>
+    <div id="permFormWrap" class="form-wrap" style="display:none;margin-top:14px;padding:12px;border-radius:8px;border:1px solid var(--theme-border,#e5e7eb);background:var(--theme-card,#fff);">
+      <h3 id="permFormTitle"><?php echo htmlspecialchars(gs('permissions.form_title_create',$flat,'Create Permission'), ENT_QUOTES); ?></h3>
+      <form id="permForm" autocomplete="off">
+        <input type="hidden" id="permId" name="id" value="">
+        <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label for="permKey"><?php echo htmlspecialchars(gs('permissions.label_key',$flat,'Key'), ENT_QUOTES); ?> *</label>
+            <input id="permKey" name="key_name" required style="width:100%;padding:8px;border:1px solid var(--theme-border,#e5e7eb);border-radius:6px;">
+          </div>
+          <div>
+            <label for="permDisplay"><?php echo htmlspecialchars(gs('permissions.label_display',$flat,'Display name'), ENT_QUOTES); ?> *</label>
+            <input id="permDisplay" name="display_name" required style="width:100%;padding:8px;border:1px solid var(--theme-border,#e5e7eb);border-radius:6px;">
+          </div>
+          <div style="grid-column:1 / span 2;">
+            <label for="permDesc"><?php echo htmlspecialchars(gs('permissions.label_description',$flat,'Description'), ENT_QUOTES); ?></label>
+            <textarea id="permDesc" name="description" rows="3" style="width:100%;padding:8px;border:1px solid var(--theme-border,#e5e7eb);border-radius:6px;"></textarea>
+          </div>
+          <div style="grid-column:1 / span 2;text-align:right;margin-top:8px;">
+            <button type="button" id="permCancel" class="btn"><?php echo htmlspecialchars(gs('permissions.btn_cancel',$flat,'Cancel'), ENT_QUOTES); ?></button>
+            <button type="submit" id="permSave" class="btn primary"><?php echo htmlspecialchars(gs('permissions.btn_save',$flat,'Save'), ENT_QUOTES); ?></button>
+          </div>
+        </div>
+      </form>
+    </div>
+    <?php endif; ?>
+
+  </div>
+
+  <script>
+    window.ADMIN_UI = <?php echo json_encode($ADMIN_UI_PAYLOAD, JSON_UNESCAPED_UNICODE); ?> || {};
+    window.I18N_FLAT = <?php echo json_encode($flat, JSON_UNESCAPED_UNICODE); ?> || {};
+    window.USER_INFO = window.ADMIN_UI.user || {};
+    window.THEME = window.ADMIN_UI.theme || {};
+    window.LANG = '<?php echo htmlspecialchars($lang, ENT_QUOTES); ?>';
+    window.DIRECTION = '<?php echo htmlspecialchars($direction, ENT_QUOTES); ?>';
+    window.CSRF_TOKEN = '<?php echo $csrf; ?>';
+    // Use /api/permissions endpoint
+    window.API_PERMISSIONS = '<?php echo addslashes($apiPath); ?>';
+    
+    (function(){ 
+      try { 
+        if(window.DIRECTION) document.documentElement.setAttribute('dir', window.DIRECTION); 
+        if(window.LANG) document.documentElement.setAttribute('lang', window.LANG); 
+      } catch(e) {} 
+    })();
+  </script>
+
+  <script src="/admin/assets/js/pages/permissions.js" defer></script>
+</body>
+</html>
