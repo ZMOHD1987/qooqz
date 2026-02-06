@@ -1,842 +1,824 @@
 <?php
 declare(strict_types=1);
 
-// Bootstrap Admin UI
-$bootstrap = __DIR__ . '/../../api/bootstrap_admin_ui.php';
-if (is_readable($bootstrap)) {
-    try { require_once $bootstrap; } catch (Throwable $e) {}
+/**
+ * /admin/fragments/products.php
+ * Production Version - Complete Rewrite based on Categories Pattern
+ * 
+ * ✅ Uses new permission system (role-based + resource-based)
+ * ✅ Compatible with tenant_users table
+ * ✅ Full multi-language translation support
+ * ✅ Advanced product management (variants, attributes, images, categories, pricing)
+ * ✅ Production-ready with all APIs integrated
+ */
+
+// ════════════════════════════════════════════════════════════
+// DETECT REQUEST TYPE
+// ════════════════════════════════════════════════════════════
+$isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+          strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+$isEmbedded = isset($_GET['embedded']) || isset($_POST['embedded']);
+$isFragment = $isAjax || $isEmbedded;
+
+// ════════════════════════════════════════════════════════════
+// LOAD CONTEXT / HEADER
+// ════════════════════════════════════════════════════════════
+if ($isFragment) {
+    require_once __DIR__ . '/../includes/admin_context.php';
+} else {
+    require_once __DIR__ . '/../includes/header.php';
 }
 
-// Fallback if not loaded
-if (!isset($GLOBALS['ADMIN_UI'])) {
-    $GLOBALS['ADMIN_UI'] = [
-        'user' => [
-            'id' => 1,
-            'role_id' => 1,
-            'permissions' => ['manage_products', 'edit_products', 'delete_products'],
-            'roles' => ['super_admin']
-        ],
-        'lang' => 'ar',
-        'direction' => 'rtl',
-        'strings' => [],
-        'theme' => [
-            'colors_map' => [
-                'primary' => '#FF0000',
-                'secondary' => '#10B981',
-                'text-primary' => '#000000',
-                'text-secondary' => '#6b7280',
-                'border' => '#e2e8f0',
-                'error' => '#dc2626',
-                'success' => '#10b981',
-                'warning' => '#f59e0b'
-            ],
-            'buttons_map' => [
-                'primary' => ['background_color' => '#333333'],
-                'danger' => ['background_color' => '#ef4444']
-            ],
-            'designs' => ['products_per_page' => 25]
-        ]
-    ];
-}
-
-$ADMIN_UI_PAYLOAD = $ADMIN_UI_PAYLOAD ?? ($GLOBALS['ADMIN_UI'] ?? []);
-$user = $ADMIN_UI_PAYLOAD['user'] ?? [];
-$lang = $ADMIN_UI_PAYLOAD['lang'] ?? 'en';
-$direction = $ADMIN_UI_PAYLOAD['direction'] ?? 'ltr';
-$strings = $ADMIN_UI_PAYLOAD['strings'] ?? [];
-$theme = $ADMIN_UI_PAYLOAD['theme'] ?? [];
-
-// Permissions
-$canManageProducts = in_array('manage_products', $user['permissions'] ?? []);
-$canEditProducts = in_array('edit_products', $user['permissions'] ?? []);
-$canDeleteProducts = in_array('delete_products', $user['permissions'] ?? []);
-$isAdmin = ($user['role_id'] ?? 0) === 1;
-
-// API Path
-$apiPath = '/api/product';
-$categoriesApi = '/api/categories';
-$productMetaApi = '/api/product_meta';
-$mediaStudioApi = '/api/media';
-
-// Load Product Languages
-$langFile = __DIR__ . '/../../languages/Product/' . $lang . '.json';
-$productStrings = is_readable($langFile) ? json_decode(file_get_contents($langFile), true) : [];
-$allStrings = array_merge($strings, $productStrings);
-
-// Helper
-function gs(string $key, array $allStrings): string {
-    $keys = explode('.', $key);
-    $current = $allStrings;
-    foreach ($keys as $k) {
-        if (!isset($current[$k])) return $key;
-        $current = $current[$k];
-    }
-    return $current;
-}
-
-// CSRF
-$csrf = htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES);
-
-// Theme Colors
-$colors = $theme['colors_map'] ?? [];
-$primaryColor = $colors['primary'] ?? '#3b82f6';
-$secondaryColor = $colors['secondary'] ?? '#f8fafc';
-$textPrimary = $colors['text-primary'] ?? '#000000';
-$textSecondary = $colors['text-secondary'] ?? '#6b7280';
-$borderColor = $colors['border'] ?? '#e2e8f0';
-$errorColor = $colors['error'] ?? '#dc2626';
-$successColor = $colors['success'] ?? '#10b981';
-$warningColor = $colors['warning'] ?? '#f59e0b';
-
-// Buttons
-$buttons = $theme['buttons_map'] ?? [];
-
-// Get button style
-function getButtonStyle($type, $buttons): string {
-    $btn = $buttons[$type] ?? [];
-    $style = '';
-    if (isset($btn['background_color'])) {
-        $style .= 'background-color: ' . $btn['background_color'] . ';';
-    }
-    if (isset($btn['text_color'])) {
-        $style .= 'color: ' . $btn['text_color'] . ';';
-    }
-    if (isset($btn['border_radius'])) {
-        $style .= 'border-radius: ' . $btn['border_radius'] . 'px;';
-    }
-    if (isset($btn['padding'])) {
-        $style .= 'padding: ' . $btn['padding'] . ';';
-    }
-    if (isset($btn['font_size'])) {
-        $style .= 'font-size: ' . $btn['font_size'] . ';';
-    }
-    if (isset($btn['font_weight'])) {
-        $style .= 'font-weight: ' . $btn['font_weight'] . ';';
-    }
-    if (isset($btn['border_color'])) {
-        $style .= 'border: 1px solid ' . $btn['border_color'] . ';';
+// ════════════════════════════════════════════════════════════
+// VERIFY USER IS LOGGED IN
+// ════════════════════════════════════════════════════════════
+if (!is_admin_logged_in()) {
+    if ($isFragment) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Not authenticated']);
+        exit;
     } else {
-        $style .= 'border: none;';
+        header('Location: /admin/login.php');
+        exit;
     }
-    return $style;
 }
+
+// ════════════════════════════════════════════════════════════
+// GET USER CONTEXT & PERMISSIONS
+// ════════════════════════════════════════════════════════════
+$user = admin_user();
+$lang = admin_lang();
+$dir = admin_dir();
+$csrf = admin_csrf();
+$tenantId = admin_tenant_id();
+
+// ════════════════════════════════════════════════════════════
+// CHECK PERMISSIONS
+// ════════════════════════════════════════════════════════════
+
+// Method 1: Using role-based permissions
+$canManageProducts = can('products.manage') || can('products.create');
+
+// Method 2: Using resource-based permissions (recommended for granular control)
+$canViewAll = can_view_all('products');
+$canViewOwn = can_view_own('products');
+$canViewTenant = can_view_tenant('products');
+$canCreate = can_create('products');
+$canEditAll = can_edit_all('products');
+$canEditOwn = can_edit_own('products');
+$canDeleteAll = can_delete_all('products');
+$canDeleteOwn = can_delete_own('products');
+
+// Combined permissions for UI
+$canView = $canViewAll || $canViewOwn || $canViewTenant;
+$canEdit = $canEditAll || $canEditOwn || $canManageProducts;
+$canDelete = $canDeleteAll || $canDeleteOwn || $canManageProducts;
+$canDuplicate = $canCreate;
+
+// If user has no view permission at all, deny access
+if (!$canView && !is_super_admin()) {
+    if ($isFragment) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Access denied']);
+        exit;
+    } else {
+        http_response_code(403);
+        die('Access denied: You do not have permission to view products');
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// TRANSLATION HELPERS
+// ════════════════════════════════════════════════════════════
+function __t($key, $fallback = '') {
+    if (function_exists('i18n_get')) {
+        $v = i18n_get($key);
+        return $v ?? ($fallback ?? $key);
+    }
+    return $fallback ?? $key;
+}
+
+function __tr($key, $replacements = []) {
+    $text = __t($key, $key);
+    foreach ($replacements as $ph => $val) {
+        $text = str_replace("{" . $ph . "}", (string)$val, $text);
+    }
+    return $text;
+}
+
+// ════════════════════════════════════════════════════════════
+// API BASE
+// ════════════════════════════════════════════════════════════
+$apiBase = '/api';
+
 ?>
+<!-- Force load CSS if embedded -->
+<?php if ($isFragment): ?>
+<link rel="stylesheet" href="/admin/assets/css/pages/products.css?v=<?= time() ?>">
+<?php endif; ?>
 
-<!doctype html>
-<html lang="<?= htmlspecialchars($lang) ?>" dir="<?= htmlspecialchars($direction) ?>">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars(gs('page_title', $allStrings)) ?> - <?= htmlspecialchars(gs('admin_panel', $allStrings)) ?></title>
-    <link rel="stylesheet" href="/admin/assets/css/admin-theme.css">
-    <style>
-        :root {
-            --primary: <?= $primaryColor ?>;
-            --secondary: <?= $secondaryColor ?>;
-            --text-primary: <?= $textPrimary ?>;
-            --text-secondary: <?= $textSecondary ?>;
-            --border: <?= $borderColor ?>;
-            --error: <?= $errorColor ?>;
-            --success: <?= $successColor ?>;
-            --warning: <?= $warningColor ?>;
-        }
-        
-        .admin-page {
-            padding: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
-            background: var(--secondary);
-            min-height: 100vh;
-        }
-        
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid var(--border);
-        }
-        
-        .page-header h2 {
-            color: var(--text-primary);
-            margin: 0;
-            font-size: 24px;
-        }
-        
-        .status-notice {
-            min-height: 22px;
-            margin-bottom: 15px;
-            padding: 10px 15px;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-        
-        .status-notice.success {
-            background-color: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-        
-        .status-notice.error {
-            background-color: rgba(220, 38, 38, 0.1);
-            color: var(--error);
-            border: 1px solid rgba(220, 38, 38, 0.3);
-        }
-        
-        .tools-bar {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        
-        .search-input {
-            padding: 10px 16px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            width: 300px;
-            background: white;
-            color: var(--text-primary);
-            font-size: 14px;
-        }
-        
-        .search-input:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-        
-        .btn {
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        
-        .btn.primary {
-            <?= getButtonStyle('primary', $buttons) ?>
-        }
-        
-        .btn.danger {
-            <?= getButtonStyle('danger', $buttons) ?>
-        }
-        
-        .btn.outline {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-primary);
-        }
-        
-        .btn.small {
-            padding: 6px 12px;
-            font-size: 13px;
-        }
-        
-        .table-container {
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-        
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 900px;
-        }
-        
-        .data-table th {
-            background: #f8fafc;
-            color: var(--text-primary);
-            font-weight: 600;
-            text-align: left;
-            padding: 16px;
-            border-bottom: 2px solid var(--border);
-            white-space: nowrap;
-        }
-        
-        .data-table td {
-            padding: 16px;
-            border-bottom: 1px solid var(--border);
-            color: var(--text-secondary);
-        }
-        
-        .data-table tr:hover td {
-            background: #f8fafc;
-        }
-        
-        .form-section {
-            background: white;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            margin-bottom: 30px;
-        }
-        
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 30px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-            font-weight: 500;
-            font-size: 14px;
-        }
-        
-        .form-input,
-        .form-select,
-        .form-textarea {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 14px;
-            color: var(--text-primary);
-            background: white;
-        }
-        
-        .form-input:focus,
-        .form-select:focus,
-        .form-textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-        
-        .form-textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-        
-        .form-actions {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border);
-        }
-        
-        .media-preview {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .media-item {
-            width: 80px;
-            height: 80px;
-            border-radius: 6px;
-            overflow: hidden;
-            position: relative;
-            border: 1px solid var(--border);
-        }
-        
-        .media-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .tr-lang-panel {
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 16px;
-            background: #f8fafc;
-        }
-        
-        .tr-lang-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
-        
-        .variant-row {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            padding: 10px;
-            background: #f8fafc;
-            border-radius: 6px;
-            margin-bottom: 8px;
-        }
-        
-        .attr-item {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            padding: 10px;
-            background: #f8fafc;
-            border-radius: 6px;
-            margin-bottom: 8px;
-        }
-        
-        .category-tree {
-            max-height: 300px;
-            overflow-y: auto;
-            padding: 15px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            background: white;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: var(--text-secondary);
-        }
-        
-        .loading::after {
-            content: '';
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--border);
-            border-top: 2px solid var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-left: 10px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        @media (max-width: 1024px) {
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .search-input {
-                width: 100%;
-            }
-        }
-    </style>
-</head>
-<body>
+<!-- Page Meta -->
+<meta data-page="products"
+      data-i18n-files="/admin/languages/Products/<?= rawurlencode($lang) ?>.json">
 
-<div id="adminProducts" class="admin-page">
+<!-- Page Container -->
+<div class="page-container" id="productsPageContainer" dir="<?= htmlspecialchars($dir) ?>">
+
+    <!-- Page Header -->
     <div class="page-header">
-        <h2><?= htmlspecialchars(gs('page_title', $allStrings)) ?></h2>
-        <?php if ($canManageProducts || $isAdmin): ?>
-        <button id="productNewBtn" class="btn primary">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M8 0a1 1 0 0 1 1 1v6h6a1 1 0 1 1 0 2H9v6a1 1 0 1 1-2 0V9H1a1 1 0 0 1 0-2h6V1a1 1 0 0 1 1-1z"/>
-            </svg>
-            <?= htmlspecialchars(gs('create', $allStrings)) ?>
-        </button>
-        <?php endif; ?>
-    </div>
-
-    <div id="productsNotice" class="status-notice"></div>
-    
-    <div class="tools-bar">
-        <input id="productSearch" type="search" 
-               class="search-input"
-               placeholder="<?= htmlspecialchars(gs('search_placeholder', $allStrings)) ?>">
-        
-        <button id="productRefresh" class="btn outline">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
-                <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
-            </svg>
-            <?= htmlspecialchars(gs('refresh', $allStrings)) ?>
-        </button>
-        
-        <?php if ($canManageProducts || $isAdmin): ?>
-        <button id="productNewBtn2" class="btn primary">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M8 0a1 1 0 0 1 1 1v6h6a1 1 0 1 1 0 2H9v6a1 1 0 1 1-2 0V9H1a1 1 0 0 1 0-2h6V1a1 1 0 0 1 1-1z"/>
-            </svg>
-            <?= htmlspecialchars(gs('create', $allStrings)) ?>
-        </button>
-        <?php endif; ?>
-        
-        <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
-            <span style="color: var(--text-secondary); font-size: 14px;">
-                <?= htmlspecialchars(gs('total', $allStrings)) ?>:
-            </span>
-            <span id="productsCount" style="font-weight: 600; color: var(--primary);">0</span>
+        <div class="page-header-content">
+            <h1 class="page-title" data-i18n="products.title"><?= __t('products.title', 'Products') ?></h1>
+            <p class="page-subtitle" data-i18n="products.subtitle"><?= __t('products.subtitle', 'Manage your product catalog') ?></p>
+        </div>
+        <div class="page-header-actions">
+            <?php if ($canCreate): ?>
+            <button id="btnAddProduct" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                <span data-i18n="products.add_new"><?= __t('products.add_new', 'Add Product') ?></span>
+            </button>
+            <?php endif; ?>
         </div>
     </div>
-    
-    <div class="table-container">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th style="width: 70px"><?= htmlspecialchars(gs('table.id', $allStrings)) ?></th>
-                    <th><?= htmlspecialchars(gs('general.name', $allStrings)) ?></th>
-                    <th style="width: 160px"><?= htmlspecialchars(gs('general.sku', $allStrings)) ?></th>
-                    <th style="width: 120px"><?= htmlspecialchars(gs('general.type', $allStrings)) ?></th>
-                    <th style="width: 100px; text-align: center"><?= htmlspecialchars(gs('inventory.stock_quantity', $allStrings)) ?></th>
-                    <th style="width: 100px; text-align: center"><?= htmlspecialchars(gs('products.active', $allStrings)) ?></th>
-                    <th style="width: 180px"><?= htmlspecialchars(gs('table.actions', $allStrings)) ?></th>
-                </tr>
-            </thead>
-            <tbody id="productsTbody">
-                <tr>
-                    <td colspan="7" class="loading">
-                        <?= htmlspecialchars(gs('loading', $allStrings)) ?>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
 
-    <!-- Product Form Section (Hidden by default) -->
-    <div id="productFormWrap" class="form-section" style="display: none;">
-        <div id="productErrors" style="display: none; color: var(--error); margin-bottom: 20px; padding: 15px; background: rgba(220, 38, 38, 0.1); border-radius: 6px;"></div>
-        
-        <form id="productForm" autocomplete="off" enctype="multipart/form-data">
-            <input type="hidden" id="product_id" name="id" value="0">
-            <input type="hidden" id="product_translations" name="translations" value="">
-            <input type="hidden" id="product_attributes" name="attributes" value="">
-            <input type="hidden" id="product_variants" name="variants" value="">
-            <input type="hidden" id="product_categories_json" name="categories" value="">
-            <input type="hidden" id="product_action" name="action" value="save">
-            <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
-            
-            <div class="form-grid">
-                <!-- Left Column -->
-                <div>
-                    <!-- General Information -->
+    <!-- Form Container -->
+    <div id="productFormContainer" class="card form-card" style="display:none">
+        <div class="card-header">
+            <h3 class="card-title" id="formTitle" data-i18n="form.add_title"><?= __t('form.add_title', 'Add Product') ?></h3>
+            <button type="button" class="btn btn-sm btn-outline" id="btnCloseForm" aria-label="<?= __t('accessibility.close', 'Close') ?>">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="card-body">
+            <form id="productForm" novalidate>
+                <!-- Hidden Fields -->
+                <input type="hidden" id="formId" name="id">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+                <input type="hidden" id="prodTenantId" name="tenant_id" value="<?= $tenantId ?>">
+                <input type="hidden" id="prodTranslationsData" name="translations_data">
+                <input type="hidden" id="prodAttributesData" name="attributes_data">
+                <input type="hidden" id="prodVariantsData" name="variants_data">
+                <input type="hidden" id="prodCategoriesData" name="categories_data">
+
+                <!-- Tabs Navigation -->
+                <div class="form-tabs">
+                    <button type="button" class="tab-btn active" data-tab="general">
+                        <i class="fas fa-info-circle"></i>
+                        <span data-i18n="tabs.general"><?= __t('tabs.general', 'General') ?></span>
+                    </button>
+                    <button type="button" class="tab-btn" data-tab="pricing">
+                        <i class="fas fa-tag"></i>
+                        <span data-i18n="tabs.pricing"><?= __t('tabs.pricing', 'Pricing') ?></span>
+                    </button>
+                    <button type="button" class="tab-btn" data-tab="inventory">
+                        <i class="fas fa-boxes"></i>
+                        <span data-i18n="tabs.inventory"><?= __t('tabs.inventory', 'Inventory') ?></span>
+                    </button>
+                    <button type="button" class="tab-btn" data-tab="attributes">
+                        <i class="fas fa-list-alt"></i>
+                        <span data-i18n="tabs.attributes"><?= __t('tabs.attributes', 'Attributes') ?></span>
+                    </button>
+                    <button type="button" class="tab-btn" data-tab="variants">
+                        <i class="fas fa-layer-group"></i>
+                        <span data-i18n="tabs.variants"><?= __t('tabs.variants', 'Variants') ?></span>
+                    </button>
+                    <button type="button" class="tab-btn" data-tab="images">
+                        <i class="fas fa-images"></i>
+                        <span data-i18n="tabs.images"><?= __t('tabs.images', 'Images') ?></span>
+                    </button>
+                    <button type="button" class="tab-btn" data-tab="categories">
+                        <i class="fas fa-folder-tree"></i>
+                        <span data-i18n="tabs.categories"><?= __t('tabs.categories', 'Categories') ?></span>
+                    </button>
+                    <button type="button" class="tab-btn" data-tab="translations">
+                        <i class="fas fa-language"></i>
+                        <span data-i18n="tabs.translations"><?= __t('tabs.translations', 'Translations') ?></span>
+                    </button>
+                </div>
+
+                <!-- Tab: General -->
+                <div class="tab-content active" id="tab-general">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prodName" class="required" data-i18n="form.fields.name.label">
+                                <?= __t('form.fields.name.label', 'Product Name') ?>
+                            </label>
+                            <input type="text" id="prodName" name="name" class="form-control" required
+                                   data-i18n-placeholder="form.fields.name.placeholder"
+                                   placeholder="<?= __t('form.fields.name.placeholder', 'Enter product name') ?>">
+                            <div class="invalid-feedback" data-i18n="form.fields.name.required">
+                                <?= __t('form.fields.name.required', 'Product name is required') ?>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodSku" class="required" data-i18n="form.fields.sku.label">
+                                <?= __t('form.fields.sku.label', 'SKU') ?>
+                            </label>
+                            <input type="text" id="prodSku" name="sku" class="form-control" required
+                                   data-i18n-placeholder="form.fields.sku.placeholder"
+                                   placeholder="<?= __t('form.fields.sku.placeholder', 'Enter SKU') ?>">
+                            <div class="invalid-feedback" data-i18n="form.fields.sku.required">
+                                <?= __t('form.fields.sku.required', 'SKU is required') ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prodSlug" data-i18n="form.fields.slug.label">
+                                <?= __t('form.fields.slug.label', 'Slug') ?>
+                            </label>
+                            <input type="text" id="prodSlug" name="slug" class="form-control"
+                                   data-i18n-placeholder="form.fields.slug.placeholder"
+                                   placeholder="<?= __t('form.fields.slug.placeholder', 'product-slug') ?>">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodBarcode" data-i18n="form.fields.barcode.label">
+                                <?= __t('form.fields.barcode.label', 'Barcode') ?>
+                            </label>
+                            <input type="text" id="prodBarcode" name="barcode" class="form-control"
+                                   data-i18n-placeholder="form.fields.barcode.placeholder"
+                                   placeholder="<?= __t('form.fields.barcode.placeholder', 'Enter barcode') ?>">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prodType" data-i18n="form.fields.product_type.label">
+                                <?= __t('form.fields.product_type.label', 'Product Type') ?>
+                            </label>
+                            <select id="prodType" name="product_type_id" class="form-control">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodBrand" data-i18n="form.fields.brand.label">
+                                <?= __t('form.fields.brand.label', 'Brand') ?>
+                            </label>
+                            <select id="prodBrand" name="brand_id" class="form-control">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prodIsActive" data-i18n="form.fields.status.label">
+                                <?= __t('form.fields.status.label', 'Status') ?>
+                            </label>
+                            <select id="prodIsActive" name="is_active" class="form-control">
+                                <option value="1" data-i18n="form.fields.status.active">
+                                    <?= __t('form.fields.status.active', 'Active') ?>
+                                </option>
+                                <option value="0" data-i18n="form.fields.status.inactive">
+                                    <?= __t('form.fields.status.inactive', 'Inactive') ?>
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodIsFeatured" data-i18n="form.fields.featured.label">
+                                <?= __t('form.fields.featured.label', 'Featured') ?>
+                            </label>
+                            <select id="prodIsFeatured" name="is_featured" class="form-control">
+                                <option value="0" data-i18n="form.fields.featured.no">
+                                    <?= __t('form.fields.featured.no', 'No') ?>
+                                </option>
+                                <option value="1" data-i18n="form.fields.featured.yes">
+                                    <?= __t('form.fields.featured.yes', 'Yes') ?>
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodIsBestseller" data-i18n="form.fields.bestseller.label">
+                                <?= __t('form.fields.bestseller.label', 'Bestseller') ?>
+                            </label>
+                            <select id="prodIsBestseller" name="is_bestseller" class="form-control">
+                                <option value="0" data-i18n="form.fields.bestseller.no">No</option>
+                                <option value="1" data-i18n="form.fields.bestseller.yes">Yes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodIsNew" data-i18n="form.fields.new.label">
+                                <?= __t('form.fields.new.label', 'New') ?>
+                            </label>
+                            <select id="prodIsNew" name="is_new" class="form-control">
+                                <option value="0" data-i18n="form.fields.new.no">No</option>
+                                <option value="1" data-i18n="form.fields.new.yes">Yes</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Pricing -->
+                <div class="tab-content" id="tab-pricing" style="display:none">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prodPrice" data-i18n="form.fields.price.label">
+                                <?= __t('form.fields.price.label', 'Price') ?>
+                            </label>
+                            <input type="number" id="prodPrice" name="price" class="form-control" step="0.01" min="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodComparePrice" data-i18n="form.fields.compare_price.label">
+                                <?= __t('form.fields.compare_price.label', 'Compare at Price') ?>
+                            </label>
+                            <input type="number" id="prodComparePrice" name="compare_at_price" class="form-control" step="0.01" min="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodCostPrice" data-i18n="form.fields.cost_price.label">
+                                <?= __t('form.fields.cost_price.label', 'Cost Price') ?>
+                            </label>
+                            <input type="number" id="prodCostPrice" name="cost_price" class="form-control" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prodCurrency" data-i18n="form.fields.currency.label">
+                                <?= __t('form.fields.currency.label', 'Currency') ?>
+                            </label>
+                            <select id="prodCurrency" name="currency_code" class="form-control">
+                                <option value="SAR">SAR</option>
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodTaxRate" data-i18n="form.fields.tax_rate.label">
+                                <?= __t('form.fields.tax_rate.label', 'Tax Rate %') ?>
+                            </label>
+                            <input type="number" id="prodTaxRate" name="tax_rate" class="form-control" step="0.01" min="0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Inventory -->
+                <div class="tab-content" id="tab-inventory" style="display:none">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prodStockQty" data-i18n="form.fields.stock_quantity.label">
+                                <?= __t('form.fields.stock_quantity.label', 'Stock Quantity') ?>
+                            </label>
+                            <input type="number" id="prodStockQty" name="stock_quantity" class="form-control" value="0" min="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodLowStock" data-i18n="form.fields.low_stock_threshold.label">
+                                <?= __t('form.fields.low_stock_threshold.label', 'Low Stock Threshold') ?>
+                            </label>
+                            <input type="number" id="prodLowStock" name="low_stock_threshold" class="form-control" value="5" min="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodStockStatus" data-i18n="form.fields.stock_status.label">
+                                <?= __t('form.fields.stock_status.label', 'Stock Status') ?>
+                            </label>
+                            <select id="prodStockStatus" name="stock_status" class="form-control">
+                                <option value="in_stock" data-i18n="form.fields.stock_status.in_stock">In Stock</option>
+                                <option value="out_of_stock" data-i18n="form.fields.stock_status.out_of_stock">Out of Stock</option>
+                                <option value="on_backorder" data-i18n="form.fields.stock_status.on_backorder">On Backorder</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prodManageStock" data-i18n="form.fields.manage_stock.label">
+                                <?= __t('form.fields.manage_stock.label', 'Manage Stock') ?>
+                            </label>
+                            <select id="prodManageStock" name="manage_stock" class="form-control">
+                                <option value="1" data-i18n="form.fields.manage_stock.yes">Yes</option>
+                                <option value="0" data-i18n="form.fields.manage_stock.no">No</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodAllowBackorder" data-i18n="form.fields.allow_backorder.label">
+                                <?= __t('form.fields.allow_backorder.label', 'Allow Backorder') ?>
+                            </label>
+                            <select id="prodAllowBackorder" name="allow_backorder" class="form-control">
+                                <option value="0" data-i18n="form.fields.allow_backorder.no">No</option>
+                                <option value="1" data-i18n="form.fields.allow_backorder.yes">Yes</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Physical Attributes (Weight/Dimensions) -->
+                    <h4 style="margin-top: 30px; margin-bottom: 15px; color:var(--text-primary,#fff);" data-i18n="form.sections.physical">
+                        <?= __t('form.sections.physical', 'Physical Attributes') ?>
+                    </h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prodWeight" data-i18n="form.fields.weight.label">Weight (kg)</label>
+                            <input type="number" id="prodWeight" name="weight" class="form-control" step="0.001" min="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodLength" data-i18n="form.fields.length.label">Length (cm)</label>
+                            <input type="number" id="prodLength" name="length" class="form-control" step="0.01" min="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodWidth" data-i18n="form.fields.width.label">Width (cm)</label>
+                            <input type="number" id="prodWidth" name="width" class="form-control" step="0.01" min="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodHeight" data-i18n="form.fields.height.label">Height (cm)</label>
+                            <input type="number" id="prodHeight" name="height" class="form-control" step="0.01" min="0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Attributes -->
+                <div class="tab-content" id="tab-attributes" style="display:none">
+                    <div style="display:flex; gap:10px; margin-bottom:15px;">
+                        <select id="attrSelect" class="form-control" style="flex:1;"></select>
+                        <button type="button" id="btnAddAttribute" class="btn btn-primary" data-i18n="form.buttons.add_attribute">
+                            <?= __t('form.buttons.add_attribute', 'Add Attribute') ?>
+                        </button>
+                    </div>
+                    <div id="prodAttributesList"></div>
+                </div>
+
+                <!-- Tab: Variants -->
+                <div class="tab-content" id="tab-variants" style="display:none">
+                    <div style="margin-bottom:15px;">
+                        <button type="button" id="btnGenerateVariants" class="btn btn-secondary" data-i18n="form.buttons.generate_variants">
+                            <?= __t('form.buttons.generate_variants', 'Generate Variants from Attributes') ?>
+                        </button>
+                        <button type="button" id="btnAddVariant" class="btn btn-primary" data-i18n="form.buttons.add_variant">
+                            <?= __t('form.buttons.add_variant', 'Add Variant Manually') ?>
+                        </button>
+                    </div>
+                    <div id="prodVariantsList"></div>
+                </div>
+
+                <!-- Tab: Images -->
+                <div class="tab-content" id="tab-images" style="display:none">
                     <div class="form-group">
-                        <h3 style="margin-bottom: 20px; color: var(--text-primary);"><?= htmlspecialchars(gs('general.general', $allStrings)) ?></h3>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('general.default_name', $allStrings)) ?></label>
-                                <input id="product_name" name="name" type="text" class="form-input" required>
-                            </div>
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('general.sku', $allStrings)) ?></label>
-                                <input id="product_sku" name="sku" type="text" class="form-input">
-                            </div>
-                        </div>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('general.slug', $allStrings)) ?></label>
-                                <input id="product_slug" name="slug" type="text" class="form-input">
-                            </div>
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('general.barcode', $allStrings)) ?></label>
-                                <input id="product_barcode" name="barcode" type="text" class="form-input">
-                            </div>
-                        </div>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('general.type', $allStrings)) ?></label>
-                                <select id="product_type" name="product_type" class="form-select">
-                                    <option value="simple"><?= htmlspecialchars(gs('general.simple', $allStrings)) ?></option>
-                                    <option value="variable"><?= htmlspecialchars(gs('general.variable', $allStrings)) ?></option>
-                                    <option value="digital"><?= htmlspecialchars(gs('general.digital', $allStrings)) ?></option>
-                                    <option value="bundle"><?= htmlspecialchars(gs('general.bundle', $allStrings)) ?></option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('general.brand', $allStrings)) ?></label>
-                                <select id="product_brand_id" name="brand_id" class="form-select"></select>
-                            </div>
-                        </div>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('general.manufacturer', $allStrings)) ?></label>
-                                <select id="product_manufacturer_id" name="manufacturer_id" class="form-select"></select>
-                            </div>
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('general.published_at', $allStrings)) ?></label>
-                                <input id="product_published_at" name="published_at" type="datetime-local" class="form-input">
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label class="form-label"><?= htmlspecialchars(gs('general.short_description', $allStrings)) ?></label>
-                            <textarea id="product_description" name="description" class="form-textarea" rows="3"></textarea>
+                        <label data-i18n="form.fields.images.label">
+                            <?= __t('form.fields.images.label', 'Product Images') ?>
+                        </label>
+                        <div class="image-upload-section">
+                            <button type="button" id="prodSelectImageBtn" class="btn btn-secondary" style="width:100%; margin-bottom:15px;" data-i18n="common.select_image">
+                                <?= __t('common.select_image', 'Select Images from Studio') ?>
+                            </button>
+                            <div id="prodImagesPreview" class="images-grid"></div>
                         </div>
                     </div>
-                    
-                    <!-- Pricing -->
-                    <div class="form-group" style="margin-top: 30px;">
-                        <h4 style="margin-bottom: 15px; color: var(--text-primary);"><?= htmlspecialchars(gs('pricing.pricing', $allStrings)) ?></h4>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('pricing.price', $allStrings)) ?></label>
-                                <input id="product_price" name="price" type="text" class="form-input">
-                            </div>
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('pricing.compare_at_price', $allStrings)) ?></label>
-                                <input id="product_compare_at_price" name="compare_at_price" type="text" class="form-input">
-                            </div>
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('pricing.cost_price', $allStrings)) ?></label>
-                                <input id="product_cost_price" name="cost_price" type="text" class="form-input">
-                            </div>
-                        </div>
+                </div>
+
+                <!-- Tab: Categories -->
+                <div class="tab-content" id="tab-categories" style="display:none">
+                    <div class="form-group">
+                        <label data-i18n="form.fields.categories.label">
+                            <?= __t('form.fields.categories.label', 'Product Categories') ?>
+                        </label>
+                        <div id="prodCategoriesTree" class="categories-tree"></div>
                     </div>
-                    
-                    <!-- Inventory -->
-                    <div class="form-group" style="margin-top: 30px;">
-                        <h4 style="margin-bottom: 15px; color: var(--text-primary);"><?= htmlspecialchars(gs('inventory.inventory', $allStrings)) ?></h4>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('inventory.stock_quantity', $allStrings)) ?></label>
-                                <input id="product_stock_quantity" name="stock_quantity" type="number" class="form-input" value="0">
-                            </div>
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('inventory.low_stock_threshold', $allStrings)) ?></label>
-                                <input id="product_low_stock_threshold" name="low_stock_threshold" type="number" class="form-input" value="5">
-                            </div>
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('inventory.stock_status', $allStrings)) ?></label>
-                                <select id="product_stock_status" name="stock_status" class="form-select">
-                                    <option value="in_stock"><?= htmlspecialchars(gs('inventory.in_stock', $allStrings)) ?></option>
-                                    <option value="out_of_stock"><?= htmlspecialchars(gs('inventory.out_of_stock', $allStrings)) ?></option>
-                                    <option value="on_backorder"><?= htmlspecialchars(gs('inventory.on_backorder', $allStrings)) ?></option>
+                </div>
+
+                <!-- Tab: Translations -->
+                <div class="tab-content" id="tab-translations" style="display:none">
+                    <div class="translations-section">
+                        <h4 style="margin-bottom:12px; color:var(--text-primary,#fff); border-bottom:1px solid var(--border-color,#263044); padding-bottom:8px;">
+                            <i class="fas fa-language"></i> Translations
+                        </h4>
+                        <div id="prodTranslations" class="translation-panels"></div>
+                        <div class="form-group" style="margin-top:12px;">
+                            <label for="prodLangSelect" data-i18n="form.translations.select_lang">Select Language</label>
+                            <div style="display:flex; gap:8px; align-items:flex-end;">
+                                <select id="prodLangSelect" class="form-control" style="flex:1;">
+                                    <option value="">Choose language</option>
                                 </select>
-                            </div>
-                        </div>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('inventory.manage_stock', $allStrings)) ?></label>
-                                <select id="product_manage_stock" name="manage_stock" class="form-select">
-                                    <option value="1"><?= htmlspecialchars(gs('general.yes', $allStrings)) ?></option>
-                                    <option value="0"><?= htmlspecialchars(gs('general.no', $allStrings)) ?></option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('inventory.allow_backorder', $allStrings)) ?></label>
-                                <select id="product_allow_backorder" name="allow_backorder" class="form-select">
-                                    <option value="0"><?= htmlspecialchars(gs('general.no', $allStrings)) ?></option>
-                                    <option value="1"><?= htmlspecialchars(gs('general.yes', $allStrings)) ?></option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('pricing.tax_rate', $allStrings)) ?></label>
-                                <input id="product_tax_rate" name="tax_rate" type="text" class="form-input" value="15.00">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Dimensions -->
-                    <div class="form-group" style="margin-top: 30px;">
-                        <h4 style="margin-bottom: 15px; color: var(--text-primary);"><?= htmlspecialchars(gs('dimensions.dimensions', $allStrings)) ?></h4>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('dimensions.weight', $allStrings)) ?> (kg)</label>
-                                <input id="product_weight" name="weight" type="text" class="form-input">
-                            </div>
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('dimensions.length', $allStrings)) ?> (cm)</label>
-                                <input id="product_length" name="length" type="text" class="form-input">
-                            </div>
-                            <div>
-                                <label class="form-label"><?= htmlspecialchars(gs('dimensions.width', $allStrings)) ?> (cm)</label>
-                                <input id="product_width" name="width" type="text" class="form-input">
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label class="form-label"><?= htmlspecialchars(gs('dimensions.height', $allStrings)) ?> (cm)</label>
-                            <input id="product_height" name="height" type="text" class="form-input">
-                        </div>
-                    </div>
-                    
-                    <!-- Variants (Hidden by default) -->
-                    <div id="variantsSection" class="form-group" style="margin-top: 30px; display: none;">
-                        <h4 style="margin-bottom: 15px; color: var(--text-primary);"><?= htmlspecialchars(gs('variants.variants', $allStrings)) ?></h4>
-                        
-                        <div style="margin-bottom: 15px; padding: 15px; background: #f0f9ff; border-radius: 6px; border: 1px solid #bae6fd;">
-                            <small style="color: #0369a1;"><?= htmlspecialchars(gs('variants.generate_from_attributes', $allStrings)) ?></small>
-                            <div style="margin-top: 10px;">
-                                <button id="generateVariantsBtn" type="button" class="btn small outline">
-                                    <?= htmlspecialchars(gs('variants.generate_variants', $allStrings)) ?>
+                                <button type="button" id="prodAddLangBtn" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Add Translation
                                 </button>
                             </div>
                         </div>
-                        
-                        <div id="product_variants_list"></div>
                     </div>
                 </div>
-                
-                <!-- Right Column -->
-                <div>
-                    <!-- Media -->
-                    <div class="form-group">
-                        <h4 style="margin-bottom: 15px; color: var(--text-primary);"><?= htmlspecialchars(gs('media.images', $allStrings)) ?></h4>
-                        
-                        <input id="product_images_files" type="file" name="images[]" multiple accept="image/*" class="form-input" style="margin-bottom: 10px;">
-                        
-                        <button id="mediaStudioBtn" type="button" class="btn outline" style="width: 100%; margin-bottom: 15px;">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="margin-right: 8px;">
-                                <path d="M4.502 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
-                                <path d="M14.002 13a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V5A2 2 0 0 1 2 3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-1.998 2zM14 2H4a1 1 0 0 0-1 1h9.002a2 2 0 0 1 2 2v7A1 1 0 0 0 15 11V3a1 1 0 0 0-1-1zM2.002 4a1 1 0 0 0-1 1v8l2.646-2.354a.5.5 0 0 1 .63-.062l2.66 1.773 3.71-3.71a.5.5 0 0 1 .577-.094l1.777 1.947V5a1 1 0 0 0-1-1h-10z"/>
-                            </svg>
-                            <?= htmlspecialchars(gs('media.select_from_studio', $allStrings)) ?>
-                        </button>
-                        
-                        <div id="product_images_preview" class="media-preview"></div>
-                    </div>
-                    
-                    <!-- Categories -->
-                    <div class="form-group" style="margin-top: 30px;">
-                        <h4 style="margin-bottom: 15px; color: var(--text-primary);"><?= htmlspecialchars(gs('categories.categories', $allStrings)) ?></h4>
-                        
-                        <div id="categoryTree" class="category-tree">
-                            <ul id="categoryList" style="list-style: none; padding: 0; margin: 0;"></ul>
-                        </div>
-                        
-                        <input type="hidden" id="product_category_primary" name="category_id" value="">
-                        <input type="hidden" id="product_categories_hidden" name="categories" value="">
-                        
-                        <small style="display: block; margin-top: 10px; color: var(--text-secondary);">
-                            <?= htmlspecialchars(gs('categories.hierarchy_info', $allStrings)) ?>
-                        </small>
-                    </div>
-                    
-                    <!-- Attributes -->
-                    <div class="form-group" style="margin-top: 30px;">
-                        <h4 style="margin-bottom: 15px; color: var(--text-primary);"><?= htmlspecialchars(gs('attributes.attributes', $allStrings)) ?></h4>
-                        
-                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                            <select id="attr_select" class="form-select" style="flex: 1;"></select>
-                            <button id="attr_add_btn" type="button" class="btn outline">
-                                <?= htmlspecialchars(gs('attributes.add_attribute', $allStrings)) ?>
-                            </button>
-                        </div>
-                        
-                        <div id="product_attributes_list"></div>
-                    </div>
-                    
-                    <!-- Translations -->
-                    <div class="form-group" style="margin-top: 30px;">
-                        <h4 style="margin-bottom: 15px; color: var(--text-primary);"><?= htmlspecialchars(gs('translations.translations', $allStrings)) ?></h4>
-                        
-                        <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
-                            <button id="toggleTranslationsBtn" type="button" class="btn small outline">
-                                <?= htmlspecialchars(gs('translations.toggle_translations', $allStrings)) ?>
-                            </button>
-                            <button id="fillFromDefaultBtn" type="button" class="btn small outline">
-                                <?= htmlspecialchars(gs('translations.fill_from_default', $allStrings)) ?>
-                            </button>
-                            <button id="addLangBtn" type="button" class="btn small outline">
-                                <?= htmlspecialchars(gs('translations.add_language', $allStrings)) ?>
-                            </button>
-                        </div>
-                        
-                        <small style="display: block; margin-bottom: 10px; color: var(--text-secondary);">
-                            <?= htmlspecialchars(gs('translations.each_language_panel', $allStrings)) ?>
-                        </small>
-                        
-                        <div id="product_translations_area" style="display: none; margin-top: 10px;">
-                            <?php 
-                            $availableLangs = ['en' => 'English', 'ar' => 'العربية'];
-                            foreach ($availableLangs as $code => $name): 
-                            ?>
-                            <div class="tr-lang-panel" data-lang="<?= htmlspecialchars($code) ?>">
-                                <div class="tr-lang-header">
-                                    <strong><?= htmlspecialchars($name) ?> (<?= htmlspecialchars($code) ?>)</strong>
-                                    <button type="button" class="btn small toggle-lang" data-lang="<?= htmlspecialchars($code) ?>">
-                                        <?= htmlspecialchars(gs('translations.collapse', $allStrings)) ?>
-                                    </button>
-                                </div>
-                                <div class="tr-lang-body">
-                                    <div style="display: grid; gap: 10px;">
-                                        <div>
-                                            <label class="form-label"><?= htmlspecialchars(gs('general.name', $allStrings)) ?></label>
-                                            <input class="tr-name form-input" data-lang="<?= htmlspecialchars($code) ?>">
-                                        </div>
-                                        <div>
-                                            <label class="form-label"><?= htmlspecialchars(gs('translations.short_description', $allStrings)) ?></label>
-                                            <input class="tr-short form-input" data-lang="<?= htmlspecialchars($code) ?>">
-                                        </div>
-                                        <div>
-                                            <label class="form-label"><?= htmlspecialchars(gs('general.description', $allStrings)) ?></label>
-                                            <textarea class="tr-desc form-textarea" data-lang="<?= htmlspecialchars($code) ?>" rows="3"></textarea>
-                                        </div>
-                                        <div>
-                                            <label class="form-label"><?= htmlspecialchars(gs('translations.specifications', $allStrings)) ?></label>
-                                            <textarea class="tr-spec form-textarea" data-lang="<?= htmlspecialchars($code) ?>" rows="2"></textarea>
-                                        </div>
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                                            <div>
-                                                <label class="form-label"><?= htmlspecialchars(gs('translations.meta_title', $allStrings)) ?></label>
-                                                <input class="tr-meta-title form-input" data-lang="<?= htmlspecialchars($code) ?>">
-                                            </div>
-                                            <div>
-                                                <label class="form-label"><?= htmlspecialchars(gs('translations.meta_keywords', $allStrings)) ?></label>
-                                                <input class="tr-meta-keys form-input" data-lang="<?= htmlspecialchars($code) ?>">
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label class="form-label"><?= htmlspecialchars(gs('translations.meta_description', $allStrings)) ?></label>
-                                            <input class="tr-meta-desc form-input" data-lang="<?= htmlspecialchars($code) ?>">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="btnSubmitForm">
+                        <i class="fas fa-save"></i>
+                        <span data-i18n="form.buttons.save"><?= __t('form.buttons.save', 'Save') ?></span>
+                    </button>
+                    <button type="button" class="btn btn-outline" id="btnCancelForm" data-i18n="form.buttons.cancel">
+                        <?= __t('form.buttons.cancel', 'Cancel') ?>
+                    </button>
+                    <?php if ($canDelete): ?>
+                    <button type="button" id="btnDeleteProduct" class="btn btn-danger" style="display:none">
+                        <i class="fas fa-trash"></i>
+                        <span data-i18n="table.actions.delete"><?= __t('table.actions.delete', 'Delete') ?></span>
+                    </button>
+                    <?php endif; ?>
                 </div>
-            </div>
-            
-            <div class="form-actions">
-                <button id="productDeleteBtn" class="btn danger" style="display: none;">
-                    <?= htmlspecialchars(gs('products.delete', $allStrings)) ?>
-                </button>
-                <button id="productCancelBtn" class="btn outline">
-                    <?= htmlspecialchars(gs('products.cancel', $allStrings)) ?>
-                </button>
-                <button id="productSaveBtn" class="btn primary">
-                    <?= htmlspecialchars(gs('products.save', $allStrings)) ?>
-                </button>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
+
+    <!-- Filters -->
+    <div class="card filter-card">
+        <div class="card-body">
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label for="searchInput" data-i18n="filters.search">
+                        <?= __t('filters.search', 'Search') ?>
+                    </label>
+                    <input type="text" id="searchInput" class="form-control"
+                           data-i18n-placeholder="filters.search_placeholder"
+                           placeholder="<?= __t('filters.search_placeholder', 'Search products...') ?>">
+                </div>
+
+                <?php if (is_super_admin()): ?>
+                <div class="filter-group">
+                    <label for="tenantFilter" data-i18n="filters.tenant_id">
+                        <?= __t('filters.tenant_id', 'Tenant ID') ?>
+                    </label>
+                    <input type="number" id="tenantFilter" class="form-control" value="<?= $tenantId ?>"
+                           data-i18n-placeholder="filters.tenant_placeholder"
+                           placeholder="<?= __t('filters.tenant_placeholder', 'Filter by tenant') ?>">
+                </div>
+                <?php endif; ?>
+
+                <div class="filter-group">
+                    <label for="typeFilter" data-i18n="filters.product_type">Product Type</label>
+                    <select id="typeFilter" class="form-control">
+                        <option value="">All Types</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="brandFilter" data-i18n="filters.brand">Brand</label>
+                    <select id="brandFilter" class="form-control">
+                        <option value="">All Brands</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="statusFilter" data-i18n="filters.status">
+                        <?= __t('filters.status', 'Status') ?>
+                    </label>
+                    <select id="statusFilter" class="form-control">
+                        <option value="" data-i18n="filters.status_options.all">All Status</option>
+                        <option value="1" data-i18n="filters.status_options.active">Active</option>
+                        <option value="0" data-i18n="filters.status_options.inactive">Inactive</option>
+                    </select>
+                </div>
+
+                <div class="filter-actions">
+                    <button id="btnApplyFilters" class="btn btn-secondary" data-i18n="filters.apply">
+                        <?= __t('filters.apply', 'Apply') ?>
+                    </button>
+                    <button id="btnResetFilters" class="btn btn-outline" data-i18n="filters.reset">
+                        <?= __t('filters.reset', 'Reset') ?>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Count -->
+    <div id="resultsCount" class="results-count" style="padding:12px 16px; margin-bottom:12px; background:var(--card-bg,#081127); border:1px solid var(--border-color,#263044); border-radius:8px; display:none;">
+        <span style="color:var(--text-secondary,#94a3b8); font-size:0.9rem;">
+            <i class="fas fa-box"></i> 
+            <span id="resultsCountText"></span>
+        </span>
+    </div>
+
+    <!-- Table -->
+    <div class="card table-card">
+        <div class="card-body">
+            <div id="tableLoading" class="loading-state">
+                <div class="spinner"></div>
+                <p data-i18n="products.loading"><?= __t('products.loading', 'Loading...') ?></p>
+            </div>
+
+            <div id="tableContainer" style="display:none">
+                <div class="table-responsive">
+                    <table class="data-table" id="productsTable">
+                        <thead>
+                            <tr>
+                                <th data-i18n="table.headers.id">ID</th>
+                                <?php if (is_super_admin()): ?>
+                                <th data-i18n="table.headers.tenant">Tenant</th>
+                                <?php endif; ?>
+                                <th data-i18n="table.headers.image">Image</th>
+                                <th data-i18n="table.headers.name">Name</th>
+                                <th data-i18n="table.headers.sku">SKU</th>
+                                <th data-i18n="table.headers.type">Type</th>
+                                <th data-i18n="table.headers.price">Price</th>
+                                <th data-i18n="table.headers.stock">Stock</th>
+                                <th data-i18n="table.headers.status">Status</th>
+                                <th data-i18n="table.headers.actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="pagination-wrapper">
+                    <div class="pagination-info">
+                        <span data-i18n="pagination.showing">Showing</span>
+                        <span id="paginationInfo">0-0 of 0</span>
+                    </div>
+                    <div class="pagination" id="pagination"></div>
+                </div>
+            </div>
+
+            <div id="emptyState" class="empty-state" style="display:none">
+                <div class="empty-icon">📦</div>
+                <h3 data-i18n="table.empty.title">No Products Found</h3>
+                <p data-i18n="table.empty.message">Start by adding your first product</p>
+                <?php if ($canCreate): ?>
+                <button class="btn btn-primary" onclick="if(window.Products)window.Products.add()">
+                    <i class="fas fa-plus"></i>
+                    <span data-i18n="table.empty.add_first">Add First Product</span>
+                </button>
+                <?php endif; ?>
+            </div>
+
+            <div id="errorState" class="error-state" style="display:none">
+                <div class="error-icon">⚠️</div>
+                <h3 data-i18n="messages.error.load_failed">Error Loading Data</h3>
+                <p id="errorMessage"></p>
+                <button id="btnRetry" class="btn btn-secondary" data-i18n="products.retry">Retry</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Media Studio Modal -->
+    <div id="prodMediaStudioModal" class="modal" style="display:none">
+        <div class="modal-content">
+            <span class="close" id="prodMediaStudioClose">&times;</span>
+            <iframe id="prodMediaStudioFrame" src="/admin/fragments/media_studio.php?embedded=1&tenant_id=<?= $tenantId ?>&lang=<?= $lang ?>" style="width:100%; height:500px; border:none;"></iframe>
+        </div>
+    </div>
+
 </div>
 
-<script>
-window.CSRF_TOKEN = "<?= $csrf ?>";
-window.AVAILABLE_LANGUAGES = <?= json_encode([['code' => 'en', 'name' => 'English'], ['code' => 'ar', 'name' => 'العربية']], JSON_UNESCAPED_UNICODE) ?>;
-window.CURRENT_USER = <?= json_encode($user, JSON_UNESCAPED_UNICODE) ?>;
-window.TRANSLATIONS = <?= json_encode($allStrings, JSON_UNESCAPED_UNICODE) ?>;
-window.PRODUCT_META_API = "<?= htmlspecialchars($productMetaApi) ?>";
-window.CATEGORIES_API = "<?= htmlspecialchars($categoriesApi) ?>";
-window.MEDIA_API = "<?= htmlspecialchars($mediaStudioApi) ?>";
-window.API_BASE = "<?= htmlspecialchars($apiPath) ?>";
+<!-- Expose client-side globals for the module -->
+<script type="text/javascript">
+window.APP_CONFIG = window.APP_CONFIG || {};
+window.APP_CONFIG.API_BASE = window.APP_CONFIG.API_BASE || '<?= $apiBase ?>';
+window.APP_CONFIG.TENANT_ID = window.APP_CONFIG.TENANT_ID || <?= $tenantId ?>;
+window.APP_CONFIG.CSRF_TOKEN = window.APP_CONFIG.CSRF_TOKEN || '<?= addslashes($csrf) ?>';
+window.APP_CONFIG.USER_ID = window.APP_CONFIG.USER_ID || <?= admin_user_id() ?>;
+
+window.USER_LANGUAGE = window.USER_LANGUAGE || '<?= addslashes($lang) ?>';
+window.USER_DIRECTION = window.USER_DIRECTION || '<?= addslashes($dir) ?>';
+window.CSRF_TOKEN = window.CSRF_TOKEN || '<?= addslashes($csrf) ?>';
+
+// Page permissions available to JS
+window.PAGE_PERMISSIONS = <?= json_encode([
+    'canCreate' => $canCreate,
+    'canEdit' => $canEdit,
+    'canDelete' => $canDelete,
+    'canDuplicate' => $canDuplicate,
+    'canViewAll' => $canViewAll,
+    'canViewOwn' => $canViewOwn,
+    'canViewTenant' => $canViewTenant,
+    'canEditAll' => $canEditAll,
+    'canEditOwn' => $canEditOwn,
+    'canDeleteAll' => $canDeleteAll,
+    'canDeleteOwn' => $canDeleteOwn,
+    'isSuperAdmin' => is_super_admin()
+], JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="/admin/assets/js/admin_core.js"></script>
-<script src="/admin/assets/js/pages/products.js" defer></script>
-</body>
-</html>
+
+<script type="text/javascript">
+window.PRODUCTS_CONFIG = {
+    apiUrl: '<?= $apiBase ?>/products',
+    categoriesApi: '<?= $apiBase ?>/categories',
+    brandsApi: '<?= $apiBase ?>/brands',
+    productTypesApi: '<?= $apiBase ?>/product_types',
+    attributesApi: '<?= $apiBase ?>/product_attributes',
+    languagesApi: '<?= $apiBase ?>/languages',
+    imagesApi: '<?= $apiBase ?>/images',
+    tenantsApi: '<?= $apiBase ?>/tenants',
+    csrfToken: '<?= addslashes($csrf) ?>',
+    lang: '<?= addslashes($lang) ?>',
+    itemsPerPage: 25
+};
+</script>
+
+<!-- Translation loader (runs early) -->
+<script type="text/javascript">
+(function(){
+    async function applyTranslations() {
+        try {
+            const lang = window.USER_LANGUAGE || 'en';
+            const url = `/languages/Products/${encodeURIComponent(lang)}.json`;
+            console.log('[Products] Loading translations from', url);
+            const res = await fetch(url, { credentials: 'same-origin' });
+            if (!res.ok) throw new Error('Translation fetch failed: ' + res.status);
+            const translations = await res.json();
+            window.PRODUCTS_TRANSLATIONS = translations;
+            // apply translations to elements with data-i18n
+            const container = document.getElementById('productsPageContainer');
+            if (!container) return;
+            container.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                const txt = key.split('.').reduce((o,k) => (o && o[k] !== undefined) ? o[k] : null, translations);
+                if (txt !== null && txt !== undefined) {
+                    if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
+                        el.placeholder = txt;
+                    } else {
+                        el.textContent = txt;
+                    }
+                }
+            });
+            // placeholders
+            container.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+                const key = el.getAttribute('data-i18n-placeholder');
+                const txt = key.split('.').reduce((o,k) => (o && o[k] !== undefined) ? o[k] : null, translations);
+                if (txt !== null && txt !== undefined) el.placeholder = txt;
+            });
+            console.log('[Products] Translations applied');
+        } catch (err) {
+            console.warn('[Products] Translation load/apply failed:', err);
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', applyTranslations);
+    } else {
+        setTimeout(applyTranslations, 50);
+    }
+})();
+</script>
+
+<!-- Page Permissions JSON for scripts that prefer it in DOM -->
+<script id="pagePermissions" type="application/json">
+<?= json_encode([
+    'canCreate' => $canCreate,
+    'canEdit' => $canEdit,
+    'canDelete' => $canDelete,
+    'canDuplicate' => $canDuplicate,
+    'canViewAll' => $canViewAll,
+    'canViewOwn' => $canViewOwn,
+    'canViewTenant' => $canViewTenant,
+    'canEditAll' => $canEditAll,
+    'canEditOwn' => $canEditOwn,
+    'canDeleteAll' => $canDeleteAll,
+    'canDeleteOwn' => $canDeleteOwn,
+    'isSuperAdmin' => is_super_admin()
+], JSON_UNESCAPED_UNICODE) ?>
+</script>
+
+<script id="PRODUCTS_INITIAL_PAYLOAD" type="application/json">
+<?= json_encode(['items' => [], 'meta' => ['page' => 1, 'per_page' => 25, 'total' => 0]]) ?>
+</script>
+
+<!-- Load AdminFramework + Page module when embedded; otherwise load normally -->
+<?php if ($isFragment): ?>
+<script src="/admin/assets/js/admin_framework.js?v=<?= time() ?>"></script>
+<script src="/admin/assets/js/pages/products.js?v=<?= time() ?>"></script>
+
+<script>
+(function(){
+    console.log('[Products] Embedded mode - waiting for framework & module...');
+    let attempts = 0, maxAttempts = 50;
+    const interval = setInterval(function(){
+        attempts++;
+        if (window.AdminFramework && window.Products && typeof window.Products.init === 'function') {
+            clearInterval(interval);
+            console.log('[Products] Module ready - initializing...');
+            try {
+                const maybePromise = window.Products.init();
+                if (maybePromise && typeof maybePromise.then === 'function') {
+                    maybePromise.then(()=>console.log('[Products] Initialized')).catch(e=>console.error('[Products] Init failed', e));
+                } else {
+                    console.log('[Products] Initialized (sync)');
+                }
+            } catch (e) {
+                console.error('[Products] Init threw', e);
+            }
+        } else if (attempts > maxAttempts) {
+            clearInterval(interval);
+            console.error('[Products] Timeout waiting for module. Framework present:', !!window.AdminFramework, 'Module present:', !!window.Products);
+        } else if (attempts % 10 === 0) {
+            console.log('[Products] waiting...', attempts, '/', maxAttempts);
+        }
+    }, 100);
+})();
+</script>
+<?php else: ?>
+<script src="/admin/assets/js/pages/products.js?v=<?= time() ?>"></script>
+<?php endif; ?>
+
+<?php
+// Load footer if standalone
+if (!$isFragment) {
+    require_once __DIR__ . '/../includes/footer.php';
+}
+?>
