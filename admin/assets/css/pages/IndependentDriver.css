@@ -1,0 +1,220 @@
+/* admin/assets/css/pages/IndependentDriver.css
+ *
+ * Global styles for IndependentDriver fragment
+ * - Responsive layout
+ * - RTL aware (uses [dir="rtl"] on container/html)
+ * - Integrates with theme system (colors, buttons, fonts from database)
+ * - Uses CSS variables injected by admin/includes/theme_injector.php
+ *
+ * Save as UTF-8 without BOM.
+ */
+
+/* Variables - integrate with theme system */
+:root {
+  /* Use theme colors injected by theme_injector.php, with fallbacks */
+  --idrv-bg: var(--color-surface, #1A1A1A);
+  --idrv-bg-light: var(--color-bg, #0A0A0A);
+  --idrv-border: var(--color-border, #333333);
+  --idrv-muted: var(--color-muted, #B0B0B0);
+  --idrv-text-primary: var(--color-text, #FFFFFF);
+  --idrv-accent: var(--color-primary, #FF0000);
+  --idrv-accent-hover: var(--color-primary-dark, #2563EB);
+  --idrv-success: var(--color-success, #10B981);
+  --idrv-danger: var(--color-error, #EF4444);
+  --idrv-warning: var(--color-warning, #F59E0B);
+  --idrv-info: var(--color-info, #22C55E);
+  --idrv-radius: 8px;
+  --idrv-gap: 12px;
+  /* Use theme fonts if available */
+  --idrv-font-body: var(--font-family, 'Open Sans', sans-serif);
+  --idrv-font-heading: var(--theme-heading_font, var(--font-family, 'Roboto', sans-serif));
+  --idrv-font-button: var(--theme-button_font, var(--font-family, 'Poppins', sans-serif));
+}
+
+/* Container */
+.independent-driver {
+  font-family: var(--idrv-font-body);
+  color: var(--idrv-text-primary);
+  background: transparent;
+  padding: 14px;
+  box-sizing: border-box;
+}
+
+/* Topbar */
+.idrv-topbar {
+  display: flex;
+  gap: var(--idrv-gap);
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.idrv-user { display:flex; flex-direction:column; }
+.idrv-user strong { font-size: 1rem; display:block; color: var(--idrv-text-primary); font-family: var(--idrv-font-heading); }
+.idrv-perms { color: var(--idrv-muted); font-size: 0.86rem; margin-top:4px; }
+
+/* Controls */
+.idrv-controls { margin-left: auto; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.idrv-controls input[type="search"],
+.idrv-controls input[type="text"],
+.idrv-controls select {
+  padding: 8px 10px;
+  border: 1px solid var(--idrv-border);
+  border-radius: 6px;
+  background: var(--idrv-bg);
+  color: var(--idrv-text-primary);
+  min-height: 38px;
+  font-size: 0.95rem;
+}
+.idrv-controls .btn { 
+  padding: 8px 12px; 
+  border-radius: 6px; 
+  border: none; 
+  background: var(--idrv-accent); 
+  color: #fff; 
+  cursor: pointer; 
+  font-family: var(--idrv-font-button);
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+.idrv-controls .btn:hover {
+  background: var(--idrv-accent-hover);
+}
+.btn { 
+  cursor: pointer; 
+  padding: 6px 10px; 
+  border-radius: 6px; 
+  border: 1px solid transparent; 
+  background: var(--idrv-bg); 
+  color: var(--idrv-text-primary);
+  font-family: var(--idrv-font-button);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.btn.primary, .btn.btn-primary { 
+  background: var(--idrv-accent); 
+  color: #fff; 
+  border-color: transparent; 
+}
+.btn.primary:hover, .btn.btn-primary:hover {
+  background: var(--idrv-accent-hover);
+}
+.btn.danger, .btn.btn-danger { 
+  background: var(--idrv-danger); 
+  color: #fff; 
+}
+.btn.danger:hover, .btn.btn-danger:hover {
+  opacity: 0.9;
+}
+.btn.success { 
+  background: var(--idrv-success); 
+  color: #fff; 
+}
+.btn.success:hover {
+  opacity: 0.9;
+}
+
+/* Grid */
+.idrv-grid { display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
+.idrv-form { background: var(--idrv-bg); border:1px solid var(--idrv-border); border-radius: var(--idrv-radius); padding:12px; min-width:320px; flex: 1 1 420px; box-sizing:border-box; }
+.idrv-table-wrap { flex: 1 1 560px; min-width:320px; background: var(--idrv-bg); border:1px solid var(--idrv-border); border-radius: var(--idrv-radius); padding:8px; box-sizing:border-box; }
+
+/* Form layout */
+.idrv-form-inner { display:flex; gap:16px; flex-wrap:wrap; }
+.idrv-col { flex: 1 1 280px; min-width:220px; box-sizing:border-box; }
+.idrv-col-right { flex: 1 1 300px; }
+
+/* Labels and inputs */
+.idrv-form label { 
+  display: block; 
+  font-size: 0.95rem; 
+  margin-bottom: 6px; 
+  color: var(--idrv-text-primary); 
+  font-weight: 500;
+}
+.idrv-form input[type="text"],
+.idrv-form input[type="email"],
+.idrv-form select,
+.idrv-form textarea { 
+  width: 100%; 
+  padding: 8px 10px; 
+  border: 1px solid var(--idrv-border); 
+  border-radius: 6px; 
+  box-sizing: border-box; 
+  font-size: 0.95rem; 
+  background: var(--idrv-bg-light); 
+  color: var(--input-text, #000000);
+  font-family: var(--idrv-font-body);
+}
+.idrv-form input::placeholder,
+.idrv-form textarea::placeholder {
+  color: var(--input-placeholder, #6B7280);
+}
+.idrv-form input[type="file"] { display: block; margin-top: 6px; }
+
+/* Previews */
+.idrv-preview { margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.idrv-preview img { display:block; border-radius:6px; object-fit:cover; border:1px solid #e6e6e6; }
+.idrv-preview .btn { margin-top:6px; }
+
+/* Preview item wrapper */
+.idrv-preview-item { display:inline-flex; flex-direction:column; align-items:flex-start; gap:6px; }
+
+/* Form actions */
+.idrv-form-actions { margin-top:10px; display:flex; gap:8px; align-items:center; }
+.idrv-form .btn[disabled] { opacity:0.6; cursor:not-allowed; }
+
+/* Messages */
+.idrv-form-message { margin-top:8px; color:var(--idrv-muted); font-size:0.95rem; }
+
+/* Table */
+.table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.table thead th { 
+  text-align: left; 
+  padding: 10px; 
+  background: var(--idrv-bg); 
+  border-bottom: 1px solid var(--idrv-border); 
+  font-weight: 600; 
+  color: var(--idrv-text-primary); 
+  font-family: var(--idrv-font-heading);
+}
+.table tbody td { 
+  padding: 10px; 
+  border-bottom: 1px solid var(--idrv-border); 
+  vertical-align: middle; 
+  color: var(--idrv-text-primary);
+}
+.table tbody tr:hover { background: rgba(255, 255, 255, 0.05); }
+
+/* Responsive: stack columns */
+@media (max-width: 980px) {
+  .idrv-grid { flex-direction:column; }
+  .idrv-controls { width:100%; }
+  .idrv-topbar { align-items:flex-start; }
+}
+
+/* Small screens: full width inputs */
+@media (max-width: 640px) {
+  .idrv-col, .idrv-col-right { min-width: 100%; flex-basis: 100%; }
+  .idrv-controls { gap:6px; }
+  .idrv-controls input, .idrv-controls select { min-width:140px; }
+}
+
+/* Inline elements */
+.btn.small { padding:4px 8px; font-size:0.86rem; }
+
+/* Accessibility focus states */
+input:focus, select:focus, textarea:focus, button:focus { 
+  outline: 2px solid var(--idrv-accent); 
+  outline-offset: 2px; 
+}
+
+/* RTL support (if html[dir="rtl"] or container dir=rtl) */
+[dir="rtl"] .idrv-topbar { direction: rtl; }
+[dir="rtl"] .idrv-controls { margin-left: 0; margin-right: auto; }
+[dir="rtl"] .idrv-form label { text-align: right; }
+[dir="rtl"] .table thead th, [dir="rtl"] .table tbody td { text-align: right; }
+
+/* Utility helpers */
+.text-muted { color: var(--idrv-muted); font-size: 0.9rem; }
+.center { text-align: center; }
+.hidden { display: none !important; }
