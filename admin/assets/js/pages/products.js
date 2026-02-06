@@ -594,7 +594,7 @@
     async function savePricingData(productId, formData) {
         try {
             const price = formData.get('price');
-            if (!price && price !== '0') return;
+            if (price === null || price === undefined || price === '') return;
 
             const pricingData = {
                 product_id: parseInt(productId),
@@ -621,14 +621,17 @@
     async function savePhysicalAttributes(productId, formData) {
         try {
             const weight = formData.get('weight');
-            if (!weight && !formData.get('length') && !formData.get('width') && !formData.get('height')) return;
+            const length = formData.get('length');
+            const width = formData.get('width');
+            const height = formData.get('height');
+            if (!weight && !length && !width && !height) return;
 
             const physicalData = {
                 product_id: parseInt(productId),
                 weight: parseFloat(weight) || null,
-                length: parseFloat(formData.get('length')) || null,
-                width: parseFloat(formData.get('width')) || null,
-                height: parseFloat(formData.get('height')) || null,
+                length: parseFloat(length) || null,
+                width: parseFloat(width) || null,
+                height: parseFloat(height) || null,
                 weight_unit: 'kg',
                 dimension_unit: 'cm'
             };
@@ -1112,9 +1115,10 @@
                 const productData = result.data;
                 const product = { ...productData };
                 delete product.id;
+                const uid = Math.random().toString(36).substring(2, 8);
                 product.name = `${product.name || ''} (Copy)`;
-                product.sku = `${product.sku || ''}-copy-${Date.now()}`;
-                product.slug = `${product.slug || ''}-copy-${Date.now()}`;
+                product.sku = `${product.sku || ''}-copy-${uid}`;
+                product.slug = `${product.slug || ''}-copy-${uid}`;
                 
                 showForm(product);
             } else {

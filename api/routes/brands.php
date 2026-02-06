@@ -33,9 +33,16 @@ $service    = new BrandsService($repo, $validator);
 $controller = new BrandsController($service);
 
 // ===== Tenant context =====
+if (session_status() === PHP_SESSION_NONE) session_start();
+
 $tenantId = isset($_GET['tenant_id']) && is_numeric($_GET['tenant_id'])
     ? (int)$_GET['tenant_id']
-    : ($_SESSION['tenant_id'] ?? 1);
+    : ($_SESSION['tenant_id'] ?? null);
+
+if ($tenantId === null) {
+    ResponseFormatter::error('Unauthorized: tenant not found', 401);
+    return;
+}
 
 // ===== Parse URI for slug/id =====
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
