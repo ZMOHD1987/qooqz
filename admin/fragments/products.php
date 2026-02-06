@@ -801,28 +801,28 @@ window.PRODUCTS_CONFIG = {
 
 <script>
 (function(){
-    console.log('[Products] Embedded mode - waiting for framework & module...');
-    let attempts = 0, maxAttempts = 50;
-    const interval = setInterval(function(){
+    console.log('[Products] Embedded mode - waiting for module...');
+    var attempts = 0, maxAttempts = 80;
+    var interval = setInterval(function(){
         attempts++;
-        if (window.AdminFramework && window.Products && typeof window.Products.init === 'function') {
+        if (window.Products && typeof window.Products.init === 'function') {
             clearInterval(interval);
-            console.log('[Products] Module ready - initializing...');
+            console.log('[Products] Module ready - initializing (attempt ' + attempts + ')...');
             try {
-                const maybePromise = window.Products.init();
+                var maybePromise = window.Products.init();
                 if (maybePromise && typeof maybePromise.then === 'function') {
-                    maybePromise.then(()=>console.log('[Products] Initialized')).catch(e=>console.error('[Products] Init failed', e));
-                } else {
-                    console.log('[Products] Initialized (sync)');
+                    maybePromise.then(function(){
+                        console.log('[Products] ✓ Initialized successfully');
+                    }).catch(function(e){
+                        console.error('[Products] Init failed:', e);
+                    });
                 }
             } catch (e) {
-                console.error('[Products] Init threw', e);
+                console.error('[Products] Init threw:', e);
             }
         } else if (attempts > maxAttempts) {
             clearInterval(interval);
-            console.error('[Products] Timeout waiting for module. Framework present:', !!window.AdminFramework, 'Module present:', !!window.Products);
-        } else if (attempts % 10 === 0) {
-            console.log('[Products] waiting...', attempts, '/', maxAttempts);
+            console.error('[Products] Timeout waiting for module after ' + (maxAttempts * 100) + 'ms');
         }
     }, 100);
 })();

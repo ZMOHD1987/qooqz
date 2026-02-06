@@ -247,9 +247,9 @@
                 console.warn('[Products] Failed to load brands:', err);
             }
 
-            // Load categories
+            // Load categories (fetch ALL for tree - need page & limit)
             try {
-                const categoriesResult = await apiCall(`${API.categories}?format=json&tenant_id=${state.tenantId}&lang=${state.language}`);
+                const categoriesResult = await apiCall(`${API.categories}?page=1&limit=1000&tenant_id=${state.tenantId}&lang=${state.language}&format=json`);
                 if (categoriesResult.success) {
                     // categories returns { data: { items: [...], meta: {} } }
                     const categoriesData = categoriesResult.data?.items || categoriesResult.data;
@@ -1560,8 +1560,8 @@
     async function init() {
         console.log('[Products] Initializing...');
 
-        // Use document.getElementById as fallback if AF.$ not available
-        const $id = (id) => (AF.$ ? AF.$(id) : document.getElementById(id));
+        // Always use document.getElementById for reliability in fragment mode
+        const $id = (id) => document.getElementById(id);
 
         // Cache DOM elements
         el = {
@@ -1665,40 +1665,64 @@
             resultsCountText: $id('resultsCountText')
         };
 
+        // Log DOM element detection for debugging
+        console.log('[Products] DOM elements found:', {
+            form: !!el.form,
+            formContainer: !!el.formContainer,
+            btnAdd: !!el.btnAdd,
+            btnSubmit: !!el.btnSubmit,
+            tbody: !!el.tbody,
+            prodMainCategory: !!el.prodMainCategory,
+            prodSubCategory: !!el.prodSubCategory,
+            prodType: !!el.prodType,
+            prodBrand: !!el.prodBrand,
+            prodCurrency: !!el.prodCurrency
+        });
+
         // Load translations
         await loadTranslations(state.language);
 
-        // Setup event listeners
-        if (el.form) el.form.addEventListener('submit', saveProduct);
-        if (el.btnAdd) el.btnAdd.addEventListener('click', () => showForm());
-        if (el.btnClose) el.btnClose.addEventListener('click', hideForm);
-        if (el.btnCancel) el.btnCancel.addEventListener('click', hideForm);
-        if (el.btnApply) el.btnApply.addEventListener('click', applyFilters);
-        if (el.btnReset) el.btnReset.addEventListener('click', resetFilters);
-        if (el.btnRetry) el.btnRetry.addEventListener('click', () => loadProducts(state.page));
-        if (el.btnDeleteProduct) el.btnDeleteProduct.addEventListener('click', () => {
+        // Setup event listeners (use onXxx to prevent duplicate handlers on re-init)
+        if (el.form) {
+            el.form.onsubmit = saveProduct;
+            console.log('[Products] ✓ Form submit handler attached');
+        } else {
+            console.error('[Products] ✗ Form element not found!');
+        }
+        if (el.btnAdd) {
+            el.btnAdd.onclick = function() { showForm(); };
+            console.log('[Products] ✓ Add button handler attached');
+        } else {
+            console.error('[Products] ✗ Add button not found!');
+        }
+        if (el.btnClose) el.btnClose.onclick = hideForm;
+        if (el.btnCancel) el.btnCancel.onclick = hideForm;
+        if (el.btnApply) el.btnApply.onclick = applyFilters;
+        if (el.btnReset) el.btnReset.onclick = resetFilters;
+        if (el.btnRetry) el.btnRetry.onclick = function() { loadProducts(state.page); };
+        if (el.btnDeleteProduct) el.btnDeleteProduct.onclick = function() {
             if (state.currentProduct) deleteProduct(state.currentProduct.id);
-        });
+        };
         
         // Attributes
-        if (el.btnAddAttribute) el.btnAddAttribute.addEventListener('click', addAttribute);
+        if (el.btnAddAttribute) el.btnAddAttribute.onclick = addAttribute;
         
         // Variants
-        if (el.btnAddVariant) el.btnAddVariant.addEventListener('click', addVariant);
+        if (el.btnAddVariant) el.btnAddVariant.onclick = addVariant;
         
         // Images
-        if (el.prodSelectImageBtn) el.prodSelectImageBtn.addEventListener('click', openMediaStudio);
-        if (el.mediaClose) el.mediaClose.addEventListener('click', closeMediaStudio);
+        if (el.prodSelectImageBtn) el.prodSelectImageBtn.onclick = openMediaStudio;
+        if (el.mediaClose) el.mediaClose.onclick = closeMediaStudio;
         
         // Translations
-        if (el.prodAddLangBtn) el.prodAddLangBtn.addEventListener('click', addTranslation);
+        if (el.prodAddLangBtn) el.prodAddLangBtn.onclick = addTranslation;
 
         // Main category → Sub category cascade
-        if (el.prodMainCategory) el.prodMainCategory.addEventListener('change', onMainCategoryChange);
-        if (el.prodSubCategory) el.prodSubCategory.addEventListener('change', onSubCategoryChange);
+        if (el.prodMainCategory) el.prodMainCategory.onchange = onMainCategoryChange;
+        if (el.prodSubCategory) el.prodSubCategory.onchange = onSubCategoryChange;
         
-        // Media Studio message listener
-        window.addEventListener('message', (e) => {
+        // Media Studio message listener (use addEventListener since window events can't use onmessage safely)
+        window.addEventListener('message', function(e) {
             if (e.data && e.data.type === 'media-selected') {
                 state.selectedImages = e.data.images || [];
                 renderProductImages();
@@ -1709,13 +1733,13 @@
         // Initialize tabs
         initTabs();
 
-        // Load dropdown data
+        // Load dropdown data (categories, brands, types, currencies, etc.)
         await loadDropdownData();
 
         // Load initial data
         await loadProducts(1);
 
-        console.log('[Products] Initialized successfully');
+        console.log('[Products] ✓ Initialized successfully');
     }
 
     // ════════════════════════════════════════════════════════════
@@ -1758,8 +1782,19 @@
     // Fragment support
     window.page = { run: init };
 
-    // Do NOT auto-init here. Let the fragment embed script (lines 784-810 in PHP)
-    // or standalone page handle initialization after DOM is fully ready.
+    // Auto-init: matches categories.js pattern (which works)
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.AdminFramework && !window.page.__fragment_init) {
+                init().catch(function(e) { console.error('[Products] Auto-init failed:', e); });
+            }
+        });
+    } else {
+        if (window.AdminFramework && !window.page.__fragment_init) {
+            init().catch(function(e) { console.error('[Products] Auto-init failed:', e); });
+        }
+    }
+    window.page.__fragment_init = false;
 
     console.log('[Products] Module loaded');
 
