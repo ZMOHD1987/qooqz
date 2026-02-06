@@ -557,9 +557,10 @@
                 await savePhysicalAttributes(savedProductId, formData);
 
                 // Save product categories
-                if (state.selectedCategories.length > 0) {
-                    await saveProductCategories(savedProductId);
-                }
+                await saveProductCategories(savedProductId, isEdit);
+
+                // Save product attribute assignments
+                await saveProductAttributeAssignments(savedProductId, isEdit);
 
                 // Save product translations
                 const translations = collectTranslations();
@@ -646,8 +647,31 @@
         }
     }
 
-    async function saveProductCategories(productId) {
+    async function saveProductCategories(productId, isEdit = false) {
         try {
+            if (state.selectedCategories.length === 0 && !isEdit) return;
+
+            // عند التعديل، حذف التصنيفات القديمة أولاً
+            if (isEdit) {
+                try {
+                    // جلب التصنيفات الموجودة وحذفها
+                    const existingResult = await apiCall(`/api/product_categories?product_id=${productId}&format=json`);
+                    if (existingResult.success) {
+                        const existingItems = existingResult.data?.items || (Array.isArray(existingResult.data) ? existingResult.data : []);
+                        for (const item of existingItems) {
+                            await apiCall('/api/product_categories', {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ id: parseInt(item.id) })
+                            });
+                        }
+                    }
+                } catch (err) {
+                    console.warn('[Products] Failed to clear old categories:', err);
+                }
+            }
+
+            // حفظ التصنيفات الجديدة
             for (const categoryId of state.selectedCategories) {
                 await apiCall('/api/product_categories', {
                     method: 'POST',
@@ -682,6 +706,41 @@
             }
         } catch (err) {
             console.warn('[Products] Failed to save translations:', err);
+        }
+    }
+
+    async function saveProductAttributeAssignments(productId, isEdit = false) {
+        try {
+            // عند التعديل، حذف التعيينات القديمة أولاً
+            if (isEdit) {
+                try {
+                    await apiCall(`/api/product_attribute_assignments/by_product?product_id=${productId}`, {
+                        method: 'DELETE'
+                    });
+                } catch (err) {
+                    console.warn('[Products] Failed to clear old attribute assignments:', err);
+                }
+            }
+
+            // حفظ التعيينات الجديدة
+            for (const attr of state.productAttributes) {
+                if (!attr.attribute_id) continue;
+
+                const assignmentData = {
+                    product_id: parseInt(productId),
+                    attribute_id: parseInt(attr.attribute_id),
+                    attribute_value_id: attr.attribute_value_id ? parseInt(attr.attribute_value_id) : null,
+                    custom_value: attr.value || null
+                };
+
+                await apiCall('/api/product_attribute_assignments', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(assignmentData)
+                });
+            }
+        } catch (err) {
+            console.warn('[Products] Failed to save attribute assignments:', err);
         }
     }
 
@@ -1090,13 +1149,35 @@
             const result = await apiCall(`/api/product_attribute_assignments/by_product?product_id=${productId}`);
             if (result.success) {
                 const items = Array.isArray(result.data) ? result.data : (result.data?.items || []);
-                state.productAttributes = items.map(item => ({
-                    attribute_id: item.attribute_id,
-                    attribute_name: item.attribute_name || item.name || `Attribute #${item.attribute_id}`,
-                    attribute_type: item.attribute_type_id || '',
-                    value: item.custom_value || '',
-                    attribute_value_id: item.attribute_value_id || null
-                }));
+                
+                // بناء قائمة السمات مع تحميل القيم المتاحة لكل سمة
+                const attrs = [];
+                for (const item of items) {
+                    // تحميل القيم المتاحة لهذه السمة
+                    let availableValues = [];
+                    try {
+                        const valuesResult = await apiCall(`${API.attributeValues}?attribute_id=${encodeURIComponent(item.attribute_id)}&format=json`);
+                        if (valuesResult.success) {
+                            availableValues = Array.isArray(valuesResult.data) ? valuesResult.data : (valuesResult.data?.items || []);
+                        }
+                    } catch (err) {
+                        console.warn('[Products] Failed to load values for attribute:', item.attribute_id, err);
+                    }
+
+                    // البحث عن اسم السمة من state.attributes
+                    const attrInfo = state.attributes.find(a => a.id == item.attribute_id);
+                    
+                    attrs.push({
+                        attribute_id: item.attribute_id,
+                        attribute_name: attrInfo?.name || item.attribute_name || item.attribute_slug || `Attribute #${item.attribute_id}`,
+                        attribute_type: item.attribute_type_id || attrInfo?.attribute_type_id || '',
+                        value: item.custom_value || item.value || '',
+                        attribute_value_id: item.attribute_value_id || null,
+                        available_values: availableValues
+                    });
+                }
+                
+                state.productAttributes = attrs;
                 renderAttributes();
             }
         } catch (err) {
