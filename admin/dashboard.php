@@ -1,193 +1,260 @@
 <?php
 declare(strict_types=1);
-/**
- * admin/dashboard.php
- * Dashboard page integrated with header.php and server-driven i18n.
- *
- * - Uses $GLOBALS['ADMIN_UI'] injected by includes/header.php
- * - All visible strings use data-i18n attributes for client-side translation
- * - Provides safe server-side fallbacks via s() when translations aren't injected yet
- */
+
+$validPages = [
+    'dashboard' => 'fragments/dashboard.php',
+    'users' => 'fragments/users.php',
+    'tenant' => 'fragments/tenant.php',
+    'permissions' => 'fragments/permissions.php',
+    // ... other pages
+];
 
 require_once __DIR__ . '/includes/header.php';
 
-// safe escape helper
-if (!function_exists('h')) {
-    function h($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
-}
+// ════════════════════════════════════════════════════════════
+// EXTRACT DATA
+// ════════════════════════════════════════════════════════════
+$payload = $GLOBALS['ADMIN_UI'] ?? [];
+$theme = $payload['theme'] ?? [];
+$user = $payload['user'] ?? [];
+$lang = $payload['lang'] ?? 'en';
 
-// server-side strings fallback accessor (safe)
-$payload = $GLOBALS['ADMIN_UI'] ?? ($ADMIN_UI_PAYLOAD ?? []);
-$S = is_array($payload['strings'] ?? null) ? $payload['strings'] : [];
-
-/**
- * s(key, default) - server-side fallback lookup for key like "dashboard_title" or "nav.products"
- */
-function s(string $key, $def = '') {
-    global $S;
-    if ($key === '') return $def;
-    // try dotted lookup
-    $parts = preg_split('/[\\.\\_]/', $key);
-    $cur = $S;
-    foreach ($parts as $p) {
-        if (is_array($cur) && array_key_exists($p, $cur)) {
-            $cur = $cur[$p];
-        } else {
-            $cur = null;
-            break;
-        }
+// Extract colors from DB/theme
+$colors = [];
+foreach ($theme['color_settings'] ?? [] as $c) {
+    if (!empty($c['color_value'])) {
+        $colors[] = [
+            'setting_name' => $c['setting_name'] ?? $c['setting_key'] ?? 'Color',
+            'color_value' => $c['color_value']
+        ];
     }
-    if ($cur !== null && $cur !== '') return (string)$cur;
-    // direct flat key
-    if (isset($S[$key]) && is_scalar($S[$key])) return (string)$S[$key];
-    return $def;
 }
 
-// current language for meta hint
-$lang = $payload['lang'] ?? ($_SESSION['preferred_language'] ?? 'en');
-
-// default fragment (set to '' to disable auto-load)
-$defaultLoad = '/admin/fragments/menus_list.php';
-
-// permission example for drivers
-$canViewDrivers = false;
-if (function_exists('user_has')) {
-    $canViewDrivers = user_has('view_drivers');
-} else {
-    $perms = $_SESSION['permissions'] ?? [];
-    $canViewDrivers = in_array('view_drivers', $perms, true) || (($_SESSION['role_id'] ?? 0) == 1);
-}
-$embedDrivers = !empty($_GET['embed']);
+// Check permissions
+$canViewDrivers = in_array('view_drivers', $user['permissions'] ?? [], true) 
+               || in_array('super_admin', $user['roles'] ?? [], true);
 ?>
-<meta data-page="dashboard"
-      data-i18n-files="/languages/admin/<?php echo rawurlencode($lang); ?>.json,/languages/Dashboard/<?php echo rawurlencode($lang); ?>.json">
 
-<section class="container" style="padding:18px 0;">
-  <h1 class="page-title" data-i18n="dashboard_title"><?php echo h(s('dashboard_title', 'Admin dashboard')); ?></h1>
-  <p class="text-muted" data-i18n="dashboard_subtitle"><?php echo h(s('dashboard_subtitle', 'Use the sidebar to navigate.')); ?></p>
-</section>
+<!-- Page meta for i18n -->
+<meta data-page="dashboard" 
+      data-i18n-files="/languages/admin/<?= rawurlencode($lang) ?>.json">
 
-<section class="container" style="padding:18px 0;">
-  <div style="margin-top:6px;padding:18px;background:#f8fafc;border-radius:10px;border:1px solid rgba(2,6,23,0.04);">
-    <div style="display:flex;gap:12px;align-items:flex-start;">
-      <div style="font-size:28px;line-height:1;">🧭</div>
-      <div>
-        <h3 style="margin:0 0 8px 0;" data-i18n="welcome_title"><?php echo h(s('welcome_title', 'Welcome')); ?></h3>
-        <p class="text-muted" style="margin:0;" data-i18n="welcome_message">
-          <?php echo h(s('welcome_message', 'This admin panel lets you manage the site.')); ?>
-        </p>
-      </div>
+<style>
+/* ================= Dashboard Styles ================= */
+.dashboard-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+}
+.dash-card {
+    background: var(--background-secondary, #1e293b);
+    border: 1px solid var(--border-color, #334155);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+.dash-title { font-size: 2rem; font-weight: 700; color: var(--text-primary,#fff); margin-bottom:0.5rem; }
+.dash-subtitle { color: var(--text-secondary,#94a3b8); font-size:0.9375rem; margin-bottom:0; }
+.welcome-section { display:flex; align-items:center; gap:1rem; }
+.welcome-icon { font-size:2.5rem; }
+.welcome-content h3 { margin:0 0 0.25rem 0; font-size:1.25rem; }
+.welcome-content p { margin:0; color:var(--text-secondary,#94a3b8); }
+.quick-actions-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1.25rem; margin-top:1.5rem; }
+.action-card {
+    background: var(--background-secondary,#1e293b);
+    border:1px solid var(--border-color,#334155);
+    border-radius:10px;
+    padding:1.25rem;
+    text-decoration:none;
+    color:inherit;
+    transition:all 0.2s ease;
+    display:flex;
+    align-items:flex-start;
+    gap:1rem;
+}
+.action-card:hover {
+    background: var(--primary-color,#3B82F6);
+    color:#fff;
+    transform:translateY(-2px);
+    box-shadow:0 8px 16px rgba(0,0,0,0.2);
+}
+.action-icon { font-size:2rem; flex-shrink:0; }
+.action-content h3 { margin:0 0 0.25rem 0; font-size:1.125rem; font-weight:600; }
+.action-content p { margin:0; font-size:0.875rem; opacity:0.85; }
+
+.colors-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:1.5rem; margin-top:1.5rem; }
+.color-card {
+    background: var(--background-secondary,#1e293b);
+    border:2px solid var(--border-color,#334155);
+    border-radius:10px;
+    padding:1rem;
+    cursor:pointer;
+    transition:all 0.2s ease;
+}
+.color-card:hover { border-color: var(--primary-color,#6366f1); transform:translateY(-4px); box-shadow:0 8px 20px rgba(0,0,0,0.3); }
+.color-card.copied { border-color:#10b981; animation: copyPulse 0.5s ease; }
+@keyframes copyPulse { 50% { transform: scale(1.05); } }
+
+.color-preview { width:100%; height:80px; border-radius:8px; margin-bottom:0.75rem; border:1px solid rgba(0,0,0,0.2); }
+.color-name { font-weight:600; color:var(--text-primary,#fff); margin-bottom:0.5rem; font-size:0.95rem; }
+.color-code { font-family:'Courier New', monospace; font-size:0.85rem; color:var(--text-secondary,#94a3b8); background:rgba(0,0,0,0.2); padding:0.25rem 0.5rem; border-radius:4px; }
+
+.copy-feedback {
+    position:fixed;
+    bottom:2rem; right:2rem;
+    background:linear-gradient(135deg,#10b981 0%,#059669 100%);
+    color:white; padding:1rem 1.5rem; border-radius:8px;
+    box-shadow:0 4px 20px rgba(16,185,129,0.4);
+    opacity:0; transform:translateY(20px); transition:all 0.3s ease; pointer-events:none; z-index:10000; font-weight:500;
+}
+.copy-feedback.show { opacity:1; transform:translateY(0); }
+
+.empty-state { text-align:center; padding:3rem; color:var(--text-secondary,#94a3b8); }
+.empty-state p { margin:0; }
+
+@media (max-width:768px){
+    .dash-card { padding:1.5rem; }
+    .colors-grid { grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:1rem; }
+    .quick-actions-grid { grid-template-columns:1fr; }
+    .copy-feedback { bottom:1rem; right:1rem; left:1rem; }
+}
+</style>
+
+<div class="dashboard-wrapper">
+
+    <!-- Welcome Card -->
+    <div class="dash-card">
+        <h1 class="dash-title" data-i18n="dashboard_title">Dashboard</h1>
+        <p class="dash-subtitle" data-i18n="dashboard_subtitle">Welcome back, <?= htmlspecialchars($user['username'] ?? 'Guest') ?></p>
     </div>
-  </div>
-</section>
 
-<section class="container" style="padding:18px 0;">
-  <div style="margin-top:20px;padding:20px;background:#eef2ff;border:1px solid #c7e0ff;border-radius:8px;">
-    <h3 style="margin:0 0 10px 0;color:#0b6ea8;" data-i18n="test_instructions_title"><?php echo h(s('test_instructions_title','Test instructions')); ?></h3>
-    <ol style="margin:0;padding-left:20px;line-height:1.8;">
-      <li data-i18n="test_step_1"><strong data-i18n="test_step_1_heading"><?php echo h(s('test_step_1_heading','Open devtools')); ?></strong> (F12)</li>
-      <li data-i18n="test_step_2"><?php echo h(s('test_step_2','Look for console messages starting with ===')); ?></li>
-      <li data-i18n="test_step_3"><?php echo h(s('test_step_3','Toggle the sidebar using the button')); ?></li>
-      <li data-i18n="test_step_4"><?php echo h(s('test_step_4','Check network tab for failed fragment loads')); ?></li>
-      <li data-i18n="test_step_5"><?php echo h(s('test_step_5','Run testSidebar() to toggle via console')); ?></li>
-    </ol>
-  </div>
-</section>
+    <!-- Welcome Section -->
+    <div class="dash-card">
+        <div class="welcome-section">
+            <div class="welcome-icon">👋</div>
+            <div class="welcome-content">
+                <h3 data-i18n="welcome_title">Welcome Back</h3>
+                <p data-i18n="welcome_message">Manage your platform from here</p>
+            </div>
+        </div>
+    </div>
 
-<section class="container quick-actions" style="padding:18px 0;">
-  <h2 data-i18n="quick_actions_title"><?php echo h(s('quick_actions_title','Quick actions')); ?></h2>
-  <div class="grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:12px;">
-    <a class="card" href="/admin/products.php" data-load-url="/admin/products.php" style="text-decoration:none;">
-      <div class="card-icon">📦</div>
-      <div>
-        <h3 data-i18n="nav.products"><?php echo h(s('nav.products','Products')); ?></h3>
-        <p class="text-muted" data-i18n="manage_products"><?php echo h(s('manage_products','Manage products')); ?></p>
-      </div>
-    </a>
+    <!-- Quick Actions -->
+    <div class="dash-card">
+        <h2 style="font-size:1.5rem; margin-bottom:0.5rem; color:var(--text-primary);" data-i18n="quick_actions_title">Quick Actions</h2>
+        <div class="quick-actions-grid">
+            <a href="/admin/products.php" class="action-card"><div class="action-icon">📦</div><div class="action-content"><h3 data-i18n="nav.products">Products</h3><p data-i18n="manage_products">Manage products & inventory</p></div></a>
+            <a href="/admin/categories.php" class="action-card"><div class="action-icon">🏷️</div><div class="action-content"><h3 data-i18n="nav.categories">Categories</h3><p data-i18n="manage_categories">Organize product categories</p></div></a>
+            <a href="/admin/users.php" class="action-card"><div class="action-icon">👥</div><div class="action-content"><h3 data-i18n="nav.users">Users</h3><p data-i18n="manage_users">Manage user accounts</p></div></a>
+            <?php if ($canViewDrivers): ?>
+            <a href="/admin/drivers.php" class="action-card"><div class="action-icon">🚚</div><div class="action-content"><h3 data-i18n="nav.drivers">Drivers</h3><p data-i18n="manage_drivers">Manage delivery drivers</p></div></a>
+            <?php endif; ?>
+            <a href="/admin/orders.php" class="action-card"><div class="action-icon">🛒</div><div class="action-content"><h3 data-i18n="nav.orders">Orders</h3><p data-i18n="manage_orders">Track and process orders</p></div></a>
+            <a href="/admin/settings.php" class="action-card"><div class="action-icon">⚙️</div><div class="action-content"><h3 data-i18n="nav.settings">Settings</h3><p>Configure system settings</p></div></a>
+        </div>
+    </div>
 
-    <a class="card" href="/admin/menus_list.php" data-load-url="/admin/fragments/menus_list.php" style="text-decoration:none;">
-      <div class="card-icon">📁</div>
-      <div>
-        <h3 data-i18n="nav.categories"><?php echo h(s('nav.categories','Categories')); ?></h3>
-        <p class="text-muted" data-i18n="manage_categories"><?php echo h(s('manage_categories','Organize categories')); ?></p>
-      </div>
-    </a>
+    <!-- Theme Colors -->
+    <div class="dash-card">
+        <h2 style="font-size:1.5rem; margin-bottom:0.5rem; color:var(--text-primary);" data-i18n="theme_preview_title">Active Theme Colors</h2>
+        <p class="dash-subtitle" data-i18n="theme_preview_subtitle">Click any color to copy to clipboard</p>
 
-    <a class="card" href="/admin/users.php" data-load-url="/admin/users.php" style="text-decoration:none;">
-      <div class="card-icon">👥</div>
-      <div>
-        <h3 data-i18n="nav.users"><?php echo h(s('nav.users','Users')); ?></h3>
-        <p class="text-muted" data-i18n="manage_users"><?php echo h(s('manage_users','Manage users')); ?></p>
-      </div>
-    </a>
+        <?php if (empty($colors)): ?>
+            <div class="empty-state"><p>No colors available</p><small>Configure theme colors in Settings</small></div>
+        <?php else: ?>
+            <div class="colors-grid">
+                <?php foreach ($colors as $color): ?>
+                    <div class="color-card" onclick="copyColor('<?= htmlspecialchars($color['color_value'], ENT_QUOTES) ?>', this)">
+                        <div class="color-preview" style="background: <?= htmlspecialchars($color['color_value']) ?>;"></div>
+                        <div class="color-name"><?= htmlspecialchars($color['setting_name']) ?></div>
+                        <div class="color-code"><?= htmlspecialchars($color['color_value']) ?></div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
 
-    <?php if ($canViewDrivers): ?>
-    <a class="card" href="/admin/fragments/IndependentDriver.php" data-load-url="/admin/fragments/IndependentDriver.php" style="text-decoration:none;">
-      <div class="card-icon">🚚</div>
-      <div>
-        <h3 data-i18n="nav.drivers"><?php echo h(s('nav.drivers','Drivers')); ?></h3>
-        <p class="text-muted" data-i18n="manage_drivers"><?php echo h(s('manage_drivers','Manage drivers')); ?></p>
-      </div>
-    </a>
-    <?php endif; ?>
-  </div>
-</section>
+</div>
 
-<?php if ($embedDrivers && $canViewDrivers): ?>
-<meta data-page="independent_driver" data-assets-js="/admin/assets/js/pages/IndependentDriver.js"
-      data-i18n-files="/languages/admin/<?php echo rawurlencode($lang); ?>.json,/languages/IndependentDriver/<?php echo rawurlencode($lang); ?>.json">
-<?php
-$fragFile = __DIR__ . '/fragments/IndependentDriver.php';
-if (is_readable($fragFile)) {
-    include $fragFile;
-} else {
-    echo '<div class="container" style="padding:20px;color:#c0392b;">IndependentDriver fragment not found</div>';
-}
-?>
-<?php endif; ?>
+<div class="copy-feedback" id="copyFeedback">Copied!</div>
 
 <script>
-console.log('=== DASHBOARD: page loaded ===');
+(function(){
+'use strict';
 
-// apply translations (tries a few loaders)
-(function applyTranslations() {
+console.log('Dashboard Loaded');
+console.log('Language: <?= $lang ?>');
+console.log('User: <?= $user['username'] ?? 'Guest' ?>');
+
+// 🔹 مزامنة ألوان PHP إلى JS
+window.ADMIN_UI = window.ADMIN_UI || {};
+window.ADMIN_UI.theme = window.ADMIN_UI.theme || {};
+window.ADMIN_UI.theme.colors = <?= json_encode($colors, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+
+// Copy color function
+window.copyColor = async function(value, el){
     try {
-        if (window.I18nLoader && typeof window.I18nLoader.translateFragment === 'function') {
-            window.I18nLoader.translateFragment(document);
-            console.log('Translations applied via I18nLoader');
-            return;
-        }
-        if (window.AdminI18n && typeof window.AdminI18n.translateFragment === 'function') {
-            window.AdminI18n.translateFragment(document);
-            console.log('Translations applied via AdminI18n');
-            return;
-        }
-        if (window._admin && typeof window._admin.applyTranslations === 'function') {
-            window._admin.applyTranslations(document);
-            console.log('Translations applied via _admin');
-        }
-    } catch (e) {
-        console.warn('Translation apply error', e);
-    }
-})();
+        await navigator.clipboard.writeText(value);
+        el.classList.add('copied');
+        setTimeout(()=>el.classList.remove('copied'),1000);
 
-window.testSidebar = function() {
-    console.log('=== TEST: toggle sidebar ===');
-    var toggle = document.getElementById('sidebarToggle');
-    if (toggle) toggle.click();
+        var fb = document.getElementById('copyFeedback');
+        fb.textContent = 'Copied: ' + value;
+        fb.classList.add('show');
+        setTimeout(()=>fb.classList.remove('show'),2500);
+
+        // تحديث اللون مباشرة على Dashboard
+        const card = el.closest('.color-card');
+        if(card){
+            card.querySelector('.color-preview').style.backgroundColor = value;
+            card.querySelector('.color-code').textContent = value;
+        }
+
+        // تحديث ADMIN_UI.theme.colors
+        const colorName = el.querySelector('.color-name')?.textContent;
+        if(colorName && window.ADMIN_UI?.theme?.colors){
+            const themeColor = window.ADMIN_UI.theme.colors.find(c=>c.setting_name===colorName);
+            if(themeColor) themeColor.color_value = value;
+        }
+
+    }catch(e){
+        console.error(e);
+        var textarea=document.createElement('textarea');
+        textarea.value=value; textarea.style.position='fixed'; textarea.style.opacity='0';
+        document.body.appendChild(textarea); textarea.select();
+        try{ document.execCommand('copy'); alert('Copied: '+value);}catch(err){console.error(err);}
+        document.body.removeChild(textarea);
+    }
 };
 
-// load default fragment (if configured)
-(function loadDefaultFragment() {
-    var defaultUrl = <?php echo json_encode($defaultLoad, JSON_UNESCAPED_UNICODE); ?>;
-    var targetSelector = '#adminMainContent';
-    if (!defaultUrl) return;
-    if (!document.querySelector(targetSelector)) return;
-    if (window.Admin && typeof window.Admin.fetchAndInsert === 'function') {
-        window.Admin.fetchAndInsert(defaultUrl, targetSelector)
-            .then(function(){ console.log('Default fragment loaded:', defaultUrl); })
-            .catch(function(err){ console.warn('Failed to load default fragment', err); });
+// Apply translations
+function applyTranslations(){
+    try{
+        if(window._admin && typeof window._admin.applyTranslations==='function'){
+            window._admin.applyTranslations(document.body);
+        }
+    }catch(e){ console.warn(e); }
+}
+if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', applyTranslations);
+}else{ setTimeout(applyTranslations,100); }
+
+// مزامنة الألوان عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function(){
+    if(window.ADMIN_UI?.theme?.colors){
+        document.querySelectorAll('.color-card').forEach(card=>{
+            const name = card.querySelector('.color-name')?.textContent;
+            const color = window.ADMIN_UI.theme.colors.find(c=>c.setting_name===name);
+            if(color){
+                const val = color.color_value;
+                card.querySelector('.color-preview').style.backgroundColor = val;
+                card.querySelector('.color-code').textContent = val;
+            }
+        });
     }
+});
+
+console.log('Dashboard initialized');
 })();
 </script>
 
