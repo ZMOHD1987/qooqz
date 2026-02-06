@@ -649,8 +649,6 @@
 
     async function saveProductCategories(productId, isEdit = false) {
         try {
-            if (state.selectedCategories.length === 0 && !isEdit) return;
-
             // عند التعديل، حذف التصنيفات القديمة أولاً
             if (isEdit) {
                 try {
@@ -1165,7 +1163,7 @@
                     }
 
                     // البحث عن اسم السمة من state.attributes
-                    const attrInfo = state.attributes.find(a => a.id == item.attribute_id);
+                    const attrInfo = state.attributes.find(a => String(a.id) === String(item.attribute_id));
                     
                     attrs.push({
                         attribute_id: item.attribute_id,
