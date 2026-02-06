@@ -1,0 +1,216 @@
+/* Users Page Styles */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.page-header h1 {
+    margin: 0;
+    font-size: 2rem;
+    color: var(--text-primary, #fff);
+}
+
+.filters-card {
+    background: var(--background-secondary, #1e293b);
+    border: 1px solid var(--border-color, #334155);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+}
+
+.filter-group label {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--text-primary, #fff);
+}
+
+.filter-group input,
+.filter-group select {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color, #334155);
+    border-radius: 4px;
+    background: var(--background-primary, #0f172a);
+    color: var(--text-primary, #fff);
+}
+
+.table-container {
+    background: var(--background-secondary, #1e293b);
+    border: 1px solid var(--border-color, #334155);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color, #334155);
+}
+
+.data-table th {
+    background: var(--background-accent, #1e293b);
+    font-weight: 600;
+    color: var(--text-primary, #fff);
+}
+
+.data-table tr:hover {
+    background: var(--background-hover, #334155);
+}
+
+.status {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.status.active {
+    background: #10b981;
+    color: white;
+}
+
+.status.inactive {
+    background: #ef4444;
+    color: white;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: var(--primary-color, #6366f1);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover, #5850ec);
+}
+
+.btn-secondary {
+    background: var(--secondary-color, #475569);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: var(--secondary-hover, #334155);
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--border-color, #334155);
+    color: var(--text-primary, #fff);
+}
+
+.btn-outline:hover {
+    background: var(--border-color, #334155);
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.btn-edit {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn-edit:hover {
+    background: #2563eb;
+}
+
+.btn-delete {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-delete:hover {
+    background: #dc2626;
+}
+
+.loading,
+.error,
+.empty {
+    text-align: center;
+    color: var(--text-secondary, #94a3b8);
+}
+
+.error {
+    color: #ef4444;
+}
+
+.empty {
+    color: var(--text-secondary, #94a3b8);
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: var(--background-accent, #1e293b);
+}
+
+.pagination button {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color, #334155);
+    background: var(--background-primary, #0f172a);
+    color: var(--text-primary, #fff);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pagination button:hover,
+.pagination button.active {
+    background: var(--primary-color, #6366f1);
+    border-color: var(--primary-color, #6366f1);
+}
+
+@media (max-width: 768px) {
+    .filters-card {
+        flex-direction: column;
+    }
+
+    .filter-group {
+        min-width: auto;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+}
