@@ -1,602 +1,420 @@
-/* Themes System Styles - Scoped to .themes-page */
+/**
+ * themes-system.css
+ * All selectors scoped with .themes-page to prevent admin framework conflicts
+ */
 
-.themes-page .container {
-    max-width: 1400px;
-    margin: 0 auto;
+/* ═══════════ PAGE LAYOUT ═══════════ */
+.themes-page {
     padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .themes-page .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
 }
 
-.themes-page .page-title {
+.themes-page .page-header h1 {
+    font-size: 24px;
     margin: 0;
-    font-size: 28px;
-    font-weight: 600;
-    color: #1f2937;
+    color: #1a1a2e;
 }
 
-.themes-page .page-subtitle {
-    margin: 5px 0 0 0;
-    color: #6b7280;
-    font-size: 16px;
+.themes-page .page-header p {
+    margin: 4px 0 0;
+    color: #6c757d;
+    font-size: 14px;
 }
 
-.themes-page .main-tabs {
+.themes-page .page-header-actions {
     display: flex;
-    gap: 0;
-    margin-bottom: 30px;
-    border-bottom: 1px solid #e5e7eb;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
-.themes-page .main-tab {
-    padding: 12px 24px;
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-bottom: none;
+/* ═══════════ BUTTONS ═══════════ */
+.themes-page .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
     cursor: pointer;
-    transition: all 0.15s ease-in-out;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    font-size: 14px;
     font-weight: 500;
-    color: #6b7280;
-}
-
-.themes-page .main-tab.active {
-    background: #3b82f6;
-    color: white;
-    border-color: #3b82f6;
-}
-
-.themes-page .main-tab:hover:not(.active) {
-    background: #f9fafb;
-    color: #374151;
-}
-
-.themes-page .card {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-    overflow: hidden;
-}
-
-.themes-page .card-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid #e5e7eb;
-    background: #f9fafb;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.themes-page .card-title {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #1f2937;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.themes-page .card-body {
-    padding: 24px;
-}
-
-/* Theme Grid */
-.themes-page .theme-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-}
-
-.themes-page .theme-card {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    overflow: hidden;
-    transition: all 0.15s ease-in-out;
-    background: white;
-}
-
-.themes-page .theme-card:hover {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-}
-
-.themes-page .theme-card.active {
-    border-color: #10b981;
-    background: #f0fdf4;
-}
-
-.themes-page .theme-card.default {
-    border-color: #3b82f6;
-    background: #eff6ff;
-}
-
-.themes-page .theme-thumbnail {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-}
-
-.themes-page .theme-thumbnail-placeholder {
-    width: 100%;
-    height: 150px;
-    background: #f9fafb;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 48px;
-    color: #d1d5db;
-}
-
-.themes-page .theme-info {
-    padding: 16px;
-}
-
-.themes-page .theme-name {
-    margin: 0 0 4px 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #1f2937;
-}
-
-.themes-page .theme-slug {
-    margin: 0 0 8px 0;
-    font-size: 14px;
-    color: #6b7280;
-    font-family: monospace;
-}
-
-.themes-page .theme-description {
-    margin: 0 0 12px 0;
-    font-size: 14px;
-    color: #4b5563;
+    transition: all 0.2s;
+    text-decoration: none;
     line-height: 1.4;
 }
 
-.themes-page .theme-meta {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    color: #9ca3af;
-    margin-bottom: 8px;
-}
+.themes-page .btn:hover { opacity: 0.9; }
+.themes-page .btn-primary { background: #4361ee; color: #fff; }
+.themes-page .btn-secondary { background: #6c757d; color: #fff; }
+.themes-page .btn-danger { background: #dc3545; color: #fff; }
+.themes-page .btn-success { background: #28a745; color: #fff; }
+.themes-page .btn-sm { padding: 5px 10px; font-size: 12px; }
+.themes-page .btn-xs { padding: 3px 8px; font-size: 11px; }
 
-.themes-page .theme-badges {
-    display: flex;
-    gap: 6px;
-}
-
-.themes-page .theme-actions {
-    padding: 12px 16px;
-    background: #f9fafb;
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-}
-
-/* Settings Grid */
-.themes-page .settings-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 16px;
-}
-
-.themes-page .setting-item {
-    padding: 16px;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    background: white;
-}
-
-.themes-page .setting-label {
-    display: block;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 8px;
-}
-
-.themes-page .setting-input {
-    margin-bottom: 4px;
-}
-
-.themes-page .setting-desc {
-    display: block;
-    font-size: 12px;
-    color: #9ca3af;
-}
-
-/* Button Styles Grid */
-.themes-page .button-styles-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
-}
-
-.themes-page .button-style-card {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 20px;
-    background: white;
-    transition: all 0.15s ease-in-out;
-}
-
-.themes-page .button-style-card:hover {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.themes-page .button-preview {
-    margin-bottom: 16px;
-    text-align: center;
-}
-
-.themes-page .button-preview button {
-    padding: 10px 20px;
-    border-radius: 4px;
-    border: none;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-.themes-page .button-style-info h4 {
-    margin: 0 0 8px 0;
-    font-size: 16px;
-    font-weight: 600;
-}
-
-.themes-page .button-style-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-}
-
-/* Card Styles Grid - Similar to button styles */
-/* Homepage Sections List */
-.themes-page .sections-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.themes-page .section-item {
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    padding: 16px;
-    background: white;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-/* Modals */
-.themes-page .modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease-in-out;
-}
-
-.themes-page .modal.active {
-    opacity: 1;
-    visibility: visible;
-}
-
-.themes-page .modal-dialog {
-    background: white;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 600px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
-}
-
-.themes-page .modal-dialog.modal-lg {
-    max-width: 800px;
-}
-
-.themes-page .modal-dialog.modal-xl {
-    max-width: 1200px;
-}
-
-.themes-page .modal-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.themes-page .modal-title {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 600;
-    color: #1f2937;
-}
-
-.themes-page .modal-close {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: #9ca3af;
-    padding: 0;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.themes-page .modal-body {
-    padding: 24px;
-}
-
-.themes-page .modal-footer {
-    padding: 20px 24px;
-    border-top: 1px solid #e5e7eb;
+/* ═══════════ FILTERS ═══════════ */
+.themes-page .filters-bar {
     display: flex;
     gap: 12px;
-    justify-content: flex-end;
-}
-
-/* Forms */
-.themes-page .form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
     margin-bottom: 20px;
-}
-
-.themes-page .form-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.themes-page .form-group label {
-    margin-bottom: 6px;
-    font-weight: 500;
-    color: #374151;
+    flex-wrap: wrap;
 }
 
 .themes-page .form-control {
     padding: 8px 12px;
-    border: 1px solid #d1d5db;
+    border: 1px solid #dee2e6;
     border-radius: 6px;
     font-size: 14px;
-    transition: border-color 0.15s ease-in-out;
+    background: #fff;
+    color: #333;
+    transition: border-color 0.2s;
 }
 
 .themes-page .form-control:focus {
+    border-color: #4361ee;
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
 }
 
-.themes-page .checkbox-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
+.themes-page .filters-bar .form-control {
+    min-width: 200px;
 }
 
-.themes-page .checkbox {
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
+/* ═══════════ TABLE ═══════════ */
+.themes-page .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
-/* Buttons */
-.themes-page .btn {
-    padding: 8px 16px;
-    border-radius: 6px;
+.themes-page .data-table th {
+    background: #f8f9fa;
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.themes-page .data-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
     font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    border: none;
-    transition: all 0.15s ease-in-out;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    text-decoration: none;
+    vertical-align: middle;
 }
 
-.themes-page .btn-primary {
-    background: #3b82f6;
-    color: white;
+.themes-page .data-table tr:hover td {
+    background: #f8f9fa;
 }
 
-.themes-page .btn-primary:hover {
-    background: #2563eb;
-}
-
-.themes-page .btn-secondary {
-    background: #6b7280;
-    color: white;
-}
-
-.themes-page .btn-secondary:hover {
-    background: #4b5563;
-}
-
-.themes-page .btn-success {
-    background: #10b981;
-    color: white;
-}
-
-.themes-page .btn-success:hover {
-    background: #059669;
-}
-
-.themes-page .btn-danger {
-    background: #ef4444;
-    color: white;
-}
-
-.themes-page .btn-danger:hover {
-    background: #dc2626;
-}
-
-.themes-page .btn-sm {
-    padding: 6px 12px;
+.themes-page .data-table code {
+    background: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 3px;
     font-size: 12px;
 }
 
-/* Alerts */
-.themes-page .alerts-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 2000;
-    max-width: 400px;
+.themes-page .actions-cell {
+    white-space: nowrap;
 }
 
-.themes-page .alert {
-    padding: 12px 16px;
-    border-radius: 6px;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    animation: slideIn 0.3s ease-out;
+/* ═══════════ BADGES ═══════════ */
+.themes-page .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
 }
 
-.themes-page .alert-success {
-    background: #dcfce7;
-    color: #166534;
-    border-left: 4px solid #16a34a;
-}
+.themes-page .badge-success { background: #d4edda; color: #155724; }
+.themes-page .badge-secondary { background: #e2e3e5; color: #383d41; }
+.themes-page .badge-primary { background: #cce5ff; color: #004085; }
+.themes-page .badge-info { background: #d1ecf1; color: #0c5460; }
+.themes-page .badge-warning { background: #fff3cd; color: #856404; }
+.themes-page .badge-danger { background: #f8d7da; color: #721c24; }
 
-.themes-page .alert-error {
-    background: #fef2f2;
-    color: #991b1b;
-    border-left: 4px solid #dc2626;
-}
-
-.themes-page .alert-warning {
-    background: #fef3c7;
-    color: #92400e;
-    border-left: 4px solid #d97706;
-}
-
-.themes-page .alert-info {
-    background: #eff6ff;
-    color: #1e40af;
-    border-left: 4px solid #3b82f6;
-}
-
-@keyframes slideIn {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-/* Loading */
-.themes-page .loading {
+/* ═══════════ LOADING / EMPTY ═══════════ */
+.themes-page .loading-state {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 40px;
+    padding: 60px 20px;
+    color: #6c757d;
 }
 
 .themes-page .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid #e5e7eb;
-    border-top: 3px solid #3b82f6;
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e9ecef;
+    border-top-color: #4361ee;
     border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 12px;
+    animation: themes-spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+@keyframes themes-spin {
+    to { transform: rotate(360deg); }
 }
 
-/* Empty State */
 .themes-page .empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 60px 20px;
+    color: #adb5bd;
     text-align: center;
 }
 
-.themes-page .empty-state i {
-    font-size: 48px;
-    color: #d1d5db;
+.themes-page .empty-state i { margin-bottom: 12px; }
+.themes-page .empty-state h3 { margin: 8px 0 4px; color: #6c757d; }
+.themes-page .empty-state p { margin: 0; }
+
+/* ═══════════ ALERTS ═══════════ */
+.themes-page .alert {
+    padding: 12px 16px;
+    border-radius: 6px;
     margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    animation: themes-slideIn 0.3s ease;
 }
 
-.themes-page .empty-state h3 {
-    margin: 0 0 8px 0;
-    color: #6b7280;
+@keyframes themes-slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.themes-page .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.themes-page .alert-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+.themes-page .alert-warning { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+
+.themes-page .alert-close {
+    background: none;
+    border: none;
     font-size: 18px;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.7;
+    padding: 0 4px;
+}
+
+.themes-page .alert-close:hover { opacity: 1; }
+
+/* ═══════════ FORM TABS ═══════════ */
+.themes-page .form-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 2px solid #dee2e6;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    padding-bottom: 0;
+}
+
+.themes-page .form-tab {
+    padding: 10px 16px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #6c757d;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.themes-page .form-tab:hover {
+    color: #4361ee;
+    background: #f8f9fa;
+}
+
+.themes-page .form-tab.active {
+    color: #4361ee;
+    border-bottom-color: #4361ee;
     font-weight: 600;
 }
 
-.themes-page .empty-state p {
-    margin: 0 0 20px 0;
-    color: #9ca3af;
+/* ═══════════ FORM LAYOUT ═══════════ */
+.themes-page .tab-content {
+    background: #fff;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
-/* Responsive */
+.themes-page .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.themes-page .form-group {
+    margin-bottom: 12px;
+}
+
+.themes-page .form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 6px;
+}
+
+.themes-page .form-group textarea {
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+.themes-page .form-group input[type="color"] {
+    height: 38px;
+    padding: 2px;
+    cursor: pointer;
+}
+
+.themes-page .form-group input[type="checkbox"] {
+    margin-right: 6px;
+}
+
+/* ═══════════ SETTINGS LIST ═══════════ */
+.themes-page .settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.themes-page .settings-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #1a1a2e;
+}
+
+.themes-page .settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.themes-page .settings-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    transition: border-color 0.2s;
+}
+
+.themes-page .settings-item:hover {
+    border-color: #4361ee;
+}
+
+.themes-page .settings-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.themes-page .settings-item-actions {
+    display: flex;
+    gap: 4px;
+    margin-left: 12px;
+    flex-shrink: 0;
+}
+
+.themes-page .setting-value {
+    color: #6c757d;
+    font-size: 12px;
+    margin-top: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.themes-page .color-swatch {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin: 0 4px;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.themes-page .empty-settings {
+    text-align: center;
+    padding: 30px;
+    color: #adb5bd;
+    font-style: italic;
+}
+
+/* ═══════════ INLINE FORM ═══════════ */
+.themes-page .inline-form {
+    background: #fff;
+    border: 2px solid #4361ee;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 16px;
+}
+
+.themes-page .inline-form-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #e9ecef;
+}
+
+/* ═══════════ RTL SUPPORT ═══════════ */
+.themes-page[dir="rtl"] .data-table th,
+.themes-page[dir="rtl"] .data-table td {
+    text-align: right;
+}
+
+.themes-page[dir="rtl"] .settings-item-actions {
+    margin-left: 0;
+    margin-right: 12px;
+}
+
+.themes-page[dir="rtl"] .form-group input[type="checkbox"] {
+    margin-right: 0;
+    margin-left: 6px;
+}
+
+/* ═══════════ RESPONSIVE ═══════════ */
 @media (max-width: 768px) {
-    .themes-page .container {
-        padding: 10px;
-    }
-
-    .themes-page .page-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
-    }
-
-    .themes-page .main-tabs {
-        flex-direction: column;
-    }
-
-    .themes-page .theme-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .themes-page .form-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .themes-page .modal-dialog {
-        width: 95%;
-        margin: 20px;
-    }
-
-    .themes-page .modal-body {
-        padding: 16px;
-    }
+    .themes-page { padding: 12px; }
+    .themes-page .page-header { flex-direction: column; align-items: flex-start; }
+    .themes-page .form-row { grid-template-columns: 1fr; }
+    .themes-page .form-tabs { gap: 0; }
+    .themes-page .form-tab { padding: 8px 10px; font-size: 12px; }
+    .themes-page .filters-bar { flex-direction: column; }
+    .themes-page .filters-bar .form-control { min-width: 100%; }
+    .themes-page .data-table { font-size: 12px; }
+    .themes-page .data-table th,
+    .themes-page .data-table td { padding: 8px; }
 }
