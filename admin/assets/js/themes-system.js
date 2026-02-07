@@ -7,7 +7,7 @@
     // CONFIG & STATE
     // ════════════════════════════════════════════════════════════
 
-    const APP_CONFIG = window.APP_CONFIG || {
+    const APP_CONFIG = window.THEMES_CONFIG || window.APP_CONFIG || {
         API_BASE: '/api',
         TENANT_ID: 1,
         CSRF_TOKEN: ''
@@ -1174,6 +1174,50 @@
         initTabs();
         loadThemes();
 
+        // Bind button event listeners (instead of inline onclick)
+        var bind = function(id, fn) {
+            var el = document.getElementById(id);
+            if (el) el.onclick = fn;
+        };
+
+        // Themes
+        bind('btnAddTheme', function() { openThemeModal(); });
+        bind('btnAddThemeEmpty', function() { openThemeModal(); });
+        bind('btnSaveTheme', function() { saveTheme(); });
+        bind('btnCancelTheme', function() { closeThemeModal(); });
+        bind('btnCloseThemeModal', function() { closeThemeModal(); });
+        bind('btnRefreshThemes', function() { refreshAll(); });
+
+        // Design
+        bind('btnSaveDesign', function() { saveDesignSettings(); });
+
+        // Colors
+        bind('btnSaveColors', function() { saveColorSettings(); });
+
+        // Fonts
+        bind('btnSaveFonts', function() { saveFontSettings(); });
+
+        // Buttons
+        bind('btnAddButton', function() { openButtonModal(); });
+        bind('btnAddButtonEmpty', function() { openButtonModal(); });
+        bind('btnSaveButton', function() { saveButton(); });
+        bind('btnCancelButton', function() { closeButtonModal(); });
+        bind('btnCloseButtonModal', function() { closeButtonModal(); });
+
+        // Cards
+        bind('btnAddCard', function() { openCardModal(); });
+        bind('btnAddCardEmpty', function() { openCardModal(); });
+        bind('btnSaveCard', function() { saveCard(); });
+        bind('btnCancelCard', function() { closeCardModal(); });
+        bind('btnCloseCardModal', function() { closeCardModal(); });
+
+        // Homepage
+        bind('btnAddSection', function() { openSectionModal(); });
+        bind('btnAddSectionEmpty', function() { openSectionModal(); });
+        bind('btnSaveSection', function() { saveSection(); });
+        bind('btnCancelSection', function() { closeSectionModal(); });
+        bind('btnCloseSectionModal', function() { closeSectionModal(); });
+
         // Close modals on background click
         document.addEventListener('click', e => {
             if (e.target.classList.contains('modal')) {
@@ -1189,6 +1233,9 @@
     // ════════════════════════════════════════════════════════════
 
     window.ThemesApp = {
+        // Init
+        init,
+
         // Themes
         loadThemes,
         openThemeModal,
@@ -1236,12 +1283,5 @@
         // General
         refreshAll
     };
-
-    // Auto-init
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
 
 })();

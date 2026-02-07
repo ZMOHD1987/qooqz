@@ -1,53 +1,103 @@
 <?php
 declare(strict_types=1);
 
-if (!function_exists('admin_user')) {
+/**
+ * /admin/fragments/themes.php
+ * Theme Management - Rewritten to match Products pattern
+ * 
+ * ✅ Uses new permission system (role-based + resource-based)
+ * ✅ Compatible with tenant_users table
+ * ✅ Fragment/standalone mode support
+ * ✅ All theme sub-entities: design_settings, color_settings, font_settings, 
+ *    button_styles, card_styles, homepage_sections
+ */
+
+// ════════════════════════════════════════════════════════════
+// DETECT REQUEST TYPE
+// ════════════════════════════════════════════════════════════
+$isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+          strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+$isEmbedded = isset($_GET['embedded']) || isset($_POST['embedded']);
+$isFragment = $isAjax || $isEmbedded;
+
+// ════════════════════════════════════════════════════════════
+// LOAD CONTEXT / HEADER
+// ════════════════════════════════════════════════════════════
+if ($isFragment) {
     require_once __DIR__ . '/../includes/admin_context.php';
+} else {
+    require_once __DIR__ . '/../includes/header.php';
 }
 
+// ════════════════════════════════════════════════════════════
+// VERIFY USER IS LOGGED IN
+// ════════════════════════════════════════════════════════════
+if (!is_admin_logged_in()) {
+    if ($isFragment) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Not authenticated']);
+        exit;
+    } else {
+        header('Location: /admin/login.php');
+        exit;
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// GET USER CONTEXT & PERMISSIONS
+// ════════════════════════════════════════════════════════════
+$user = admin_user();
+$lang = admin_lang();
+$dir  = admin_dir();
+$csrf = admin_csrf();
+$tenantId = admin_tenant_id();
+
+// ════════════════════════════════════════════════════════════
+// CHECK PERMISSIONS
+// ════════════════════════════════════════════════════════════
 $isSuperAdmin = is_super_admin();
 $canManage = $isSuperAdmin || can('manage_themes');
 
 if (!$canManage) {
-    echo '<div style="padding:2rem;background:#1e293b;border-radius:8px;margin:2rem;">
-        <h3 style="color:#ef4444;"><i class="fas fa-ban"></i> Access Denied</h3>
-        <p style="color:#e2e8f0;">You don\'t have permission to manage themes.</p>
-    </div>';
-    return;
+    if ($isFragment) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Access denied']);
+        exit;
+    } else {
+        http_response_code(403);
+        die('Access denied: You do not have permission to manage themes');
+    }
 }
 
-$tenantId = admin_tenant_id();
-$csrf = admin_csrf();
+$apiBase = '/api';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="<?= htmlspecialchars($csrf) ?>">
-    <title>Theme Management</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/admin/assets/css/themes-system.css?v=<?= time() ?>">
-</head>
-<body>
+<!-- Force load CSS if embedded -->
+<?php if ($isFragment): ?>
+<link rel="stylesheet" href="/admin/assets/css/themes-system.css?v=<?= time() ?>">
+<?php endif; ?>
 
-<div class="alerts-container" id="alertsContainer"></div>
+<!-- Page Container -->
+<div class="page-container" id="themesPageContainer" dir="<?= htmlspecialchars($dir) ?>">
 
-<div class="container">
-    
+    <div class="alerts-container" id="alertsContainer"></div>
+
+    <!-- Page Header -->
     <div class="page-header">
-        <div>
+        <div class="page-header-content">
             <h1 class="page-title">
                 <i class="fas fa-palette"></i>
                 Theme Management
             </h1>
             <p class="page-subtitle">Manage Themes, Design Settings, and Styling</p>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="ThemesApp.refreshAll()">
-            <i class="fas fa-sync"></i> Refresh
-        </button>
+        <div class="page-header-actions">
+            <button class="btn btn-secondary btn-sm" id="btnRefreshThemes">
+                <i class="fas fa-sync"></i> Refresh
+            </button>
+        </div>
     </div>
 
+    <!-- Main Tabs -->
     <div class="main-tabs">
         <button class="main-tab active" data-tab="themes">
             <i class="fas fa-palette"></i>
@@ -86,7 +136,7 @@ $csrf = admin_csrf();
                 <h3 class="card-title">
                     <i class="fas fa-palette"></i> Themes List
                 </h3>
-                <button class="btn btn-primary" onclick="ThemesApp.openThemeModal()">
+                <button class="btn btn-primary" id="btnAddTheme">
                     <i class="fas fa-plus"></i> Add Theme
                 </button>
             </div>
@@ -101,7 +151,7 @@ $csrf = admin_csrf();
                 <div id="themesEmpty" class="empty-state" style="display:none;">
                     <i class="fas fa-palette"></i>
                     <h3>No Themes</h3>
-                    <button class="btn btn-primary" onclick="ThemesApp.openThemeModal()">
+                    <button class="btn btn-primary" id="btnAddThemeEmpty">
                         <i class="fas fa-plus"></i> Add First Theme
                     </button>
                 </div>
@@ -124,7 +174,7 @@ $csrf = admin_csrf();
                 <h3 class="card-title">
                     <i class="fas fa-cog"></i> Design Settings for <span id="designThemeName"></span>
                 </h3>
-                <button class="btn btn-success" onclick="ThemesApp.saveDesignSettings()">
+                <button class="btn btn-success" id="btnSaveDesign">
                     <i class="fas fa-save"></i> Save
                 </button>
             </div>
@@ -155,7 +205,7 @@ $csrf = admin_csrf();
                 <h3 class="card-title">
                     <i class="fas fa-paint-brush"></i> Color Settings for <span id="colorsThemeName"></span>
                 </h3>
-                <button class="btn btn-success" onclick="ThemesApp.saveColorSettings()">
+                <button class="btn btn-success" id="btnSaveColors">
                     <i class="fas fa-save"></i> Save
                 </button>
             </div>
@@ -186,7 +236,7 @@ $csrf = admin_csrf();
                 <h3 class="card-title">
                     <i class="fas fa-font"></i> Font Settings for <span id="fontsThemeName"></span>
                 </h3>
-                <button class="btn btn-success" onclick="ThemesApp.saveFontSettings()">
+                <button class="btn btn-success" id="btnSaveFonts">
                     <i class="fas fa-save"></i> Save
                 </button>
             </div>
@@ -209,7 +259,7 @@ $csrf = admin_csrf();
                 <h3 class="card-title">
                     <i class="fas fa-mouse-pointer"></i> Button Styles
                 </h3>
-                <button class="btn btn-primary" onclick="ThemesApp.openButtonModal()">
+                <button class="btn btn-primary" id="btnAddButton">
                     <i class="fas fa-plus"></i> Add Button Style
                 </button>
             </div>
@@ -224,7 +274,7 @@ $csrf = admin_csrf();
                 <div id="buttonsEmpty" class="empty-state" style="display:none;">
                     <i class="fas fa-mouse-pointer"></i>
                     <h3>No Button Styles</h3>
-                    <button class="btn btn-primary" onclick="ThemesApp.openButtonModal()">
+                    <button class="btn btn-primary" id="btnAddButtonEmpty">
                         <i class="fas fa-plus"></i> Add First Style
                     </button>
                 </div>
@@ -239,7 +289,7 @@ $csrf = admin_csrf();
                 <h3 class="card-title">
                     <i class="fas fa-square"></i> Card Styles
                 </h3>
-                <button class="btn btn-primary" onclick="ThemesApp.openCardModal()">
+                <button class="btn btn-primary" id="btnAddCard">
                     <i class="fas fa-plus"></i> Add Card Style
                 </button>
             </div>
@@ -254,7 +304,7 @@ $csrf = admin_csrf();
                 <div id="cardsEmpty" class="empty-state" style="display:none;">
                     <i class="fas fa-square"></i>
                     <h3>No Card Styles</h3>
-                    <button class="btn btn-primary" onclick="ThemesApp.openCardModal()">
+                    <button class="btn btn-primary" id="btnAddCardEmpty">
                         <i class="fas fa-plus"></i> Add First Style
                     </button>
                 </div>
@@ -269,7 +319,7 @@ $csrf = admin_csrf();
                 <h3 class="card-title">
                     <i class="fas fa-home"></i> Homepage Sections
                 </h3>
-                <button class="btn btn-primary" onclick="ThemesApp.openSectionModal()">
+                <button class="btn btn-primary" id="btnAddSection">
                     <i class="fas fa-plus"></i> Add Section
                 </button>
             </div>
@@ -284,7 +334,7 @@ $csrf = admin_csrf();
                 <div id="homepageEmpty" class="empty-state" style="display:none;">
                     <i class="fas fa-home"></i>
                     <h3>No Homepage Sections</h3>
-                    <button class="btn btn-primary" onclick="ThemesApp.openSectionModal()">
+                    <button class="btn btn-primary" id="btnAddSectionEmpty">
                         <i class="fas fa-plus"></i> Add First Section
                     </button>
                 </div>
@@ -292,14 +342,14 @@ $csrf = admin_csrf();
         </div>
     </div>
 
-</div>
+</div><!-- /page-container -->
 
 <!-- THEME MODAL -->
 <div class="modal" id="themeModal">
     <div class="modal-dialog modal-lg">
         <div class="modal-header">
             <h3 class="modal-title" id="themeModalTitle">Add Theme</h3>
-            <button class="modal-close" onclick="ThemesApp.closeThemeModal()">&times;</button>
+            <button class="modal-close" id="btnCloseThemeModal">&times;</button>
         </div>
         <div class="modal-body">
             <form id="themeForm" onsubmit="return false;">
@@ -347,8 +397,8 @@ $csrf = admin_csrf();
             </form>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="ThemesApp.closeThemeModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="ThemesApp.saveTheme()">
+            <button class="btn btn-secondary" id="btnCancelTheme">Cancel</button>
+            <button class="btn btn-primary" id="btnSaveTheme">
                 <i class="fas fa-save"></i> Save
             </button>
         </div>
@@ -360,7 +410,7 @@ $csrf = admin_csrf();
     <div class="modal-dialog modal-lg">
         <div class="modal-header">
             <h3 class="modal-title" id="buttonModalTitle">Add Button Style</h3>
-            <button class="modal-close" onclick="ThemesApp.closeButtonModal()">&times;</button>
+            <button class="modal-close" id="btnCloseButtonModal">&times;</button>
         </div>
         <div class="modal-body">
             <form id="buttonForm" onsubmit="return false;">
@@ -435,8 +485,8 @@ $csrf = admin_csrf();
             </form>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="ThemesApp.closeButtonModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="ThemesApp.saveButton()">
+            <button class="btn btn-secondary" id="btnCancelButton">Cancel</button>
+            <button class="btn btn-primary" id="btnSaveButton">
                 <i class="fas fa-save"></i> Save
             </button>
         </div>
@@ -448,7 +498,7 @@ $csrf = admin_csrf();
     <div class="modal-dialog modal-lg">
         <div class="modal-header">
             <h3 class="modal-title" id="cardModalTitle">Add Card Style</h3>
-            <button class="modal-close" onclick="ThemesApp.closeCardModal()">&times;</button>
+            <button class="modal-close" id="btnCloseCardModal">&times;</button>
         </div>
         <div class="modal-body">
             <form id="cardForm" onsubmit="return false;">
@@ -530,8 +580,8 @@ $csrf = admin_csrf();
             </form>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="ThemesApp.closeCardModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="ThemesApp.saveCard()">
+            <button class="btn btn-secondary" id="btnCancelCard">Cancel</button>
+            <button class="btn btn-primary" id="btnSaveCard">
                 <i class="fas fa-save"></i> Save
             </button>
         </div>
@@ -543,7 +593,7 @@ $csrf = admin_csrf();
     <div class="modal-dialog modal-xl">
         <div class="modal-header">
             <h3 class="modal-title" id="sectionModalTitle">Add Homepage Section</h3>
-            <button class="modal-close" onclick="ThemesApp.closeSectionModal()">&times;</button>
+            <button class="modal-close" id="btnCloseSectionModal">&times;</button>
         </div>
         <div class="modal-body">
             <form id="sectionForm" onsubmit="return false;">
@@ -619,49 +669,70 @@ $csrf = admin_csrf();
             </form>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="ThemesApp.closeSectionModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="ThemesApp.saveSection()">
+            <button class="btn btn-secondary" id="btnCancelSection">Cancel</button>
+            <button class="btn btn-primary" id="btnSaveSection">
                 <i class="fas fa-save"></i> Save
             </button>
         </div>
     </div>
 </div>
 
+<!-- Page Config -->
 <script>
-window.APP_CONFIG = {
-    API_BASE: '/api',
-    TENANT_ID: <?= $tenantId ?>,
+window.THEMES_CONFIG = {
+    API_BASE: '<?= $apiBase ?>',
+    TENANT_ID: <?= (int)$tenantId ?>,
     CSRF_TOKEN: '<?= htmlspecialchars($csrf) ?>'
 };
 </script>
+
+<!-- Load scripts based on mode -->
+<?php if ($isFragment): ?>
 <script src="/admin/assets/js/themes-system.js?v=<?= time() ?>"></script>
 
 <script>
-(function() {
-    'use strict';
-    
-    function ready(callback) {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', callback);
-        } else {
-            callback();
-        }
-    }
-    
-    ready(function() {
-        setTimeout(function() {
-            console.log('Themes Fragment ready');
-            if (window.Admin && window.Admin.initPageFromFragment) {
-                window.Admin.initPageFromFragment(document.querySelector('.container'));
-            } else if (window.page && typeof window.page.run === 'function') {
-                window.page.run();
-            } else if (window.ThemesApp && typeof window.ThemesApp.init === 'function') {
+(function(){
+    console.log('[Themes] Embedded mode - waiting for module...');
+    var attempts = 0, maxAttempts = 50;
+    var interval = setInterval(function(){
+        attempts++;
+        if (window.ThemesApp && typeof window.ThemesApp.init === 'function') {
+            clearInterval(interval);
+            console.log('[Themes] Module ready - initializing (attempt ' + attempts + ')...');
+            try {
                 window.ThemesApp.init();
+                console.log('[Themes] ✓ Initialized successfully');
+            } catch (e) {
+                console.error('[Themes] Init threw:', e);
             }
-        }, 200);
-    });
+        } else if (attempts > maxAttempts) {
+            clearInterval(interval);
+            console.error('[Themes] Timeout waiting for module after ' + (maxAttempts * 100) + 'ms');
+        }
+    }, 100);
 })();
 </script>
+<?php else: ?>
+<script src="/admin/assets/js/themes-system.js?v=<?= time() ?>"></script>
+<script>
+(function(){
+    function tryInit() {
+        if (window.ThemesApp && typeof window.ThemesApp.init === 'function') {
+            window.ThemesApp.init();
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', tryInit);
+    } else {
+        tryInit();
+    }
+})();
+</script>
+<?php endif; ?>
 
-</body>
-</html>
+<?php
+// Load footer if standalone
+if (!$isFragment) {
+    require_once __DIR__ . '/../includes/footer.php';
+}
+?>
