@@ -47,8 +47,8 @@ try {
                 ResponseFormatter::success(
                     $controller->list(
                         $tenantId,
-                        isset($_GET['limit']) ? (int)$_GET['limit'] : null,
-                        isset($_GET['offset']) ? (int)$_GET['offset'] : null,
+                        isset($_GET['limit']) && is_numeric($_GET['limit']) ? (int)$_GET['limit'] : null,
+                        isset($_GET['offset']) && is_numeric($_GET['offset']) ? (int)$_GET['offset'] : null,
                         $filters,
                         $_GET['order_by'] ?? 'id',
                         $_GET['order_dir'] ?? 'DESC'
