@@ -66,7 +66,8 @@ window.THEMES_CONFIG = {
         fontSettings: '/api/font_settings',
         buttonStyles: '/api/button_styles',
         cardStyles: '/api/card_styles',
-        homepageSections: '/api/homepage_sections'
+        homepageSections: '/api/homepage_sections',
+        systemSettings: '/api/system_settings'
     }
 };
 </script>
@@ -180,6 +181,9 @@ window.THEMES_CONFIG = {
             <button class="form-tab" data-tab="homepage">
                 <i class="fas fa-home"></i> <span data-i18n="tabs.homepage">Homepage</span>
             </button>
+            <button class="form-tab" data-tab="system">
+                <i class="fas fa-cogs"></i> <span data-i18n="tabs.system">System Settings</span>
+            </button>
         </div>
 
         <!-- TAB: Theme Info -->
@@ -280,6 +284,13 @@ window.THEMES_CONFIG = {
                         </select>
                     </div>
                 </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Active</label>
+                        <select id="designIsActive" class="form-control"><option value="1">Yes</option><option value="0">No</option></select>
+                    </div>
+                    <div class="form-group"><label>Sort Order</label><input type="number" id="designSortOrder" class="form-control" value="0"></div>
+                </div>
                 <div class="inline-form-actions">
                     <button class="btn btn-primary btn-sm" id="btnSaveDesign">Save</button>
                     <button class="btn btn-secondary btn-sm" id="btnCancelDesign">Cancel</button>
@@ -313,6 +324,11 @@ window.THEMES_CONFIG = {
                             <option value="status">Status</option><option value="other">Other</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label>Active</label>
+                        <select id="colorIsActive" class="form-control"><option value="1">Yes</option><option value="0">No</option></select>
+                    </div>
+                    <div class="form-group"><label>Sort Order</label><input type="number" id="colorSortOrder" class="form-control" value="0"></div>
                 </div>
                 <div class="inline-form-actions">
                     <button class="btn btn-primary btn-sm" id="btnSaveColor">Save</button>
@@ -351,6 +367,11 @@ window.THEMES_CONFIG = {
                             <option value="other">Other</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label>Active</label>
+                        <select id="fontIsActive" class="form-control"><option value="1">Yes</option><option value="0">No</option></select>
+                    </div>
+                    <div class="form-group"><label>Sort Order</label><input type="number" id="fontSortOrder" class="form-control" value="0"></div>
                 </div>
                 <div class="inline-form-actions">
                     <button class="btn btn-primary btn-sm" id="btnSaveFont">Save</button>
@@ -401,6 +422,12 @@ window.THEMES_CONFIG = {
                     <div class="form-group"><label>Hover BG</label><input type="color" id="buttonHoverBg" class="form-control"></div>
                     <div class="form-group"><label>Hover Text</label><input type="color" id="buttonHoverText" class="form-control"></div>
                     <div class="form-group"><label>Hover Border</label><input type="color" id="buttonHoverBorder" class="form-control"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Active</label>
+                        <select id="buttonIsActive" class="form-control"><option value="1">Yes</option><option value="0">No</option></select>
+                    </div>
                 </div>
                 <div class="inline-form-actions">
                     <button class="btn btn-primary btn-sm" id="btnSaveButton">Save</button>
@@ -460,6 +487,10 @@ window.THEMES_CONFIG = {
                         </select>
                     </div>
                     <div class="form-group"><label>Image Ratio</label><input type="text" id="cardImageRatio" class="form-control" value="1:1"></div>
+                    <div class="form-group">
+                        <label>Active</label>
+                        <select id="cardIsActive" class="form-control"><option value="1">Yes</option><option value="0">No</option></select>
+                    </div>
                 </div>
                 <div class="inline-form-actions">
                     <button class="btn btn-primary btn-sm" id="btnSaveCard">Save</button>
@@ -520,6 +551,48 @@ window.THEMES_CONFIG = {
                 <div class="inline-form-actions">
                     <button class="btn btn-primary btn-sm" id="btnSaveSection">Save</button>
                     <button class="btn btn-secondary btn-sm" id="btnCancelSection">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: System Settings -->
+        <div class="tab-content" id="tab-system" style="display:none">
+            <div class="settings-header">
+                <h3 data-i18n="tabs.system">System Settings</h3>
+                <button class="btn btn-sm btn-primary" id="btnAddSystem">
+                    <i class="fas fa-plus"></i> Add Setting
+                </button>
+            </div>
+            <div id="systemSettingsList" class="settings-list"></div>
+            <div id="systemForm" class="inline-form" style="display:none">
+                <input type="hidden" id="systemId">
+                <div class="form-row">
+                    <div class="form-group"><label>Key</label><input type="text" id="systemKey" class="form-control"></div>
+                    <div class="form-group"><label>Category</label><input type="text" id="systemCategory" class="form-control"></div>
+                    <div class="form-group">
+                        <label>Type</label>
+                        <select id="systemType" class="form-control">
+                            <option value="text">Text</option><option value="number">Number</option>
+                            <option value="boolean">Boolean</option><option value="json">JSON</option>
+                            <option value="file">File</option><option value="email">Email</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group"><label>Value</label><textarea id="systemValue" class="form-control" rows="2"></textarea></div>
+                <div class="form-group"><label>Description</label><textarea id="systemDescription" class="form-control" rows="2"></textarea></div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Public</label>
+                        <select id="systemIsPublic" class="form-control"><option value="0">No</option><option value="1">Yes</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Editable</label>
+                        <select id="systemIsEditable" class="form-control"><option value="1">Yes</option><option value="0">No</option></select>
+                    </div>
+                </div>
+                <div class="inline-form-actions">
+                    <button class="btn btn-primary btn-sm" id="btnSaveSystem">Save</button>
+                    <button class="btn btn-secondary btn-sm" id="btnCancelSystem">Cancel</button>
                 </div>
             </div>
         </div>

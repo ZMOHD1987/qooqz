@@ -24,7 +24,8 @@
         fontSettings: [],
         buttonStyles: [],
         cardStyles: [],
-        homepageSections: []
+        homepageSections: [],
+        systemSettings: []
     };
 
     // DOM elements cache
@@ -77,6 +78,7 @@
         el.buttonStylesList = $('buttonStylesList');
         el.cardStylesList = $('cardStylesList');
         el.homepageSectionsList = $('homepageSectionsList');
+        el.systemSettingsList = $('systemSettingsList');
     }
 
     function bindEvents() {
@@ -112,6 +114,7 @@
         bindSettingsButtons('Button', 'button');
         bindSettingsButtons('Card', 'card');
         bindSettingsButtons('Section', 'section');
+        bindSettingsButtons('System', 'system');
     }
 
     function bindSettingsButtons(name, prefix) {
@@ -425,7 +428,8 @@
             loadSettings('font', API.fontSettings, themeId),
             loadSettings('button', API.buttonStyles, themeId),
             loadSettings('card', API.cardStyles, themeId),
-            loadSettings('section', API.homepageSections, themeId)
+            loadSettings('section', API.homepageSections, themeId),
+            loadSettings('system', API.systemSettings, themeId)
         ]);
     }
 
@@ -453,7 +457,8 @@
             font: el.fontSettingsList,
             button: el.buttonStylesList,
             card: el.cardStylesList,
-            section: el.homepageSectionsList
+            section: el.homepageSectionsList,
+            system: el.systemSettingsList
         };
         return map[type];
     }
@@ -499,6 +504,12 @@
                           ' <span class="badge badge-secondary">' + escapeHtml(item.section_type || '') + '</span>' +
                           ' <span class="badge badge-info">' + escapeHtml(item.layout_type || '') + '</span>' +
                           (item.is_active ? ' <span class="badge badge-success">Active</span>' : ' <span class="badge badge-secondary">Inactive</span>');
+            } else if (type === 'system') {
+                display = '<strong>' + escapeHtml(item.setting_key || '') + '</strong>' +
+                          ' <span class="badge badge-secondary">' + escapeHtml(item.setting_type || 'text') + '</span>' +
+                          ' <span class="badge badge-info">' + escapeHtml(item.category || '') + '</span>' +
+                          '<div class="setting-value">' + escapeHtml(String(item.setting_value || '').substring(0, 100)) + '</div>' +
+                          (item.is_public ? ' <span class="badge badge-success">Public</span>' : '');
             }
 
             return '<div class="settings-item" data-id="' + itemId + '">' +
@@ -513,7 +524,7 @@
     }
 
     function clearAllSettingsLists() {
-        ['design', 'color', 'font', 'button', 'card', 'section'].forEach(type => {
+        ['design', 'color', 'font', 'button', 'card', 'section', 'system'].forEach(type => {
             const listEl = getSettingsListEl(type);
             if (listEl) listEl.innerHTML = '';
             state[type + 'Settings'] = [];
@@ -521,7 +532,7 @@
     }
 
     function hideAllSettingForms() {
-        ['design', 'color', 'font', 'button', 'card', 'section'].forEach(prefix => {
+        ['design', 'color', 'font', 'button', 'card', 'section', 'system'].forEach(prefix => {
             const form = document.getElementById(prefix + 'Form');
             if (form) form.style.display = 'none';
         });
@@ -554,7 +565,8 @@
             font: API.fontSettings,
             button: API.buttonStyles,
             card: API.cardStyles,
-            section: API.homepageSections
+            section: API.homepageSections,
+            system: API.systemSettings
         };
         return map[type];
     }
@@ -572,8 +584,8 @@
                 setting_value: ($(prefix + 'Value') && $(prefix + 'Value').value || '').trim(),
                 setting_type: $('designType') ? $('designType').value : 'text',
                 category: $('designCategory') ? $('designCategory').value : 'other',
-                is_active: 1,
-                sort_order: 0
+                is_active: $('designIsActive') ? parseInt($('designIsActive').value) : 1,
+                sort_order: $('designSortOrder') ? parseInt($('designSortOrder').value) || 0 : 0
             };
         } else if (prefix === 'color') {
             return {
@@ -583,8 +595,8 @@
                 setting_name: ($('colorName') && $('colorName').value || '').trim(),
                 color_value: $('colorValue') ? $('colorValue').value : '#000000',
                 category: $('colorCategory') ? $('colorCategory').value : 'other',
-                is_active: 1,
-                sort_order: 0
+                is_active: $('colorIsActive') ? parseInt($('colorIsActive').value) : 1,
+                sort_order: $('colorSortOrder') ? parseInt($('colorSortOrder').value) || 0 : 0
             };
         } else if (prefix === 'font') {
             return {
@@ -597,8 +609,8 @@
                 font_weight: ($('fontWeight') && $('fontWeight').value || '').trim() || null,
                 line_height: ($('fontLineHeight') && $('fontLineHeight').value || '').trim() || null,
                 category: $('fontCategory') ? $('fontCategory').value : 'other',
-                is_active: 1,
-                sort_order: 0
+                is_active: $('fontIsActive') ? parseInt($('fontIsActive').value) : 1,
+                sort_order: $('fontSortOrder') ? parseInt($('fontSortOrder').value) || 0 : 0
             };
         } else if (prefix === 'button') {
             return {
@@ -618,7 +630,7 @@
                 hover_background_color: $('buttonHoverBg') ? $('buttonHoverBg').value : null,
                 hover_text_color: $('buttonHoverText') ? $('buttonHoverText').value : null,
                 hover_border_color: $('buttonHoverBorder') ? $('buttonHoverBorder').value : null,
-                is_active: 1
+                is_active: $('buttonIsActive') ? parseInt($('buttonIsActive').value) : 1
             };
         } else if (prefix === 'card') {
             return {
@@ -636,7 +648,7 @@
                 hover_effect: $('cardHoverEffect') ? $('cardHoverEffect').value : 'none',
                 text_align: $('cardTextAlign') ? $('cardTextAlign').value : 'left',
                 image_aspect_ratio: ($('cardImageRatio') && $('cardImageRatio').value || '1:1').trim(),
-                is_active: 1
+                is_active: $('cardIsActive') ? parseInt($('cardIsActive').value) : 1
             };
         } else if (prefix === 'section') {
             return {
@@ -656,6 +668,17 @@
                 is_active: $('sectionIsActive') ? ($('sectionIsActive').checked ? 1 : 0) : 1,
                 sort_order: $('sectionSortOrder') ? parseInt($('sectionSortOrder').value) || 0 : 0
             };
+        } else if (prefix === 'system') {
+            return {
+                tenant_id: TENANT_ID,
+                setting_key: ($('systemKey') && $('systemKey').value || '').trim(),
+                setting_value: ($('systemValue') && $('systemValue').value || '').trim(),
+                setting_type: $('systemType') ? $('systemType').value : 'text',
+                category: ($('systemCategory') && $('systemCategory').value || '').trim(),
+                description: ($('systemDescription') && $('systemDescription').value || '').trim() || null,
+                is_public: $('systemIsPublic') ? parseInt($('systemIsPublic').value) : 0,
+                is_editable: $('systemIsEditable') ? parseInt($('systemIsEditable').value) : 1
+            };
         }
         return {};
     }
@@ -671,11 +694,15 @@
             if ($('designValue')) $('designValue').value = item.setting_value || '';
             if ($('designType')) $('designType').value = item.setting_type || 'text';
             if ($('designCategory')) $('designCategory').value = item.category || 'other';
+            if ($('designIsActive')) $('designIsActive').value = item.is_active != null ? String(item.is_active) : '1';
+            if ($('designSortOrder')) $('designSortOrder').value = item.sort_order || 0;
         } else if (prefix === 'color') {
             if ($('colorKey')) $('colorKey').value = item.setting_key || '';
             if ($('colorName')) $('colorName').value = item.setting_name || '';
             if ($('colorValue')) $('colorValue').value = item.color_value || '#000000';
             if ($('colorCategory')) $('colorCategory').value = item.category || 'other';
+            if ($('colorIsActive')) $('colorIsActive').value = item.is_active != null ? String(item.is_active) : '1';
+            if ($('colorSortOrder')) $('colorSortOrder').value = item.sort_order || 0;
         } else if (prefix === 'font') {
             if ($('fontKey')) $('fontKey').value = item.setting_key || '';
             if ($('fontName')) $('fontName').value = item.setting_name || '';
@@ -684,6 +711,8 @@
             if ($('fontWeight')) $('fontWeight').value = item.font_weight || '';
             if ($('fontLineHeight')) $('fontLineHeight').value = item.line_height || '';
             if ($('fontCategory')) $('fontCategory').value = item.category || 'other';
+            if ($('fontIsActive')) $('fontIsActive').value = item.is_active != null ? String(item.is_active) : '1';
+            if ($('fontSortOrder')) $('fontSortOrder').value = item.sort_order || 0;
         } else if (prefix === 'button') {
             if ($('buttonName')) $('buttonName').value = item.name || '';
             if ($('buttonSlug')) $('buttonSlug').value = item.slug || '';
@@ -699,6 +728,7 @@
             if ($('buttonHoverBg')) $('buttonHoverBg').value = item.hover_background_color || '#000000';
             if ($('buttonHoverText')) $('buttonHoverText').value = item.hover_text_color || '#000000';
             if ($('buttonHoverBorder')) $('buttonHoverBorder').value = item.hover_border_color || '#000000';
+            if ($('buttonIsActive')) $('buttonIsActive').value = item.is_active != null ? String(item.is_active) : '1';
         } else if (prefix === 'card') {
             if ($('cardName')) $('cardName').value = item.name || '';
             if ($('cardSlug')) $('cardSlug').value = item.slug || '';
@@ -712,6 +742,7 @@
             if ($('cardHoverEffect')) $('cardHoverEffect').value = item.hover_effect || 'none';
             if ($('cardTextAlign')) $('cardTextAlign').value = item.text_align || 'left';
             if ($('cardImageRatio')) $('cardImageRatio').value = item.image_aspect_ratio || '1:1';
+            if ($('cardIsActive')) $('cardIsActive').value = item.is_active != null ? String(item.is_active) : '1';
         } else if (prefix === 'section') {
             if ($('sectionType')) $('sectionType').value = item.section_type || 'other';
             if ($('sectionTitle')) $('sectionTitle').value = item.title || '';
@@ -726,6 +757,14 @@
             if ($('sectionCustomCss')) $('sectionCustomCss').value = item.custom_css || '';
             if ($('sectionCustomHtml')) $('sectionCustomHtml').value = item.custom_html || '';
             if ($('sectionIsActive')) $('sectionIsActive').checked = !!item.is_active;
+        } else if (prefix === 'system') {
+            if ($('systemKey')) $('systemKey').value = item.setting_key || '';
+            if ($('systemValue')) $('systemValue').value = item.setting_value || '';
+            if ($('systemType')) $('systemType').value = item.setting_type || 'text';
+            if ($('systemCategory')) $('systemCategory').value = item.category || '';
+            if ($('systemDescription')) $('systemDescription').value = item.description || '';
+            if ($('systemIsPublic')) $('systemIsPublic').value = item.is_public != null ? String(item.is_public) : '0';
+            if ($('systemIsEditable')) $('systemIsEditable').value = item.is_editable != null ? String(item.is_editable) : '1';
         }
     }
 
@@ -776,7 +815,7 @@
         if (form) form.style.display = 'block';
 
         // Switch to the correct tab
-        const tabMap = { design: 'design', color: 'colors', font: 'fonts', button: 'buttons', card: 'cards', section: 'homepage' };
+        const tabMap = { design: 'design', color: 'colors', font: 'fonts', button: 'buttons', card: 'cards', section: 'homepage', system: 'system' };
         const tabName = tabMap[type];
         if (tabName) {
             document.querySelectorAll('.themes-page .form-tab').forEach(t => t.classList.remove('active'));
