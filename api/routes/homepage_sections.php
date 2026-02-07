@@ -31,7 +31,7 @@ if (!$pdo instanceof PDO) {
     return;
 }
 
-$tenantId = (int)($_GET['tenant_id'] ?? $_SESSION['tenant_id'] ?? 1);
+$tenantId = (int)($_SESSION['tenant_id'] ?? 1);
 
 // إنشاء الاعتمادات
 $repo      = new PdoHomepageSectionsRepository($pdo);
