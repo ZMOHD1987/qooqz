@@ -72,24 +72,17 @@ final class PdoProductPhysicalAttributesRepository
         $sql .= " ORDER BY {$orderBy} {$orderDir}";
 
         // Pagination
-        if ($limit !== null) {
-            $sql .= " LIMIT :limit";
-            $params[':limit'] = $limit;
-        }
-        if ($offset !== null) {
-            $sql .= " OFFSET :offset";
-            $params[':offset'] = $offset;
-        }
+        if ($limit !== null) $sql .= " LIMIT :limit";
+        if ($offset !== null) $sql .= " OFFSET :offset";
 
         $stmt = $this->pdo->prepare($sql);
 
         foreach ($params as $key => $val) {
-            $stmt->bindValue(
-                $key,
-                $val,
-                is_int($val) ? PDO::PARAM_INT : PDO::PARAM_STR
-            );
+            $type = is_int($val) ? PDO::PARAM_INT : PDO::PARAM_STR;
+            $stmt->bindValue($key, $val, $type);
         }
+        if ($limit !== null) $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        if ($offset !== null) $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
 
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
