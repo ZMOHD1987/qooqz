@@ -1123,7 +1123,7 @@
                                        onchange="Products.toggleCategory(${cat.id}, this.checked)">
                                 <span>${esc(cat.name)}</span>
                             </label>
-                            ${children.length > 0 ? `<div class="category-children">${children.join('')}</div>` : ''}
+                            ${children ? `<div class="category-children">${children}</div>` : ''}
                         </div>
                     `;
                 }).join('');
