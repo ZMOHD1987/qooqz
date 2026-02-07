@@ -11,7 +11,8 @@
         colors: '/api/color_settings',
         fonts: '/api/font_settings',
         buttons: '/api/button_styles',
-        cards: '/api/card_styles'
+        cards: '/api/card_styles',
+        system: '/api/system_settings'
     };
 
     let el = {};
@@ -130,6 +131,7 @@
         setupInlineForm('Font', 'fonts');
         setupInlineForm('Button', 'buttons');
         setupInlineForm('Card', 'cards');
+        setupInlineForm('System', 'system');
 
         loadTranslations();
         loadThemes();
@@ -255,6 +257,7 @@
             loadSettingsList('fonts', 'fontsList', themeId);
             loadSettingsList('buttons', 'buttonsList', themeId);
             loadSettingsList('cards', 'cardsList', themeId);
+            loadSettingsList('system', 'systemList', themeId);
         } catch (e) {
             notify(t('errors.load_failed', 'Failed to load theme data'), 'error');
         }
@@ -266,7 +269,8 @@
         if (!container) return;
         container.innerHTML = '<div class="loading-state"><div class="spinner"></div></div>';
         try {
-            var url = API[type] + '?theme_id=' + themeId + '&tenant_id=' + tid() + '&format=json';
+            var url = API[type] + '?tenant_id=' + tid() + '&format=json';
+            if (themeId && type !== 'system') url += '&theme_id=' + themeId;
             var json = await api(url);
             var items = extractItems(json);
             if (!items.length) {
@@ -284,6 +288,7 @@
         var detail = '';
         var canEdit = CFG().CAN_EDIT;
         var canDelete = CFG().CAN_DELETE;
+        var activeTag = String(item.is_active) === '0' ? ' <span style="color:var(--danger-color,#e74c3c);font-size:11px">[inactive]</span>' : '';
 
         if (type === 'design') {
             detail = esc(item.setting_key || '') + ' = ' + esc(item.setting_value || '') + ' (' + esc(item.category || '') + ')';
@@ -294,11 +299,13 @@
         } else if (type === 'buttons') {
             detail = '<span class="color-swatch" style="background:' + esc(item.background_color || '#000') + '"></span>' + esc(item.button_type || '') + ' - ' + esc(item.font_size || '');
         } else if (type === 'cards') {
-            detail = esc(item.card_type || '') + ' - ' + esc(item.hover_effect || 'none');
+            detail = esc(item.card_type || '') + ' - ' + esc(item.hover_effect || 'none') + ' - ' + esc(item.text_align || 'left');
+        } else if (type === 'system') {
+            detail = esc(item.setting_key || '') + ' = ' + esc((item.setting_value || '').substring(0, 50)) + ' (' + esc(item.category || '') + ')';
         }
 
         return '<div class="setting-item">' +
-            '<div class="setting-item-info"><div class="setting-item-name">' + name + '</div><div class="setting-item-detail">' + detail + '</div></div>' +
+            '<div class="setting-item-info"><div class="setting-item-name">' + name + activeTag + '</div><div class="setting-item-detail">' + detail + '</div></div>' +
             '<div class="setting-item-actions">' +
                 (canEdit ? '<button class="btn btn-outline btn-sm" onclick="ThemesSystem.editSetting(\'' + type + '\',' + item.id + ')"><i class="fas fa-edit"></i></button>' : '') +
                 (canDelete ? '<button class="btn btn-danger btn-sm" onclick="ThemesSystem.deleteSetting(\'' + type + '\',' + item.id + ')"><i class="fas fa-trash"></i></button>' : '') +
@@ -399,50 +406,56 @@
             var key = $('dsKey') ? $('dsKey').value.trim() : '';
             var name = $('dsName') ? $('dsName').value.trim() : '';
             if (!key || !name) { notify(t('errors.fields_required', 'Key and Name are required'), 'error'); return null; }
-            return { setting_key: key, setting_name: name, setting_value: $('dsValue') ? $('dsValue').value : '', setting_type: $('dsType') ? $('dsType').value : 'text', category: $('dsCategory') ? $('dsCategory').value : 'other', sort_order: $('dsSortOrder') ? parseInt($('dsSortOrder').value) || 0 : 0, is_active: 1 };
+            return { setting_key: key, setting_name: name, setting_value: $('dsValue') ? $('dsValue').value : '', setting_type: $('dsType') ? $('dsType').value : 'text', category: $('dsCategory') ? $('dsCategory').value : 'other', sort_order: $('dsSortOrder') ? parseInt($('dsSortOrder').value) || 0 : 0, is_active: $('dsIsActive') ? parseInt($('dsIsActive').value) : 1 };
         }
         if (type === 'colors') {
             var key = $('csKey') ? $('csKey').value.trim() : '';
             var name = $('csName') ? $('csName').value.trim() : '';
             if (!key || !name) { notify(t('errors.fields_required', 'Key and Name are required'), 'error'); return null; }
-            return { setting_key: key, setting_name: name, color_value: $('csValue') ? $('csValue').value : '#000000', category: $('csCategory') ? $('csCategory').value : 'other', sort_order: $('csSortOrder') ? parseInt($('csSortOrder').value) || 0 : 0, is_active: 1 };
+            return { setting_key: key, setting_name: name, color_value: $('csValue') ? $('csValue').value : '#000000', category: $('csCategory') ? $('csCategory').value : 'other', sort_order: $('csSortOrder') ? parseInt($('csSortOrder').value) || 0 : 0, is_active: $('csIsActive') ? parseInt($('csIsActive').value) : 1 };
         }
         if (type === 'fonts') {
             var key = $('fsKey') ? $('fsKey').value.trim() : '';
             var name = $('fsName') ? $('fsName').value.trim() : '';
             if (!key || !name) { notify(t('errors.fields_required', 'Key and Name are required'), 'error'); return null; }
-            return { setting_key: key, setting_name: name, font_family: $('fsFamily') ? $('fsFamily').value : '', font_size: $('fsSize') ? $('fsSize').value : '', font_weight: $('fsWeight') ? $('fsWeight').value : '', line_height: $('fsLineHeight') ? $('fsLineHeight').value : '', category: $('fsCategory') ? $('fsCategory').value : 'other', sort_order: $('fsSortOrder') ? parseInt($('fsSortOrder').value) || 0 : 0, is_active: 1 };
+            return { setting_key: key, setting_name: name, font_family: $('fsFamily') ? $('fsFamily').value : '', font_size: $('fsSize') ? $('fsSize').value : '', font_weight: $('fsWeight') ? $('fsWeight').value : '', line_height: $('fsLineHeight') ? $('fsLineHeight').value : '', category: $('fsCategory') ? $('fsCategory').value : 'other', sort_order: $('fsSortOrder') ? parseInt($('fsSortOrder').value) || 0 : 0, is_active: $('fsIsActive') ? parseInt($('fsIsActive').value) : 1 };
         }
         if (type === 'buttons') {
             var name = $('bsName') ? $('bsName').value.trim() : '';
             if (!name) { notify(t('errors.name_required', 'Name is required'), 'error'); return null; }
             var slug = $('bsSlug') ? $('bsSlug').value.trim() : '';
             if (!slug) slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            return { name: name, slug: slug, button_type: $('bsType') ? $('bsType').value : 'primary', background_color: $('bsBgColor') ? $('bsBgColor').value : '#3b82f6', text_color: $('bsTextColor') ? $('bsTextColor').value : '#ffffff', border_color: $('bsBorderColor') ? $('bsBorderColor').value : '#3b82f6', border_width: $('bsBorderWidth') ? parseInt($('bsBorderWidth').value) || 0 : 0, border_radius: $('bsBorderRadius') ? parseInt($('bsBorderRadius').value) || 4 : 4, padding: $('bsPadding') ? $('bsPadding').value : '10px 20px', font_size: $('bsFontSize') ? $('bsFontSize').value : '14px', font_weight: $('bsFontWeight') ? $('bsFontWeight').value : 'normal', hover_background_color: $('bsHoverBg') ? $('bsHoverBg').value : null, hover_text_color: $('bsHoverText') ? $('bsHoverText').value : null, hover_border_color: $('bsHoverBorder') ? $('bsHoverBorder').value : null, is_active: 1 };
+            return { name: name, slug: slug, button_type: $('bsType') ? $('bsType').value : 'primary', background_color: $('bsBgColor') ? $('bsBgColor').value : '#3b82f6', text_color: $('bsTextColor') ? $('bsTextColor').value : '#ffffff', border_color: $('bsBorderColor') ? $('bsBorderColor').value : '#3b82f6', border_width: $('bsBorderWidth') ? parseInt($('bsBorderWidth').value) || 0 : 0, border_radius: $('bsBorderRadius') ? parseInt($('bsBorderRadius').value) || 4 : 4, padding: $('bsPadding') ? $('bsPadding').value : '10px 20px', font_size: $('bsFontSize') ? $('bsFontSize').value : '14px', font_weight: $('bsFontWeight') ? $('bsFontWeight').value : 'normal', hover_background_color: $('bsHoverBg') ? $('bsHoverBg').value : null, hover_text_color: $('bsHoverText') ? $('bsHoverText').value : null, hover_border_color: $('bsHoverBorder') ? $('bsHoverBorder').value : null, is_active: $('bsIsActive') ? parseInt($('bsIsActive').value) : 1 };
         }
         if (type === 'cards') {
             var name = $('crdName') ? $('crdName').value.trim() : '';
             if (!name) { notify(t('errors.name_required', 'Name is required'), 'error'); return null; }
             var slug = $('crdSlug') ? $('crdSlug').value.trim() : '';
             if (!slug) slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            return { name: name, slug: slug, card_type: $('crdType') ? $('crdType').value : 'product', background_color: $('crdBgColor') ? $('crdBgColor').value : '#FFFFFF', border_color: $('crdBorderColor') ? $('crdBorderColor').value : '#E0E0E0', border_width: $('crdBorderWidth') ? parseInt($('crdBorderWidth').value) || 1 : 1, border_radius: $('crdBorderRadius') ? parseInt($('crdBorderRadius').value) || 8 : 8, shadow_style: $('crdShadow') ? $('crdShadow').value : 'none', padding: $('crdPadding') ? $('crdPadding').value : '16px', hover_effect: $('crdHover') ? $('crdHover').value : 'none', text_align: $('crdTextAlign') ? $('crdTextAlign').value : 'left', image_aspect_ratio: $('crdAspectRatio') ? $('crdAspectRatio').value : '1:1', is_active: 1 };
+            return { name: name, slug: slug, card_type: $('crdType') ? $('crdType').value : 'product', background_color: $('crdBgColor') ? $('crdBgColor').value : '#FFFFFF', border_color: $('crdBorderColor') ? $('crdBorderColor').value : '#E0E0E0', border_width: $('crdBorderWidth') ? parseInt($('crdBorderWidth').value) || 1 : 1, border_radius: $('crdBorderRadius') ? parseInt($('crdBorderRadius').value) || 8 : 8, shadow_style: $('crdShadow') ? $('crdShadow').value : 'none', padding: $('crdPadding') ? $('crdPadding').value : '16px', hover_effect: $('crdHover') ? $('crdHover').value : 'none', text_align: $('crdTextAlign') ? $('crdTextAlign').value : 'left', image_aspect_ratio: $('crdAspectRatio') ? $('crdAspectRatio').value : '1:1', is_active: $('crdIsActive') ? parseInt($('crdIsActive').value) : 1 };
+        }
+        if (type === 'system') {
+            var key = $('sysKey') ? $('sysKey').value.trim() : '';
+            if (!key) { notify(t('errors.fields_required', 'Key is required'), 'error'); return null; }
+            return { setting_key: key, setting_value: $('sysValue') ? $('sysValue').value : '', setting_type: $('sysType') ? $('sysType').value : 'text', category: $('sysCategory') ? $('sysCategory').value : 'general', description: $('sysDescription') ? $('sysDescription').value : '', is_public: $('sysIsPublic') ? parseInt($('sysIsPublic').value) : 0, is_editable: $('sysIsEditable') ? parseInt($('sysIsEditable').value) : 1 };
         }
         return null;
     }
 
     function getInlineFormId(type) {
-        var idField = { design: 'dsId', colors: 'csId', fonts: 'fsId', buttons: 'bsId', cards: 'crdId' }[type];
+        var idField = { design: 'dsId', colors: 'csId', fonts: 'fsId', buttons: 'bsId', cards: 'crdId', system: 'sysId' }[type];
         var f = $(idField);
         return f ? f.value : '';
     }
 
     function clearInlineForm(type) {
         var fields = {
-            design: ['dsKey','dsName','dsValue','dsType','dsCategory','dsSortOrder','dsId'],
-            colors: ['csKey','csName','csValue','csCategory','csSortOrder','csId'],
-            fonts: ['fsKey','fsName','fsFamily','fsSize','fsWeight','fsLineHeight','fsCategory','fsSortOrder','fsId'],
-            buttons: ['bsName','bsSlug','bsType','bsBgColor','bsTextColor','bsBorderColor','bsBorderWidth','bsBorderRadius','bsPadding','bsFontSize','bsFontWeight','bsHoverBg','bsHoverText','bsHoverBorder','bsId'],
-            cards: ['crdName','crdSlug','crdType','crdBgColor','crdBorderColor','crdBorderWidth','crdBorderRadius','crdPadding','crdShadow','crdHover','crdTextAlign','crdAspectRatio','crdId']
+            design: ['dsKey','dsName','dsValue','dsType','dsCategory','dsSortOrder','dsIsActive','dsId'],
+            colors: ['csKey','csName','csValue','csCategory','csSortOrder','csIsActive','csId'],
+            fonts: ['fsKey','fsName','fsFamily','fsSize','fsWeight','fsLineHeight','fsCategory','fsSortOrder','fsIsActive','fsId'],
+            buttons: ['bsName','bsSlug','bsType','bsBgColor','bsTextColor','bsBorderColor','bsBorderWidth','bsBorderRadius','bsPadding','bsFontSize','bsFontWeight','bsHoverBg','bsHoverText','bsHoverBorder','bsIsActive','bsId'],
+            cards: ['crdName','crdSlug','crdType','crdBgColor','crdBorderColor','crdBorderWidth','crdBorderRadius','crdPadding','crdShadow','crdHover','crdTextAlign','crdAspectRatio','crdIsActive','crdId'],
+            system: ['sysKey','sysValue','sysType','sysCategory','sysDescription','sysIsPublic','sysIsEditable','sysId']
         }[type] || [];
         fields.forEach(function(id) {
             var f = $(id);
@@ -495,6 +508,7 @@
             if ($('dsType')) $('dsType').value = item.setting_type || 'text';
             if ($('dsCategory')) $('dsCategory').value = item.category || 'other';
             if ($('dsSortOrder')) $('dsSortOrder').value = item.sort_order || 0;
+            if ($('dsIsActive')) $('dsIsActive').value = String(item.is_active ?? 1);
             if ($('dsId')) $('dsId').value = item.id;
         } else if (type === 'colors') {
             if ($('csKey')) $('csKey').value = item.setting_key || '';
@@ -502,6 +516,7 @@
             if ($('csValue')) $('csValue').value = item.color_value || '#000000';
             if ($('csCategory')) $('csCategory').value = item.category || 'other';
             if ($('csSortOrder')) $('csSortOrder').value = item.sort_order || 0;
+            if ($('csIsActive')) $('csIsActive').value = String(item.is_active ?? 1);
             if ($('csId')) $('csId').value = item.id;
         } else if (type === 'fonts') {
             if ($('fsKey')) $('fsKey').value = item.setting_key || '';
@@ -512,6 +527,7 @@
             if ($('fsLineHeight')) $('fsLineHeight').value = item.line_height || '';
             if ($('fsCategory')) $('fsCategory').value = item.category || 'other';
             if ($('fsSortOrder')) $('fsSortOrder').value = item.sort_order || 0;
+            if ($('fsIsActive')) $('fsIsActive').value = String(item.is_active ?? 1);
             if ($('fsId')) $('fsId').value = item.id;
         } else if (type === 'buttons') {
             if ($('bsName')) $('bsName').value = item.name || '';
@@ -528,6 +544,7 @@
             if ($('bsHoverBg')) $('bsHoverBg').value = item.hover_background_color || '#000000';
             if ($('bsHoverText')) $('bsHoverText').value = item.hover_text_color || '#000000';
             if ($('bsHoverBorder')) $('bsHoverBorder').value = item.hover_border_color || '#000000';
+            if ($('bsIsActive')) $('bsIsActive').value = String(item.is_active ?? 1);
             if ($('bsId')) $('bsId').value = item.id;
         } else if (type === 'cards') {
             if ($('crdName')) $('crdName').value = item.name || '';
@@ -542,7 +559,17 @@
             if ($('crdHover')) $('crdHover').value = item.hover_effect || 'none';
             if ($('crdTextAlign')) $('crdTextAlign').value = item.text_align || 'left';
             if ($('crdAspectRatio')) $('crdAspectRatio').value = item.image_aspect_ratio || '1:1';
+            if ($('crdIsActive')) $('crdIsActive').value = String(item.is_active ?? 1);
             if ($('crdId')) $('crdId').value = item.id;
+        } else if (type === 'system') {
+            if ($('sysKey')) $('sysKey').value = item.setting_key || '';
+            if ($('sysValue')) $('sysValue').value = item.setting_value || '';
+            if ($('sysType')) $('sysType').value = item.setting_type || 'text';
+            if ($('sysCategory')) $('sysCategory').value = item.category || 'general';
+            if ($('sysDescription')) $('sysDescription').value = item.description || '';
+            if ($('sysIsPublic')) $('sysIsPublic').value = String(item.is_public ?? 0);
+            if ($('sysIsEditable')) $('sysIsEditable').value = String(item.is_editable ?? 1);
+            if ($('sysId')) $('sysId').value = item.id;
         }
     }
 

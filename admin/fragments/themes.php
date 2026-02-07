@@ -104,6 +104,7 @@ window.THEMES_CONFIG = {
                 <button class="tab-btn" data-tab="colors" data-i18n="tabs.colors">Color Settings</button>
                 <button class="tab-btn" data-tab="fonts" data-i18n="tabs.fonts">Font Settings</button>
                 <button class="tab-btn" data-tab="buttons" data-i18n="tabs.buttons">Button & Card Styles</button>
+                <button class="tab-btn" data-tab="system" data-i18n="tabs.system">System Settings</button>
             </div>
 
             <!-- ─── Tab: Info ─── -->
@@ -150,6 +151,7 @@ window.THEMES_CONFIG = {
                             <select id="dsCategory"><option value="layout">layout</option><option value="header">header</option><option value="footer">footer</option><option value="sidebar">sidebar</option><option value="homepage">homepage</option><option value="product">product</option><option value="cart">cart</option><option value="checkout">checkout</option><option value="other">other</option></select>
                         </div>
                         <div class="form-group"><label data-i18n="design.sort_order">Sort</label><input type="number" id="dsSortOrder" value="0"></div>
+                        <div class="form-group"><label data-i18n="common.is_active">Active</label><select id="dsIsActive"><option value="1" data-i18n="common.yes">Yes</option><option value="0" data-i18n="common.no">No</option></select></div>
                     </div>
                     <input type="hidden" id="dsId">
                     <div class="form-actions"><button class="btn btn-primary btn-sm" id="btnSaveDesign"><i class="fas fa-check"></i> <span data-i18n="actions.save">Save</span></button><button class="btn btn-outline btn-sm" id="btnCancelDesign" data-i18n="actions.cancel">Cancel</button></div>
@@ -174,6 +176,7 @@ window.THEMES_CONFIG = {
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label data-i18n="colors.sort_order">Sort</label><input type="number" id="csSortOrder" value="0"></div>
+                        <div class="form-group"><label data-i18n="common.is_active">Active</label><select id="csIsActive"><option value="1" data-i18n="common.yes">Yes</option><option value="0" data-i18n="common.no">No</option></select></div>
                     </div>
                     <input type="hidden" id="csId">
                     <div class="form-actions"><button class="btn btn-primary btn-sm" id="btnSaveColor"><i class="fas fa-check"></i> <span data-i18n="actions.save">Save</span></button><button class="btn btn-outline btn-sm" id="btnCancelColor" data-i18n="actions.cancel">Cancel</button></div>
@@ -203,6 +206,7 @@ window.THEMES_CONFIG = {
                             <select id="fsCategory"><option value="heading">heading</option><option value="body">body</option><option value="button">button</option><option value="navigation">navigation</option><option value="other">other</option></select>
                         </div>
                         <div class="form-group"><label data-i18n="fonts.sort_order">Sort</label><input type="number" id="fsSortOrder" value="0"></div>
+                        <div class="form-group"><label data-i18n="common.is_active">Active</label><select id="fsIsActive"><option value="1" data-i18n="common.yes">Yes</option><option value="0" data-i18n="common.no">No</option></select></div>
                     </div>
                     <input type="hidden" id="fsId">
                     <div class="form-actions"><button class="btn btn-primary btn-sm" id="btnSaveFont"><i class="fas fa-check"></i> <span data-i18n="actions.save">Save</span></button><button class="btn btn-outline btn-sm" id="btnCancelFont" data-i18n="actions.cancel">Cancel</button></div>
@@ -240,6 +244,7 @@ window.THEMES_CONFIG = {
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label data-i18n="buttons.font_weight">Font Weight</label><input type="text" id="bsFontWeight" value="normal"></div>
+                        <div class="form-group"><label data-i18n="common.is_active">Active</label><select id="bsIsActive"><option value="1" data-i18n="common.yes">Yes</option><option value="0" data-i18n="common.no">No</option></select></div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label data-i18n="buttons.hover_bg">Hover BG</label><input type="color" id="bsHoverBg"></div>
@@ -286,9 +291,38 @@ window.THEMES_CONFIG = {
                             <select id="crdTextAlign"><option value="left">left</option><option value="center">center</option><option value="right">right</option></select>
                         </div>
                         <div class="form-group"><label data-i18n="cards.aspect_ratio">Aspect Ratio</label><input type="text" id="crdAspectRatio" value="1:1"></div>
+                        <div class="form-group"><label data-i18n="common.is_active">Active</label><select id="crdIsActive"><option value="1" data-i18n="common.yes">Yes</option><option value="0" data-i18n="common.no">No</option></select></div>
                     </div>
                     <input type="hidden" id="crdId">
                     <div class="form-actions"><button class="btn btn-primary btn-sm" id="btnSaveCard"><i class="fas fa-check"></i> <span data-i18n="actions.save">Save</span></button><button class="btn btn-outline btn-sm" id="btnCancelCard" data-i18n="actions.cancel">Cancel</button></div>
+                </div>
+            </div>
+
+            <!-- ─── Tab: System Settings ─── -->
+            <div class="tab-panel" id="tabSystem">
+                <div class="settings-list" id="systemList"></div>
+                <button class="btn btn-outline btn-sm" id="btnAddSystem"><i class="fas fa-plus"></i> <span data-i18n="actions.add_setting">Add Setting</span></button>
+                <div class="inline-form" id="systemForm">
+                    <div class="inline-form-header"><h4 data-i18n="system.add_title">Add System Setting</h4></div>
+                    <div class="form-row">
+                        <div class="form-group"><label data-i18n="system.key">Key</label><input type="text" id="sysKey"></div>
+                        <div class="form-group"><label data-i18n="system.category">Category</label><input type="text" id="sysCategory" placeholder="general"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label data-i18n="system.value">Value</label><textarea id="sysValue" rows="2"></textarea></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label data-i18n="system.type">Type</label>
+                            <select id="sysType"><option value="text">text</option><option value="number">number</option><option value="boolean">boolean</option><option value="json">json</option><option value="file">file</option><option value="email">email</option></select>
+                        </div>
+                        <div class="form-group"><label data-i18n="system.description">Description</label><input type="text" id="sysDescription"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label data-i18n="system.is_public">Public</label><select id="sysIsPublic"><option value="0" data-i18n="common.no">No</option><option value="1" data-i18n="common.yes">Yes</option></select></div>
+                        <div class="form-group"><label data-i18n="system.is_editable">Editable</label><select id="sysIsEditable"><option value="1" data-i18n="common.yes">Yes</option><option value="0" data-i18n="common.no">No</option></select></div>
+                    </div>
+                    <input type="hidden" id="sysId">
+                    <div class="form-actions"><button class="btn btn-primary btn-sm" id="btnSaveSystem"><i class="fas fa-check"></i> <span data-i18n="actions.save">Save</span></button><button class="btn btn-outline btn-sm" id="btnCancelSystem" data-i18n="actions.cancel">Cancel</button></div>
                 </div>
             </div>
 
