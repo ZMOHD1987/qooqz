@@ -64,6 +64,12 @@ final class PdoProductVariantsRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // الأعمدة المسموحة في جدول product_variants
+    private const VARIANT_COLUMNS = [
+        'product_id', 'sku', 'barcode', 'stock_quantity',
+        'low_stock_threshold', 'is_active', 'is_default'
+    ];
+
     // ===========================
     // Save / Update variant
     // ===========================
@@ -71,7 +77,30 @@ final class PdoProductVariantsRepository
     {
         $isUpdate = !empty($data['id']);
 
+        // استخراج الأعمدة المسموح بها فقط
+        $params = [];
+        foreach (self::VARIANT_COLUMNS as $col) {
+            if (array_key_exists($col, $data)) {
+                $val = $data[$col];
+                $params[':' . $col] = ($val === '' || $val === null) ? null : $val;
+            } else {
+                $params[':' . $col] = null;
+            }
+        }
+
+        // product_id مطلوب
+        if (empty($params[':product_id'])) {
+            throw new \InvalidArgumentException('product_id is required for variant');
+        }
+
+        // توليد SKU تلقائياً إذا فارغ
+        if (empty($params[':sku'])) {
+            $params[':sku'] = 'VAR-' . strtoupper(bin2hex(random_bytes(4))) . '-' . time();
+        }
+
         if ($isUpdate) {
+            $params[':id'] = (int)$data['id'];
+
             $stmt = $this->pdo->prepare("
                 UPDATE product_variants SET
                     product_id = :product_id,
@@ -84,7 +113,7 @@ final class PdoProductVariantsRepository
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = :id
             ");
-            $stmt->execute(array_merge($data, [':id'=>$data['id']]));
+            $stmt->execute($params);
             return (int)$data['id'];
         }
 
@@ -97,7 +126,7 @@ final class PdoProductVariantsRepository
                 :is_active, :is_default
             )
         ");
-        $stmt->execute($data);
+        $stmt->execute($params);
         return (int)$this->pdo->lastInsertId();
     }
 

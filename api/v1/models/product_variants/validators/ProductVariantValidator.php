@@ -7,7 +7,7 @@ final class ProductVariantValidator
 {
     public function validate(array $data, bool $isUpdate=false): void
     {
-        $required = ['product_id','sku','is_active'];
+        $required = ['product_id'];
         if (!$isUpdate) {
             foreach($required as $field) {
                 if(!isset($data[$field])) {

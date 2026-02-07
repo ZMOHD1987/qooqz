@@ -491,6 +491,7 @@
                 loadProductAttributes(product.id);
                 loadProductVariants(product.id);
                 loadProductTranslations(product.id);
+                loadProductPricing(product.id);
             }
         } else {
             if (el.formTitle) el.formTitle.textContent = t('form.add_title', 'Add Product');
@@ -619,6 +620,9 @@
 
                 // Save product attribute assignments
                 await saveProductAttributeAssignments(savedProductId, isEdit);
+
+                // Save product variants
+                await saveProductVariants(savedProductId, isEdit);
 
                 // Save product translations
                 const translations = collectTranslations();
@@ -786,7 +790,7 @@
                     product_id: parseInt(productId),
                     attribute_id: parseInt(attr.attribute_id),
                     attribute_value_id: attr.attribute_value_id ? parseInt(attr.attribute_value_id) : null,
-                    custom_value: attr.value || null
+                    custom_value: attr.custom_value || attr.value || null
                 };
 
                 await apiCall('/api/product_attribute_assignments', {
@@ -797,6 +801,62 @@
             }
         } catch (err) {
             console.warn('[Products] Failed to save attribute assignments:', err);
+        }
+    }
+
+    async function saveProductVariants(productId, isEdit = false) {
+        try {
+            if (!state.productVariants || state.productVariants.length === 0) return;
+
+            // حفظ كل نسخة (variant)
+            for (const variant of state.productVariants) {
+                const variantData = {
+                    product_id: parseInt(productId),
+                    sku: variant.sku || null,
+                    barcode: variant.barcode || null,
+                    stock_quantity: parseInt(variant.stock_quantity) || 0,
+                    low_stock_threshold: parseInt(variant.low_stock_threshold) || 5,
+                    is_active: variant.is_active !== undefined ? parseInt(variant.is_active) : 1,
+                    is_default: variant.is_default !== undefined ? parseInt(variant.is_default) : 0
+                };
+
+                // إذا كان لديه id = تحديث، وإلا = إنشاء جديد
+                if (variant.id) {
+                    variantData.id = parseInt(variant.id);
+                }
+
+                const method = variant.id ? 'PUT' : 'POST';
+
+                const result = await apiCall(`/api/product_variants?tenant_id=${state.tenantId}`, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(variantData)
+                });
+
+                // حفظ اسم النسخة كترجمة
+                if (result.success && variant.name) {
+                    const variantId = variant.id || result.data?.id;
+                    if (variantId) {
+                        try {
+                            await apiCall(`/api/product_variants?tenant_id=${state.tenantId}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    variant_id: parseInt(variantId),
+                                    translation: {
+                                        language_code: state.language,
+                                        name: variant.name
+                                    }
+                                })
+                            });
+                        } catch (err) {
+                            console.warn('[Products] Failed to save variant translation:', err);
+                        }
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn('[Products] Failed to save variants:', err);
         }
     }
 
@@ -852,6 +912,7 @@
             attribute_name: attrName,
             attribute_type: attrType,
             value: '',
+            custom_value: '',
             attribute_value_id: null,
             available_values: attrValues
         };
@@ -865,7 +926,7 @@
         if (!el.prodAttributesList) return;
 
         el.prodAttributesList.innerHTML = state.productAttributes.map((attr, idx) => {
-            // إذا كانت هناك قيم محددة مسبقاً، عرضها كقائمة منسدلة
+            // إذا كانت هناك قيم محددة مسبقاً، عرضها كقائمة منسدلة + حقل نص مخصص
             if (attr.available_values && attr.available_values.length > 0) {
                 const options = attr.available_values.map(v => 
                     `<option value="${esc(v.id)}" ${String(v.id) === String(attr.attribute_value_id) ? 'selected' : ''}>${esc(v.label || v.value || v.name)}</option>`
@@ -873,11 +934,15 @@
                 return `
                     <div class="attribute-item" data-index="${idx}">
                         <label>${esc(attr.attribute_name)}</label>
-                        <div style="display:flex;gap:8px;align-items:center;">
-                            <select class="form-control" onchange="Products.updateAttributeValueId(${idx}, this.value)">
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                            <select class="form-control" style="flex:1;min-width:150px;" onchange="Products.updateAttributeValueId(${idx}, this.value)">
                                 <option value="">${t('form.attributes.select_value', 'Select value')}</option>
                                 ${options}
                             </select>
+                            <input type="text" class="form-control" style="flex:1;min-width:120px;" 
+                                   value="${esc(attr.custom_value || '')}" 
+                                   placeholder="${t('form.attributes.custom_value', 'Custom value (optional)')}"
+                                   onchange="Products.updateCustomValue(${idx}, this.value)">
                             <button type="button" class="btn btn-sm btn-danger" onclick="Products.removeAttribute(${idx})">
                                 <i class="fas fa-times"></i>
                             </button>
@@ -885,13 +950,13 @@
                     </div>
                 `;
             }
-            // خلاف ذلك حقل نص حر
+            // خلاف ذلك حقل نص حر فقط
             return `
                 <div class="attribute-item" data-index="${idx}">
                     <label>${esc(attr.attribute_name)}</label>
                     <div style="display:flex;gap:8px;align-items:center;">
-                        <input type="text" class="form-control" value="${esc(attr.value || '')}" 
-                               onchange="Products.updateAttributeValue(${idx}, this.value)">
+                        <input type="text" class="form-control" value="${esc(attr.custom_value || attr.value || '')}" 
+                               onchange="Products.updateCustomValue(${idx}, this.value)">
                         <button type="button" class="btn btn-sm btn-danger" onclick="Products.removeAttribute(${idx})">
                             <i class="fas fa-times"></i>
                         </button>
@@ -904,6 +969,7 @@
     function updateAttributeValue(index, value) {
         if (state.productAttributes[index]) {
             state.productAttributes[index].value = value;
+            state.productAttributes[index].custom_value = value;
         }
     }
 
@@ -916,6 +982,13 @@
             if (found) {
                 state.productAttributes[index].value = found.value || found.label || '';
             }
+        }
+    }
+
+    function updateCustomValue(index, value) {
+        if (state.productAttributes[index]) {
+            state.productAttributes[index].custom_value = value;
+            state.productAttributes[index].value = value;
         }
     }
 
@@ -950,19 +1023,20 @@
             <div class="variant-item card" data-index="${idx}" style="margin-bottom:12px; padding:12px;">
                 <div class="form-row">
                     <div class="form-group" style="flex:1;">
-                        <label>SKU</label>
-                        <input type="text" class="form-control" value="${esc(variant.sku || '')}"
-                               onchange="Products.updateVariantField(${idx}, 'sku', this.value)">
-                    </div>
-                    <div class="form-group" style="flex:1;">
                         <label>Name</label>
                         <input type="text" class="form-control" value="${esc(variant.name || '')}"
                                onchange="Products.updateVariantField(${idx}, 'name', this.value)">
                     </div>
                     <div class="form-group" style="flex:1;">
-                        <label>Price</label>
-                        <input type="number" step="0.01" class="form-control" value="${esc(variant.price || '')}"
-                               onchange="Products.updateVariantField(${idx}, 'price', this.value)">
+                        <label>SKU</label>
+                        <input type="text" class="form-control" value="${esc(variant.sku || '')}"
+                               placeholder="Auto-generated"
+                               onchange="Products.updateVariantField(${idx}, 'sku', this.value)">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Barcode</label>
+                        <input type="text" class="form-control" value="${esc(variant.barcode || '')}"
+                               onchange="Products.updateVariantField(${idx}, 'barcode', this.value)">
                     </div>
                     <div class="form-group" style="width:100px;">
                         <label>Stock</label>
@@ -1283,6 +1357,27 @@
         }
     }
 
+    async function loadProductPricing(productId) {
+        try {
+            console.log('[Products] Loading pricing for product:', productId);
+            const result = await apiCall(`/api/product_pricing?product_id=${productId}&format=json`);
+            if (result.success) {
+                const items = result.data?.items || (Array.isArray(result.data) ? result.data : []);
+                // استخدام أول سعر نشط
+                const pricing = items.find(p => p.is_active == 1) || items[0];
+                if (pricing) {
+                    if (el.prodPrice) el.prodPrice.value = pricing.price || '';
+                    if (el.prodComparePrice) el.prodComparePrice.value = pricing.compare_at_price || '';
+                    if (el.prodCostPrice) el.prodCostPrice.value = pricing.cost_price || '';
+                    if (el.prodCurrency) el.prodCurrency.value = pricing.currency_code || 'SAR';
+                    if (el.prodTaxRate) el.prodTaxRate.value = pricing.tax_rate || '';
+                }
+            }
+        } catch (err) {
+            console.warn('[Products] Failed to load pricing:', err);
+        }
+    }
+
     async function loadProductCategories(productId) {
         try {
             console.log('[Products] Loading categories for product:', productId);
@@ -1327,6 +1422,7 @@
                         attribute_name: attrInfo?.name || item.attribute_name || item.attribute_slug || `Attribute #${item.attribute_id}`,
                         attribute_type: item.attribute_type_id || attrInfo?.attribute_type_id || '',
                         value: item.custom_value || item.value || '',
+                        custom_value: item.custom_value || '',
                         attribute_value_id: item.attribute_value_id || null,
                         available_values: availableValues
                     });
@@ -1770,6 +1866,7 @@
         duplicate: duplicateProduct,
         updateAttributeValue,
         updateAttributeValueId,
+        updateCustomValue,
         removeAttribute,
         updateVariantField,
         removeVariant,
