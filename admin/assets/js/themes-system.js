@@ -471,7 +471,6 @@
             if (form) form.classList.add('show');
 
             // Switch to the correct tab
-            var tabMap = { design: 'Design', colors: 'Colors', fonts: 'Fonts', buttons: 'Buttons', cards: 'Buttons' };
             var page = $('themesPage');
             if (page) {
                 page.querySelectorAll('.tab-btn').forEach(function(btn) {
