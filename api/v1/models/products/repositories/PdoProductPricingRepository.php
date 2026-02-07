@@ -123,7 +123,25 @@ final class PdoProductPricingRepository
     {
         $isUpdate = !empty($data['id']);
 
+        // Extract only valid pricing columns to prevent SQLSTATE[HY093]
+        $params = [
+            ':product_id'       => $data['product_id'] ?? null,
+            ':variant_id'       => $data['variant_id'] ?? null,
+            ':price'            => $data['price'] ?? 0,
+            ':tax_rate'         => $data['tax_rate'] ?? null,
+            ':cost_price'       => $data['cost_price'] ?? null,
+            ':compare_at_price' => $data['compare_at_price'] ?? null,
+            ':currency_code'    => $data['currency_code'] ?? 'SAR',
+            ':pricing_type'     => $data['pricing_type'] ?? 'fixed',
+            ':start_at'         => $data['start_at'] ?? null,
+            ':end_at'           => $data['end_at'] ?? null,
+            ':country_id'       => $data['country_id'] ?? null,
+            ':city_id'          => $data['city_id'] ?? null,
+            ':is_active'        => $data['is_active'] ?? 1,
+        ];
+
         if ($isUpdate) {
+            $params[':id'] = $data['id'];
             $stmt = $this->pdo->prepare("
                 UPDATE product_pricing SET
                     product_id = :product_id,
@@ -143,7 +161,7 @@ final class PdoProductPricingRepository
                 WHERE id = :id
             ");
 
-            $stmt->execute($data);
+            $stmt->execute($params);
             return (int)$data['id'];
         }
 
@@ -161,7 +179,7 @@ final class PdoProductPricingRepository
             )
         ");
 
-        $stmt->execute($data);
+        $stmt->execute($params);
         return (int)$this->pdo->lastInsertId();
     }
 

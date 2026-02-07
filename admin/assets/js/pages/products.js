@@ -760,7 +760,11 @@
                         language_code: langCode,
                         name: trans.name || '',
                         short_description: trans.short_description || '',
-                        description: trans.description || ''
+                        description: trans.description || '',
+                        specifications: trans.specifications || '',
+                        meta_title: trans.meta_title || '',
+                        meta_description: trans.meta_description || '',
+                        meta_keywords: trans.meta_keywords || ''
                     })
                 });
             }
@@ -1282,16 +1286,32 @@
             </div>
             <div class="translation-panel-body">
                 <div class="form-group">
-                    <label>Name</label>
+                    <label>${t('form.fields.name.label', 'Name')}</label>
                     <input type="text" class="form-control trans-name" value="${esc(data.name || '')}" data-lang="${langCode}">
                 </div>
                 <div class="form-group">
-                    <label>Short Description</label>
+                    <label>${t('form.fields.short_description.label', 'Short Description')}</label>
                     <textarea class="form-control trans-short-desc" rows="2" data-lang="${langCode}">${esc(data.short_description || '')}</textarea>
                 </div>
                 <div class="form-group">
-                    <label>Description</label>
+                    <label>${t('form.fields.description.label', 'Description')}</label>
                     <textarea class="form-control trans-desc" rows="4" data-lang="${langCode}">${esc(data.description || '')}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>${t('form.fields.specifications.label', 'Specifications')}</label>
+                    <textarea class="form-control trans-specifications" rows="3" data-lang="${langCode}">${esc(data.specifications || '')}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>${t('form.fields.meta_title.label', 'Meta Title')}</label>
+                    <input type="text" class="form-control trans-meta-title" value="${esc(data.meta_title || '')}" data-lang="${langCode}">
+                </div>
+                <div class="form-group">
+                    <label>${t('form.fields.meta_description.label', 'Meta Description')}</label>
+                    <textarea class="form-control trans-meta-desc" rows="2" data-lang="${langCode}">${esc(data.meta_description || '')}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>${t('form.fields.meta_keywords.label', 'Meta Keywords')}</label>
+                    <input type="text" class="form-control trans-meta-keywords" value="${esc(data.meta_keywords || '')}" data-lang="${langCode}">
                 </div>
             </div>
         `;
@@ -1307,12 +1327,20 @@
             const name = panel.querySelector('.trans-name')?.value || '';
             const shortDesc = panel.querySelector('.trans-short-desc')?.value || '';
             const desc = panel.querySelector('.trans-desc')?.value || '';
+            const specifications = panel.querySelector('.trans-specifications')?.value || '';
+            const metaTitle = panel.querySelector('.trans-meta-title')?.value || '';
+            const metaDesc = panel.querySelector('.trans-meta-desc')?.value || '';
+            const metaKeywords = panel.querySelector('.trans-meta-keywords')?.value || '';
             
-            if (name || shortDesc || desc) {
+            if (name || shortDesc || desc || specifications || metaTitle || metaDesc || metaKeywords) {
                 translations[lang] = {
                     name: name,
                     short_description: shortDesc,
-                    description: desc
+                    description: desc,
+                    specifications: specifications,
+                    meta_title: metaTitle,
+                    meta_description: metaDesc,
+                    meta_keywords: metaKeywords
                 };
             }
         });
@@ -1332,7 +1360,11 @@
                     const panel = createTranslationPanel(trans.language_code, langName, {
                         name: trans.name || '',
                         short_description: trans.short_description || '',
-                        description: trans.description || ''
+                        description: trans.description || '',
+                        specifications: trans.specifications || '',
+                        meta_title: trans.meta_title || '',
+                        meta_description: trans.meta_description || '',
+                        meta_keywords: trans.meta_keywords || ''
                     });
                     if (el.prodTranslations) el.prodTranslations.appendChild(panel);
                 });
