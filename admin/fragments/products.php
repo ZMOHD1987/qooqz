@@ -281,6 +281,8 @@ $apiBase = '/api';
                     </div>
 
                     <div class="form-row">
+                        <div class="form-group">
+                            <label for="prodIsActive" data-i18n="form.fields.status.label">
                                 <?= __t('form.fields.status.label', 'Status') ?>
                             </label>
                             <select id="prodIsActive" name="is_active" class="form-control">
