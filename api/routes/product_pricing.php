@@ -85,5 +85,6 @@ try {
 
 } catch (Throwable $e) {
     safe_log('error','product_pricing', ['error'=>$e->getMessage()]);
-    ResponseFormatter::error($e->getMessage(), 500);
+    $msg = ($e instanceof InvalidArgumentException) ? $e->getMessage() : 'Internal server error';
+    ResponseFormatter::error($msg, 500);
 }

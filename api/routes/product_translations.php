@@ -71,5 +71,6 @@ try {
     ResponseFormatter::error('Method not allowed', 405);
 } catch(Throwable $e){
     safe_log('critical','product_translations.fatal',['error'=>$e->getMessage()]);
-    ResponseFormatter::error($e->getMessage(),500);
+    $msg = ($e instanceof InvalidArgumentException) ? $e->getMessage() : 'Internal server error';
+    ResponseFormatter::error($msg,500);
 }

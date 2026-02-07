@@ -675,7 +675,7 @@
                     const found = items.find(p => !p.variant_id || p.variant_id === null);
                     if (found) existingId = found.id;
                 }
-            } catch (e) { /* ignore */ }
+            } catch (e) { console.warn('[Products] Check existing pricing:', e); }
 
             if (existingId) {
                 pricingData.id = parseInt(existingId);
@@ -774,7 +774,7 @@
                 if (existing.success) {
                     existingTranslations = Array.isArray(existing.data) ? existing.data : (existing.data?.items || []);
                 }
-            } catch (e) { /* ignore */ }
+            } catch (e) { console.warn('[Products] Check existing translations:', e); }
 
             for (const [langCode, trans] of Object.entries(translations)) {
                 const transData = {

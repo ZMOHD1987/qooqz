@@ -111,5 +111,6 @@ try {
         'file'  => $e->getFile(),
         'line'  => $e->getLine(),
     ]);
-    ResponseFormatter::error($e->getMessage(), 500);
+    $msg = ($e instanceof InvalidArgumentException) ? $e->getMessage() : 'Internal server error';
+    ResponseFormatter::error($msg, 500);
 }
