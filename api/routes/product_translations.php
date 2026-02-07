@@ -22,7 +22,7 @@ $service = new ProductTranslationsService($repo);
 $controller = new ProductTranslationsController($service);
 
 $user = $_SESSION['user'] ?? [];
-$tenantId = $_SESSION['tenant_id'] ?? null;
+$tenantId = isset($_SESSION['tenant_id']) ? (int)$_SESSION['tenant_id'] : null;
 $languageCode = $user['preferred_language'] ?? 'en';
 
 try {

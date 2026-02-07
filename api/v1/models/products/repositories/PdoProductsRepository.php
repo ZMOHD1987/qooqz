@@ -47,7 +47,13 @@ final class PdoProductsRepository
                    pt.meta_keywords,
                    i.id AS image_id,
                    i.url AS image_url,
-                   i.thumb_url AS image_thumb_url
+                   i.thumb_url AS image_thumb_url,
+                   pp.price,
+                   pp.compare_at_price,
+                   pp.cost_price,
+                   pp.currency_code,
+                   pp.tax_rate,
+                   pp.pricing_type
             FROM products p
             LEFT JOIN product_translations pt
                 ON p.id = pt.product_id AND pt.language_code = :lang
@@ -57,6 +63,10 @@ final class PdoProductsRepository
                AND i.image_type_id = (
                    SELECT id FROM image_types WHERE name = 'product' LIMIT 1
                )
+            LEFT JOIN product_pricing pp
+                ON pp.product_id = p.id
+               AND pp.variant_id IS NULL
+               AND pp.is_active = 1
             WHERE p.tenant_id = :tenant_id
         ";
         $params = [':tenant_id' => $tenantId, ':lang' => $lang];

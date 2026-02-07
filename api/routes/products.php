@@ -30,7 +30,7 @@ $controller = new ProductsController($service);
 $user = $_SESSION['user'] ?? [];
 $tenantId = isset($_GET['tenant_id']) && is_numeric($_GET['tenant_id'])
     ? (int)$_GET['tenant_id']
-    : ($_SESSION['tenant_id'] ?? null);
+    : (isset($_SESSION['tenant_id']) ? (int)$_SESSION['tenant_id'] : null);
 
 if ($tenantId === null) {
     ResponseFormatter::error('Unauthorized: tenant not found', 401);
