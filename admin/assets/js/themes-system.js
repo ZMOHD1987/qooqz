@@ -1,602 +1,855 @@
 /**
- * themes-system.js — IIFE matching categories.js pattern
+ * themes-system.js
+ * Theme management - Products-pattern IIFE module
+ * List → Form with tabs (Info, Design, Colors, Fonts, Buttons, Cards, Homepage)
  */
 (function() {
     'use strict';
-    const AF = window.AdminFramework;
-    const CFG = () => window.THEMES_CONFIG || {};
-    const API = {
-        themes: '/api/themes',
-        design: '/api/design_settings',
-        colors: '/api/color_settings',
-        fonts: '/api/font_settings',
-        buttons: '/api/button_styles',
-        cards: '/api/card_styles',
-        system: '/api/system_settings'
+
+    // ════════════════════════════════════════
+    // CONFIG & STATE
+    // ════════════════════════════════════════
+    const CFG = (typeof THEMES_CONFIG !== 'undefined') ? THEMES_CONFIG : {};
+    const API = CFG.API || {};
+    const TENANT_ID = CFG.TENANT_ID || 1;
+    const LANG = CFG.LANG || 'en';
+
+    const state = {
+        themes: [],
+        editingThemeId: null,
+        i18n: {},
+        // Related data for current theme
+        designSettings: [],
+        colorSettings: [],
+        fontSettings: [],
+        buttonStyles: [],
+        cardStyles: [],
+        homepageSections: []
     };
 
-    let el = {};
-    let state = { currentThemeId: null, translations: {} };
+    // DOM elements cache
+    const el = {};
 
-    /* ─── Helpers ─── */
-    function $(id) { return document.getElementById(id); }
-    function esc(s) { if (s == null) return ''; const d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
-    function tid() { return CFG().TENANT_ID || 1; }
-    function lang() { return CFG().USER_LANG || 'en'; }
-    function t(key, fb) { return state.translations[key] || fb || key; }
-    function extractItems(json) {
-        if (!json) return [];
-        const d = json.data || json;
-        if (Array.isArray(d)) return d;
-        if (d && Array.isArray(d.items)) return d.items;
-        if (d && Array.isArray(d.data)) return d.data;
-        return [];
-    }
-
-    async function api(url, opts) {
-        const res = await fetch(url, Object.assign({ credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } }, opts || {}));
-        return res.json();
-    }
-
-    function notify(msg, type) {
-        if (AF && AF.toast) AF.toast(msg, type || 'info');
-        else alert(msg);
-    }
-
-    /* ─── i18n ─── */
-    async function loadTranslations() {
-        try {
-            const res = await fetch('/admin/languages/AdminUiTheme/' + lang() + '.json');
-            if (!res.ok) return;
-            const json = await res.json();
-            state.translations = flattenObj(json);
-            applyTranslations();
-            const dir = json.direction || (lang() === 'ar' ? 'rtl' : 'ltr');
-            const page = $('themesPage');
-            if (page) page.dir = dir;
-        } catch (e) { /* translations optional */ }
-    }
-
-    function flattenObj(obj, prefix) {
-        let result = {};
-        for (const k in obj) {
-            const key = prefix ? prefix + '.' + k : k;
-            if (typeof obj[k] === 'object' && obj[k] !== null && !Array.isArray(obj[k])) {
-                Object.assign(result, flattenObj(obj[k], key));
-            } else {
-                result[key] = obj[k];
-            }
-        }
-        return result;
-    }
-
-    function applyTranslations() {
-        const page = $('themesPage');
-        if (!page) return;
-        page.querySelectorAll('[data-i18n]').forEach(function(el) {
-            const key = el.getAttribute('data-i18n');
-            if (state.translations[key]) el.textContent = state.translations[key];
-        });
-        page.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
-            const key = el.getAttribute('data-i18n-placeholder');
-            if (state.translations[key]) el.placeholder = state.translations[key];
-        });
-    }
-
-    /* ─── Init ─── */
+    // ════════════════════════════════════════
+    // INIT
+    // ════════════════════════════════════════
     function init() {
-        el = {
-            list: $('themesList'),
-            form: $('themeForm'),
-            tbody: $('themesTableBody'),
-            formTitle: $('formTitle'),
-            themeId: $('themeId'),
-            btnAdd: $('btnAddTheme'),
-            btnCancel: $('btnCancel'),
-            btnCancelMain: $('btnCancelMain'),
-            btnSave: $('btnSave'),
-            search: $('searchThemes'),
-            filterStatus: $('filterStatus'),
-            // Info fields
-            fName: $('fName'), fSlug: $('fSlug'), fDescription: $('fDescription'),
-            fVersion: $('fVersion'), fAuthor: $('fAuthor'),
-            fThumbnailUrl: $('fThumbnailUrl'), fPreviewUrl: $('fPreviewUrl'),
-            fIsActive: $('fIsActive'), fIsDefault: $('fIsDefault')
-        };
-
-        if (el.btnAdd) el.btnAdd.onclick = function() { showForm(); };
-        if (el.btnCancel) el.btnCancel.onclick = hideForm;
-        if (el.btnCancelMain) el.btnCancelMain.onclick = hideForm;
-        if (el.btnSave) el.btnSave.onclick = saveTheme;
-        if (el.search) el.search.oninput = function() { loadThemes(); };
-        if (el.filterStatus) el.filterStatus.onchange = function() { loadThemes(); };
-
-        // Tab buttons
-        var page = $('themesPage');
-        if (page) {
-            page.querySelectorAll('.tab-btn').forEach(function(btn) {
-                btn.onclick = function() {
-                    page.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-                    page.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
-                    btn.classList.add('active');
-                    var panel = $('tab' + btn.getAttribute('data-tab').charAt(0).toUpperCase() + btn.getAttribute('data-tab').slice(1));
-                    if (panel) panel.classList.add('active');
-                };
-            });
-        }
-
-        // Inline form toggles
-        setupInlineForm('Design', 'design');
-        setupInlineForm('Color', 'colors');
-        setupInlineForm('Font', 'fonts');
-        setupInlineForm('Button', 'buttons');
-        setupInlineForm('Card', 'cards');
-        setupInlineForm('System', 'system');
-
-        loadTranslations();
+        console.log('[ThemesSystem] init()');
+        cacheElements();
+        bindEvents();
+        loadI18n();
         loadThemes();
     }
 
-    function setupInlineForm(name, prefix) {
-        var btnAdd = $('btnAdd' + name);
-        var btnSave = $('btnSave' + name);
-        var btnCancel = $('btnCancel' + name);
-        var form = $(prefix + 'Form');
-        if (btnAdd) btnAdd.onclick = function() { if (form) { clearInlineForm(prefix); form.classList.add('show'); } };
-        if (btnCancel) btnCancel.onclick = function() { if (form) form.classList.remove('show'); };
-        if (btnSave) btnSave.onclick = function() { saveSetting(prefix); };
+    function cacheElements() {
+        const $ = id => document.getElementById(id);
+        el.alertsContainer = $('alertsContainer');
+        // List view
+        el.listView = $('themesListView');
+        el.loading = $('themesLoading');
+        el.tableContainer = $('themesTableContainer');
+        el.tableBody = $('themesTableBody');
+        el.empty = $('themesEmpty');
+        el.search = $('themeSearch');
+        el.statusFilter = $('themeStatusFilter');
+        el.btnAdd = $('btnAddTheme');
+        // Form view
+        el.formView = $('themeFormView');
+        el.formTitle = $('formTitle');
+        el.btnCancel = $('btnCancelForm');
+        el.btnSave = $('btnSaveTheme');
+        el.btnDelete = $('btnDeleteTheme');
+        // Theme fields
+        el.themeId = $('themeId');
+        el.themeName = $('themeName');
+        el.themeSlug = $('themeSlug');
+        el.themeDescription = $('themeDescription');
+        el.themeVersion = $('themeVersion');
+        el.themeAuthor = $('themeAuthor');
+        el.themeThumbnailUrl = $('themeThumbnailUrl');
+        el.themePreviewUrl = $('themePreviewUrl');
+        el.themeIsActive = $('themeIsActive');
+        el.themeIsDefault = $('themeIsDefault');
+        // Settings lists
+        el.designSettingsList = $('designSettingsList');
+        el.colorSettingsList = $('colorSettingsList');
+        el.fontSettingsList = $('fontSettingsList');
+        el.buttonStylesList = $('buttonStylesList');
+        el.cardStylesList = $('cardStylesList');
+        el.homepageSectionsList = $('homepageSectionsList');
     }
 
-    /* ─── List / Form Toggle ─── */
-    function showForm(themeId) {
-        state.currentThemeId = themeId || null;
-        if (el.form) el.form.style.display = 'block';
-        if (el.list) el.list.style.display = 'none';
-        if (el.themeId) el.themeId.value = themeId || '';
-        if (el.formTitle) el.formTitle.textContent = themeId ? t('form.edit_title', 'Edit Theme') : t('form.add_title', 'Add Theme');
-
-        // Reset tabs to first
-        var page = $('themesPage');
-        if (page) {
-            page.querySelectorAll('.tab-btn').forEach(function(b, i) { b.classList.toggle('active', i === 0); });
-            page.querySelectorAll('.tab-panel').forEach(function(p, i) { p.classList.toggle('active', i === 0); });
-        }
-
-        if (themeId) {
-            loadThemeData(themeId);
-        } else {
-            clearForm();
-        }
-    }
-
-    function hideForm() {
-        if (el.form) el.form.style.display = 'none';
-        if (el.list) el.list.style.display = 'block';
-        state.currentThemeId = null;
-        clearForm();
-    }
-
-    function clearForm() {
-        ['fName','fSlug','fDescription','fVersion','fAuthor','fThumbnailUrl','fPreviewUrl'].forEach(function(id) {
-            if (el[id]) el[id].value = '';
+    function bindEvents() {
+        // List view
+        if (el.btnAdd) el.btnAdd.onclick = () => showForm();
+        if (el.search) el.search.oninput = filterThemes;
+        if (el.statusFilter) el.statusFilter.onchange = filterThemes;
+        // Form view
+        if (el.btnCancel) el.btnCancel.onclick = hideForm;
+        if (el.btnSave) el.btnSave.onclick = saveTheme;
+        if (el.btnDelete) el.btnDelete.onclick = deleteTheme;
+        // Form tabs
+        document.querySelectorAll('.themes-page .form-tab').forEach(tab => {
+            tab.onclick = function() {
+                const target = this.getAttribute('data-tab');
+                document.querySelectorAll('.themes-page .form-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                document.querySelectorAll('.themes-page .tab-content').forEach(c => {
+                    c.style.display = 'none';
+                    c.classList.remove('active');
+                });
+                const tabEl = document.getElementById('tab-' + target);
+                if (tabEl) {
+                    tabEl.style.display = 'block';
+                    tabEl.classList.add('active');
+                }
+            };
         });
-        if (el.fVersion) el.fVersion.value = '1.0.0';
-        if (el.fIsActive) el.fIsActive.value = '1';
-        if (el.fIsDefault) el.fIsDefault.value = '0';
-        if (el.themeId) el.themeId.value = '';
-        // Clear settings lists
-        ['designList','colorsList','fontsList','buttonsList','cardsList'].forEach(function(id) {
-            var e = $(id);
-            if (e) e.innerHTML = '<div class="empty-state">' + t('common.no_items', 'No items yet') + '</div>';
-        });
+        // Settings add/save/cancel buttons
+        bindSettingsButtons('Design', 'design');
+        bindSettingsButtons('Color', 'color');
+        bindSettingsButtons('Font', 'font');
+        bindSettingsButtons('Button', 'button');
+        bindSettingsButtons('Card', 'card');
+        bindSettingsButtons('Section', 'section');
     }
 
-    /* ─── Load Themes List ─── */
-    async function loadThemes() {
-        if (el.tbody) el.tbody.innerHTML = '<tr><td colspan="7" class="loading-state"><div class="spinner"></div></td></tr>';
+    function bindSettingsButtons(name, prefix) {
+        const btnAdd = document.getElementById('btnAdd' + name);
+        const btnSave = document.getElementById('btnSave' + name);
+        const btnCancel = document.getElementById('btnCancel' + name);
+        const form = document.getElementById(prefix + 'Form');
+        if (btnAdd) btnAdd.onclick = () => {
+            resetSettingForm(prefix);
+            if (form) form.style.display = 'block';
+        };
+        if (btnCancel) btnCancel.onclick = () => {
+            if (form) form.style.display = 'none';
+        };
+        if (btnSave) btnSave.onclick = () => saveSetting(prefix);
+    }
+
+    // ════════════════════════════════════════
+    // i18n
+    // ════════════════════════════════════════
+    async function loadI18n() {
         try {
-            var url = API.themes + '?tenant_id=' + tid() + '&format=json';
-            var search = el.search ? el.search.value.trim() : '';
-            var status = el.filterStatus ? el.filterStatus.value : '';
-            if (search) url += '&search=' + encodeURIComponent(search);
-            if (status !== '') url += '&is_active=' + status;
-            var json = await api(url);
-            var items = extractItems(json);
-            renderThemes(items);
+            const res = await fetch('/languages/AdminUiTheme/' + LANG + '.json');
+            if (res.ok) {
+                state.i18n = await res.json();
+                applyI18n();
+            }
         } catch (e) {
-            if (el.tbody) el.tbody.innerHTML = '<tr><td colspan="7" class="empty-state">' + t('errors.load_failed', 'Failed to load') + '</td></tr>';
+            console.warn('[ThemesSystem] i18n load failed:', e);
         }
     }
 
-    function renderThemes(items) {
-        if (!el.tbody) return;
-        if (!items || items.length === 0) {
-            el.tbody.innerHTML = '<tr><td colspan="7" class="empty-state">' + t('common.no_items', 'No themes found') + '</td></tr>';
+    function t(key, fallback) {
+        const parts = key.split('.');
+        let val = state.i18n;
+        for (const p of parts) {
+            if (val && typeof val === 'object' && p in val) {
+                val = val[p];
+            } else {
+                return fallback || key;
+            }
+        }
+        return (typeof val === 'string') ? val : (fallback || key);
+    }
+
+    function applyI18n() {
+        document.querySelectorAll('.themes-page [data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            const translated = t(key);
+            if (translated !== key) el.textContent = translated;
+        });
+        document.querySelectorAll('.themes-page [data-i18n-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-i18n-placeholder');
+            const translated = t(key);
+            if (translated !== key) el.placeholder = translated;
+        });
+    }
+
+    // ════════════════════════════════════════
+    // THEMES LIST
+    // ════════════════════════════════════════
+    async function loadThemes() {
+        showLoading(true);
+        try {
+            const url = API.themes + '?tenant_id=' + TENANT_ID + '&format=json';
+            const res = await fetch(url);
+            const json = await res.json();
+            state.themes = extractItems(json);
+            renderThemes(state.themes);
+        } catch (e) {
+            console.error('[ThemesSystem] loadThemes error:', e);
+            showAlert('error', t('theme_manager.messages.error.load_failed', 'Failed to load themes'));
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    function extractItems(json) {
+        if (!json) return [];
+        if (json.success && json.data) {
+            if (Array.isArray(json.data)) return json.data;
+            if (json.data.items && Array.isArray(json.data.items)) return json.data.items;
+            if (json.data.data && Array.isArray(json.data.data)) return json.data.data;
+        }
+        if (Array.isArray(json)) return json;
+        return [];
+    }
+
+    function renderThemes(themes) {
+        if (!el.tableBody) return;
+        if (!themes || themes.length === 0) {
+            if (el.tableContainer) el.tableContainer.style.display = 'none';
+            if (el.empty) el.empty.style.display = 'flex';
             return;
         }
-        el.tbody.innerHTML = items.map(function(th) {
-            var canEdit = CFG().CAN_EDIT;
-            var canDelete = CFG().CAN_DELETE;
+        if (el.tableContainer) el.tableContainer.style.display = 'block';
+        if (el.empty) el.empty.style.display = 'none';
+
+        el.tableBody.innerHTML = themes.map(th => {
+            const statusClass = th.is_active ? 'badge-success' : 'badge-secondary';
+            const statusText = th.is_active ? t('theme_manager.status.active', 'Active') : t('theme_manager.status.inactive', 'Inactive');
+            const defaultBadge = th.is_default ? '<span class="badge badge-primary">' + t('theme_manager.status.default', 'Default') + '</span>' : '';
+            const name = escapeHtml(th.name || '');
+            const slug = escapeHtml(th.slug || '');
             return '<tr>' +
-                '<td>' + esc(th.id) + '</td>' +
-                '<td><strong>' + esc(th.name) + '</strong></td>' +
-                '<td>' + esc(th.slug) + '</td>' +
-                '<td>' + esc(th.version || '1.0.0') + '</td>' +
-                '<td>' + (String(th.is_active) === '1'
-                    ? '<span class="badge badge-success">' + t('common.active', 'Active') + '</span>'
-                    : '<span class="badge badge-danger">' + t('common.inactive', 'Inactive') + '</span>') + '</td>' +
-                '<td>' + (String(th.is_default) === '1' ? '<span class="badge badge-info">' + t('common.default', 'Default') + '</span>' : '-') + '</td>' +
+                '<td>' + th.id + '</td>' +
+                '<td><strong>' + name + '</strong></td>' +
+                '<td><code>' + slug + '</code></td>' +
+                '<td>' + escapeHtml(th.version || '1.0.0') + '</td>' +
+                '<td><span class="badge ' + statusClass + '">' + statusText + '</span></td>' +
+                '<td>' + defaultBadge + '</td>' +
                 '<td class="actions-cell">' +
-                    (canEdit ? '<button class="btn btn-outline btn-sm" onclick="ThemesSystem.edit(' + th.id + ')"><i class="fas fa-edit"></i></button>' : '') +
-                    (canDelete ? '<button class="btn btn-danger btn-sm" onclick="ThemesSystem.remove(' + th.id + ')"><i class="fas fa-trash"></i></button>' : '') +
-                '</td></tr>';
+                    '<button class="btn btn-sm btn-primary" onclick="ThemesSystem.editTheme(' + th.id + ')">' +
+                        '<i class="fas fa-edit"></i> ' + t('theme_manager.table.actions.edit', 'Edit') +
+                    '</button> ' +
+                    '<button class="btn btn-sm btn-danger" onclick="ThemesSystem.removeTheme(' + th.id + ')">' +
+                        '<i class="fas fa-trash"></i> ' + t('theme_manager.table.actions.delete', 'Delete') +
+                    '</button>' +
+                '</td>' +
+            '</tr>';
         }).join('');
     }
 
-    /* ─── Load Theme Data for Edit ─── */
-    async function loadThemeData(themeId) {
-        try {
-            var json = await api(API.themes + '?id=' + themeId + '&tenant_id=' + tid() + '&format=json');
-            var items = extractItems(json);
-            var theme = items.find(function(t) { return String(t.id) === String(themeId); });
-            if (!theme && json.data && !Array.isArray(json.data)) theme = json.data;
-            if (theme) {
-                if (el.fName) el.fName.value = theme.name || '';
-                if (el.fSlug) el.fSlug.value = theme.slug || '';
-                if (el.fDescription) el.fDescription.value = theme.description || '';
-                if (el.fVersion) el.fVersion.value = theme.version || '1.0.0';
-                if (el.fAuthor) el.fAuthor.value = theme.author || '';
-                if (el.fThumbnailUrl) el.fThumbnailUrl.value = theme.thumbnail_url || '';
-                if (el.fPreviewUrl) el.fPreviewUrl.value = theme.preview_url || '';
-                if (el.fIsActive) el.fIsActive.value = String(theme.is_active ?? 1);
-                if (el.fIsDefault) el.fIsDefault.value = String(theme.is_default ?? 0);
-            }
-            // Load all related data
-            loadSettingsList('design', 'designList', themeId);
-            loadSettingsList('colors', 'colorsList', themeId);
-            loadSettingsList('fonts', 'fontsList', themeId);
-            loadSettingsList('buttons', 'buttonsList', themeId);
-            loadSettingsList('cards', 'cardsList', themeId);
-            loadSettingsList('system', 'systemList', themeId);
-        } catch (e) {
-            notify(t('errors.load_failed', 'Failed to load theme data'), 'error');
+    function filterThemes() {
+        let filtered = state.themes;
+        const search = (el.search && el.search.value || '').toLowerCase();
+        const status = el.statusFilter ? el.statusFilter.value : '';
+        if (search) {
+            filtered = filtered.filter(th =>
+                (th.name || '').toLowerCase().includes(search) ||
+                (th.slug || '').toLowerCase().includes(search)
+            );
         }
+        if (status !== '') {
+            filtered = filtered.filter(th => String(th.is_active) === status);
+        }
+        renderThemes(filtered);
     }
 
-    /* ─── Load Settings List ─── */
-    async function loadSettingsList(type, containerId, themeId) {
-        var container = $(containerId);
-        if (!container) return;
-        container.innerHTML = '<div class="loading-state"><div class="spinner"></div></div>';
-        try {
-            var url = API[type] + '?tenant_id=' + tid() + '&format=json';
-            if (themeId && type !== 'system') url += '&theme_id=' + themeId;
-            var json = await api(url);
-            var items = extractItems(json);
-            if (!items.length) {
-                container.innerHTML = '<div class="empty-state">' + t('common.no_items', 'No items yet') + '</div>';
-                return;
-            }
-            container.innerHTML = items.map(function(item) { return renderSettingItem(type, item); }).join('');
-        } catch (e) {
-            container.innerHTML = '<div class="empty-state">' + t('errors.load_failed', 'Failed to load') + '</div>';
+    // ════════════════════════════════════════
+    // FORM: SHOW / HIDE
+    // ════════════════════════════════════════
+    function showForm(themeId) {
+        state.editingThemeId = themeId || null;
+        // Reset form
+        const form = document.getElementById('themeForm');
+        if (form) form.reset();
+        if (el.themeId) el.themeId.value = '';
+        if (el.themeVersion) el.themeVersion.value = '1.0.0';
+        if (el.themeIsActive) el.themeIsActive.value = '1';
+        if (el.themeIsDefault) el.themeIsDefault.checked = false;
+
+        // Reset tabs to first
+        document.querySelectorAll('.themes-page .form-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.themes-page .tab-content').forEach(c => {
+            c.style.display = 'none';
+            c.classList.remove('active');
+        });
+        const firstTab = document.querySelector('.themes-page .form-tab');
+        const infoTab = document.getElementById('tab-info');
+        if (firstTab) firstTab.classList.add('active');
+        if (infoTab) { infoTab.style.display = 'block'; infoTab.classList.add('active'); }
+
+        // Clear settings lists
+        clearAllSettingsLists();
+        hideAllSettingForms();
+
+        if (themeId) {
+            // Edit mode
+            if (el.formTitle) el.formTitle.textContent = t('theme_manager.form.edit_title', 'Edit Theme');
+            if (el.btnDelete) el.btnDelete.style.display = 'inline-block';
+            populateThemeForm(themeId);
+            loadAllRelatedData(themeId);
+        } else {
+            // Add mode
+            if (el.formTitle) el.formTitle.textContent = t('theme_manager.form.add_title', 'Add Theme');
+            if (el.btnDelete) el.btnDelete.style.display = 'none';
         }
+
+        // Show form, hide list
+        if (el.listView) el.listView.style.display = 'none';
+        if (el.formView) el.formView.style.display = 'block';
     }
 
-    function renderSettingItem(type, item) {
-        var name = esc(item.name || item.setting_name || item.setting_key || '');
-        var detail = '';
-        var canEdit = CFG().CAN_EDIT;
-        var canDelete = CFG().CAN_DELETE;
-        var activeTag = String(item.is_active) === '0' ? ' <span class="status-inactive">[inactive]</span>' : '';
-
-        if (type === 'design') {
-            detail = esc(item.setting_key || '') + ' = ' + esc(item.setting_value || '') + ' (' + esc(item.category || '') + ')';
-        } else if (type === 'colors') {
-            detail = '<span class="color-swatch" style="background:' + esc(item.color_value || '#000') + '"></span>' + esc(item.color_value || '') + ' (' + esc(item.category || '') + ')';
-        } else if (type === 'fonts') {
-            detail = esc(item.font_family || '') + ' ' + esc(item.font_size || '') + ' ' + esc(item.font_weight || '');
-        } else if (type === 'buttons') {
-            detail = '<span class="color-swatch" style="background:' + esc(item.background_color || '#000') + '"></span>' + esc(item.button_type || '') + ' - ' + esc(item.font_size || '');
-        } else if (type === 'cards') {
-            detail = esc(item.card_type || '') + ' - ' + esc(item.hover_effect || 'none') + ' - ' + esc(item.text_align || 'left');
-        } else if (type === 'system') {
-            detail = esc(item.setting_key || '') + ' = ' + esc((item.setting_value || '').substring(0, 50)) + ' (' + esc(item.category || '') + ')';
-        }
-
-        return '<div class="setting-item">' +
-            '<div class="setting-item-info"><div class="setting-item-name">' + name + activeTag + '</div><div class="setting-item-detail">' + detail + '</div></div>' +
-            '<div class="setting-item-actions">' +
-                (canEdit ? '<button class="btn btn-outline btn-sm" onclick="ThemesSystem.editSetting(\'' + type + '\',' + item.id + ')"><i class="fas fa-edit"></i></button>' : '') +
-                (canDelete ? '<button class="btn btn-danger btn-sm" onclick="ThemesSystem.deleteSetting(\'' + type + '\',' + item.id + ')"><i class="fas fa-trash"></i></button>' : '') +
-            '</div></div>';
+    function hideForm() {
+        if (el.formView) el.formView.style.display = 'none';
+        if (el.listView) el.listView.style.display = 'block';
+        state.editingThemeId = null;
     }
 
-    /* ─── Save Theme ─── */
+    function populateThemeForm(themeId) {
+        const theme = state.themes.find(th => String(th.id) === String(themeId));
+        if (!theme) return;
+        if (el.themeId) el.themeId.value = theme.id;
+        if (el.themeName) el.themeName.value = theme.name || '';
+        if (el.themeSlug) el.themeSlug.value = theme.slug || '';
+        if (el.themeDescription) el.themeDescription.value = theme.description || '';
+        if (el.themeVersion) el.themeVersion.value = theme.version || '1.0.0';
+        if (el.themeAuthor) el.themeAuthor.value = theme.author || '';
+        if (el.themeThumbnailUrl) el.themeThumbnailUrl.value = theme.thumbnail_url || '';
+        if (el.themePreviewUrl) el.themePreviewUrl.value = theme.preview_url || '';
+        if (el.themeIsActive) el.themeIsActive.value = theme.is_active ? '1' : '0';
+        if (el.themeIsDefault) el.themeIsDefault.checked = !!theme.is_default;
+    }
+
+    // ════════════════════════════════════════
+    // SAVE / DELETE THEME
+    // ════════════════════════════════════════
     async function saveTheme() {
-        var name = el.fName ? el.fName.value.trim() : '';
-        if (!name) { notify(t('errors.name_required', 'Name is required'), 'error'); return; }
+        const name = (el.themeName && el.themeName.value || '').trim();
+        let slug = (el.themeSlug && el.themeSlug.value || '').trim();
+        if (!name) {
+            showAlert('warning', t('theme_manager.form.fields.name.required', 'Theme name is required'));
+            return;
+        }
+        if (!slug) {
+            slug = name.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, '-').replace(/^-|-$/g, '');
+            if (el.themeSlug) el.themeSlug.value = slug;
+        }
 
-        var slug = el.fSlug ? el.fSlug.value.trim() : '';
-        if (!slug) slug = name.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, '-').replace(/^-|-$/g, '');
+        const themeId = el.themeId ? el.themeId.value : '';
+        const isEdit = !!themeId;
 
-        var data = {
-            name: name, slug: slug,
-            description: el.fDescription ? el.fDescription.value : '',
-            version: el.fVersion ? el.fVersion.value : '1.0.0',
-            author: el.fAuthor ? el.fAuthor.value : '',
-            thumbnail_url: el.fThumbnailUrl ? el.fThumbnailUrl.value : '',
-            preview_url: el.fPreviewUrl ? el.fPreviewUrl.value : '',
-            is_active: el.fIsActive ? parseInt(el.fIsActive.value) : 1,
-            is_default: el.fIsDefault ? parseInt(el.fIsDefault.value) : 0,
-            tenant_id: tid()
+        const payload = {
+            tenant_id: TENANT_ID,
+            name: name,
+            slug: slug,
+            description: (el.themeDescription && el.themeDescription.value || '').trim(),
+            version: (el.themeVersion && el.themeVersion.value || '1.0.0').trim(),
+            author: (el.themeAuthor && el.themeAuthor.value || '').trim(),
+            thumbnail_url: (el.themeThumbnailUrl && el.themeThumbnailUrl.value || '').trim() || null,
+            preview_url: (el.themePreviewUrl && el.themePreviewUrl.value || '').trim() || null,
+            is_active: el.themeIsActive ? parseInt(el.themeIsActive.value) : 1,
+            is_default: el.themeIsDefault ? (el.themeIsDefault.checked ? 1 : 0) : 0
         };
 
-        var themeId = el.themeId ? el.themeId.value : '';
+        if (isEdit) payload.id = parseInt(themeId);
+
         try {
-            var json;
-            if (themeId) {
-                data.id = parseInt(themeId);
-                json = await api(API.themes + '?id=' + themeId + '&tenant_id=' + tid(), { method: 'PUT', body: JSON.stringify(data) });
-            } else {
-                json = await api(API.themes + '?tenant_id=' + tid(), { method: 'POST', body: JSON.stringify(data) });
-            }
+            const url = isEdit ? API.themes + '?id=' + themeId : API.themes;
+            const res = await fetch(url, {
+                method: isEdit ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const json = await res.json();
             if (json.success) {
-                notify(t('messages.saved', 'Theme saved successfully'), 'success');
+                const savedId = isEdit ? parseInt(themeId) : (json.data && json.data.id);
+                showAlert('success', t('theme_manager.messages.success.save', 'Theme saved successfully'));
+                await loadThemes();
                 hideForm();
-                loadThemes();
             } else {
-                notify(json.message || t('errors.save_failed', 'Save failed'), 'error');
+                showAlert('error', json.message || t('theme_manager.messages.error.save_failed', 'Failed to save'));
             }
         } catch (e) {
-            notify(t('errors.save_failed', 'Save failed'), 'error');
+            console.error('[ThemesSystem] saveTheme error:', e);
+            showAlert('error', t('theme_manager.messages.error.save_failed', 'Failed to save'));
         }
     }
 
-    /* ─── Delete Theme ─── */
-    async function deleteTheme(id) {
-        if (!confirm(t('messages.confirm_delete', 'Are you sure you want to delete this theme?'))) return;
+    async function deleteTheme() {
+        const themeId = el.themeId ? el.themeId.value : '';
+        if (!themeId) return;
+        if (!confirm(t('theme_manager.messages.confirm.delete', 'Are you sure you want to delete this theme?'))) return;
+
         try {
-            var json = await api(API.themes + '?id=' + id + '&tenant_id=' + tid(), { method: 'DELETE', body: JSON.stringify({ id: id }) });
+            const res = await fetch(API.themes + '?id=' + themeId, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const json = await res.json();
             if (json.success) {
-                notify(t('messages.deleted', 'Theme deleted'), 'success');
-                loadThemes();
+                showAlert('success', t('theme_manager.messages.success.delete', 'Theme deleted'));
+                await loadThemes();
+                hideForm();
             } else {
-                notify(json.message || t('errors.delete_failed', 'Delete failed'), 'error');
+                showAlert('error', json.message || t('theme_manager.messages.error.delete_failed', 'Failed to delete'));
             }
         } catch (e) {
-            notify(t('errors.delete_failed', 'Delete failed'), 'error');
+            console.error('[ThemesSystem] deleteTheme error:', e);
+            showAlert('error', t('theme_manager.messages.error.delete_failed', 'Failed to delete'));
         }
     }
 
-    /* ─── Save Setting (generic for all types) ─── */
-    async function saveSetting(type) {
-        var themeId = state.currentThemeId;
-        if (!themeId) { notify(t('errors.save_theme_first', 'Save the theme first'), 'error'); return; }
-
-        var data = collectSettingData(type);
-        if (!data) return;
-        data.theme_id = parseInt(themeId);
-        data.tenant_id = tid();
-
-        var existingId = getInlineFormId(type);
+    async function removeTheme(themeId) {
+        if (!confirm(t('theme_manager.messages.confirm.delete', 'Are you sure you want to delete this theme?'))) return;
         try {
-            var json;
-            if (existingId) {
-                data.id = parseInt(existingId);
-                json = await api(API[type] + '?id=' + existingId + '&tenant_id=' + tid(), { method: 'PUT', body: JSON.stringify(data) });
-            } else {
-                json = await api(API[type] + '?tenant_id=' + tid(), { method: 'POST', body: JSON.stringify(data) });
-            }
+            const res = await fetch(API.themes + '?id=' + themeId, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const json = await res.json();
             if (json.success) {
-                notify(t('messages.setting_saved', 'Setting saved'), 'success');
-                var form = $(type + 'Form');
-                if (form) form.classList.remove('show');
-                loadSettingsList(type, type === 'colors' ? 'colorsList' : type + 'List', themeId);
+                showAlert('success', t('theme_manager.messages.success.delete', 'Theme deleted'));
+                await loadThemes();
             } else {
-                notify(json.message || t('errors.save_failed', 'Save failed'), 'error');
+                showAlert('error', json.message || 'Failed to delete');
             }
         } catch (e) {
-            notify(t('errors.save_failed', 'Save failed'), 'error');
+            showAlert('error', 'Failed to delete');
         }
     }
 
-    function collectSettingData(type) {
-        if (type === 'design') {
-            var key = $('dsKey') ? $('dsKey').value.trim() : '';
-            var name = $('dsName') ? $('dsName').value.trim() : '';
-            if (!key || !name) { notify(t('errors.fields_required', 'Key and Name are required'), 'error'); return null; }
-            return { setting_key: key, setting_name: name, setting_value: $('dsValue') ? $('dsValue').value : '', setting_type: $('dsType') ? $('dsType').value : 'text', category: $('dsCategory') ? $('dsCategory').value : 'other', sort_order: $('dsSortOrder') ? parseInt($('dsSortOrder').value) || 0 : 0, is_active: $('dsIsActive') ? parseInt($('dsIsActive').value) : 1 };
-        }
-        if (type === 'colors') {
-            var key = $('csKey') ? $('csKey').value.trim() : '';
-            var name = $('csName') ? $('csName').value.trim() : '';
-            if (!key || !name) { notify(t('errors.fields_required', 'Key and Name are required'), 'error'); return null; }
-            return { setting_key: key, setting_name: name, color_value: $('csValue') ? $('csValue').value : '#000000', category: $('csCategory') ? $('csCategory').value : 'other', sort_order: $('csSortOrder') ? parseInt($('csSortOrder').value) || 0 : 0, is_active: $('csIsActive') ? parseInt($('csIsActive').value) : 1 };
-        }
-        if (type === 'fonts') {
-            var key = $('fsKey') ? $('fsKey').value.trim() : '';
-            var name = $('fsName') ? $('fsName').value.trim() : '';
-            if (!key || !name) { notify(t('errors.fields_required', 'Key and Name are required'), 'error'); return null; }
-            return { setting_key: key, setting_name: name, font_family: $('fsFamily') ? $('fsFamily').value : '', font_size: $('fsSize') ? $('fsSize').value : '', font_weight: $('fsWeight') ? $('fsWeight').value : '', line_height: $('fsLineHeight') ? $('fsLineHeight').value : '', category: $('fsCategory') ? $('fsCategory').value : 'other', sort_order: $('fsSortOrder') ? parseInt($('fsSortOrder').value) || 0 : 0, is_active: $('fsIsActive') ? parseInt($('fsIsActive').value) : 1 };
-        }
-        if (type === 'buttons') {
-            var name = $('bsName') ? $('bsName').value.trim() : '';
-            if (!name) { notify(t('errors.name_required', 'Name is required'), 'error'); return null; }
-            var slug = $('bsSlug') ? $('bsSlug').value.trim() : '';
-            if (!slug) slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            return { name: name, slug: slug, button_type: $('bsType') ? $('bsType').value : 'primary', background_color: $('bsBgColor') ? $('bsBgColor').value : '#3b82f6', text_color: $('bsTextColor') ? $('bsTextColor').value : '#ffffff', border_color: $('bsBorderColor') ? $('bsBorderColor').value : '#3b82f6', border_width: $('bsBorderWidth') ? parseInt($('bsBorderWidth').value) || 0 : 0, border_radius: $('bsBorderRadius') ? parseInt($('bsBorderRadius').value) || 4 : 4, padding: $('bsPadding') ? $('bsPadding').value : '10px 20px', font_size: $('bsFontSize') ? $('bsFontSize').value : '14px', font_weight: $('bsFontWeight') ? $('bsFontWeight').value : 'normal', hover_background_color: $('bsHoverBg') ? $('bsHoverBg').value : null, hover_text_color: $('bsHoverText') ? $('bsHoverText').value : null, hover_border_color: $('bsHoverBorder') ? $('bsHoverBorder').value : null, is_active: $('bsIsActive') ? parseInt($('bsIsActive').value) : 1 };
-        }
-        if (type === 'cards') {
-            var name = $('crdName') ? $('crdName').value.trim() : '';
-            if (!name) { notify(t('errors.name_required', 'Name is required'), 'error'); return null; }
-            var slug = $('crdSlug') ? $('crdSlug').value.trim() : '';
-            if (!slug) slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            return { name: name, slug: slug, card_type: $('crdType') ? $('crdType').value : 'product', background_color: $('crdBgColor') ? $('crdBgColor').value : '#FFFFFF', border_color: $('crdBorderColor') ? $('crdBorderColor').value : '#E0E0E0', border_width: $('crdBorderWidth') ? parseInt($('crdBorderWidth').value) || 1 : 1, border_radius: $('crdBorderRadius') ? parseInt($('crdBorderRadius').value) || 8 : 8, shadow_style: $('crdShadow') ? $('crdShadow').value : 'none', padding: $('crdPadding') ? $('crdPadding').value : '16px', hover_effect: $('crdHover') ? $('crdHover').value : 'none', text_align: $('crdTextAlign') ? $('crdTextAlign').value : 'left', image_aspect_ratio: $('crdAspectRatio') ? $('crdAspectRatio').value : '1:1', is_active: $('crdIsActive') ? parseInt($('crdIsActive').value) : 1 };
-        }
-        if (type === 'system') {
-            var key = $('sysKey') ? $('sysKey').value.trim() : '';
-            if (!key) { notify(t('errors.fields_required', 'Key is required'), 'error'); return null; }
-            return { setting_key: key, setting_value: $('sysValue') ? $('sysValue').value : '', setting_type: $('sysType') ? $('sysType').value : 'text', category: $('sysCategory') ? $('sysCategory').value : 'general', description: $('sysDescription') ? $('sysDescription').value : '', is_public: $('sysIsPublic') ? parseInt($('sysIsPublic').value) : 0, is_editable: $('sysIsEditable') ? parseInt($('sysIsEditable').value) : 1 };
-        }
-        return null;
+    // ════════════════════════════════════════
+    // LOAD ALL RELATED DATA FOR A THEME
+    // ════════════════════════════════════════
+    async function loadAllRelatedData(themeId) {
+        await Promise.all([
+            loadSettings('design', API.designSettings, themeId),
+            loadSettings('color', API.colorSettings, themeId),
+            loadSettings('font', API.fontSettings, themeId),
+            loadSettings('button', API.buttonStyles, themeId),
+            loadSettings('card', API.cardStyles, themeId),
+            loadSettings('section', API.homepageSections, themeId)
+        ]);
     }
 
-    function getInlineFormId(type) {
-        var idField = { design: 'dsId', colors: 'csId', fonts: 'fsId', buttons: 'bsId', cards: 'crdId', system: 'sysId' }[type];
-        var f = $(idField);
-        return f ? f.value : '';
+    async function loadSettings(type, apiUrl, themeId) {
+        if (!apiUrl) return;
+        try {
+            const url = apiUrl + '?theme_id=' + themeId + '&tenant_id=' + TENANT_ID + '&format=json';
+            const res = await fetch(url);
+            const json = await res.json();
+            const items = extractItems(json);
+            state[type + 'Settings'] = items;
+            renderSettingsList(type, items);
+        } catch (e) {
+            console.warn('[ThemesSystem] loadSettings(' + type + ') error:', e);
+        }
     }
 
-    function clearInlineForm(type) {
-        var fields = {
-            design: ['dsKey','dsName','dsValue','dsType','dsCategory','dsSortOrder','dsIsActive','dsId'],
-            colors: ['csKey','csName','csValue','csCategory','csSortOrder','csIsActive','csId'],
-            fonts: ['fsKey','fsName','fsFamily','fsSize','fsWeight','fsLineHeight','fsCategory','fsSortOrder','fsIsActive','fsId'],
-            buttons: ['bsName','bsSlug','bsType','bsBgColor','bsTextColor','bsBorderColor','bsBorderWidth','bsBorderRadius','bsPadding','bsFontSize','bsFontWeight','bsHoverBg','bsHoverText','bsHoverBorder','bsIsActive','bsId'],
-            cards: ['crdName','crdSlug','crdType','crdBgColor','crdBorderColor','crdBorderWidth','crdBorderRadius','crdPadding','crdShadow','crdHover','crdTextAlign','crdAspectRatio','crdIsActive','crdId'],
-            system: ['sysKey','sysValue','sysType','sysCategory','sysDescription','sysIsPublic','sysIsEditable','sysId']
-        }[type] || [];
-        fields.forEach(function(id) {
-            var f = $(id);
-            if (f) {
-                if (f.tagName === 'SELECT') f.selectedIndex = 0;
-                else if (f.type === 'color') { /* keep default */ }
-                else if (f.type === 'number') f.value = '0';
-                else f.value = '';
+    // ════════════════════════════════════════
+    // RENDER SETTINGS LISTS
+    // ════════════════════════════════════════
+    function getSettingsListEl(type) {
+        const map = {
+            design: el.designSettingsList,
+            color: el.colorSettingsList,
+            font: el.fontSettingsList,
+            button: el.buttonStylesList,
+            card: el.cardStylesList,
+            section: el.homepageSectionsList
+        };
+        return map[type];
+    }
+
+    function renderSettingsList(type, items) {
+        const listEl = getSettingsListEl(type);
+        if (!listEl) return;
+
+        if (!items || items.length === 0) {
+            listEl.innerHTML = '<div class="empty-settings">No items found</div>';
+            return;
+        }
+
+        listEl.innerHTML = items.map(item => {
+            const itemId = item.id;
+            let display = '';
+
+            if (type === 'design') {
+                display = '<strong>' + escapeHtml(item.setting_name || item.setting_key || '') + '</strong>' +
+                          ' <span class="badge badge-secondary">' + escapeHtml(item.setting_type || 'text') + '</span>' +
+                          ' <span class="badge badge-info">' + escapeHtml(item.category || '') + '</span>' +
+                          '<div class="setting-value">' + escapeHtml(String(item.setting_value || '').substring(0, 100)) + '</div>';
+            } else if (type === 'color') {
+                display = '<span class="color-swatch" style="background:' + escapeHtml(item.color_value || '#000') + '"></span> ' +
+                          '<strong>' + escapeHtml(item.setting_name || item.setting_key || '') + '</strong>' +
+                          ' <code>' + escapeHtml(item.color_value || '') + '</code>' +
+                          ' <span class="badge badge-info">' + escapeHtml(item.category || '') + '</span>';
+            } else if (type === 'font') {
+                display = '<strong>' + escapeHtml(item.setting_name || item.setting_key || '') + '</strong>' +
+                          ' <span style="font-family:' + escapeHtml(item.font_family || '') + '">' + escapeHtml(item.font_family || '') + '</span>' +
+                          ' <span class="badge badge-info">' + escapeHtml(item.category || '') + '</span>';
+            } else if (type === 'button') {
+                display = '<strong>' + escapeHtml(item.name || '') + '</strong>' +
+                          ' <span class="badge badge-secondary">' + escapeHtml(item.button_type || '') + '</span>' +
+                          ' <span class="color-swatch" style="background:' + escapeHtml(item.background_color || '#007bff') + '"></span>' +
+                          ' <span class="color-swatch" style="background:' + escapeHtml(item.text_color || '#fff') + ';border:1px solid #ccc"></span>';
+            } else if (type === 'card') {
+                display = '<strong>' + escapeHtml(item.name || '') + '</strong>' +
+                          ' <span class="badge badge-secondary">' + escapeHtml(item.card_type || '') + '</span>' +
+                          ' <span class="color-swatch" style="background:' + escapeHtml(item.background_color || '#fff') + ';border:1px solid #ccc"></span>';
+            } else if (type === 'section') {
+                display = '<strong>' + escapeHtml(item.title || item.section_type || '') + '</strong>' +
+                          ' <span class="badge badge-secondary">' + escapeHtml(item.section_type || '') + '</span>' +
+                          ' <span class="badge badge-info">' + escapeHtml(item.layout_type || '') + '</span>' +
+                          (item.is_active ? ' <span class="badge badge-success">Active</span>' : ' <span class="badge badge-secondary">Inactive</span>');
             }
+
+            return '<div class="settings-item" data-id="' + itemId + '">' +
+                '<div class="settings-item-content">' + display + '</div>' +
+                '<div class="settings-item-actions">' +
+                    '<button class="btn btn-xs btn-primary" onclick="ThemesSystem.editSetting(\'' + type + '\',' + itemId + ')">' +
+                        '<i class="fas fa-edit"></i></button> ' +
+                    '<button class="btn btn-xs btn-danger" onclick="ThemesSystem.deleteSetting(\'' + type + '\',' + itemId + ')">' +
+                        '<i class="fas fa-trash"></i></button>' +
+                '</div></div>';
+        }).join('');
+    }
+
+    function clearAllSettingsLists() {
+        ['design', 'color', 'font', 'button', 'card', 'section'].forEach(type => {
+            const listEl = getSettingsListEl(type);
+            if (listEl) listEl.innerHTML = '';
+            state[type + 'Settings'] = [];
         });
     }
 
-    /* ─── Edit Setting ─── */
-    async function editSetting(type, id) {
-        try {
-            var url = API[type] + '?id=' + id + '&tenant_id=' + tid() + '&format=json';
-            var json = await api(url);
-            var items = extractItems(json);
-            var item = items.find(function(i) { return String(i.id) === String(id); });
-            if (!item && json.data && !Array.isArray(json.data)) item = json.data;
-            if (!item) { notify(t('errors.not_found', 'Item not found'), 'error'); return; }
+    function hideAllSettingForms() {
+        ['design', 'color', 'font', 'button', 'card', 'section'].forEach(prefix => {
+            const form = document.getElementById(prefix + 'Form');
+            if (form) form.style.display = 'none';
+        });
+    }
 
-            clearInlineForm(type);
-            populateInlineForm(type, item);
-            var form = $(type + 'Form');
-            if (form) form.classList.add('show');
+    // ════════════════════════════════════════
+    // SETTINGS CRUD
+    // ════════════════════════════════════════
+    function resetSettingForm(prefix) {
+        const idField = document.getElementById(prefix + 'Id');
+        if (idField) idField.value = '';
 
-            // Switch to the correct tab
-            var page = $('themesPage');
-            if (page) {
-                page.querySelectorAll('.tab-btn').forEach(function(btn) {
-                    var isTarget = btn.getAttribute('data-tab') === (type === 'cards' ? 'buttons' : type);
-                    btn.classList.toggle('active', isTarget);
-                });
-                page.querySelectorAll('.tab-panel').forEach(function(p) {
-                    var panelTab = p.id.replace('tab', '').toLowerCase();
-                    p.classList.toggle('active', panelTab === (type === 'cards' ? 'buttons' : type));
-                });
-            }
-        } catch (e) {
-            notify(t('errors.load_failed', 'Failed to load'), 'error');
+        // Reset all inputs in the form
+        const form = document.getElementById(prefix + 'Form');
+        if (form) {
+            form.querySelectorAll('input:not([type=hidden]), textarea, select').forEach(f => {
+                if (f.type === 'checkbox') f.checked = true;
+                else if (f.type === 'color') f.value = f.defaultValue || '#000000';
+                else if (f.type === 'number') f.value = f.defaultValue || '0';
+                else if (f.tagName === 'SELECT') f.selectedIndex = 0;
+                else f.value = '';
+            });
         }
     }
 
-    function populateInlineForm(type, item) {
-        if (type === 'design') {
-            if ($('dsKey')) $('dsKey').value = item.setting_key || '';
-            if ($('dsName')) $('dsName').value = item.setting_name || '';
-            if ($('dsValue')) $('dsValue').value = item.setting_value || '';
-            if ($('dsType')) $('dsType').value = item.setting_type || 'text';
-            if ($('dsCategory')) $('dsCategory').value = item.category || 'other';
-            if ($('dsSortOrder')) $('dsSortOrder').value = item.sort_order || 0;
-            if ($('dsIsActive')) $('dsIsActive').value = String(item.is_active ?? 1);
-            if ($('dsId')) $('dsId').value = item.id;
-        } else if (type === 'colors') {
-            if ($('csKey')) $('csKey').value = item.setting_key || '';
-            if ($('csName')) $('csName').value = item.setting_name || '';
-            if ($('csValue')) $('csValue').value = item.color_value || '#000000';
-            if ($('csCategory')) $('csCategory').value = item.category || 'other';
-            if ($('csSortOrder')) $('csSortOrder').value = item.sort_order || 0;
-            if ($('csIsActive')) $('csIsActive').value = String(item.is_active ?? 1);
-            if ($('csId')) $('csId').value = item.id;
-        } else if (type === 'fonts') {
-            if ($('fsKey')) $('fsKey').value = item.setting_key || '';
-            if ($('fsName')) $('fsName').value = item.setting_name || '';
-            if ($('fsFamily')) $('fsFamily').value = item.font_family || '';
-            if ($('fsSize')) $('fsSize').value = item.font_size || '';
-            if ($('fsWeight')) $('fsWeight').value = item.font_weight || '';
-            if ($('fsLineHeight')) $('fsLineHeight').value = item.line_height || '';
-            if ($('fsCategory')) $('fsCategory').value = item.category || 'other';
-            if ($('fsSortOrder')) $('fsSortOrder').value = item.sort_order || 0;
-            if ($('fsIsActive')) $('fsIsActive').value = String(item.is_active ?? 1);
-            if ($('fsId')) $('fsId').value = item.id;
-        } else if (type === 'buttons') {
-            if ($('bsName')) $('bsName').value = item.name || '';
-            if ($('bsSlug')) $('bsSlug').value = item.slug || '';
-            if ($('bsType')) $('bsType').value = item.button_type || 'primary';
-            if ($('bsBgColor')) $('bsBgColor').value = item.background_color || '#3b82f6';
-            if ($('bsTextColor')) $('bsTextColor').value = item.text_color || '#ffffff';
-            if ($('bsBorderColor')) $('bsBorderColor').value = item.border_color || '#3b82f6';
-            if ($('bsBorderWidth')) $('bsBorderWidth').value = item.border_width ?? 0;
-            if ($('bsBorderRadius')) $('bsBorderRadius').value = item.border_radius ?? 4;
-            if ($('bsPadding')) $('bsPadding').value = item.padding || '10px 20px';
-            if ($('bsFontSize')) $('bsFontSize').value = item.font_size || '14px';
-            if ($('bsFontWeight')) $('bsFontWeight').value = item.font_weight || 'normal';
-            if ($('bsHoverBg')) $('bsHoverBg').value = item.hover_background_color || '#000000';
-            if ($('bsHoverText')) $('bsHoverText').value = item.hover_text_color || '#000000';
-            if ($('bsHoverBorder')) $('bsHoverBorder').value = item.hover_border_color || '#000000';
-            if ($('bsIsActive')) $('bsIsActive').value = String(item.is_active ?? 1);
-            if ($('bsId')) $('bsId').value = item.id;
-        } else if (type === 'cards') {
-            if ($('crdName')) $('crdName').value = item.name || '';
-            if ($('crdSlug')) $('crdSlug').value = item.slug || '';
-            if ($('crdType')) $('crdType').value = item.card_type || 'product';
-            if ($('crdBgColor')) $('crdBgColor').value = item.background_color || '#FFFFFF';
-            if ($('crdBorderColor')) $('crdBorderColor').value = item.border_color || '#E0E0E0';
-            if ($('crdBorderWidth')) $('crdBorderWidth').value = item.border_width ?? 1;
-            if ($('crdBorderRadius')) $('crdBorderRadius').value = item.border_radius ?? 8;
-            if ($('crdPadding')) $('crdPadding').value = item.padding || '16px';
-            if ($('crdShadow')) $('crdShadow').value = item.shadow_style || 'none';
-            if ($('crdHover')) $('crdHover').value = item.hover_effect || 'none';
-            if ($('crdTextAlign')) $('crdTextAlign').value = item.text_align || 'left';
-            if ($('crdAspectRatio')) $('crdAspectRatio').value = item.image_aspect_ratio || '1:1';
-            if ($('crdIsActive')) $('crdIsActive').value = String(item.is_active ?? 1);
-            if ($('crdId')) $('crdId').value = item.id;
-        } else if (type === 'system') {
-            if ($('sysKey')) $('sysKey').value = item.setting_key || '';
-            if ($('sysValue')) $('sysValue').value = item.setting_value || '';
-            if ($('sysType')) $('sysType').value = item.setting_type || 'text';
-            if ($('sysCategory')) $('sysCategory').value = item.category || 'general';
-            if ($('sysDescription')) $('sysDescription').value = item.description || '';
-            if ($('sysIsPublic')) $('sysIsPublic').value = String(item.is_public ?? 0);
-            if ($('sysIsEditable')) $('sysIsEditable').value = String(item.is_editable ?? 1);
-            if ($('sysId')) $('sysId').value = item.id;
+    function getApiForType(type) {
+        const map = {
+            design: API.designSettings,
+            color: API.colorSettings,
+            font: API.fontSettings,
+            button: API.buttonStyles,
+            card: API.cardStyles,
+            section: API.homepageSections
+        };
+        return map[type];
+    }
+
+    function collectSettingData(prefix) {
+        const $ = id => document.getElementById(id);
+        const themeId = el.themeId ? parseInt(el.themeId.value) : null;
+
+        if (prefix === 'design') {
+            return {
+                theme_id: themeId,
+                tenant_id: TENANT_ID,
+                setting_key: ($(prefix + 'Key') && $(prefix + 'Key').value || '').trim(),
+                setting_name: ($(prefix + 'Name') && $(prefix + 'Name').value || '').trim(),
+                setting_value: ($(prefix + 'Value') && $(prefix + 'Value').value || '').trim(),
+                setting_type: $('designType') ? $('designType').value : 'text',
+                category: $('designCategory') ? $('designCategory').value : 'other',
+                is_active: 1,
+                sort_order: 0
+            };
+        } else if (prefix === 'color') {
+            return {
+                theme_id: themeId,
+                tenant_id: TENANT_ID,
+                setting_key: ($('colorKey') && $('colorKey').value || '').trim(),
+                setting_name: ($('colorName') && $('colorName').value || '').trim(),
+                color_value: $('colorValue') ? $('colorValue').value : '#000000',
+                category: $('colorCategory') ? $('colorCategory').value : 'other',
+                is_active: 1,
+                sort_order: 0
+            };
+        } else if (prefix === 'font') {
+            return {
+                theme_id: themeId,
+                tenant_id: TENANT_ID,
+                setting_key: ($('fontKey') && $('fontKey').value || '').trim(),
+                setting_name: ($('fontName') && $('fontName').value || '').trim(),
+                font_family: ($('fontFamily') && $('fontFamily').value || '').trim(),
+                font_size: ($('fontSize') && $('fontSize').value || '').trim() || null,
+                font_weight: ($('fontWeight') && $('fontWeight').value || '').trim() || null,
+                line_height: ($('fontLineHeight') && $('fontLineHeight').value || '').trim() || null,
+                category: $('fontCategory') ? $('fontCategory').value : 'other',
+                is_active: 1,
+                sort_order: 0
+            };
+        } else if (prefix === 'button') {
+            return {
+                theme_id: themeId,
+                tenant_id: TENANT_ID,
+                name: ($('buttonName') && $('buttonName').value || '').trim(),
+                slug: ($('buttonSlug') && $('buttonSlug').value || '').trim(),
+                button_type: $('buttonType') ? $('buttonType').value : 'primary',
+                background_color: $('buttonBgColor') ? $('buttonBgColor').value : '#007bff',
+                text_color: $('buttonTextColor') ? $('buttonTextColor').value : '#ffffff',
+                border_color: $('buttonBorderColor') ? $('buttonBorderColor').value : null,
+                border_width: $('buttonBorderWidth') ? parseInt($('buttonBorderWidth').value) || 0 : 0,
+                border_radius: $('buttonBorderRadius') ? parseInt($('buttonBorderRadius').value) || 4 : 4,
+                padding: ($('buttonPadding') && $('buttonPadding').value || '10px 20px').trim(),
+                font_size: ($('buttonFontSize') && $('buttonFontSize').value || '14px').trim(),
+                font_weight: ($('buttonFontWeight') && $('buttonFontWeight').value || 'normal').trim(),
+                hover_background_color: $('buttonHoverBg') ? $('buttonHoverBg').value : null,
+                hover_text_color: $('buttonHoverText') ? $('buttonHoverText').value : null,
+                hover_border_color: $('buttonHoverBorder') ? $('buttonHoverBorder').value : null,
+                is_active: 1
+            };
+        } else if (prefix === 'card') {
+            return {
+                theme_id: themeId,
+                tenant_id: TENANT_ID,
+                name: ($('cardName') && $('cardName').value || '').trim(),
+                slug: ($('cardSlug') && $('cardSlug').value || '').trim(),
+                card_type: $('cardType') ? $('cardType').value : 'product',
+                background_color: $('cardBgColor') ? $('cardBgColor').value : '#FFFFFF',
+                border_color: $('cardBorderColor') ? $('cardBorderColor').value : '#E0E0E0',
+                border_width: $('cardBorderWidth') ? parseInt($('cardBorderWidth').value) || 1 : 1,
+                border_radius: $('cardBorderRadius') ? parseInt($('cardBorderRadius').value) || 8 : 8,
+                shadow_style: ($('cardShadow') && $('cardShadow').value || 'none').trim(),
+                padding: ($('cardPadding') && $('cardPadding').value || '16px').trim(),
+                hover_effect: $('cardHoverEffect') ? $('cardHoverEffect').value : 'none',
+                text_align: $('cardTextAlign') ? $('cardTextAlign').value : 'left',
+                image_aspect_ratio: ($('cardImageRatio') && $('cardImageRatio').value || '1:1').trim(),
+                is_active: 1
+            };
+        } else if (prefix === 'section') {
+            return {
+                theme_id: themeId,
+                tenant_id: TENANT_ID,
+                section_type: $('sectionType') ? $('sectionType').value : 'other',
+                title: ($('sectionTitle') && $('sectionTitle').value || '').trim() || null,
+                subtitle: ($('sectionSubtitle') && $('sectionSubtitle').value || '').trim() || null,
+                layout_type: $('sectionLayout') ? $('sectionLayout').value : 'grid',
+                items_per_row: $('sectionItemsPerRow') ? parseInt($('sectionItemsPerRow').value) || 4 : 4,
+                background_color: $('sectionBgColor') ? $('sectionBgColor').value : '#FFFFFF',
+                text_color: $('sectionTextColor') ? $('sectionTextColor').value : '#000000',
+                padding: ($('sectionPadding') && $('sectionPadding').value || '40px 0').trim(),
+                custom_css: ($('sectionCustomCss') && $('sectionCustomCss').value || '').trim() || null,
+                custom_html: ($('sectionCustomHtml') && $('sectionCustomHtml').value || '').trim() || null,
+                data_source: ($('sectionDataSource') && $('sectionDataSource').value || '').trim() || null,
+                is_active: $('sectionIsActive') ? ($('sectionIsActive').checked ? 1 : 0) : 1,
+                sort_order: $('sectionSortOrder') ? parseInt($('sectionSortOrder').value) || 0 : 0
+            };
+        }
+        return {};
+    }
+
+    function populateSettingForm(prefix, item) {
+        const $ = id => document.getElementById(id);
+        const idField = $(prefix + 'Id');
+        if (idField) idField.value = item.id;
+
+        if (prefix === 'design') {
+            if ($('designKey')) $('designKey').value = item.setting_key || '';
+            if ($('designName')) $('designName').value = item.setting_name || '';
+            if ($('designValue')) $('designValue').value = item.setting_value || '';
+            if ($('designType')) $('designType').value = item.setting_type || 'text';
+            if ($('designCategory')) $('designCategory').value = item.category || 'other';
+        } else if (prefix === 'color') {
+            if ($('colorKey')) $('colorKey').value = item.setting_key || '';
+            if ($('colorName')) $('colorName').value = item.setting_name || '';
+            if ($('colorValue')) $('colorValue').value = item.color_value || '#000000';
+            if ($('colorCategory')) $('colorCategory').value = item.category || 'other';
+        } else if (prefix === 'font') {
+            if ($('fontKey')) $('fontKey').value = item.setting_key || '';
+            if ($('fontName')) $('fontName').value = item.setting_name || '';
+            if ($('fontFamily')) $('fontFamily').value = item.font_family || '';
+            if ($('fontSize')) $('fontSize').value = item.font_size || '';
+            if ($('fontWeight')) $('fontWeight').value = item.font_weight || '';
+            if ($('fontLineHeight')) $('fontLineHeight').value = item.line_height || '';
+            if ($('fontCategory')) $('fontCategory').value = item.category || 'other';
+        } else if (prefix === 'button') {
+            if ($('buttonName')) $('buttonName').value = item.name || '';
+            if ($('buttonSlug')) $('buttonSlug').value = item.slug || '';
+            if ($('buttonType')) $('buttonType').value = item.button_type || 'primary';
+            if ($('buttonBgColor')) $('buttonBgColor').value = item.background_color || '#007bff';
+            if ($('buttonTextColor')) $('buttonTextColor').value = item.text_color || '#ffffff';
+            if ($('buttonBorderColor')) $('buttonBorderColor').value = item.border_color || '#000000';
+            if ($('buttonBorderWidth')) $('buttonBorderWidth').value = item.border_width || 0;
+            if ($('buttonBorderRadius')) $('buttonBorderRadius').value = item.border_radius || 4;
+            if ($('buttonPadding')) $('buttonPadding').value = item.padding || '10px 20px';
+            if ($('buttonFontSize')) $('buttonFontSize').value = item.font_size || '14px';
+            if ($('buttonFontWeight')) $('buttonFontWeight').value = item.font_weight || 'normal';
+            if ($('buttonHoverBg')) $('buttonHoverBg').value = item.hover_background_color || '#000000';
+            if ($('buttonHoverText')) $('buttonHoverText').value = item.hover_text_color || '#000000';
+            if ($('buttonHoverBorder')) $('buttonHoverBorder').value = item.hover_border_color || '#000000';
+        } else if (prefix === 'card') {
+            if ($('cardName')) $('cardName').value = item.name || '';
+            if ($('cardSlug')) $('cardSlug').value = item.slug || '';
+            if ($('cardType')) $('cardType').value = item.card_type || 'product';
+            if ($('cardBgColor')) $('cardBgColor').value = item.background_color || '#FFFFFF';
+            if ($('cardBorderColor')) $('cardBorderColor').value = item.border_color || '#E0E0E0';
+            if ($('cardBorderWidth')) $('cardBorderWidth').value = item.border_width || 1;
+            if ($('cardBorderRadius')) $('cardBorderRadius').value = item.border_radius || 8;
+            if ($('cardShadow')) $('cardShadow').value = item.shadow_style || 'none';
+            if ($('cardPadding')) $('cardPadding').value = item.padding || '16px';
+            if ($('cardHoverEffect')) $('cardHoverEffect').value = item.hover_effect || 'none';
+            if ($('cardTextAlign')) $('cardTextAlign').value = item.text_align || 'left';
+            if ($('cardImageRatio')) $('cardImageRatio').value = item.image_aspect_ratio || '1:1';
+        } else if (prefix === 'section') {
+            if ($('sectionType')) $('sectionType').value = item.section_type || 'other';
+            if ($('sectionTitle')) $('sectionTitle').value = item.title || '';
+            if ($('sectionSubtitle')) $('sectionSubtitle').value = item.subtitle || '';
+            if ($('sectionLayout')) $('sectionLayout').value = item.layout_type || 'grid';
+            if ($('sectionItemsPerRow')) $('sectionItemsPerRow').value = item.items_per_row || 4;
+            if ($('sectionSortOrder')) $('sectionSortOrder').value = item.sort_order || 0;
+            if ($('sectionBgColor')) $('sectionBgColor').value = item.background_color || '#FFFFFF';
+            if ($('sectionTextColor')) $('sectionTextColor').value = item.text_color || '#000000';
+            if ($('sectionPadding')) $('sectionPadding').value = item.padding || '40px 0';
+            if ($('sectionDataSource')) $('sectionDataSource').value = item.data_source || '';
+            if ($('sectionCustomCss')) $('sectionCustomCss').value = item.custom_css || '';
+            if ($('sectionCustomHtml')) $('sectionCustomHtml').value = item.custom_html || '';
+            if ($('sectionIsActive')) $('sectionIsActive').checked = !!item.is_active;
         }
     }
 
-    /* ─── Delete Setting ─── */
-    async function deleteSetting(type, id) {
-        if (!confirm(t('messages.confirm_delete', 'Delete this item?'))) return;
+    async function saveSetting(prefix) {
+        const apiUrl = getApiForType(prefix);
+        if (!apiUrl) return;
+
+        const idField = document.getElementById(prefix + 'Id');
+        const itemId = idField ? idField.value : '';
+        const isEdit = !!itemId;
+        const data = collectSettingData(prefix);
+
+        if (isEdit) data.id = parseInt(itemId);
+
         try {
-            var json = await api(API[type] + '?id=' + id + '&tenant_id=' + tid(), { method: 'DELETE', body: JSON.stringify({ id: id }) });
+            const url = isEdit ? apiUrl + '?id=' + itemId : apiUrl;
+            const res = await fetch(url, {
+                method: isEdit ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const json = await res.json();
             if (json.success) {
-                notify(t('messages.deleted', 'Deleted'), 'success');
-                var listId = type === 'colors' ? 'colorsList' : type + 'List';
-                loadSettingsList(type, listId, state.currentThemeId);
+                showAlert('success', 'Saved successfully');
+                const form = document.getElementById(prefix + 'Form');
+                if (form) form.style.display = 'none';
+                // Reload this settings list
+                const themeId = el.themeId ? el.themeId.value : state.editingThemeId;
+                if (themeId) await loadSettings(prefix, apiUrl, themeId);
             } else {
-                notify(json.message || t('errors.delete_failed', 'Delete failed'), 'error');
+                showAlert('error', json.message || 'Failed to save');
             }
         } catch (e) {
-            notify(t('errors.delete_failed', 'Delete failed'), 'error');
+            console.error('[ThemesSystem] saveSetting(' + prefix + ') error:', e);
+            showAlert('error', 'Failed to save');
         }
     }
 
-    /* ─── Public API ─── */
+    function editSetting(type, itemId) {
+        const stateKey = type + 'Settings';
+        const items = state[stateKey] || [];
+        const item = items.find(i => String(i.id) === String(itemId));
+        if (!item) return;
+
+        resetSettingForm(type);
+        populateSettingForm(type, item);
+        const form = document.getElementById(type + 'Form');
+        if (form) form.style.display = 'block';
+
+        // Switch to the correct tab
+        const tabMap = { design: 'design', color: 'colors', font: 'fonts', button: 'buttons', card: 'cards', section: 'homepage' };
+        const tabName = tabMap[type];
+        if (tabName) {
+            document.querySelectorAll('.themes-page .form-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.themes-page .tab-content').forEach(c => {
+                c.style.display = 'none';
+                c.classList.remove('active');
+            });
+            const tabBtn = document.querySelector('.themes-page .form-tab[data-tab="' + tabName + '"]');
+            const tabContent = document.getElementById('tab-' + tabName);
+            if (tabBtn) tabBtn.classList.add('active');
+            if (tabContent) { tabContent.style.display = 'block'; tabContent.classList.add('active'); }
+        }
+    }
+
+    async function deleteSetting(type, itemId) {
+        if (!confirm('Are you sure you want to delete this item?')) return;
+        const apiUrl = getApiForType(type);
+        if (!apiUrl) return;
+
+        try {
+            const res = await fetch(apiUrl + '?id=' + itemId, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const json = await res.json();
+            if (json.success) {
+                showAlert('success', 'Deleted successfully');
+                const themeId = el.themeId ? el.themeId.value : state.editingThemeId;
+                if (themeId) await loadSettings(type, apiUrl, themeId);
+            } else {
+                showAlert('error', json.message || 'Failed to delete');
+            }
+        } catch (e) {
+            showAlert('error', 'Failed to delete');
+        }
+    }
+
+    // ════════════════════════════════════════
+    // UTILITIES
+    // ════════════════════════════════════════
+    function showLoading(show) {
+        if (el.loading) el.loading.style.display = show ? 'flex' : 'none';
+        if (el.tableContainer && show) el.tableContainer.style.display = 'none';
+        if (el.empty && show) el.empty.style.display = 'none';
+    }
+
+    function showAlert(type, message) {
+        if (!el.alertsContainer) return;
+        const alertClass = type === 'error' ? 'alert-danger' : type === 'warning' ? 'alert-warning' : 'alert-success';
+        const alertEl = document.createElement('div');
+        alertEl.className = 'alert ' + alertClass;
+        alertEl.innerHTML = '<span>' + escapeHtml(message) + '</span>' +
+                           '<button class="alert-close" onclick="this.parentElement.remove()">&times;</button>';
+        el.alertsContainer.appendChild(alertEl);
+        setTimeout(() => { if (alertEl.parentElement) alertEl.remove(); }, 5000);
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // ════════════════════════════════════════
+    // PUBLIC API
+    // ════════════════════════════════════════
     window.ThemesSystem = {
         init: init,
-        edit: function(id) { showForm(id); },
-        remove: deleteTheme,
+        editTheme: function(id) { showForm(id); },
+        removeTheme: removeTheme,
         editSetting: editSetting,
         deleteSetting: deleteSetting
     };
-    window.page = { run: init };
+
 })();
