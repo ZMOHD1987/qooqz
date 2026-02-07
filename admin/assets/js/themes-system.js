@@ -205,7 +205,7 @@
                         <button class="btn btn-sm btn-primary" onclick="ThemesApp.editTheme(${theme.id})">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="ThemesApp.deleteTheme(${theme.id}, '${escapeHtml(theme.name).replace(/'/g, "\\'")}')">
+                        <button class="btn btn-sm btn-danger" onclick="ThemesApp.deleteTheme(${theme.id}, '${escapeHtml(theme.name).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">
                             <i class="fas fa-trash"></i>
                         </button>
                         ${theme.preview_url ? `<a href="${escapeHtml(theme.preview_url)}" target="_blank" class="btn btn-sm btn-secondary"><i class="fas fa-eye"></i></a>` : ''}
@@ -332,7 +332,7 @@
         if (APP_STATE.themes.length === 0) await loadThemes();
 
         selector.innerHTML = APP_STATE.themes.map(theme => `
-            <div class="theme-card" onclick="ThemesApp.selectDesignTheme(${theme.id}, '${escapeHtml(theme.name).replace(/'/g, "\\'")}', this)">
+            <div class="theme-card" onclick="ThemesApp.selectDesignTheme(${theme.id}, '${escapeHtml(theme.name).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}', this)">
                 <div class="theme-icon">
                     <i class="fas fa-cog"></i>
                 </div>
@@ -445,7 +445,7 @@
         if (APP_STATE.themes.length === 0) await loadThemes();
 
         selector.innerHTML = APP_STATE.themes.map(theme => `
-            <div class="theme-card" onclick="ThemesApp.selectColorsTheme(${theme.id}, '${escapeHtml(theme.name).replace(/'/g, "\\'")}', this)">
+            <div class="theme-card" onclick="ThemesApp.selectColorsTheme(${theme.id}, '${escapeHtml(theme.name).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}', this)">
                 <div class="theme-icon">
                     <i class="fas fa-paint-brush"></i>
                 </div>
@@ -541,7 +541,7 @@
         if (APP_STATE.themes.length === 0) await loadThemes();
 
         selector.innerHTML = APP_STATE.themes.map(theme => `
-            <div class="theme-card" onclick="ThemesApp.selectFontsTheme(${theme.id}, '${escapeHtml(theme.name).replace(/'/g, "\\'")}', this)">
+            <div class="theme-card" onclick="ThemesApp.selectFontsTheme(${theme.id}, '${escapeHtml(theme.name).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}', this)">
                 <div class="theme-icon">
                     <i class="fas fa-font"></i>
                 </div>
@@ -682,7 +682,7 @@
                         <button class="btn btn-sm btn-primary" onclick="ThemesApp.editButton(${button.id})">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="ThemesApp.deleteButton(${button.id}, '${escapeHtml(button.name).replace(/'/g, "\\'")}')">
+                        <button class="btn btn-sm btn-danger" onclick="ThemesApp.deleteButton(${button.id}, '${escapeHtml(button.name).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -870,7 +870,7 @@
                         <button class="btn btn-sm btn-primary" onclick="ThemesApp.editCard(${card.id})">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="ThemesApp.deleteCard(${card.id}, '${escapeHtml(card.name).replace(/'/g, "\\'")}')">
+                        <button class="btn btn-sm btn-danger" onclick="ThemesApp.deleteCard(${card.id}, '${escapeHtml(card.name).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -1033,7 +1033,7 @@
                         <button class="btn btn-sm btn-primary" onclick="ThemesApp.editSection(${section.id})">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="ThemesApp.deleteSection(${section.id}, '${escapeHtml(section.title || section.section_type).replace(/'/g, "\\'")}')">
+                        <button class="btn btn-sm btn-danger" onclick="ThemesApp.deleteSection(${section.id}, '${escapeHtml(section.title || section.section_type).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
