@@ -19,6 +19,7 @@ final class ProductsController
      * @param array $filters
      * @param string $orderBy
      * @param string $orderDir
+     * @param string $lang
      * @return array
      */
     public function list(
@@ -27,9 +28,10 @@ final class ProductsController
         ?int $offset = null,
         array $filters = [],
         string $orderBy = 'id',
-        string $orderDir = 'DESC'
+        string $orderDir = 'DESC',
+        string $lang = 'ar'
     ): array {
-        $items = $this->service->list($tenantId, $limit, $offset, $filters, $orderBy, $orderDir);
+        $items = $this->service->list($tenantId, $limit, $offset, $filters, $orderBy, $orderDir, $lang);
         $total = $this->service->count($tenantId, $filters);
 
         return [
@@ -43,11 +45,12 @@ final class ProductsController
      *
      * @param int $tenantId
      * @param int $id
+     * @param string $lang
      * @return array|null
      */
-    public function get(int $tenantId, int $id): ?array
+    public function get(int $tenantId, int $id, string $lang = 'ar'): ?array
     {
-        return $this->service->get($tenantId, $id);
+        return $this->service->get($tenantId, $id, $lang);
     }
 
     /**

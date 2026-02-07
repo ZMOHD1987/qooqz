@@ -1,0 +1,5 @@
+api/storage/sessions/
+api/error_log.txt
+*.log
+/tmp/
+admin/test_*.html

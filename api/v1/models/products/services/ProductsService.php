@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-final class ProductPricingService
+final class ProductsService
 {
-    private PdoProductPricingRepository $repo;
+    private PdoProductsRepository $repo;
 
-    public function __construct(PdoProductPricingRepository $repo)
+    public function __construct(PdoProductsRepository $repo)
     {
         $this->repo = $repo;
     }
@@ -17,10 +17,10 @@ final class ProductPricingService
         array $filters,
         string $orderBy,
         string $orderDir,
-        bool $onlyActiveForNow = false
+        string $lang = 'ar'
     ): array {
         return $this->repo->all(
-            $tenantId, $limit, $offset, $filters, $orderBy, $orderDir, $onlyActiveForNow
+            $tenantId, $limit, $offset, $filters, $orderBy, $orderDir, $lang
         );
     }
 
@@ -29,9 +29,9 @@ final class ProductPricingService
         return $this->repo->count($tenantId, $filters);
     }
 
-    public function get(int $tenantId, int $id): ?array
+    public function get(int $tenantId, int $id, string $lang = 'ar'): ?array
     {
-        return $this->repo->find($tenantId, $id);
+        return $this->repo->find($tenantId, $id, $lang);
     }
 
     public function create(int $tenantId, array $data): int

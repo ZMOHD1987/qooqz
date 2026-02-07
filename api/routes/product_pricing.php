@@ -19,7 +19,7 @@ $repo = new PdoProductPricingRepository($pdo);
 $service = new ProductPricingService($repo);
 $controller = new ProductPricingController($service);
 
-$tenantId = $_SESSION['tenant_id'] ?? null;
+$tenantId = isset($_SESSION['tenant_id']) ? (int)$_SESSION['tenant_id'] : null;
 if (!$tenantId) {
     ResponseFormatter::error('Unauthorized', 401);
     exit;
@@ -47,8 +47,8 @@ try {
                 ResponseFormatter::success(
                     $controller->list(
                         $tenantId,
-                        $_GET['limit'] ?? null,
-                        $_GET['offset'] ?? null,
+                        isset($_GET['limit']) && is_numeric($_GET['limit']) ? (int)$_GET['limit'] : null,
+                        isset($_GET['offset']) && is_numeric($_GET['offset']) ? (int)$_GET['offset'] : null,
                         $filters,
                         $_GET['order_by'] ?? 'id',
                         $_GET['order_dir'] ?? 'DESC'
@@ -85,5 +85,6 @@ try {
 
 } catch (Throwable $e) {
     safe_log('error','product_pricing', ['error'=>$e->getMessage()]);
-    ResponseFormatter::error('Internal server error', 500);
+    $msg = ($e instanceof InvalidArgumentException) ? $e->getMessage() : 'Internal server error';
+    ResponseFormatter::error($msg, 500);
 }

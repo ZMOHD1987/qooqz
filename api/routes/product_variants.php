@@ -24,8 +24,9 @@ $controller = new ProductVariantController($service);
 $user = $_SESSION['user'] ?? [];
 $roles = $user['roles'] ?? ($_SESSION['roles'] ?? []);
 $isSuperAdmin = in_array('super_admin',$roles,true);
-$tenantId = $_GET['tenant_id'] ?? ($_SESSION['tenant_id'] ?? null);
-if(!$isSuperAdmin && ($tenantId===null || $tenantId !== ($_SESSION['tenant_id'] ?? null))) {
+$sessionTenantId = isset($_SESSION['tenant_id']) ? (int)$_SESSION['tenant_id'] : null;
+$tenantId = isset($_GET['tenant_id']) && is_numeric($_GET['tenant_id']) ? (int)$_GET['tenant_id'] : $sessionTenantId;
+if(!$isSuperAdmin && ($tenantId===null || $tenantId !== $sessionTenantId)) {
     ResponseFormatter::error('Unauthorized',403);
 }
 

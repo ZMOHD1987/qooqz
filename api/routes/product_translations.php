@@ -22,7 +22,7 @@ $service = new ProductTranslationsService($repo);
 $controller = new ProductTranslationsController($service);
 
 $user = $_SESSION['user'] ?? [];
-$tenantId = $_SESSION['tenant_id'] ?? null;
+$tenantId = isset($_SESSION['tenant_id']) ? (int)$_SESSION['tenant_id'] : null;
 $languageCode = $user['preferred_language'] ?? 'en';
 
 try {
@@ -71,5 +71,6 @@ try {
     ResponseFormatter::error('Method not allowed', 405);
 } catch(Throwable $e){
     safe_log('critical','product_translations.fatal',['error'=>$e->getMessage()]);
-    ResponseFormatter::error('Internal server error',500);
+    $msg = ($e instanceof InvalidArgumentException) ? $e->getMessage() : 'Internal server error';
+    ResponseFormatter::error($msg,500);
 }

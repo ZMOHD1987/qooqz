@@ -31,8 +31,7 @@ if (!$pdo instanceof PDO) {
     return;
 }
 
-// استخدم tenantId ثابت مؤقتًا
-$tenantId = 1;
+$tenantId = (int)($_SESSION['tenant_id'] ?? 1);
 
 // إنشاء الاعتمادات
 $repo      = new PdoDesignSettingsRepository($pdo);

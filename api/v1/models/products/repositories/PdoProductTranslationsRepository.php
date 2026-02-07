@@ -92,7 +92,21 @@ final class PdoProductTranslationsRepository
     {
         $isUpdate = !empty($data['id']);
 
+        // Extract only valid translation columns to prevent SQLSTATE[HY093]
+        $params = [
+            ':product_id'        => $data['product_id'] ?? null,
+            ':language_code'     => $data['language_code'] ?? null,
+            ':name'              => $data['name'] ?? '',
+            ':short_description' => $data['short_description'] ?? null,
+            ':description'       => $data['description'] ?? null,
+            ':specifications'    => $data['specifications'] ?? null,
+            ':meta_title'        => $data['meta_title'] ?? null,
+            ':meta_description'  => $data['meta_description'] ?? null,
+            ':meta_keywords'     => $data['meta_keywords'] ?? null,
+        ];
+
         if ($isUpdate) {
+            $params[':id'] = $data['id'];
             $stmt = $this->pdo->prepare("
                 UPDATE product_translations SET
                     product_id = :product_id,
@@ -106,7 +120,7 @@ final class PdoProductTranslationsRepository
                     meta_keywords = :meta_keywords
                 WHERE id = :id
             ");
-            $stmt->execute(array_merge($data, [':id'=>$data['id']]));
+            $stmt->execute($params);
             return (int)$data['id'];
         }
 
@@ -116,7 +130,7 @@ final class PdoProductTranslationsRepository
             VALUES
                 (:product_id, :language_code, :name, :short_description, :description, :specifications, :meta_title, :meta_description, :meta_keywords)
         ");
-        $stmt->execute($data);
+        $stmt->execute($params);
         return (int)$this->pdo->lastInsertId();
     }
 

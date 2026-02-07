@@ -211,15 +211,12 @@ $apiBase = '/api';
                         </div>
 
                         <div class="form-group">
-                            <label for="prodSku" class="required" data-i18n="form.fields.sku.label">
+                            <label for="prodSku" data-i18n="form.fields.sku.label">
                                 <?= __t('form.fields.sku.label', 'SKU') ?>
                             </label>
-                            <input type="text" id="prodSku" name="sku" class="form-control" required
+                            <input type="text" id="prodSku" name="sku" class="form-control"
                                    data-i18n-placeholder="form.fields.sku.placeholder"
-                                   placeholder="<?= __t('form.fields.sku.placeholder', 'Enter SKU') ?>">
-                            <div class="invalid-feedback" data-i18n="form.fields.sku.required">
-                                <?= __t('form.fields.sku.required', 'SKU is required') ?>
-                            </div>
+                                   placeholder="<?= __t('form.fields.sku.placeholder', 'Auto-generated if empty') ?>">
                         </div>
                     </div>
 
@@ -259,6 +256,26 @@ $apiBase = '/api';
                             </label>
                             <select id="prodBrand" name="brand_id" class="form-control">
                                 <option value="">Loading...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prodMainCategory" data-i18n="form.fields.main_category.label">
+                                <?= __t('form.fields.main_category.label', 'Main Category') ?>
+                            </label>
+                            <select id="prodMainCategory" class="form-control">
+                                <option value=""><?= __t('form.fields.main_category.select', 'Select main category') ?></option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodSubCategory" data-i18n="form.fields.sub_category.label">
+                                <?= __t('form.fields.sub_category.label', 'Sub Category') ?>
+                            </label>
+                            <select id="prodSubCategory" class="form-control">
+                                <option value=""><?= __t('form.fields.sub_category.select', 'Select sub category') ?></option>
                             </select>
                         </div>
                     </div>
@@ -345,9 +362,7 @@ $apiBase = '/api';
                                 <?= __t('form.fields.currency.label', 'Currency') ?>
                             </label>
                             <select id="prodCurrency" name="currency_code" class="form-control">
-                                <option value="SAR">SAR</option>
-                                <option value="USD">USD</option>
-                                <option value="EUR">EUR</option>
+                                <option value=""><?= __t('form.fields.currency.select', 'Select currency') ?></option>
                             </select>
                         </div>
 
@@ -417,23 +432,41 @@ $apiBase = '/api';
                     </h4>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="prodWeight" data-i18n="form.fields.weight.label">Weight (kg)</label>
+                            <label for="prodWeight" data-i18n="form.fields.weight.label">Weight</label>
                             <input type="number" id="prodWeight" name="weight" class="form-control" step="0.001" min="0">
                         </div>
 
                         <div class="form-group">
-                            <label for="prodLength" data-i18n="form.fields.length.label">Length (cm)</label>
+                            <label for="prodWeightUnit" data-i18n="form.fields.weight_unit.label">Weight Unit</label>
+                            <select id="prodWeightUnit" name="weight_unit" class="form-control">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="lb">lb</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodLength" data-i18n="form.fields.length.label">Length</label>
                             <input type="number" id="prodLength" name="length" class="form-control" step="0.01" min="0">
                         </div>
 
                         <div class="form-group">
-                            <label for="prodWidth" data-i18n="form.fields.width.label">Width (cm)</label>
+                            <label for="prodWidth" data-i18n="form.fields.width.label">Width</label>
                             <input type="number" id="prodWidth" name="width" class="form-control" step="0.01" min="0">
                         </div>
 
                         <div class="form-group">
-                            <label for="prodHeight" data-i18n="form.fields.height.label">Height (cm)</label>
+                            <label for="prodHeight" data-i18n="form.fields.height.label">Height</label>
                             <input type="number" id="prodHeight" name="height" class="form-control" step="0.01" min="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodDimensionUnit" data-i18n="form.fields.dimension_unit.label">Dimension Unit</label>
+                            <select id="prodDimensionUnit" name="dimension_unit" class="form-control">
+                                <option value="cm">cm</option>
+                                <option value="mm">mm</option>
+                                <option value="in">in</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -703,6 +736,8 @@ window.PRODUCTS_CONFIG = {
     brandsApi: '<?= $apiBase ?>/brands',
     productTypesApi: '<?= $apiBase ?>/product_types',
     attributesApi: '<?= $apiBase ?>/product_attributes',
+    attributeValuesApi: '<?= $apiBase ?>/product_attribute_values',
+    currenciesApi: '<?= $apiBase ?>/currencies',
     languagesApi: '<?= $apiBase ?>/languages',
     imagesApi: '<?= $apiBase ?>/images',
     tenantsApi: '<?= $apiBase ?>/tenants',
@@ -786,34 +821,49 @@ window.PRODUCTS_CONFIG = {
 
 <script>
 (function(){
-    console.log('[Products] Embedded mode - waiting for framework & module...');
-    let attempts = 0, maxAttempts = 50;
-    const interval = setInterval(function(){
+    console.log('[Products] Embedded mode - waiting for module...');
+    var attempts = 0, maxAttempts = 50;
+    var interval = setInterval(function(){
         attempts++;
-        if (window.AdminFramework && window.Products && typeof window.Products.init === 'function') {
+        if (window.Products && typeof window.Products.init === 'function') {
             clearInterval(interval);
-            console.log('[Products] Module ready - initializing...');
+            console.log('[Products] Module ready - initializing (attempt ' + attempts + ')...');
             try {
-                const maybePromise = window.Products.init();
+                var maybePromise = window.Products.init();
                 if (maybePromise && typeof maybePromise.then === 'function') {
-                    maybePromise.then(()=>console.log('[Products] Initialized')).catch(e=>console.error('[Products] Init failed', e));
-                } else {
-                    console.log('[Products] Initialized (sync)');
+                    maybePromise.then(function(){
+                        console.log('[Products] ✓ Initialized successfully');
+                    }).catch(function(e){
+                        console.error('[Products] Init failed:', e);
+                    });
                 }
             } catch (e) {
-                console.error('[Products] Init threw', e);
+                console.error('[Products] Init threw:', e);
             }
         } else if (attempts > maxAttempts) {
             clearInterval(interval);
-            console.error('[Products] Timeout waiting for module. Framework present:', !!window.AdminFramework, 'Module present:', !!window.Products);
-        } else if (attempts % 10 === 0) {
-            console.log('[Products] waiting...', attempts, '/', maxAttempts);
+            console.error('[Products] Timeout waiting for module after ' + (maxAttempts * 100) + 'ms');
         }
     }, 100);
 })();
 </script>
 <?php else: ?>
 <script src="/admin/assets/js/pages/products.js?v=<?= time() ?>"></script>
+<script>
+// Standalone mode init
+(function(){
+    function tryInit() {
+        if (window.Products && typeof window.Products.init === 'function') {
+            window.Products.init().catch(function(e){ console.error('[Products] Init failed', e); });
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', tryInit);
+    } else {
+        tryInit();
+    }
+})();
+</script>
 <?php endif; ?>
 
 <?php

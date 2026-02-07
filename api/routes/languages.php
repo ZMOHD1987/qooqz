@@ -25,7 +25,8 @@ if (!$pdo instanceof PDO) {
 }
 
 // ===== احصل على tenantId من query string =====
-$tenantId = isset($_GET['tenant_id']) ? (int)$_GET['tenant_id'] : ($_SESSION['tenant_id'] ?? 1);
+$sessionTenantId = isset($_SESSION['tenant_id']) ? (int)$_SESSION['tenant_id'] : 1;
+$tenantId = isset($_GET['tenant_id']) ? (int)$_GET['tenant_id'] : $sessionTenantId;
 
 // ===== تحميل بيانات المستخدم الحالي =====
 $user = $_SESSION['user'] ?? [];
@@ -36,7 +37,7 @@ $permissions = $user['permissions'] ?? [];
 $isSuperAdmin = in_array('super_admin', $roles, true);
 
 // إذا لم يكن super_admin، تحقق من أنه يملك الوصول لهذا الـ tenant
-if (!$isSuperAdmin && $tenantId !== ($_SESSION['tenant_id'] ?? 0)) {
+if (!$isSuperAdmin && $tenantId !== $sessionTenantId) {
     ResponseFormatter::error('Unauthorized for this tenant', 403);
     return;
 }

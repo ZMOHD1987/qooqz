@@ -24,8 +24,8 @@ if (!$pdo instanceof PDO) {
 }
 
 // Tenant/User context
-$tenantId = $_SESSION['tenant_id'] ?? 1;
-$userId   = $_SESSION['user']['id'] ?? null;
+$tenantId = isset($_SESSION['tenant_id']) ? (int)$_SESSION['tenant_id'] : 1;
+$userId   = isset($_SESSION['user']['id']) ? (int)$_SESSION['user']['id'] : null;
 
 // Init layers
 $repo       = new PdoImagesRepository($pdo);
