@@ -91,40 +91,58 @@
         const val = s.validation || {};
         const msg = s.messages || {};
         return {
-            title: s.title || s.products,
+            // products.* keys
+            products: {
+                title: s.title || s.products,
+                subtitle: s.product || s.title,
+                add_new: s.create,
+                loading: s.loading,
+                retry: s.refresh || 'Retry'
+            },
+            // tabs.* keys (top-level, NOT under form)
+            tabs: {
+                general: g.general, pricing: p.pricing, inventory: inv.inventory,
+                attributes: attr.attributes, variants: vr.variants,
+                images: med.images, categories: cat.categories,
+                translations: tr.translations
+            },
+            // form.* keys
             form: {
                 add_title: s.create,
                 edit_title: s.edit,
-                tabs: {
-                    general: g.general, pricing: p.pricing, inventory: inv.inventory,
-                    physical: dim.dimensions, categories: cat.categories,
-                    attributes: attr.attributes, variants: vr.variants,
-                    images: med.images, translations: tr.translations
-                },
                 fields: {
-                    name: { label: g.name }, sku: { label: g.sku }, slug: { label: g.slug },
-                    barcode: { label: g.barcode }, product_type: { label: g.type },
-                    brand: { label: g.brand }, main_category: { label: cat.categories },
+                    name: { label: g.name, placeholder: g.name, required: val.name_required },
+                    sku: { label: g.sku, placeholder: g.sku },
+                    slug: { label: g.slug, placeholder: g.slug },
+                    barcode: { label: g.barcode, placeholder: g.barcode },
+                    product_type: { label: g.type },
+                    brand: { label: g.brand },
+                    main_category: { label: cat.categories },
                     sub_category: { label: cat.hierarchy_info },
                     categories: { label: cat.categories },
-                    price: { label: p.price }, compare_price: { label: p.compare_at_price },
-                    cost_price: { label: p.cost_price }, tax_rate: { label: p.tax_rate },
-                    currency: { label: s.general?.select || 'Currency' },
+                    price: { label: p.price },
+                    compare_price: { label: p.compare_at_price },
+                    cost_price: { label: p.cost_price },
+                    tax_rate: { label: p.tax_rate },
+                    currency: { label: g.select || 'Currency' },
                     pricing_type: { label: p.pricing },
                     stock_quantity: { label: inv.stock_quantity },
                     low_stock_threshold: { label: inv.low_stock_threshold },
                     stock_status: { label: inv.stock_status,
-                        options: { in_stock: inv.in_stock, out_of_stock: inv.out_of_stock, on_backorder: inv.on_backorder }
+                        in_stock: inv.in_stock, out_of_stock: inv.out_of_stock, on_backorder: inv.on_backorder
                     },
                     manage_stock: { label: inv.manage_stock, yes: g.yes, no: g.no },
                     allow_backorder: { label: inv.allow_backorder, yes: g.yes, no: g.no },
-                    featured: { label: s.general?.yes ? g.select : 'Featured', yes: g.yes, no: g.no },
-                    bestseller: { label: 'Bestseller', yes: g.yes, no: g.no },
-                    new_product: { label: 'New', yes: g.yes, no: g.no },
+                    featured: { label: g.yes ? (s.active || 'Featured') : 'Featured', yes: g.yes, no: g.no },
+                    bestseller: { label: vr.variants || 'Bestseller', yes: g.yes, no: g.no },
+                    new: { label: s.create || 'New', yes: g.yes, no: g.no },
                     status: { label: s.active || 'Status', active: s.active, inactive: s.inactive },
-                    weight: { label: dim.weight }, length: { label: dim.length },
-                    width: { label: dim.width }, height: { label: dim.height },
-                    weight_unit: { label: dim.weight }, dimension_unit: { label: dim.dimensions },
+                    weight: { label: dim.weight },
+                    length: { label: dim.length },
+                    width: { label: dim.width },
+                    height: { label: dim.height },
+                    weight_unit: { label: dim.weight },
+                    dimension_unit: { label: dim.dimensions },
                     images: { label: med.images },
                     short_description: { label: g.short_description },
                     description: { label: g.description },
@@ -142,17 +160,40 @@
                 sections: { physical: dim.dimensions },
                 translations: { select_lang: tr.add_language }
             },
+            // filters.* keys
             filters: {
-                search: s.search_placeholder, product_type: g.type, brand: g.brand,
+                search: s.search_placeholder,
+                search_placeholder: s.search_placeholder,
+                product_type: g.type, brand: g.brand,
                 status: inv.stock_status, tenant_id: 'Tenant',
+                tenant_placeholder: 'Tenant ID',
                 status_options: { all: s.total, active: s.active, inactive: s.inactive },
                 apply: s.save, reset: s.cancel
             },
+            // common.* keys
             common: { select_image: med.select_from_studio },
+            // table.* keys
             table: {
-                name: g.name, sku: g.sku, price: p.price,
-                status: s.active, actions: s.actions
+                headers: {
+                    id: 'ID', tenant: 'Tenant', image: med.images,
+                    name: g.name, sku: g.sku, type: g.type,
+                    price: p.price, stock: inv.stock_quantity,
+                    status: s.active, actions: s.actions
+                },
+                empty: {
+                    title: s.no_products,
+                    message: s.create || 'Add your first product',
+                    add_first: s.create
+                },
+                actions: { delete: s.delete }
             },
+            // pagination.* keys
+            pagination: { showing: s.total || 'Showing' },
+            // messages.* keys
+            messages: {
+                error: { load_failed: msg.server_error || 'Error loading data' }
+            },
+            // strings used internally
             strings: { save_success: s.save_success, update_success: s.update_success,
                 delete_confirm: s.delete_confirm, delete_success: s.delete_success,
                 saving: s.saving, loading: s.loading
