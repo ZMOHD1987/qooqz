@@ -85,5 +85,5 @@ try {
 
 } catch (Throwable $e) {
     safe_log('error','product_pricing', ['error'=>$e->getMessage()]);
-    ResponseFormatter::error('Internal server error', 500);
+    ResponseFormatter::error($e->getMessage(), 500);
 }

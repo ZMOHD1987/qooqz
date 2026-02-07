@@ -111,5 +111,5 @@ try {
         'file'  => $e->getFile(),
         'line'  => $e->getLine(),
     ]);
-    ResponseFormatter::error('Internal server error', 500);
+    ResponseFormatter::error($e->getMessage(), 500);
 }

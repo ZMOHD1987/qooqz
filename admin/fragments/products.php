@@ -432,23 +432,41 @@ $apiBase = '/api';
                     </h4>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="prodWeight" data-i18n="form.fields.weight.label">Weight (kg)</label>
+                            <label for="prodWeight" data-i18n="form.fields.weight.label">Weight</label>
                             <input type="number" id="prodWeight" name="weight" class="form-control" step="0.001" min="0">
                         </div>
 
                         <div class="form-group">
-                            <label for="prodLength" data-i18n="form.fields.length.label">Length (cm)</label>
+                            <label for="prodWeightUnit" data-i18n="form.fields.weight_unit.label">Weight Unit</label>
+                            <select id="prodWeightUnit" name="weight_unit" class="form-control">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="lb">lb</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodLength" data-i18n="form.fields.length.label">Length</label>
                             <input type="number" id="prodLength" name="length" class="form-control" step="0.01" min="0">
                         </div>
 
                         <div class="form-group">
-                            <label for="prodWidth" data-i18n="form.fields.width.label">Width (cm)</label>
+                            <label for="prodWidth" data-i18n="form.fields.width.label">Width</label>
                             <input type="number" id="prodWidth" name="width" class="form-control" step="0.01" min="0">
                         </div>
 
                         <div class="form-group">
-                            <label for="prodHeight" data-i18n="form.fields.height.label">Height (cm)</label>
+                            <label for="prodHeight" data-i18n="form.fields.height.label">Height</label>
                             <input type="number" id="prodHeight" name="height" class="form-control" step="0.01" min="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodDimensionUnit" data-i18n="form.fields.dimension_unit.label">Dimension Unit</label>
+                            <select id="prodDimensionUnit" name="dimension_unit" class="form-control">
+                                <option value="cm">cm</option>
+                                <option value="mm">mm</option>
+                                <option value="in">in</option>
+                            </select>
                         </div>
                     </div>
                 </div>

@@ -475,16 +475,10 @@
             if (el.prodStockStatus) el.prodStockStatus.value = product.stock_status || 'in_stock';
             if (el.prodManageStock) el.prodManageStock.value = product.manage_stock || '1';
             if (el.prodAllowBackorder) el.prodAllowBackorder.value = product.allow_backorder || '0';
-            
-            // Physical attributes
-            if (el.prodWeight) el.prodWeight.value = product.weight || '';
-            if (el.prodLength) el.prodLength.value = product.length || '';
-            if (el.prodWidth) el.prodWidth.value = product.width || '';
-            if (el.prodHeight) el.prodHeight.value = product.height || '';
 
             if (el.btnDeleteProduct) el.btnDeleteProduct.style.display = state.permissions.canDelete ? 'inline-block' : 'none';
 
-            // Load related data
+            // Load related data from separate API tables
             if (product.id) {
                 loadProductImages(product.id);
                 loadProductCategories(product.id);
@@ -492,6 +486,7 @@
                 loadProductVariants(product.id);
                 loadProductTranslations(product.id);
                 loadProductPricing(product.id);
+                loadPhysicalAttributes(product.id);
             }
         } else {
             if (el.formTitle) el.formTitle.textContent = t('form.add_title', 'Add Product');
@@ -671,11 +666,31 @@
                 is_active: 1
             };
 
-            await apiCall('/api/product_pricing', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(pricingData)
-            });
+            // Check if pricing record already exists for this product
+            let existingId = null;
+            try {
+                const existing = await apiCall(`/api/product_pricing?product_id=${productId}&format=json`);
+                if (existing.success) {
+                    const items = existing.data?.items || (Array.isArray(existing.data) ? existing.data : []);
+                    const found = items.find(p => !p.variant_id || p.variant_id === null);
+                    if (found) existingId = found.id;
+                }
+            } catch (e) { /* ignore */ }
+
+            if (existingId) {
+                pricingData.id = parseInt(existingId);
+                await apiCall('/api/product_pricing', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(pricingData)
+                });
+            } else {
+                await apiCall('/api/product_pricing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(pricingData)
+                });
+            }
         } catch (err) {
             console.warn('[Products] Failed to save pricing:', err);
         }
@@ -695,10 +710,11 @@
                 length: parseFloat(length) || null,
                 width: parseFloat(width) || null,
                 height: parseFloat(height) || null,
-                weight_unit: 'kg',
-                dimension_unit: 'cm'
+                weight_unit: formData.get('weight_unit') || 'kg',
+                dimension_unit: formData.get('dimension_unit') || 'cm'
             };
 
+            // Physical attributes repo does upsert (INSERT or UPDATE) based on product_id
             await apiCall('/api/product_physical_attributes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -751,22 +767,45 @@
 
     async function saveProductTranslations(productId, translations) {
         try {
+            // Load existing translations to determine create vs update
+            let existingTranslations = [];
+            try {
+                const existing = await apiCall(`/api/product_translations?product_id=${productId}&format=json`);
+                if (existing.success) {
+                    existingTranslations = Array.isArray(existing.data) ? existing.data : (existing.data?.items || []);
+                }
+            } catch (e) { /* ignore */ }
+
             for (const [langCode, trans] of Object.entries(translations)) {
-                await apiCall('/api/product_translations', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        product_id: parseInt(productId),
-                        language_code: langCode,
-                        name: trans.name || '',
-                        short_description: trans.short_description || '',
-                        description: trans.description || '',
-                        specifications: trans.specifications || '',
-                        meta_title: trans.meta_title || '',
-                        meta_description: trans.meta_description || '',
-                        meta_keywords: trans.meta_keywords || ''
-                    })
-                });
+                const transData = {
+                    product_id: parseInt(productId),
+                    language_code: langCode,
+                    name: trans.name || '',
+                    short_description: trans.short_description || '',
+                    description: trans.description || '',
+                    specifications: trans.specifications || '',
+                    meta_title: trans.meta_title || '',
+                    meta_description: trans.meta_description || '',
+                    meta_keywords: trans.meta_keywords || ''
+                };
+
+                // Check if translation for this language already exists
+                const existingTrans = existingTranslations.find(t => t.language_code === langCode);
+
+                if (existingTrans) {
+                    transData.id = parseInt(existingTrans.id);
+                    await apiCall('/api/product_translations', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(transData)
+                    });
+                } else {
+                    await apiCall('/api/product_translations', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(transData)
+                    });
+                }
             }
         } catch (err) {
             console.warn('[Products] Failed to save translations:', err);
@@ -1410,6 +1449,27 @@
         }
     }
 
+    async function loadPhysicalAttributes(productId) {
+        try {
+            console.log('[Products] Loading physical attributes for product:', productId);
+            const result = await apiCall(`/api/product_physical_attributes?product_id=${productId}&format=json`);
+            if (result.success) {
+                const items = result.data?.items || (Array.isArray(result.data) ? result.data : []);
+                const phys = items.find(p => p.product_id == productId) || items[0];
+                if (phys) {
+                    if (el.prodWeight) el.prodWeight.value = phys.weight || '';
+                    if (el.prodLength) el.prodLength.value = phys.length || '';
+                    if (el.prodWidth) el.prodWidth.value = phys.width || '';
+                    if (el.prodHeight) el.prodHeight.value = phys.height || '';
+                    if (el.prodWeightUnit) el.prodWeightUnit.value = phys.weight_unit || 'kg';
+                    if (el.prodDimensionUnit) el.prodDimensionUnit.value = phys.dimension_unit || 'cm';
+                }
+            }
+        } catch (err) {
+            console.warn('[Products] Failed to load physical attributes:', err);
+        }
+    }
+
     async function loadProductCategories(productId) {
         try {
             console.log('[Products] Loading categories for product:', productId);
@@ -1741,6 +1801,8 @@
             prodLength: $id('prodLength'),
             prodWidth: $id('prodWidth'),
             prodHeight: $id('prodHeight'),
+            prodWeightUnit: $id('prodWeightUnit'),
+            prodDimensionUnit: $id('prodDimensionUnit'),
             
             // Attributes
             attrSelect: $id('attrSelect'),
