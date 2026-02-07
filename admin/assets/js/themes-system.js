@@ -232,7 +232,7 @@
         document.getElementById('themeId').value = '';
 
         if (themeId) {
-            const theme = APP_STATE.themes.find(t => t.id === themeId);
+            const theme = APP_STATE.themes.find(t => String(t.id) === String(themeId));
             if (theme) {
                 title.textContent = 'Edit Theme';
                 document.getElementById('themeId').value = theme.id;
@@ -332,7 +332,7 @@
         if (APP_STATE.themes.length === 0) await loadThemes();
 
         selector.innerHTML = APP_STATE.themes.map(theme => `
-            <div class="theme-card" onclick="ThemesApp.selectDesignTheme(${theme.id}, '${escapeHtml(theme.name).replace(/'/g, "\\'")}')">
+            <div class="theme-card" onclick="ThemesApp.selectDesignTheme(${theme.id}, '${escapeHtml(theme.name).replace(/'/g, "\\'")}', this)">
                 <div class="theme-icon">
                     <i class="fas fa-cog"></i>
                 </div>
@@ -342,11 +342,11 @@
         `).join('');
     }
 
-    async function selectDesignTheme(themeId, themeName) {
+    async function selectDesignTheme(themeId, themeName, el) {
         APP_STATE.selectedThemeId = themeId;
 
         document.querySelectorAll('#designThemeSelector .theme-card').forEach(c => c.classList.remove('selected'));
-        event.currentTarget.classList.add('selected');
+        if (el) el.classList.add('selected');
 
         document.getElementById('designThemeName').textContent = themeName;
         document.getElementById('designCard').style.display = 'block';
@@ -445,7 +445,7 @@
         if (APP_STATE.themes.length === 0) await loadThemes();
 
         selector.innerHTML = APP_STATE.themes.map(theme => `
-            <div class="theme-card" onclick="ThemesApp.selectColorsTheme(${theme.id}, '${escapeHtml(theme.name).replace(/'/g, "\\'")}')">
+            <div class="theme-card" onclick="ThemesApp.selectColorsTheme(${theme.id}, '${escapeHtml(theme.name).replace(/'/g, "\\'")}', this)">
                 <div class="theme-icon">
                     <i class="fas fa-paint-brush"></i>
                 </div>
@@ -455,11 +455,11 @@
         `).join('');
     }
 
-    async function selectColorsTheme(themeId, themeName) {
+    async function selectColorsTheme(themeId, themeName, el) {
         APP_STATE.selectedThemeId = themeId;
 
         document.querySelectorAll('#colorsThemeSelector .theme-card').forEach(c => c.classList.remove('selected'));
-        event.currentTarget.classList.add('selected');
+        if (el) el.classList.add('selected');
 
         document.getElementById('colorsThemeName').textContent = themeName;
         document.getElementById('colorsCard').style.display = 'block';
@@ -541,7 +541,7 @@
         if (APP_STATE.themes.length === 0) await loadThemes();
 
         selector.innerHTML = APP_STATE.themes.map(theme => `
-            <div class="theme-card" onclick="ThemesApp.selectFontsTheme(${theme.id}, '${escapeHtml(theme.name).replace(/'/g, "\\'")}')">
+            <div class="theme-card" onclick="ThemesApp.selectFontsTheme(${theme.id}, '${escapeHtml(theme.name).replace(/'/g, "\\'")}', this)">
                 <div class="theme-icon">
                     <i class="fas fa-font"></i>
                 </div>
@@ -551,11 +551,11 @@
         `).join('');
     }
 
-    async function selectFontsTheme(themeId, themeName) {
+    async function selectFontsTheme(themeId, themeName, el) {
         APP_STATE.selectedThemeId = themeId;
 
         document.querySelectorAll('#fontsThemeSelector .theme-card').forEach(c => c.classList.remove('selected'));
-        event.currentTarget.classList.add('selected');
+        if (el) el.classList.add('selected');
 
         document.getElementById('fontsThemeName').textContent = themeName;
         document.getElementById('fontsCard').style.display = 'block';

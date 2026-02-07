@@ -77,7 +77,7 @@ $apiBase = '/api';
 <?php endif; ?>
 
 <!-- Page Container -->
-<div class="page-container" id="themesPageContainer" dir="<?= htmlspecialchars($dir) ?>">
+<div class="themes-page page-container" id="themesPageContainer" dir="<?= htmlspecialchars($dir) ?>">
 
     <div class="alerts-container" id="alertsContainer"></div>
 
