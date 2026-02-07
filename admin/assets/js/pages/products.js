@@ -1195,24 +1195,23 @@
     }
 
     function generateVariantsFromAttributes() {
-        // Collect variation attributes (is_variation=1) and their selected values
-        const variationAttrs = state.productAttributes.filter(a => {
-            // Attributes that have attribute_value_id are used for variations
-            return a.attribute_value_id || a.value;
-        });
+        // Collect variation attributes that have values
+        const variationAttrs = state.productAttributes.filter(a => !!(a.attribute_value_id || a.value));
 
         if (variationAttrs.length === 0) {
             alert(t('strings.no_attributes', 'Please add attributes with values first'));
             return;
         }
 
-        // Group attributes by attribute_id
+        // Group attributes by attribute_id, dedup values by id
         const grouped = {};
         variationAttrs.forEach(a => {
             const key = a.attribute_id;
             if (!grouped[key]) grouped[key] = { name: a.attribute_name || a.slug || `Attr ${key}`, values: [] };
-            const label = a.value_label || a.value || a.custom_value || `Value ${a.attribute_value_id}`;
-            grouped[key].values.push({ id: a.attribute_value_id, label: label });
+            const valId = a.attribute_value_id;
+            if (valId && grouped[key].values.some(v => v.id === valId)) return; // skip duplicate
+            const label = a.value_label || a.value || a.custom_value || `Value ${valId}`;
+            grouped[key].values.push({ id: valId, label });
         });
 
         // Generate cartesian product of all attribute value combinations
