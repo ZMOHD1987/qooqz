@@ -60,17 +60,104 @@
     // ════════════════════════════════════════════════════════════
     async function loadTranslations(lang) {
         try {
-            const url = `/languages/Products/${encodeURIComponent(lang || state.language)}.json`;
+            const url = `/languages/Product/${encodeURIComponent(lang || state.language)}.json`;
             console.log('[Products] Loading translations:', url);
             const res = await fetch(url, { credentials: 'same-origin' });
             if (!res.ok) throw new Error(`Failed to load translations: ${res.status}`);
-            translations = await res.json();
+            const raw = await res.json();
+            const s = raw.strings || raw;
+            // Build translations matching data-i18n keys used in products.php
+            translations = buildTranslationsMap(s);
+            // Set direction from translation file
+            if (raw.direction) setDirectionForLang(raw.direction === 'rtl' ? 'ar' : 'en');
             console.log('[Products] Translations loaded');
             applyTranslations();
         } catch (err) {
             console.warn('[Products] Translation load failed:', err);
             translations = {};
         }
+    }
+
+    function buildTranslationsMap(s) {
+        const g = s.general || {};
+        const p = s.pricing || {};
+        const inv = s.inventory || {};
+        const dim = s.dimensions || {};
+        const med = s.media || {};
+        const cat = s.categories || {};
+        const attr = s.attributes || {};
+        const vr = s.variants || {};
+        const tr = s.translations || {};
+        const val = s.validation || {};
+        const msg = s.messages || {};
+        return {
+            title: s.title || s.products,
+            form: {
+                add_title: s.create,
+                edit_title: s.edit,
+                tabs: {
+                    general: g.general, pricing: p.pricing, inventory: inv.inventory,
+                    physical: dim.dimensions, categories: cat.categories,
+                    attributes: attr.attributes, variants: vr.variants,
+                    images: med.images, translations: tr.translations
+                },
+                fields: {
+                    name: { label: g.name }, sku: { label: g.sku }, slug: { label: g.slug },
+                    barcode: { label: g.barcode }, product_type: { label: g.type },
+                    brand: { label: g.brand }, main_category: { label: cat.categories },
+                    sub_category: { label: cat.hierarchy_info },
+                    categories: { label: cat.categories },
+                    price: { label: p.price }, compare_price: { label: p.compare_at_price },
+                    cost_price: { label: p.cost_price }, tax_rate: { label: p.tax_rate },
+                    currency: { label: s.general?.select || 'Currency' },
+                    pricing_type: { label: p.pricing },
+                    stock_quantity: { label: inv.stock_quantity },
+                    low_stock_threshold: { label: inv.low_stock_threshold },
+                    stock_status: { label: inv.stock_status,
+                        options: { in_stock: inv.in_stock, out_of_stock: inv.out_of_stock, on_backorder: inv.on_backorder }
+                    },
+                    manage_stock: { label: inv.manage_stock, yes: g.yes, no: g.no },
+                    allow_backorder: { label: inv.allow_backorder, yes: g.yes, no: g.no },
+                    featured: { label: s.general?.yes ? g.select : 'Featured', yes: g.yes, no: g.no },
+                    bestseller: { label: 'Bestseller', yes: g.yes, no: g.no },
+                    new_product: { label: 'New', yes: g.yes, no: g.no },
+                    status: { label: s.active || 'Status', active: s.active, inactive: s.inactive },
+                    weight: { label: dim.weight }, length: { label: dim.length },
+                    width: { label: dim.width }, height: { label: dim.height },
+                    weight_unit: { label: dim.weight }, dimension_unit: { label: dim.dimensions },
+                    images: { label: med.images },
+                    short_description: { label: g.short_description },
+                    description: { label: g.description },
+                    specifications: { label: tr.specifications },
+                    meta_title: { label: tr.meta_title },
+                    meta_description: { label: tr.meta_description },
+                    meta_keywords: { label: tr.meta_keywords }
+                },
+                buttons: {
+                    save: s.save, cancel: s.cancel,
+                    add_attribute: attr.add_attribute,
+                    add_variant: vr.variants,
+                    generate_variants: vr.generate_variants
+                },
+                sections: { physical: dim.dimensions },
+                translations: { select_lang: tr.add_language }
+            },
+            filters: {
+                search: s.search_placeholder, product_type: g.type, brand: g.brand,
+                status: inv.stock_status, tenant_id: 'Tenant',
+                status_options: { all: s.total, active: s.active, inactive: s.inactive },
+                apply: s.save, reset: s.cancel
+            },
+            common: { select_image: med.select_from_studio },
+            table: {
+                name: g.name, sku: g.sku, price: p.price,
+                status: s.active, actions: s.actions
+            },
+            strings: { save_success: s.save_success, update_success: s.update_success,
+                delete_confirm: s.delete_confirm, delete_success: s.delete_success,
+                saving: s.saving, loading: s.loading
+            }
+        };
     }
 
     function t(key, fallback = '') {
@@ -1107,6 +1194,69 @@
         renderVariants();
     }
 
+    function generateVariantsFromAttributes() {
+        // Collect variation attributes (is_variation=1) and their selected values
+        const variationAttrs = state.productAttributes.filter(a => {
+            // Attributes that have attribute_value_id are used for variations
+            return a.attribute_value_id || a.value;
+        });
+
+        if (variationAttrs.length === 0) {
+            alert(t('strings.no_attributes', 'Please add attributes with values first'));
+            return;
+        }
+
+        // Group attributes by attribute_id
+        const grouped = {};
+        variationAttrs.forEach(a => {
+            const key = a.attribute_id;
+            if (!grouped[key]) grouped[key] = { name: a.attribute_name || a.slug || `Attr ${key}`, values: [] };
+            const label = a.value_label || a.value || a.custom_value || `Value ${a.attribute_value_id}`;
+            grouped[key].values.push({ id: a.attribute_value_id, label: label });
+        });
+
+        // Generate cartesian product of all attribute value combinations
+        const attrKeys = Object.keys(grouped);
+        const combinations = cartesian(attrKeys.map(k => grouped[k].values));
+
+        if (combinations.length === 0) {
+            alert(t('strings.no_combinations', 'No attribute combinations found'));
+            return;
+        }
+
+        // Create variants from combinations
+        const baseSku = document.getElementById('prodSku')?.value || 'VAR';
+        combinations.forEach((combo, i) => {
+            const nameParts = combo.map(v => v.label);
+            const variant = {
+                id: null,
+                sku: `${baseSku}-${i + 1}`,
+                barcode: '',
+                name: nameParts.join(' / '),
+                stock_quantity: 0,
+                is_active: 1,
+                is_default: i === 0 ? 1 : 0,
+                _attributeValues: combo // Store attribute values for saving to product_variant_attributes
+            };
+            state.productVariants.push(variant);
+        });
+
+        renderVariants();
+    }
+
+    function cartesian(arrays) {
+        if (arrays.length === 0) return [[]];
+        const [first, ...rest] = arrays;
+        const restCombos = cartesian(rest);
+        const result = [];
+        first.forEach(val => {
+            restCombos.forEach(combo => {
+                result.push([val, ...combo]);
+            });
+        });
+        return result;
+    }
+
     // ════════════════════════════════════════════════════════════
     // IMAGES MANAGEMENT
     // ════════════════════════════════════════════════════════════
@@ -1900,6 +2050,7 @@
         
         // Variants
         if (el.btnAddVariant) el.btnAddVariant.onclick = addVariant;
+        if (el.btnGenerateVariants) el.btnGenerateVariants.onclick = generateVariantsFromAttributes;
         
         // Images
         if (el.prodSelectImageBtn) el.prodSelectImageBtn.onclick = openMediaStudio;
@@ -1964,6 +2115,7 @@
         removeAttribute,
         updateVariantField,
         removeVariant,
+        generateVariantsFromAttributes,
         removeImage,
         toggleCategory,
         setLanguage: async (lang) => {
