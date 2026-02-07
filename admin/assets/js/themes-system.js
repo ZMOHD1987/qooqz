@@ -288,7 +288,7 @@
         var detail = '';
         var canEdit = CFG().CAN_EDIT;
         var canDelete = CFG().CAN_DELETE;
-        var activeTag = String(item.is_active) === '0' ? ' <span style="color:var(--danger-color,#e74c3c);font-size:11px">[inactive]</span>' : '';
+        var activeTag = String(item.is_active) === '0' ? ' <span class="status-inactive">[inactive]</span>' : '';
 
         if (type === 'design') {
             detail = esc(item.setting_key || '') + ' = ' + esc(item.setting_value || '') + ' (' + esc(item.category || '') + ')';

@@ -105,3 +105,4 @@
     .themes-page .page-header { flex-direction:column; align-items:flex-start; }
     .themes-page .filters-bar { flex-direction:column; }
 }
+.themes-page .status-inactive { color:var(--danger-color,#e74c3c); font-size:11px; }
