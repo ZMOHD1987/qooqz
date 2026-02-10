@@ -280,6 +280,7 @@ final class PdoEntitySettingsRepository
         // استخراج الأعمدة المسموح بها فقط من البيانات الواردة
         $params = [':entity_id' => $entityId];
         $setClauses = [];
+        $filteredCols = [];
 
         foreach (self::ENTITY_SETTINGS_COLUMNS as $col) {
             if (array_key_exists($col, $data)) {
@@ -287,6 +288,7 @@ final class PdoEntitySettingsRepository
                 // تحويل القيم الفارغة إلى null للأعمدة الاختيارية
                 $params[':' . $col] = ($val === '' || $val === null) ? null : $val;
                 $setClauses[] = "{$col} = :{$col}";
+                $filteredCols[] = $col;
             }
         }
 
@@ -304,9 +306,9 @@ final class PdoEntitySettingsRepository
         } else {
             $sql = "
                 INSERT INTO entity_settings (
-                    entity_id, " . implode(', ', array_keys($data)) . "
+                    entity_id, " . implode(', ', $filteredCols) . "
                 ) VALUES (
-                    :entity_id, :" . implode(', :', array_keys($data)) . "
+                    :entity_id, :" . implode(', :', $filteredCols) . "
                 )
             ";
         }

@@ -821,21 +821,11 @@
                 featured_in_app: document.getElementById('settingFeaturedInApp')?.value === '1' ? 1 : 0
             };
 
-            // Try PUT first (update), if it fails try POST (create)
-            try {
-                await apiCall(API.settings, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(settings)
-                });
-            } catch (putErr) {
-                console.warn('[Entities] PUT settings failed, trying POST:', putErr.message);
-                await apiCall(API.settings, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(settings)
-                });
-            }
+            await apiCall(API.settings, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            });
         } catch (err) {
             console.warn('[Entities] Failed to save settings:', err);
         }

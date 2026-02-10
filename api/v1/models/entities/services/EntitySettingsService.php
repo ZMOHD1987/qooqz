@@ -48,17 +48,19 @@ final class EntitySettingsService
             throw new RuntimeException("Entity settings already exist for entity ID: $entityId");
         }
         
-        $data['entity_id'] = $entityId;
+        // Remove entity_id from data since save() handles it as a separate parameter
+        unset($data['entity_id']);
         return $this->repo->save($entityId, $data);
     }
 
+    /**
+     * Create or update entity settings (upsert via repository save)
+     */
     public function update(int $entityId, array $data): bool
     {
-        // التحقق من وجود الإعدادات قبل التحديث
-        if (!$this->get($entityId)) {
-            throw new RuntimeException("Entity settings not found for entity ID: $entityId");
-        }
-        
+        // Remove entity_id from data since save() handles it as a separate parameter
+        unset($data['entity_id']);
+        // save() handles both insert and update (upsert)
         return $this->repo->save($entityId, $data);
     }
 
