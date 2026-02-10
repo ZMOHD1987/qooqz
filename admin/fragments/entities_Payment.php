@@ -3,295 +3,167 @@ declare(strict_types=1);
 
 /**
  * admin/fragments/entities_Payment.php
- * Embedded entity payment management fragment for the admin panel.
- * Loaded as iframe or standalone with URL like:
- *   /admin/fragments/entities_Payment.php?embedded=1&tenant_id=1&lang=ar&entity_id=5
+ * Entity Payment Management - Bank accounts and payment methods
+ * 
+ * Follows the same auth/permission pattern as entities.php
  */
 
-// Bootstrap admin UI
-$bootstrap = __DIR__ . '/../../api/bootstrap_admin_ui.php';
-if (is_readable($bootstrap)) {
-    try { require_once $bootstrap; } catch (Throwable $e) {}
+// ════════════════════════════════════════════════════════════
+// DETECT REQUEST TYPE
+// ════════════════════════════════════════════════════════════
+$isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+          strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+$isEmbedded = isset($_GET['embedded']) || isset($_POST['embedded']);
+$isFragment = $isAjax || $isEmbedded;
+
+// ════════════════════════════════════════════════════════════
+// LOAD CONTEXT / HEADER
+// ════════════════════════════════════════════════════════════
+if ($isFragment) {
+    require_once __DIR__ . '/../includes/admin_context.php';
+} else {
+    require_once __DIR__ . '/../includes/header.php';
 }
 
-$ADMIN_UI_PAYLOAD = $ADMIN_UI_PAYLOAD ?? ($GLOBALS['ADMIN_UI'] ?? []);
-$lang      = $_GET['lang'] ?? $ADMIN_UI_PAYLOAD['lang'] ?? 'ar';
-$rtlLangs  = ['ar', 'fa', 'he', 'ur', 'ps', 'sd', 'ku'];
-$direction = in_array(substr($lang, 0, 2), $rtlLangs, true) ? 'rtl' : 'ltr';
-$strings   = $ADMIN_UI_PAYLOAD['strings'] ?? [];
-$theme     = $ADMIN_UI_PAYLOAD['theme'] ?? [];
-
-$csrf      = htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES);
-$tenantId  = (int)($_GET['tenant_id'] ?? $_SESSION['tenant_id'] ?? 1);
-$entityId  = (int)($_GET['entity_id'] ?? 0);
-$embedded  = !empty($_GET['embedded']);
-$canManage = true;
-
-// Theme colors
-$primaryColor  = $theme['colors_map']['primary'] ?? '#2563eb';
-$background    = $theme['colors_map']['background'] ?? '#0f0f0f';
-$cardBg        = $theme['colors_map']['card-background'] ?? $theme['colors_map']['background-card'] ?? '#1a1a1a';
-$textPrimary   = $theme['colors_map']['text-primary'] ?? '#ffffff';
-$textSecondary = $theme['colors_map']['text-secondary'] ?? '#cccccc';
-$borderColor   = $theme['colors_map']['border'] ?? '#333333';
-$dangerBg      = $theme['colors_map']['danger'] ?? '#450a0a';
-$dangerText    = $theme['colors_map']['danger-text'] ?? '#f87171';
-$successColor  = '#16a34a';
-$fontFamily    = $theme['fonts'][0]['font_family'] ?? "'Segoe UI', sans-serif";
-
-// Translation helper
-function pay_t(string $key, string $fallback = ''): string {
-    global $strings;
-    return $strings[$key] ?? $fallback;
+// ════════════════════════════════════════════════════════════
+// VERIFY USER IS LOGGED IN
+// ════════════════════════════════════════════════════════════
+if (!is_admin_logged_in()) {
+    if ($isFragment) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Not authenticated']);
+        exit;
+    } else {
+        header('Location: /admin/login.php');
+        exit;
+    }
 }
+
+// ════════════════════════════════════════════════════════════
+// GET USER CONTEXT & PERMISSIONS
+// ════════════════════════════════════════════════════════════
+$user     = admin_user();
+$lang     = admin_lang();
+$dir      = admin_dir();
+$csrf     = admin_csrf();
+$tenantId = admin_tenant_id();
+$userId   = admin_user_id();
+
+// ════════════════════════════════════════════════════════════
+// CHECK PERMISSIONS (same pattern as entities.php)
+// ════════════════════════════════════════════════════════════
+$canManageEntities = can('entities.manage') || can('entities.create');
+$canViewAll   = can_view_all('entities');
+$canViewOwn   = can_view_own('entities');
+$canViewTenant = can_view_tenant('entities');
+$canCreate    = can_create('entities');
+$canEditAll   = can_edit_all('entities');
+$canEditOwn   = can_edit_own('entities');
+$canDeleteAll = can_delete_all('entities');
+$canDeleteOwn = can_delete_own('entities');
+
+$canView   = $canViewAll || $canViewOwn || $canViewTenant;
+$canEdit   = $canEditAll || $canEditOwn || $canManageEntities;
+$canDelete = $canDeleteAll || $canDeleteOwn || $canManageEntities;
+$canManage = $canEdit || is_super_admin();
+
+if (!$canView && !is_super_admin()) {
+    if ($isFragment) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Access denied']);
+        exit;
+    } else {
+        http_response_code(403);
+        die('Access denied: You do not have permission to view entity payments');
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// TRANSLATION HELPERS
+// ════════════════════════════════════════════════════════════
+if (!function_exists('__t')) {
+    function __t($key, $fallback = '') {
+        if (function_exists('i18n_get')) {
+            $v = i18n_get($key);
+            return $v ?? ($fallback ?? $key);
+        }
+        return $fallback ?? $key;
+    }
+}
+
+// Local alias for backward compatibility in this file
+if (!function_exists('pay_t')) {
+    function pay_t(string $key, string $fallback = ''): string {
+        return __t($key, $fallback);
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// ENTITY ID & API BASE
+// ════════════════════════════════════════════════════════════
+$entityId = (int)($_GET['entity_id'] ?? 0);
+$apiBase  = '/api';
+
 ?>
-<!DOCTYPE html>
-<html lang="<?= htmlspecialchars($lang) ?>" dir="<?= htmlspecialchars($direction) ?>">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?= pay_t('entity_payments', 'Entity Payments') ?></title>
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-    font-family: <?= $fontFamily ?>;
-    background: <?= $embedded ? 'transparent' : $background ?>;
-    color: <?= $textPrimary ?>;
-    direction: <?= $direction ?>;
-    padding: <?= $embedded ? '0' : '20px' ?>;
-    min-height: <?= $embedded ? 'auto' : '100vh' ?>;
-}
-.pay-card {
-    background: <?= $cardBg ?>;
-    border: 1px solid <?= $borderColor ?>;
-    border-radius: 8px;
-    padding: 20px;
-}
-.pay-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid <?= $borderColor ?>;
-}
-.pay-header h2 { color: <?= $primaryColor ?>; font-size: 1.1rem; }
-.pay-header-actions { display: flex; gap: 8px; }
+<!-- Force load CSS if embedded -->
+<?php if ($isFragment): ?>
+<link rel="stylesheet" href="/admin/assets/css/pages/entities_payment.css?v=<?= time() ?>">
+<?php endif; ?>
 
-/* Entity selector */
-.entity-selector-wrap {
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid <?= $borderColor ?>;
-}
-.entity-selector-wrap label { font-size: 0.8rem; color: <?= $textSecondary ?>; margin-bottom: 4px; display: block; }
-.entity-selector-wrap select {
-    width: 100%;
-    padding: 8px 10px;
-    background: <?= $background ?>;
-    border: 1px solid <?= $borderColor ?>;
-    color: <?= $textPrimary ?>;
-    border-radius: 4px;
-    font-size: 0.85rem;
-}
-.entity-selector-wrap select:focus { outline: none; border-color: <?= $primaryColor ?>; }
+<!-- Page Container -->
+<div class="page-container" id="entitiesPaymentPageContainer" dir="<?= htmlspecialchars($dir) ?>">
 
-/* Tabs */
-.pay-tabs { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 2px solid <?= $borderColor ?>; }
-.pay-tab-btn {
-    padding: 8px 18px;
-    border: none;
-    background: transparent;
-    color: <?= $textSecondary ?>;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.85rem;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -2px;
-    transition: color 0.2s, border-color 0.2s;
-}
-.pay-tab-btn:hover { color: <?= $textPrimary ?>; }
-.pay-tab-btn.active { color: <?= $primaryColor ?>; border-bottom-color: <?= $primaryColor ?>; }
-.pay-tab-content { display: none; }
-.pay-tab-content.active { display: block; }
-
-/* Buttons */
-.btn {
-    padding: 6px 14px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.8rem;
-    transition: opacity 0.2s;
-}
-.btn:hover { opacity: 0.85; }
-.btn-primary { background: <?= $primaryColor ?>; color: #fff; }
-.btn-gray { background: <?= $borderColor ?>; color: <?= $textSecondary ?>; }
-.btn-danger { background: <?= $dangerBg ?>; color: <?= $dangerText ?>; }
-.btn-sm { padding: 4px 10px; font-size: 0.75rem; }
-
-/* Data table */
-.pay-table-wrap { overflow-x: auto; }
-.pay-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.82rem;
-}
-.pay-table th, .pay-table td {
-    padding: 8px 10px;
-    text-align: <?= $direction === 'rtl' ? 'right' : 'left' ?>;
-    border-bottom: 1px solid <?= $borderColor ?>;
-    white-space: nowrap;
-}
-.pay-table th {
-    background: <?= $background ?>;
-    color: <?= $textSecondary ?>;
-    font-weight: 600;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-}
-.pay-table tbody tr:hover { background: <?= $background ?>; }
-.pay-table .actions-cell { display: flex; gap: 4px; }
-
-.badge-yes {
-    display: inline-block;
-    background: <?= $successColor ?>;
-    color: #fff;
-    font-size: 0.7rem;
-    padding: 2px 8px;
-    border-radius: 10px;
-}
-.badge-no {
-    display: inline-block;
-    background: <?= $borderColor ?>;
-    color: <?= $textSecondary ?>;
-    font-size: 0.7rem;
-    padding: 2px 8px;
-    border-radius: 10px;
-}
-
-/* Modal */
-.pay-modal-overlay {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.6);
-    z-index: 9998;
-    justify-content: center;
-    align-items: center;
-}
-.pay-modal-overlay.open { display: flex; }
-.pay-modal {
-    background: <?= $cardBg ?>;
-    border: 1px solid <?= $borderColor ?>;
-    border-radius: 8px;
-    padding: 20px;
-    width: 90%;
-    max-width: 520px;
-    max-height: 90vh;
-    overflow-y: auto;
-}
-.pay-modal h3 {
-    color: <?= $primaryColor ?>;
-    margin-bottom: 14px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid <?= $borderColor ?>;
-    font-size: 0.95rem;
-}
-.form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-}
-.form-group { display: flex; flex-direction: column; gap: 4px; }
-.form-group.full { grid-column: 1 / -1; }
-.form-group label { font-size: 0.8rem; color: <?= $textSecondary ?>; }
-.form-group input, .form-group select {
-    padding: 8px 10px;
-    background: <?= $background ?>;
-    border: 1px solid <?= $borderColor ?>;
-    color: <?= $textPrimary ?>;
-    border-radius: 4px;
-    font-size: 0.85rem;
-}
-.form-group input:focus, .form-group select:focus {
-    outline: none;
-    border-color: <?= $primaryColor ?>;
-}
-.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 14px;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 30px;
-    color: <?= $textSecondary ?>;
-    font-size: 0.9rem;
-}
-.loading-state {
-    text-align: center;
-    padding: 30px;
-    color: <?= $textSecondary ?>;
-}
-.notification {
-    position: fixed;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    z-index: 9999;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-.notification.show { opacity: 1; }
-.notification.success { background: <?= $successColor ?>; color: #fff; }
-.notification.error { background: <?= $dangerBg ?>; color: <?= $dangerText ?>; }
-
-@media (max-width: 600px) {
-    .form-grid { grid-template-columns: 1fr; }
-    .pay-header { flex-direction: column; gap: 8px; align-items: flex-start; }
-}
-</style>
-</head>
-<body>
-
-<div class="pay-card">
-    <div class="pay-header">
-        <h2><?= pay_t('entity_payments', 'Entity Payments') ?></h2>
-        <div class="pay-header-actions">
-            <button type="button" class="btn btn-primary" id="btnAddPaymentMethod">+ <?= pay_t('add_payment_method', 'Add Payment Method') ?></button>
-            <button type="button" class="btn btn-primary" id="btnAddBankAccount">+ <?= pay_t('add_bank_account', 'Add Bank Account') ?></button>
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title"><?= pay_t('entity_payments', 'Entity Payments') ?></h1>
+            <p class="page-subtitle"><?= pay_t('entity_payments_subtitle', 'Manage payment methods and bank accounts') ?></p>
+        </div>
+        <div class="page-header-actions">
+            <?php if ($canManage): ?>
+            <button type="button" class="btn btn-primary" id="btnAddPaymentMethod">
+                <i class="fas fa-plus"></i>
+                <span><?= pay_t('add_payment_method', 'Add Payment Method') ?></span>
+            </button>
+            <button type="button" class="btn btn-primary" id="btnAddBankAccount">
+                <i class="fas fa-plus"></i>
+                <span><?= pay_t('add_bank_account', 'Add Bank Account') ?></span>
+            </button>
+            <?php endif; ?>
         </div>
     </div>
 
     <?php if (!$entityId): ?>
-    <div class="entity-selector-wrap" id="entitySelectorWrap">
-        <label for="entitySelector"><?= pay_t('select_entity', 'Select Entity') ?></label>
-        <select id="entitySelector">
-            <option value=""><?= pay_t('select_entity_placeholder', '-- Select Entity --') ?></option>
-        </select>
+    <div class="card" id="entitySelectorWrap">
+        <div class="card-body">
+            <label for="entitySelector"><?= pay_t('select_entity', 'Select Entity') ?></label>
+            <select id="entitySelector" class="form-control">
+                <option value=""><?= pay_t('select_entity_placeholder', '-- Select Entity --') ?></option>
+            </select>
+        </div>
     </div>
     <?php endif; ?>
 
     <!-- Tabs -->
-    <div class="pay-tabs">
-        <button type="button" class="pay-tab-btn active" data-tab="payment_methods"><?= pay_t('payment_methods', 'Payment Methods') ?></button>
-        <button type="button" class="pay-tab-btn" data-tab="bank_accounts"><?= pay_t('bank_accounts', 'Bank Accounts') ?></button>
-    </div>
+    <div class="card">
+        <div class="card-body">
+            <div class="form-tabs">
+                <button type="button" class="tab-btn active" data-tab="payment_methods">
+                    <i class="fas fa-credit-card"></i>
+                    <span><?= pay_t('payment_methods', 'Payment Methods') ?></span>
+                </button>
+                <button type="button" class="tab-btn" data-tab="bank_accounts">
+                    <i class="fas fa-university"></i>
+                    <span><?= pay_t('bank_accounts', 'Bank Accounts') ?></span>
+                </button>
+            </div>
 
     <!-- Payment Methods Tab -->
-    <div class="pay-tab-content active" id="tab-payment_methods">
+    <div class="tab-content active" id="tab-payment_methods">
         <div id="pmLoading" class="loading-state"><?= pay_t('loading', 'Loading...') ?></div>
         <div id="pmEmpty" class="empty-state" style="display:none;"><?= pay_t('no_payment_methods', 'No payment methods found') ?></div>
-        <div class="pay-table-wrap" id="pmTableWrap" style="display:none;">
-            <table class="pay-table" id="paymentMethodsTable">
+        <div class="table-responsive" id="pmTableWrap" style="display:none;">
+            <table class="data-table" id="paymentMethodsTable">
                 <thead>
                     <tr>
                         <th><?= pay_t('id', 'ID') ?></th>
@@ -300,7 +172,9 @@ body {
                         <th><?= pay_t('account_id', 'Account ID') ?></th>
                         <th><?= pay_t('active', 'Active') ?></th>
                         <th><?= pay_t('created_at', 'Created At') ?></th>
+                        <?php if ($canManage): ?>
                         <th><?= pay_t('actions', 'Actions') ?></th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody id="paymentMethodsBody"></tbody>
@@ -309,11 +183,11 @@ body {
     </div>
 
     <!-- Bank Accounts Tab -->
-    <div class="pay-tab-content" id="tab-bank_accounts">
+    <div class="tab-content" id="tab-bank_accounts">
         <div id="baLoading" class="loading-state"><?= pay_t('loading', 'Loading...') ?></div>
         <div id="baEmpty" class="empty-state" style="display:none;"><?= pay_t('no_bank_accounts', 'No bank accounts found') ?></div>
-        <div class="pay-table-wrap" id="baTableWrap" style="display:none;">
-            <table class="pay-table" id="bankAccountsTable">
+        <div class="table-responsive" id="baTableWrap" style="display:none;">
+            <table class="data-table" id="bankAccountsTable">
                 <thead>
                     <tr>
                         <th><?= pay_t('id', 'ID') ?></th>
@@ -325,25 +199,34 @@ body {
                         <th><?= pay_t('primary', 'Primary') ?></th>
                         <th><?= pay_t('verified', 'Verified') ?></th>
                         <th><?= pay_t('created_at', 'Created At') ?></th>
+                        <?php if ($canManage): ?>
                         <th><?= pay_t('actions', 'Actions') ?></th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody id="bankAccountsBody"></tbody>
             </table>
         </div>
     </div>
-</div>
+        </div>
+    </div>
 
 <!-- Payment Method Modal -->
-<div class="pay-modal-overlay" id="paymentMethodModal">
-    <div class="pay-modal">
-        <h3 id="pmFormTitle"><?= pay_t('add_payment_method', 'Add Payment Method') ?></h3>
+<div class="modal-overlay" id="paymentMethodModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="pmFormTitle"><?= pay_t('add_payment_method', 'Add Payment Method') ?></h3>
+            <button type="button" class="btn btn-sm btn-outline" id="pmCancel" aria-label="<?= pay_t('close', 'Close') ?>">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
         <form id="paymentMethodForm">
             <input type="hidden" id="pmId" value="">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
             <div class="form-grid">
                 <div class="form-group full">
                     <label for="pmGateway"><?= pay_t('gateway_name', 'Gateway') ?> *</label>
-                    <select id="pmGateway" required>
+                    <select id="pmGateway" class="form-control" required>
                         <option value=""><?= pay_t('select', 'Select...') ?></option>
                         <option value="stripe">Stripe</option>
                         <option value="paypal">PayPal</option>
@@ -358,22 +241,22 @@ body {
                 </div>
                 <div class="form-group">
                     <label for="pmEmail"><?= pay_t('account_email', 'Account Email') ?></label>
-                    <input type="email" id="pmEmail">
+                    <input type="email" id="pmEmail" class="form-control">
                 </div>
                 <div class="form-group">
                     <label for="pmAccountId"><?= pay_t('account_id', 'Account ID') ?></label>
-                    <input type="text" id="pmAccountId">
+                    <input type="text" id="pmAccountId" class="form-control">
                 </div>
                 <div class="form-group">
                     <label for="pmActive"><?= pay_t('active', 'Active') ?></label>
-                    <select id="pmActive">
+                    <select id="pmActive" class="form-control">
                         <option value="1"><?= pay_t('yes', 'Yes') ?></option>
                         <option value="0"><?= pay_t('no', 'No') ?></option>
                     </select>
                 </div>
             </div>
             <div class="form-actions">
-                <button type="button" class="btn btn-gray" id="pmCancel"><?= pay_t('cancel', 'Cancel') ?></button>
+                <button type="button" class="btn btn-outline pm-cancel-btn"><?= pay_t('cancel', 'Cancel') ?></button>
                 <button type="submit" class="btn btn-primary"><?= pay_t('save', 'Save') ?></button>
             </div>
         </form>
@@ -381,35 +264,41 @@ body {
 </div>
 
 <!-- Bank Account Modal -->
-<div class="pay-modal-overlay" id="bankAccountModal">
-    <div class="pay-modal">
-        <h3 id="baFormTitle"><?= pay_t('add_bank_account', 'Add Bank Account') ?></h3>
+<div class="modal-overlay" id="bankAccountModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="baFormTitle"><?= pay_t('add_bank_account', 'Add Bank Account') ?></h3>
+            <button type="button" class="btn btn-sm btn-outline" id="baCancel" aria-label="<?= pay_t('close', 'Close') ?>">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
         <form id="bankAccountForm">
             <input type="hidden" id="baId" value="">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
             <div class="form-grid">
                 <div class="form-group">
                     <label for="baBankName"><?= pay_t('bank_name', 'Bank Name') ?> *</label>
-                    <input type="text" id="baBankName" required>
+                    <input type="text" id="baBankName" class="form-control" required>
                 </div>
                 <div class="form-group">
                     <label for="baHolderName"><?= pay_t('account_holder_name', 'Account Holder Name') ?> *</label>
-                    <input type="text" id="baHolderName" required>
+                    <input type="text" id="baHolderName" class="form-control" required>
                 </div>
                 <div class="form-group">
                     <label for="baAccountNumber"><?= pay_t('account_number', 'Account Number') ?> *</label>
-                    <input type="text" id="baAccountNumber" required>
+                    <input type="text" id="baAccountNumber" class="form-control" required>
                 </div>
                 <div class="form-group">
                     <label for="baIban"><?= pay_t('iban', 'IBAN') ?></label>
-                    <input type="text" id="baIban">
+                    <input type="text" id="baIban" class="form-control">
                 </div>
                 <div class="form-group">
                     <label for="baSwift"><?= pay_t('swift_code', 'SWIFT Code') ?></label>
-                    <input type="text" id="baSwift">
+                    <input type="text" id="baSwift" class="form-control">
                 </div>
                 <div class="form-group">
                     <label for="baPrimary"><?= pay_t('is_primary', 'Primary') ?></label>
-                    <select id="baPrimary">
+                    <select id="baPrimary" class="form-control">
                         <option value="0"><?= pay_t('no', 'No') ?></option>
                         <option value="1"><?= pay_t('yes', 'Yes') ?></option>
                     </select>
@@ -417,7 +306,7 @@ body {
                 <?php if ($canManage): ?>
                 <div class="form-group">
                     <label for="baVerified"><?= pay_t('is_verified', 'Verified') ?></label>
-                    <select id="baVerified">
+                    <select id="baVerified" class="form-control">
                         <option value="0"><?= pay_t('no', 'No') ?></option>
                         <option value="1"><?= pay_t('yes', 'Yes') ?></option>
                     </select>
@@ -425,12 +314,14 @@ body {
                 <?php endif; ?>
             </div>
             <div class="form-actions">
-                <button type="button" class="btn btn-gray" id="baCancel"><?= pay_t('cancel', 'Cancel') ?></button>
+                <button type="button" class="btn btn-outline ba-cancel-btn"><?= pay_t('cancel', 'Cancel') ?></button>
                 <button type="submit" class="btn btn-primary"><?= pay_t('save', 'Save') ?></button>
             </div>
         </form>
     </div>
 </div>
+
+</div><!-- end page-container -->
 
 <div class="notification" id="notification"></div>
 
@@ -438,11 +329,16 @@ body {
 window.ENTITIES_PAYMENT_CONFIG = {
     entityId: <?= $entityId ?>,
     tenantId: <?= $tenantId ?>,
+    userId: <?= $userId ?>,
     csrfToken: <?= json_encode($csrf) ?>,
     apiBase: '/api',
     canManage: <?= $canManage ? 'true' : 'false' ?>,
+    canView: <?= $canView ? 'true' : 'false' ?>,
+    canCreate: <?= ($canCreate || $canManage) ? 'true' : 'false' ?>,
+    canEdit: <?= $canEdit ? 'true' : 'false' ?>,
+    canDelete: <?= $canDelete ? 'true' : 'false' ?>,
+    isSuperAdmin: <?= is_super_admin() ? 'true' : 'false' ?>,
     lang: <?= json_encode($lang) ?>,
-    embedded: <?= $embedded ? 'true' : 'false' ?>,
     texts: {
         addPaymentMethod: <?= json_encode(pay_t('add_payment_method', 'Add Payment Method')) ?>,
         editPaymentMethod: <?= json_encode(pay_t('edit_payment_method', 'Edit Payment Method')) ?>,
@@ -459,6 +355,3 @@ window.ENTITIES_PAYMENT_CONFIG = {
 };
 </script>
 <script src="/admin/assets/js/pages/entities_payment.js?v=<?= time() ?>"></script>
-
-</body>
-</html>

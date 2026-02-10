@@ -52,8 +52,8 @@ document.addEventListener('DOMContentLoaded', function () {
     function notify(msg, type) {
         if (!notification) return;
         notification.textContent = msg;
-        notification.className = type + ' show';
-        setTimeout(function () { notification.className = ''; }, 3000);
+        notification.className = 'notification ' + type + ' show';
+        setTimeout(function () { notification.className = 'notification'; }, 3000);
     }
 
     function openModal(el) { if (el) el.classList.add('open'); }
@@ -74,10 +74,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // ===========================
     // Tabs
     // ===========================
-    document.querySelectorAll('.pay-tab-btn').forEach(function (btn) {
+    document.querySelectorAll('.tab-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
-            document.querySelectorAll('.pay-tab-btn').forEach(function (b) { b.classList.remove('active'); });
-            document.querySelectorAll('.pay-tab-content').forEach(function (c) { c.classList.remove('active'); });
+            document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+            document.querySelectorAll('.tab-content').forEach(function (c) { c.classList.remove('active'); });
             btn.classList.add('active');
             var target = document.getElementById('tab-' + btn.dataset.tab);
             if (target) target.classList.add('active');
@@ -238,6 +238,11 @@ document.addEventListener('DOMContentLoaded', function () {
         resetPmForm();
     });
 
+    document.querySelector('.pm-cancel-btn')?.addEventListener('click', function () {
+        closeModal(pmModal);
+        resetPmForm();
+    });
+
     pmModal?.addEventListener('click', function (e) {
         if (e.target === pmModal) { closeModal(pmModal); resetPmForm(); }
     });
@@ -317,6 +322,11 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.getElementById('baCancel')?.addEventListener('click', function () {
+        closeModal(baModal);
+        resetBaForm();
+    });
+
+    document.querySelector('.ba-cancel-btn')?.addEventListener('click', function () {
         closeModal(baModal);
         resetBaForm();
     });
