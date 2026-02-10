@@ -1271,13 +1271,24 @@
 
         if (previewEl) {
             if (imageUrl) {
-                previewEl.innerHTML = `
-                    <div style="position:relative; display:inline-block;">
-                        <img src="${esc(imageUrl)}" style="max-width:100%; max-height:200px; border-radius:4px;">
-                        <button type="button" onclick="Entities.deleteImage('${esc(imageType)}')" 
-                                style="position:absolute; top:4px; right:4px; background:rgba(220,38,38,0.9); color:#fff; border:none; border-radius:50%; width:28px; height:28px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center;"
-                                title="${t('form.media.delete', 'Delete image')}">✕</button>
-                    </div>`;
+                const wrapper = document.createElement('div');
+                wrapper.style.cssText = 'position:relative; display:inline-block;';
+
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.style.cssText = 'max-width:100%; max-height:200px; border-radius:4px;';
+                wrapper.appendChild(img);
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.textContent = '✕';
+                btn.title = t('form.media.delete', 'Delete image');
+                btn.style.cssText = 'position:absolute; top:4px; right:4px; background:rgba(220,38,38,0.9); color:#fff; border:none; border-radius:50%; width:28px; height:28px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center;';
+                btn.addEventListener('click', () => deleteEntityImage(imageType));
+                wrapper.appendChild(btn);
+
+                previewEl.innerHTML = '';
+                previewEl.appendChild(wrapper);
             } else {
                 previewEl.innerHTML = `<div class="placeholder">${t(`form.media.no_${imageType}`, `No ${imageType} selected`)}</div>`;
             }
@@ -1373,7 +1384,11 @@
             if (!imageTypeId) return;
 
             // Delete from images API
-            await apiCall(`/api/images/by_owner?owner_id=${state.currentEntity.id}&image_type_id=${imageTypeId}`, {
+            const deleteParams = new URLSearchParams({
+                owner_id: String(state.currentEntity.id),
+                image_type_id: String(imageTypeId)
+            });
+            await apiCall(`/api/images/by_owner?${deleteParams}`, {
                 method: 'DELETE'
             });
 
