@@ -1,0 +1,267 @@
+/* admin/assets/css/mobile-responsive.css
+ * Mobile Responsive Styles - Fixed for all issues
+ */
+
+/* ════════════════════════════════════════════════════════════
+   TABLET (768px - 1024px)
+   ════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1024px) {
+    .container {
+        max-width: 100%;
+        padding: 0 1rem;
+    }
+
+    .admin-main {
+        padding: 1.5rem;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE (max-width: 768px)
+   ════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+    
+    /* Header - Stack search on new line */
+    .admin-header {
+        flex-wrap: wrap !important;
+        height: auto !important;
+        padding: 0.75rem 1rem !important;
+        gap: 0.75rem !important;
+    }
+
+    .header-left {
+        order: 1 !important;
+        flex: 0 0 auto !important;
+        gap: 0.75rem !important;
+    }
+
+    .header-right {
+        order: 2 !important;
+        flex: 0 0 auto !important;
+        margin-left: auto !important;
+        gap: 0.75rem !important;
+    }
+
+    /* Search moves to new line */
+    .header-center {
+        order: 3 !important;
+        flex: 1 1 100% !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-top: 0.75rem !important;
+    }
+
+    .search-wrap {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    #adminSearch {
+        width: 100% !important;
+    }
+
+    /* Hide user info text on mobile */
+    .user-info {
+        display: none !important;
+    }
+
+    /* Sidebar - Fixed mobile drawer */
+    .admin-sidebar {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        height: 100vh !important;
+        width: 280px !important;
+        transform: translateX(-100%) !important;
+        z-index: 1001 !important;
+        transition: transform 0.3s ease !important;
+        box-shadow: 4px 0 12px rgba(0,0,0,0.3) !important;
+    }
+
+    [dir="rtl"] .admin-sidebar {
+        left: auto !important;
+        right: 0 !important;
+        transform: translateX(100%) !important;
+        box-shadow: -4px 0 12px rgba(0,0,0,0.3) !important;
+    }
+
+    body.sidebar-open .admin-sidebar {
+        transform: translateX(0) !important;
+    }
+
+    /* Sidebar backdrop - only show when open */
+    .sidebar-backdrop {
+        display: none !important;
+    }
+
+    body.sidebar-open .sidebar-backdrop {
+        display: block !important;
+        opacity: 1 !important;
+    }
+
+    /* Main content */
+    .admin-main {
+        padding: 1rem !important;
+        width: 100% !important;
+    }
+
+    /* Dashboard cards */
+    .dash-card,
+    .dashboard-section {
+        padding: 1.25rem !important;
+        margin-bottom: 1.25rem !important;
+    }
+
+    /* Colors grid */
+    .colors-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+        gap: 1rem !important;
+    }
+
+    .color-card {
+        padding: 0.875rem !important;
+    }
+
+    .color-preview {
+        height: 70px !important;
+    }
+
+    /* Modal */
+    .admin-modal-panel {
+        width: calc(100vw - 2rem) !important;
+        max-height: calc(100vh - 2rem) !important;
+        padding: 1.25rem !important;
+    }
+
+    /* Tables */
+    table {
+        font-size: 0.875rem !important;
+    }
+
+    /* Buttons */
+    .icon-btn {
+        width: 38px !important;
+        height: 38px !important;
+    }
+
+    #sidebarToggle {
+        width: 42px !important;
+        height: 42px !important;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   SMALL MOBILE (max-width: 480px)
+   ════════════════════════════════════════════════════════════ */
+
+@media (max-width: 480px) {
+    
+    .admin-header {
+        padding: 0.5rem 0.75rem !important;
+    }
+
+    .header-left,
+    .header-right {
+        gap: 0.5rem !important;
+    }
+
+    .brand {
+        font-size: 1rem !important;
+    }
+
+    .brand-logo {
+        max-height: 32px !important;
+    }
+
+    .admin-main {
+        padding: 0.75rem !important;
+    }
+
+    .dash-card,
+    .dashboard-section {
+        padding: 1rem !important;
+        border-radius: 8px !important;
+    }
+
+    .dash-title {
+        font-size: 1.5rem !important;
+    }
+
+    /* Colors grid - 2 columns on very small screens */
+    .colors-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.75rem !important;
+    }
+
+    .color-card {
+        padding: 0.75rem !important;
+    }
+
+    .color-preview {
+        height: 60px !important;
+    }
+
+    .color-name {
+        font-size: 0.875rem !important;
+    }
+
+    .color-code {
+        font-size: 0.75rem !important;
+    }
+
+    /* Copy feedback */
+    .copy-feedback {
+        bottom: 1rem !important;
+        right: 1rem !important;
+        left: 1rem !important;
+        width: auto !important;
+        font-size: 0.875rem !important;
+        padding: 0.75rem 1rem !important;
+    }
+
+    /* Footer */
+    .admin-footer {
+        padding: 1rem !important;
+        font-size: 0.8125rem !important;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   LANDSCAPE MODE (Mobile horizontal)
+   ══��═════════════════════════════════════════════════════════ */
+
+@media (max-height: 500px) and (orientation: landscape) {
+    .admin-header {
+        position: relative !important;
+    }
+
+    .admin-sidebar {
+        top: 0 !important;
+        height: 100vh !important;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   PRINT
+   ════════════════════════════════════════════════════════════ */
+
+@media print {
+    .admin-header,
+    .admin-sidebar,
+    .sidebar-backdrop,
+    .admin-footer,
+    .copy-feedback {
+        display: none !important;
+    }
+
+    .admin-main {
+        padding: 0 !important;
+    }
+
+    .dash-card {
+        border: 1px solid #ccc !important;
+        page-break-inside: avoid !important;
+    }
+}

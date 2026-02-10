@@ -1,0 +1,341 @@
+/* admin/assets/css/modal.css
+ * Production Modal Styles - Complete & Clean
+ * Does NOT interfere with dashboard color slider
+ */
+
+/* ════════════════════════════════════════════════════════════
+   MODAL BACKDROP
+   ════════════════════════════════════════════════════════════ */
+
+.admin-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 13000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    overflow-y: auto;
+}
+
+.admin-modal-backdrop.show {
+    opacity: 1;
+}
+
+/* ════════════════════════════════════════════════════════════
+   MODAL PANEL
+   ════════════════════════════════════════════════════════════ */
+
+.admin-modal-panel {
+    position: relative;
+    width: 920px;
+    max-width: 100%;
+    max-height: 90vh;
+    background: var(--background-secondary, #1e293b);
+    border: 1px solid var(--border-color, #334155);
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    padding: 1.5rem;
+    overflow-y: auto;
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
+    z-index: 13001;
+}
+
+.admin-modal-backdrop.show .admin-modal-panel {
+    transform: scale(1);
+}
+
+/* ════════════════════════════════════════════════════════════
+   MODAL HEADER
+   ════════════════════════════════════════════════════════════ */
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color, #334155);
+}
+
+.modal-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary, #fff);
+    margin: 0;
+}
+
+.modal-close {
+    background: transparent;
+    border: 1px solid var(--border-color, #334155);
+    color: var(--text-primary, #fff);
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 1.25rem;
+}
+
+.modal-close:hover {
+    background: var(--error-color, #ef4444);
+    border-color: var(--error-color, #ef4444);
+    transform: rotate(90deg);
+}
+
+/* ════════════════════════════════════════════════════════════
+   MODAL BODY
+   ════════════════════════════════════════════════════════════ */
+
+.modal-body {
+    padding: 0;
+    color: var(--text-primary, #fff);
+}
+
+.modal-body p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+.modal-body h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.25rem;
+}
+
+.modal-body h3:first-child {
+    margin-top: 0;
+}
+
+/* ════════════════════════════════════════════════════════════
+   MODAL FOOTER
+   ════════════════════════════════════════════════════════════ */
+
+.modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--border-color, #334155);
+}
+
+.modal-footer button {
+    padding: 0.625rem 1.25rem;
+    border-radius: 6px;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.modal-footer .btn-primary {
+    background: var(--primary-color, #3b82f6);
+    color: #fff;
+    border-color: var(--primary-color, #3b82f6);
+}
+
+.modal-footer .btn-primary:hover {
+    background: var(--primary-hover, #2563eb);
+    border-color: var(--primary-hover, #2563eb);
+}
+
+.modal-footer .btn-secondary {
+    background: transparent;
+    color: var(--text-primary, #fff);
+    border-color: var(--border-color, #334155);
+}
+
+.modal-footer .btn-secondary:hover {
+    background: var(--border-color, #334155);
+}
+
+/* ════════════════════════════════════════════════════════════
+   MODAL FORMS
+   ════════════════════════════════════════════════════════════ */
+
+.modal-body form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.modal-body .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.modal-body label {
+    font-weight: 500;
+    color: var(--text-primary, #fff);
+    font-size: 0.9375rem;
+}
+
+.modal-body input,
+.modal-body textarea,
+.modal-body select {
+    background: var(--background-main, #0a0a0a);
+    border: 1px solid var(--border-color, #334155);
+    color: var(--text-primary, #fff);
+    padding: 0.625rem;
+    border-radius: 6px;
+    font-size: 0.9375rem;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.modal-body input:focus,
+.modal-body textarea:focus,
+.modal-body select:focus {
+    border-color: var(--primary-color, #3b82f6);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.modal-body textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* ════════════════════════════════════════════════════════════
+   BODY LOCK WHEN MODAL OPEN
+   ════════════════════════════════════════════════════════════ */
+
+body.modal-open {
+    overflow: hidden;
+    padding-right: 0;
+}
+
+/* ════════════════════════════════════════════════════════════
+   CRITICAL: PREVENT MODAL FROM AFFECTING OTHER ELEMENTS
+   ════════════════════════════════════════════════════════════ */
+
+/* Ensure modal doesn't trigger sidebar backdrop */
+.admin-modal-backdrop {
+    pointer-events: auto;
+}
+
+.admin-modal-backdrop > * {
+    pointer-events: auto;
+}
+
+/* Don't let modal clicks propagate to body */
+.admin-modal-panel {
+    pointer-events: auto;
+}
+
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE - MOBILE
+   ════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+    .admin-modal-backdrop {
+        padding: 0.75rem;
+    }
+
+    .admin-modal-panel {
+        width: 100%;
+        max-height: calc(100vh - 1.5rem);
+        padding: 1.25rem;
+        border-radius: 10px;
+    }
+
+    .modal-header {
+        padding-bottom: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .modal-title {
+        font-size: 1.25rem;
+    }
+
+    .modal-footer {
+        flex-direction: column-reverse;
+        gap: 0.5rem;
+    }
+
+    .modal-footer button {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-modal-backdrop {
+        padding: 0.5rem;
+    }
+
+    .admin-modal-panel {
+        padding: 1rem;
+        border-radius: 8px;
+    }
+
+    .modal-title {
+        font-size: 1.125rem;
+    }
+
+    .modal-body input,
+    .modal-body textarea,
+    .modal-body select {
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   MODAL SCROLLBAR
+   ════════════════════════════════════════════════════════════ */
+
+.admin-modal-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.admin-modal-panel::-webkit-scrollbar-track {
+    background: var(--background-main, #0a0a0a);
+    border-radius: 4px;
+}
+
+.admin-modal-panel::-webkit-scrollbar-thumb {
+    background: var(--border-color, #334155);
+    border-radius: 4px;
+}
+
+.admin-modal-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color, #3b82f6);
+}
+
+/* ════════════════════════════════════════════════════════════
+   PROTECTED CLASSES - DO NOT TOUCH
+   These belong to dashboard and should not be affected by modal
+   ════════════════════════════════════════════════════════════ */
+
+/* Dashboard elements that modal must NOT touch:
+   - .colors-grid
+   - .color-card
+   - .color-preview
+   - .color-name
+   - .color-code
+   - .copy-feedback
+   - .dash-card
+   - .dashboard-section
+   - .slider-btn (if exists)
+   - #colorSliderContainer (if exists)
+*/
+
+/* ════════════════════════════════════════════════════════════
+   END OF FILE
+   ════════════════════════════════════════════════════════════ */

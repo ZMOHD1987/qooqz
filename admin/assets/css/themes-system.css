@@ -1,0 +1,143 @@
+/**
+ * themes-system.css
+ * All colors via CSS variables (from DB), hardcoded hex only as fallbacks
+ */
+
+/* ── Layout ── */
+.themes-page .page-container { max-width:1400px; margin:0 auto; padding:16px; }
+.themes-page .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px; }
+.themes-page .page-header-right,
+.themes-page .page-header-actions { display:flex; gap:8px; align-items:center; }
+.themes-page .header-info { display:flex; flex-direction:column; }
+.themes-page .page-title { margin:0; font-size:1.5rem; font-weight:700; color:var(--text-primary,#fff); }
+.themes-page .page-subtitle { margin:0; color:var(--text-secondary,#94a3b8); font-size:0.85rem; }
+
+/* ── Buttons ── */
+.themes-page .btn { padding:8px 16px; border-radius:8px; cursor:pointer; font-size:0.9rem; display:inline-flex; align-items:center; gap:6px; transition:all .2s; border:none; }
+.themes-page .btn-primary { background:var(--primary-color,#3b82f6); color:#fff; border:1px solid var(--primary-color,#3b82f6); }
+.themes-page .btn-secondary { background:var(--secondary-color,#64748b); color:#fff; border:1px solid var(--secondary-color,#64748b); }
+.themes-page .btn-outline { background:transparent; color:var(--text-primary,#fff); border:1px solid var(--border-color,#263044); }
+.themes-page .btn-danger { background:var(--danger-color,#ef4444); color:#fff; border:1px solid var(--danger-color,#ef4444); }
+.themes-page .btn-sm { padding:4px 10px; font-size:0.8rem; }
+.themes-page .btn-xs { padding:2px 8px; font-size:0.75rem; border-radius:4px; }
+.themes-page .btn:hover { opacity:.85; }
+
+/* ── Card ── */
+.themes-page .card { background:var(--card-bg,#081127); border:1px solid var(--border-color,#263044); border-radius:12px; margin-bottom:16px; overflow:hidden; }
+.themes-page .card-header { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid var(--border-color,#263044); }
+.themes-page .card-header h3 { margin:0; font-size:1rem; color:var(--text-primary,#fff); }
+.themes-page .card-body { padding:16px; }
+
+/* ── Form ── */
+.themes-page .form-card { display:none; }
+.themes-page .form-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:12px; margin-bottom:12px; }
+.themes-page .form-group { display:flex; flex-direction:column; }
+.themes-page .form-group label { font-size:0.85rem; margin-bottom:6px; color:var(--text-secondary,#94a3b8); }
+.themes-page .form-group .form-control,
+.themes-page .form-control,
+.themes-page input[type="text"],
+.themes-page input[type="number"],
+.themes-page input[type="url"],
+.themes-page input[type="color"],
+.themes-page select,
+.themes-page textarea { padding:8px 10px; border-radius:8px; background:var(--input-bg,#0b1220); color:var(--text-primary,#fff); border:1px solid var(--border-color,#263044); font-size:0.9rem; width:100%; box-sizing:border-box; }
+.themes-page input:focus,
+.themes-page select:focus,
+.themes-page textarea:focus { border-color:var(--primary-color,#3b82f6); outline:none; }
+.themes-page .form-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; padding-top:12px; border-top:1px solid var(--border-color,#263044); }
+
+/* ── Table ── */
+.themes-page .table-responsive { overflow-x:auto; }
+.themes-page .data-table { width:100%; border-collapse:collapse; }
+.themes-page .data-table thead { background:var(--thead-bg,#061021); border-bottom:1px solid var(--border-color,#263044); }
+.themes-page .data-table th { padding:12px; text-align:left; font-size:0.8rem; color:var(--text-secondary,#94a3b8); text-transform:uppercase; }
+.themes-page .data-table td { padding:12px; font-size:0.95rem; color:var(--text-primary,#fff); border-bottom:1px solid var(--border-color,#263044); }
+.themes-page .data-table tr:hover { background:rgba(255,255,255,0.02); }
+.themes-page .actions-cell { display:flex; gap:4px; }
+
+/* ── Badges ── */
+.themes-page .badge { padding:3px 10px; border-radius:20px; font-size:0.75rem; font-weight:600; display:inline-block; }
+.themes-page .badge-success { background:rgba(34,197,94,0.15); color:var(--success-color,#22c55e); }
+.themes-page .badge-danger { background:rgba(239,68,68,0.15); color:var(--danger-color,#ef4444); }
+.themes-page .badge-info { background:rgba(59,130,246,0.15); color:var(--primary-color,#3b82f6); }
+.themes-page .badge-primary { background:rgba(59,130,246,0.15); color:var(--primary-color,#3b82f6); }
+.themes-page .badge-secondary { background:rgba(100,116,139,0.15); color:var(--secondary-color,#64748b); }
+
+/* ── Tabs ── */
+.themes-page .tabs-nav,
+.themes-page .form-tabs { display:flex; gap:0; border-bottom:1px solid var(--border-color,#263044); margin-bottom:16px; overflow-x:auto; }
+.themes-page .tab-btn,
+.themes-page .form-tab { padding:10px 16px; background:transparent; border:none; color:var(--text-secondary,#94a3b8); cursor:pointer; font-size:0.85rem; border-bottom:2px solid transparent; white-space:nowrap; transition:all .2s; }
+.themes-page .tab-btn:hover,
+.themes-page .form-tab:hover { color:var(--text-primary,#fff); }
+.themes-page .tab-btn.active,
+.themes-page .form-tab.active { color:var(--primary-color,#3b82f6); border-bottom-color:var(--primary-color,#3b82f6); }
+.themes-page .tab-panel { display:none; }
+.themes-page .tab-panel.active { display:block; }
+.themes-page .tab-content { display:none; }
+.themes-page .tab-content.active { display:block; }
+
+/* ── Settings Items List ── */
+.themes-page .settings-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.themes-page .settings-header h4 { margin:0; font-size:0.95rem; color:var(--text-primary,#fff); }
+.themes-page .settings-list { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+.themes-page .setting-item,
+.themes-page .settings-item { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--input-bg,#0b1220); border:1px solid var(--border-color,#263044); border-radius:8px; }
+.themes-page .setting-item-info,
+.themes-page .settings-item-content { flex:1; }
+.themes-page .setting-item-name { font-weight:600; color:var(--text-primary,#fff); font-size:0.9rem; }
+.themes-page .setting-item-detail { font-size:0.8rem; color:var(--text-secondary,#94a3b8); margin-top:2px; }
+.themes-page .setting-value { font-size:0.8rem; color:var(--text-secondary,#94a3b8); margin-top:2px; word-break:break-all; }
+.themes-page .setting-item-actions,
+.themes-page .settings-item-actions { display:flex; gap:4px; flex-shrink:0; }
+.themes-page .color-swatch { display:inline-block; width:20px; height:20px; border-radius:4px; border:1px solid var(--border-color,#263044); vertical-align:middle; margin-right:6px; }
+.themes-page .empty-settings { text-align:center; padding:20px; color:var(--text-secondary,#94a3b8); font-size:0.85rem; }
+.themes-page .status-inactive { color:var(--danger-color,#ef4444); font-size:0.7rem; margin-left:6px; }
+
+/* ── Inline Add/Edit Form ── */
+.themes-page .inline-form { background:var(--card-bg,#081127); border:1px solid var(--border-color,#263044); border-radius:8px; padding:12px; margin-top:8px; display:none; }
+.themes-page .inline-form.show { display:block; }
+.themes-page .inline-form-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.themes-page .inline-form-header h4 { margin:0; font-size:0.9rem; color:var(--text-primary,#fff); }
+.themes-page .inline-form-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:10px; }
+
+/* ── Alerts ── */
+.themes-page .alert { padding:12px 16px; border-radius:8px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; font-size:0.9rem; }
+.themes-page .alert-success { background:rgba(34,197,94,0.1); color:var(--success-color,#22c55e); border:1px solid rgba(34,197,94,0.2); }
+.themes-page .alert-danger { background:rgba(239,68,68,0.1); color:var(--danger-color,#ef4444); border:1px solid rgba(239,68,68,0.2); }
+.themes-page .alert-info { background:rgba(59,130,246,0.1); color:var(--primary-color,#3b82f6); border:1px solid rgba(59,130,246,0.2); }
+.themes-page .alert-close { background:none; border:none; color:inherit; cursor:pointer; font-size:1.2rem; padding:0 4px; opacity:0.7; }
+.themes-page .alert-close:hover { opacity:1; }
+
+/* ── Filters ── */
+.themes-page .filters-bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+.themes-page .search-input,
+.themes-page .search-box input { padding:8px 12px; border-radius:8px; background:var(--input-bg,#0b1220); color:var(--text-primary,#fff); border:1px solid var(--border-color,#263044); min-width:200px; font-size:0.9rem; }
+.themes-page .filter-select,
+.themes-page .filter-group select { padding:8px 12px; border-radius:8px; background:var(--input-bg,#0b1220); color:var(--text-primary,#fff); border:1px solid var(--border-color,#263044); font-size:0.9rem; }
+
+/* ── States ── */
+.themes-page .loading-state,
+.themes-page .empty-state { text-align:center; padding:40px 20px; color:var(--text-secondary,#94a3b8); }
+.themes-page .loading-state .spinner { width:40px; height:40px; border:4px solid var(--border-color,#263044); border-top-color:var(--primary-color,#3b82f6); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 12px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── RTL ── */
+[dir="rtl"] .themes-page .data-table th,
+[dir="rtl"] .themes-page .data-table td { text-align:right; }
+[dir="rtl"] .themes-page .page-header { flex-direction:row-reverse; }
+[dir="rtl"] .themes-page .form-actions { flex-direction:row-reverse; }
+[dir="rtl"] .themes-page .actions-cell { flex-direction:row-reverse; }
+[dir="rtl"] .themes-page .color-swatch { margin-right:0; margin-left:6px; }
+[dir="rtl"] .themes-page .status-inactive { margin-left:0; margin-right:6px; }
+[dir="rtl"] .themes-page .settings-item-actions { flex-direction:row-reverse; }
+
+/* ── Responsive ── */
+@media(max-width:768px) {
+    .themes-page .form-row { grid-template-columns:1fr; }
+    .themes-page .page-header { flex-direction:column; align-items:flex-start; }
+    .themes-page .filters-bar { flex-direction:column; }
+    .themes-page .form-tabs { flex-wrap:wrap; }
+    .themes-page .settings-item { flex-direction:column; align-items:flex-start; gap:8px; }
+    .themes-page .settings-item-actions { align-self:flex-end; }
+}
