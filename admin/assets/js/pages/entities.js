@@ -791,11 +791,21 @@
                 featured_in_app: document.getElementById('settingFeaturedInApp')?.value === '1' ? 1 : 0
             };
 
-            await apiCall(API.settings, {
-                method: isEdit ? 'PUT' : 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(settings)
-            });
+            // Try PUT first (update), if it fails try POST (create)
+            try {
+                await apiCall(API.settings, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+            } catch (putErr) {
+                console.warn('[Entities] PUT settings failed, trying POST:', putErr.message);
+                await apiCall(API.settings, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+            }
         } catch (err) {
             console.warn('[Entities] Failed to save settings:', err);
         }
@@ -1261,7 +1271,13 @@
 
         if (previewEl) {
             if (imageUrl) {
-                previewEl.innerHTML = `<img src="${esc(imageUrl)}" style="max-width:100%; max-height:200px; border-radius:4px;">`;
+                previewEl.innerHTML = `
+                    <div style="position:relative; display:inline-block;">
+                        <img src="${esc(imageUrl)}" style="max-width:100%; max-height:200px; border-radius:4px;">
+                        <button type="button" onclick="Entities.deleteImage('${esc(imageType)}')" 
+                                style="position:absolute; top:4px; right:4px; background:rgba(220,38,38,0.9); color:#fff; border:none; border-radius:50%; width:28px; height:28px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center;"
+                                title="${t('form.media.delete', 'Delete image')}">✕</button>
+                    </div>`;
             } else {
                 previewEl.innerHTML = `<div class="placeholder">${t(`form.media.no_${imageType}`, `No ${imageType} selected`)}</div>`;
             }
@@ -1342,6 +1358,36 @@
             }
         } catch (err) {
             console.warn('[Entities] Failed to update entity media URL:', err);
+        }
+    }
+
+    async function deleteEntityImage(imageType) {
+        if (!state.currentEntity?.id) return;
+
+        if (!confirm(t('messages.confirm_delete_image', 'Are you sure you want to delete this image?'))) {
+            return;
+        }
+
+        try {
+            const imageTypeId = IMAGE_TYPES[imageType.toUpperCase()];
+            if (!imageTypeId) return;
+
+            // Delete from images API
+            await apiCall(`/api/images/by_owner?owner_id=${state.currentEntity.id}&image_type_id=${imageTypeId}`, {
+                method: 'DELETE'
+            });
+
+            // Clear the media URL on the entity
+            await updateEntityMediaUrl(imageType, null);
+
+            // Clear preview
+            mediaUrls[imageType] = null;
+            updateMediaPreview(imageType, null);
+
+            showNotification(t('messages.image_deleted', 'Image deleted successfully'), 'success');
+        } catch (err) {
+            console.error('[Entities] Failed to delete image:', err);
+            showNotification(t('messages.error.delete_failed', 'Failed to delete image'), 'error');
         }
     }
 
@@ -1657,7 +1703,14 @@
         try {
             const result = await apiCall(`${API.attributeValues}?entity_id=${entityId}&format=json`);
             if (result.success) {
-                const items = Array.isArray(result.data) ? result.data : [];
+                let items = [];
+                if (Array.isArray(result.data)) {
+                    items = result.data;
+                } else if (result.data && Array.isArray(result.data.items)) {
+                    items = result.data.items;
+                } else if (result.data && Array.isArray(result.data.data)) {
+                    items = result.data.data;
+                }
 
                 const attrs = [];
                 for (const item of items) {
@@ -1665,8 +1718,8 @@
 
                     attrs.push({
                         attribute_id: item.attribute_id,
-                        attribute_name: attrInfo?.name || item.attribute_slug || `Attribute #${item.attribute_id}`,
-                        attribute_type: attrInfo?.attribute_type || 'text',
+                        attribute_name: attrInfo?.name || item.attribute_name || item.attribute_slug || `Attribute #${item.attribute_id}`,
+                        attribute_type: attrInfo?.attribute_type || item.attribute_type || 'text',
                         value: item.value || ''
                     });
                 }
@@ -1682,19 +1735,19 @@
     async function loadEntitySettings(entityId) {
         try {
             const result = await apiCall(`${API.settings}?entity_id=${entityId}&format=json`);
-            if (result.success) {
+            if (result.success && result.data) {
                 const settings = result.data;
                 state.entitySettings = settings;
 
-                if (el.settingAutoAcceptOrders) el.settingAutoAcceptOrders.value = settings.auto_accept_orders || '0';
-                if (el.settingAllowCod) el.settingAllowCod.value = settings.allow_cod || '0';
-                if (el.settingMinOrderAmount) el.settingMinOrderAmount.value = settings.min_order_amount || '0.00';
-                if (el.settingAllowOnlineBooking) el.settingAllowOnlineBooking.value = settings.allow_online_booking || '0';
-                if (el.settingBookingWindowDays) el.settingBookingWindowDays.value = settings.booking_window_days || '0';
-                if (el.settingMaxBookingsPerSlot) el.settingMaxBookingsPerSlot.value = settings.max_bookings_per_slot || '0';
-                if (el.settingShowReviews) el.settingShowReviews.value = settings.show_reviews || '1';
-                if (el.settingShowContactInfo) el.settingShowContactInfo.value = settings.show_contact_info || '1';
-                if (el.settingFeaturedInApp) el.settingFeaturedInApp.value = settings.featured_in_app || '0';
+                if (el.settingAutoAcceptOrders) el.settingAutoAcceptOrders.value = settings.auto_accept_orders != null ? String(settings.auto_accept_orders) : '0';
+                if (el.settingAllowCod) el.settingAllowCod.value = settings.allow_cod != null ? String(settings.allow_cod) : '0';
+                if (el.settingMinOrderAmount) el.settingMinOrderAmount.value = settings.min_order_amount != null ? String(settings.min_order_amount) : '0.00';
+                if (el.settingAllowOnlineBooking) el.settingAllowOnlineBooking.value = settings.allow_online_booking != null ? String(settings.allow_online_booking) : '0';
+                if (el.settingBookingWindowDays) el.settingBookingWindowDays.value = settings.booking_window_days != null ? String(settings.booking_window_days) : '0';
+                if (el.settingMaxBookingsPerSlot) el.settingMaxBookingsPerSlot.value = settings.max_bookings_per_slot != null ? String(settings.max_bookings_per_slot) : '0';
+                if (el.settingShowReviews) el.settingShowReviews.value = settings.show_reviews != null ? String(settings.show_reviews) : '1';
+                if (el.settingShowContactInfo) el.settingShowContactInfo.value = settings.show_contact_info != null ? String(settings.show_contact_info) : '1';
+                if (el.settingFeaturedInApp) el.settingFeaturedInApp.value = settings.featured_in_app != null ? String(settings.featured_in_app) : '0';
             }
         } catch (err) {
             console.warn('[Entities] Failed to load settings:', err);
@@ -2099,7 +2152,8 @@
             setDirectionForLang(lang);
             loadEntities(state.page);
         },
-        handleImageSelected
+        handleImageSelected,
+        deleteImage: deleteEntityImage
     };
 
     // Fragment support

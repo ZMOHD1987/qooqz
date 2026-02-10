@@ -123,11 +123,20 @@ final class PdoEntitiesRepository
         if (!empty($data['id'])) {
             $stmt = $this->pdo->prepare("
                 UPDATE entities SET
+                    store_name = :store_name,
+                    slug = :slug,
+                    is_main = :is_main,
+                    branch_code = :branch_code,
                     status = :status,
                     vendor_type = :vendor_type,
                     store_type = :store_type,
+                    registration_number = :registration_number,
+                    tax_number = :tax_number,
                     phone = :phone,
+                    mobile = :mobile,
                     email = :email,
+                    website_url = :website_url,
+                    suspension_reason = :suspension_reason,
                     is_verified = :is_verified,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE tenant_id = :tenant_id AND id = :id
@@ -135,11 +144,20 @@ final class PdoEntitiesRepository
             $stmt->execute([
                 ':id'=>$data['id'],
                 ':tenant_id'=>$tenantId,
-                ':status'=>$data['status'],
-                ':vendor_type'=>$data['vendor_type'],
-                ':store_type'=>$data['store_type'],
+                ':store_name'=>$data['store_name'] ?? null,
+                ':slug'=>$data['slug'] ?? null,
+                ':is_main'=>$data['is_main'] ?? 1,
+                ':branch_code'=>$data['branch_code'] ?? null,
+                ':status'=>$data['status'] ?? 'pending',
+                ':vendor_type'=>$data['vendor_type'] ?? 'product_seller',
+                ':store_type'=>$data['store_type'] ?? 'individual',
+                ':registration_number'=>$data['registration_number'] ?? null,
+                ':tax_number'=>$data['tax_number'] ?? null,
                 ':phone'=>$data['phone'],
+                ':mobile'=>$data['mobile'] ?? null,
                 ':email'=>$data['email'],
+                ':website_url'=>$data['website_url'] ?? null,
+                ':suspension_reason'=>$data['suspension_reason'] ?? null,
                 ':is_verified'=>$data['is_verified'] ?? 0
             ]);
             return (int)$data['id'];
@@ -148,10 +166,18 @@ final class PdoEntitiesRepository
         $stmt = $this->pdo->prepare("
             INSERT INTO entities (
                 tenant_id, user_id, store_name, slug,
-                vendor_type, store_type, phone, email
+                is_main, branch_code,
+                vendor_type, store_type,
+                registration_number, tax_number,
+                phone, mobile, email, website_url,
+                status, is_verified
             ) VALUES (
                 :tenant_id, :user_id, :store_name, :slug,
-                :vendor_type, :store_type, :phone, :email
+                :is_main, :branch_code,
+                :vendor_type, :store_type,
+                :registration_number, :tax_number,
+                :phone, :mobile, :email, :website_url,
+                :status, :is_verified
             )
         ");
         $stmt->execute([
@@ -159,10 +185,18 @@ final class PdoEntitiesRepository
             ':user_id'=>$data['user_id'],
             ':store_name'=>$data['store_name'],
             ':slug'=>$data['slug'],
-            ':vendor_type'=>$data['vendor_type'],
-            ':store_type'=>$data['store_type'],
+            ':is_main'=>$data['is_main'] ?? 1,
+            ':branch_code'=>$data['branch_code'] ?? null,
+            ':vendor_type'=>$data['vendor_type'] ?? 'product_seller',
+            ':store_type'=>$data['store_type'] ?? 'individual',
+            ':registration_number'=>$data['registration_number'] ?? null,
+            ':tax_number'=>$data['tax_number'] ?? null,
             ':phone'=>$data['phone'],
-            ':email'=>$data['email']
+            ':mobile'=>$data['mobile'] ?? null,
+            ':email'=>$data['email'],
+            ':website_url'=>$data['website_url'] ?? null,
+            ':status'=>$data['status'] ?? 'pending',
+            ':is_verified'=>$data['is_verified'] ?? 0
         ]);
 
         return (int)$this->pdo->lastInsertId();
