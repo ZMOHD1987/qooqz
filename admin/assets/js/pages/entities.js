@@ -288,12 +288,12 @@
                 updated: msg.updated || s.update_success || 'Updated successfully',
                 deleted: msg.deleted || s.delete_success || 'Deleted successfully',
                 confirm_delete: s.confirm_delete || 'Are you sure?',
-                address_saved: msg.address_saved || s.address_saved || 'Address saved successfully',
-                address_deleted: msg.address_deleted || s.address_deleted || 'Address deleted successfully',
-                image_saved: msg.image_saved || s.image_saved || 'Image saved successfully',
-                image_deleted: msg.image_deleted || s.image_deleted || 'Image deleted successfully',
+                address_saved: msg.address_saved || 'Address saved successfully',
+                address_deleted: msg.address_deleted || 'Address deleted successfully',
+                image_saved: msg.image_saved || 'Image saved successfully',
+                image_deleted: msg.image_deleted || 'Image deleted successfully',
                 save_first: s.save_first || 'Please save the entity first',
-                try_again: msg.try_again || s.try_again || 'Please try again',
+                try_again: msg.try_again || 'Please try again',
                 attribute_exists: s.attribute_exists || 'Attribute already added',
                 translation_exists: s.translation_exists || 'Translation already added'
             },
@@ -308,11 +308,11 @@
                 translation_exists: s.translation_exists || 'Translation already added',
                 save_first: s.save_first || 'Please save the entity first',
                 confirm_delete: s.confirm_delete || 'Are you sure?',
-                address_saved: s.address_saved || 'Address saved successfully',
-                address_deleted: s.address_deleted || 'Address deleted successfully',
-                try_again: s.try_again || 'Please try again',
-                image_saved: s.image_saved || 'Image saved successfully',
-                image_deleted: s.image_deleted || 'Image deleted successfully'
+                address_saved: msg.address_saved || 'Address saved successfully',
+                address_deleted: msg.address_deleted || 'Address deleted successfully',
+                try_again: msg.try_again || 'Please try again',
+                image_saved: msg.image_saved || 'Image saved successfully',
+                image_deleted: msg.image_deleted || 'Image deleted successfully'
             }
         };
     }

@@ -41,11 +41,6 @@
         "confirm_delete": "هل أنت متأكد؟",
         "no_entities": "لا توجد كيانات",
         "manage_entities": "إدارة الكيانات والفروع",
-        "try_again": "حاول مرة أخرى",
-        "image_saved": "تم حفظ الصورة بنجاح",
-        "image_deleted": "تم حذف الصورة بنجاح",
-        "address_saved": "تم حفظ العنوان بنجاح",
-        "address_deleted": "تم حذف العنوان بنجاح",
         "general": {
             "general": "عام",
             "basic": "معلومات أساسية",

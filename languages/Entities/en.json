@@ -41,11 +41,6 @@
         "confirm_delete": "Are you sure?",
         "no_entities": "No Entities Found",
         "manage_entities": "Manage your entities and branches",
-        "try_again": "Please try again",
-        "image_saved": "Image saved successfully",
-        "image_deleted": "Image deleted successfully",
-        "address_saved": "Address saved successfully",
-        "address_deleted": "Address deleted successfully",
         "general": {
             "general": "General",
             "basic": "Basic Info",
