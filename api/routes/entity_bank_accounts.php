@@ -11,11 +11,9 @@ $pdo = $GLOBALS['ADMIN_DB'];
 
 $tenantId = (int)($_SESSION['tenant_id'] ?? 0);
 
-// Parse JSON body for POST/PUT/DELETE
-$data = json_decode(file_get_contents('php://input'), true) ?? [];
-if (empty($data) && !empty($_POST)) {
-    $data = $_POST;
-}
+// Parse request body data (supports JSON, FormData for POST/PUT/DELETE)
+require_once __DIR__.'/../shared/helpers/request_parser.php';
+$data = parse_request_data();
 
 // Get entity_id from query string or parsed body
 $entityId = (int)($_REQUEST['entity_id'] ?? $data['entity_id'] ?? 0);
