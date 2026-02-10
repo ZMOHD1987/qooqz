@@ -182,12 +182,19 @@ try {
             }
             
             // DELETE /api/entities_attribute_values - حذف قيمة محددة
-            if (empty($data['id']) || !is_numeric($data['id'])) {
+            $deleteId = null;
+            if (!empty($data['id']) && is_numeric($data['id'])) {
+                $deleteId = (int)$data['id'];
+            } elseif (!empty($_GET['id']) && is_numeric($_GET['id'])) {
+                $deleteId = (int)$_GET['id'];
+            }
+            
+            if (!$deleteId) {
                 ResponseFormatter::error('ID is required', 400);
                 exit;
             }
             
-            $controller->delete((int)$data['id']);
+            $controller->delete($deleteId);
             ResponseFormatter::success(null, 'Deleted successfully');
             break;
 

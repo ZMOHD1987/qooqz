@@ -67,7 +67,8 @@ final class EntitiesWorkingHoursService
 
     public function getByEntity(int $entityId): array
     {
-        return $this->repo->all(['entity_id' => $entityId], 100);
+        $result = $this->repo->all(['entity_id' => $entityId], 100);
+        return $result['items'] ?? [];
     }
 
     public function deleteByEntity(int $entityId): void

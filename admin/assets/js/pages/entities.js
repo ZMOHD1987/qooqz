@@ -1414,7 +1414,8 @@
 
         const iframe = document.createElement('iframe');
         iframe.id = 'addressFrame';
-        iframe.src = `${CONFIG.addressesFragment}?embedded=1&tenant_id=${state.tenantId}&lang=${state.language}&owner_type=entity&owner_id=${ownerId}`;
+        const addressFragmentUrl = CONFIG.addressesFragment || '/admin/fragments/addresses.php';
+        iframe.src = `${addressFragmentUrl}?embedded=1&tenant_id=${state.tenantId}&lang=${state.language}&owner_type=entity&owner_id=${ownerId}`;
         iframe.style = 'width:100%; height:500px; border:none;';
         iframe.onload = () => {
             document.getElementById('addressLoading')?.remove();
@@ -2043,13 +2044,6 @@
         // Message listeners
         if (!_messageListenerAdded) {
             _messageListenerAdded = true;
-            window.addEventListener('message', function (e) {
-                handleAddressMessage(e);
-            });
-        }
-
-        if (!_addressMessageListenerAdded) {
-            _addressMessageListenerAdded = true;
             window.addEventListener('message', handleAddressMessage);
         }
 

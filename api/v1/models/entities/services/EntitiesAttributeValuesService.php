@@ -134,20 +134,6 @@ final class EntitiesAttributeValuesService
      */
     public function getStatistics(): array
     {
-        $stats = [];
-        
-        // إجمالي القيم
-        $stmt = $this->repo->getPdo()->query("SELECT COUNT(*) as total FROM entities_attribute_values");
-        $stats['total_values'] = (int)$stmt->fetchColumn();
-        
-        // إجمالي الكيانات التي لها قيم
-        $stmt = $this->repo->getPdo()->query("SELECT COUNT(DISTINCT entity_id) as entities_with_values FROM entities_attribute_values");
-        $stats['entities_with_values'] = (int)$stmt->fetchColumn();
-        
-        // إجمالي الخصائص التي لها قيم
-        $stmt = $this->repo->getPdo()->query("SELECT COUNT(DISTINCT attribute_id) as attributes_with_values FROM entities_attribute_values");
-        $stats['attributes_with_values'] = (int)$stmt->fetchColumn();
-        
-        return $stats;
+        return $this->repo->getStatistics();
     }
 }
