@@ -233,11 +233,11 @@ body {
                     <input type="text" id="fLine2">
                 </div>
                 <div class="form-group">
-                    <label for="fCountry"><?= addr_t('country', 'Country ID') ?></label>
+                    <label for="fCountry"><?= addr_t('country', 'Country') ?></label>
                     <input type="number" id="fCountry" min="0">
                 </div>
                 <div class="form-group">
-                    <label for="fCity"><?= addr_t('city', 'City ID') ?></label>
+                    <label for="fCity"><?= addr_t('city', 'City') ?></label>
                     <input type="number" id="fCity" min="0">
                 </div>
                 <div class="form-group">
