@@ -77,10 +77,10 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.pay-tab-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
             document.querySelectorAll('.pay-tab-btn').forEach(function (b) { b.classList.remove('active'); });
-            document.querySelectorAll('.pay-tab-content').forEach(function (c) { c.style.display = 'none'; });
+            document.querySelectorAll('.pay-tab-content').forEach(function (c) { c.classList.remove('active'); });
             btn.classList.add('active');
             var target = document.getElementById('tab-' + btn.dataset.tab);
-            if (target) target.style.display = '';
+            if (target) target.classList.add('active');
         });
     });
 
@@ -93,7 +93,8 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(function (r) { return r.json(); })
             .then(function (d) {
                 if (!d.success || !d.data) return;
-                d.data.forEach(function (ent) {
+                var items = Array.isArray(d.data) ? d.data : (d.data.items || []);
+                items.forEach(function (ent) {
                     var opt = document.createElement('option');
                     opt.value = ent.id;
                     opt.textContent = ent.store_name || ent.name;
@@ -144,6 +145,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 pmBody.innerHTML = '';
                 items.forEach(function (p) {
                     var tr = document.createElement('tr');
+                    var editData = encodeURIComponent(JSON.stringify({
+                        gateway_name: p.gateway_name || '',
+                        account_email: p.account_email || '',
+                        account_id: p.account_id || '',
+                        is_active: p.is_active ? 1 : 0
+                    }));
                     tr.innerHTML =
                         '<td>' + esc(p.id) + '</td>' +
                         '<td>' + esc(p.gateway_name) + '</td>' +
@@ -153,7 +160,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         '<td>' + formatDate(p.created_at) + '</td>' +
                         '<td><div class="actions-cell">' +
                             (CFG.canManage
-                                ? '<button type="button" class="btn-sm pm-edit" data-id="' + p.id + '">Edit</button>' +
+                                ? '<button type="button" class="btn-sm pm-edit" data-id="' + p.id + '" data-row="' + editData + '">Edit</button>' +
                                   '<button type="button" class="btn-sm pm-delete" data-id="' + p.id + '">Delete</button>'
                                 : '') +
                         '</div></td>';
@@ -181,6 +188,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (baTableWrap) baTableWrap.style.display = '';
                 baBody.innerHTML = '';
                 items.forEach(function (b) {
+                    var editData = encodeURIComponent(JSON.stringify({
+                        bank_name: b.bank_name || '',
+                        account_holder_name: b.account_holder_name || '',
+                        account_number: b.account_number || '',
+                        iban: b.iban || '',
+                        swift_code: b.swift_code || '',
+                        is_primary: b.is_primary ? 1 : 0,
+                        is_verified: b.is_verified ? 1 : 0
+                    }));
                     var tr = document.createElement('tr');
                     tr.innerHTML =
                         '<td>' + esc(b.id) + '</td>' +
@@ -194,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         '<td>' + formatDate(b.created_at) + '</td>' +
                         '<td><div class="actions-cell">' +
                             (CFG.canManage
-                                ? '<button type="button" class="btn-sm ba-edit" data-id="' + b.id + '">Edit</button>' +
+                                ? '<button type="button" class="btn-sm ba-edit" data-id="' + b.id + '" data-row="' + editData + '">Edit</button>' +
                                   '<button type="button" class="btn-sm ba-delete" data-id="' + b.id + '">Delete</button>'
                                 : '') +
                         '</div></td>';
@@ -230,13 +246,12 @@ document.addEventListener('DOMContentLoaded', function () {
     pmBody?.addEventListener('click', function (e) {
         var btn = e.target.closest('.pm-edit');
         if (btn) {
-            var row = btn.closest('tr');
-            var cells = row.querySelectorAll('td');
+            var data = JSON.parse(decodeURIComponent(btn.dataset.row));
             document.getElementById('pmId').value = btn.dataset.id;
-            document.getElementById('pmGateway').value = cells[1].textContent;
-            document.getElementById('pmEmail').value = cells[2].textContent === '-' ? '' : cells[2].textContent;
-            document.getElementById('pmAccountId').value = cells[3].textContent === '-' ? '' : cells[3].textContent;
-            document.getElementById('pmActive').checked = !!cells[4].querySelector('.badge-yes');
+            document.getElementById('pmGateway').value = data.gateway_name;
+            document.getElementById('pmEmail').value = data.account_email;
+            document.getElementById('pmAccountId').value = data.account_id;
+            document.getElementById('pmActive').value = String(data.is_active);
             document.getElementById('pmFormTitle').textContent = TXT.editPaymentMethod || 'Edit Payment Method';
             openModal(pmModal);
             return;
@@ -268,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function () {
             gateway_name: document.getElementById('pmGateway').value,
             account_email: document.getElementById('pmEmail').value,
             account_id: document.getElementById('pmAccountId').value,
-            is_active: document.getElementById('pmActive').checked ? 1 : 0
+            is_active: parseInt(document.getElementById('pmActive').value, 10) || 0
         };
         if (isEdit) payload.id = parseInt(pmIdVal, 10);
 
@@ -314,16 +329,16 @@ document.addEventListener('DOMContentLoaded', function () {
     baBody?.addEventListener('click', function (e) {
         var btn = e.target.closest('.ba-edit');
         if (btn) {
-            var row = btn.closest('tr');
-            var cells = row.querySelectorAll('td');
+            var data = JSON.parse(decodeURIComponent(btn.dataset.row));
             document.getElementById('baId').value = btn.dataset.id;
-            document.getElementById('baBankName').value = cells[1].textContent;
-            document.getElementById('baHolderName').value = cells[2].textContent;
-            document.getElementById('baAccountNumber').value = cells[3].textContent;
-            document.getElementById('baIban').value = cells[4].textContent === '-' ? '' : cells[4].textContent;
-            document.getElementById('baSwift').value = cells[5].textContent === '-' ? '' : cells[5].textContent;
-            document.getElementById('baPrimary').checked = !!cells[6].querySelector('.badge-yes');
-            document.getElementById('baVerified').checked = !!cells[7].querySelector('.badge-yes');
+            document.getElementById('baBankName').value = data.bank_name;
+            document.getElementById('baHolderName').value = data.account_holder_name;
+            document.getElementById('baAccountNumber').value = data.account_number;
+            document.getElementById('baIban').value = data.iban;
+            document.getElementById('baSwift').value = data.swift_code;
+            document.getElementById('baPrimary').value = String(data.is_primary);
+            var verifiedEl = document.getElementById('baVerified');
+            if (verifiedEl) verifiedEl.value = String(data.is_verified);
             document.getElementById('baFormTitle').textContent = TXT.editBankAccount || 'Edit Bank Account';
             openModal(baModal);
             return;
@@ -357,8 +372,8 @@ document.addEventListener('DOMContentLoaded', function () {
             account_number: document.getElementById('baAccountNumber').value,
             iban: document.getElementById('baIban').value,
             swift_code: document.getElementById('baSwift').value,
-            is_primary: document.getElementById('baPrimary').checked ? 1 : 0,
-            is_verified: document.getElementById('baVerified').checked ? 1 : 0
+            is_primary: parseInt(document.getElementById('baPrimary').value, 10) || 0,
+            is_verified: parseInt((document.getElementById('baVerified') || {}).value || '0', 10) || 0
         };
         if (isEdit) payload.id = parseInt(baIdVal, 10);
 

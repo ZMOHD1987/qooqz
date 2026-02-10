@@ -1,10 +1,19 @@
-.page-container { padding: 20px; font-family: Arial; }
-.card { margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; }
-.tabs { margin-top: 10px; }
-.tab-btn { margin-right: 5px; padding: 5px 10px; cursor: pointer; }
-.tab-btn.active { background-color: #007bff; color: #fff; }
-.tab-content { display: none; margin-top: 10px; }
-.tab-content.active { display: block; }
-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-table th, table td { border: 1px solid #ccc; padding: 5px; text-align: left; }
-button { cursor: pointer; }
+/* /admin/assets/css/pages/entities_payment.css */
+/* Supplemental styles - main styling is inline in the PHP fragment */
+/* This file provides print styles and additional responsive rules */
+
+@media print {
+    .pay-header-actions,
+    .actions-cell,
+    .pay-modal-overlay,
+    .notification,
+    .entity-selector-wrap { display: none !important; }
+    .pay-table th, .pay-table td { border: 1px solid #ddd; color: #000; }
+    body { background: #fff; color: #000; }
+}
+
+@media (max-width: 480px) {
+    .pay-tabs { flex-wrap: wrap; }
+    .pay-tab-btn { flex: 1; text-align: center; min-width: 0; }
+    .btn-sm { padding: 3px 6px; font-size: 0.7rem; }
+}
