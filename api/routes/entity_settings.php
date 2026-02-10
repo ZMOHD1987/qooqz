@@ -104,7 +104,19 @@ try {
                 if ($item) {
                     ResponseFormatter::success($item);
                 } else {
-                    ResponseFormatter::error('Entity settings not found', 404);
+                    // Return default settings when none exist yet for this entity
+                    ResponseFormatter::success([
+                        'entity_id' => (int)$_GET['entity_id'],
+                        'auto_accept_orders' => 0,
+                        'allow_cod' => 0,
+                        'min_order_amount' => 0,
+                        'allow_online_booking' => 0,
+                        'booking_window_days' => 0,
+                        'max_bookings_per_slot' => 0,
+                        'show_reviews' => 1,
+                        'show_contact_info' => 1,
+                        'featured_in_app' => 0
+                    ]);
                 }
             } else {
                 $result = $controller->list($limit, $offset, $filters, $orderBy, $orderDir);
