@@ -1,0 +1,114 @@
+{
+    "theme_manager": {
+        "title": "إدارة النسق",
+        "subtitle": "إدارة وتخصيص مظهر لوحة الإدارة",
+        "add_new": "إضافة نسق جديد",
+        "export": "تصدير",
+        "loading": "جاري تحميل النسق...",
+        "retry": "إعادة المحاولة",
+        "form": {
+            "add_title": "إضافة نسق",
+            "edit_title": "تعديل النسق",
+            "buttons": {
+                "save": "حفظ",
+                "cancel": "إلغاء"
+            },
+            "fields": {
+                "name": {
+                    "label": "اسم النسق",
+                    "placeholder": "أدخل اسم النسق",
+                    "required": "اسم النسق مطلوب"
+                },
+                "slug": {
+                    "label": "المعرف",
+                    "placeholder": "معرف النسق",
+                    "required": "معرف النسق مطلوب"
+                },
+                "description": {
+                    "label": "الوصف",
+                    "placeholder": "أدخل وصف النسق"
+                },
+                "version": {
+                    "label": "الإصدار",
+                    "placeholder": "1.0.0",
+                    "invalid": "يجب أن يكون الإصدار بالشكل x.x.x"
+                },
+                "author": {
+                    "label": "المؤلف",
+                    "placeholder": "اسم المؤلف"
+                },
+                "primary_color": {
+                    "label": "اللون الأساسي"
+                },
+                "status": {
+                    "label": "الحالة",
+                    "active": "نشط",
+                    "inactive": "غير نشط"
+                },
+                "is_default": "تعيين كنسق افتراضي"
+            }
+        },
+        "filters": {
+            "search": "بحث",
+            "search_placeholder": "بحث في النسق...",
+            "status": "الحالة",
+            "type": "النوع",
+            "apply": "تطبيق",
+            "reset": "إعادة تعيين",
+            "status_options": {
+                "all": "جميع الحالات",
+                "active": "نشط",
+                "inactive": "غير نشط"
+            },
+            "type_options": {
+                "all": "جميع الأنواع",
+                "default": "افتراضي",
+                "custom": "مخصص"
+            }
+        },
+        "table": {
+            "empty": {
+                "title": "لا توجد نسق",
+                "message": "ابدأ بإنشاء أول نسق لك",
+                "add_first": "إضافة أول نسق"
+            },
+            "actions": {
+                "edit": "تعديل",
+                "delete": "حذف",
+                "activate": "تفعيل",
+                "preview": "معاينة"
+            }
+        },
+        "status": {
+            "active": "نشط",
+            "inactive": "غير نشط",
+            "default": "افتراضي"
+        },
+        "preview": {
+            "title": "معاينة النسق",
+            "close": "إغلاق",
+            "apply": "تطبيق النسق"
+        },
+        "messages": {
+            "success": {
+                "save": "تم حفظ النسق بنجاح",
+                "delete": "تم حذف النسق بنجاح",
+                "activate": "تم تفعيل النسق بنجاح"
+            },
+            "error": {
+                "load_failed": "فشل في تحميل النسق",
+                "save_failed": "فشل في حفظ النسق",
+                "delete_failed": "فشل في حذف النسق",
+                "activate_failed": "فشل في تفعيل النسق",
+                "preview_failed": "فشل في معاينة النسق"
+            },
+            "confirm": {
+                "delete": "هل أنت متأكد من حذف هذا النسق؟ لا يمكن التراجع عن هذا الإجراء.",
+                "activate": "هل أنت متأكد من تفعيل هذا النسق؟ سيتم إلغاء تفعيل النسق الحالي."
+            }
+        }
+    },
+    "accessibility": {
+        "close": "إغلاق"
+    }
+}

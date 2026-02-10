@@ -1,0 +1,130 @@
+{
+  "name": "المنتجات",
+  "direction": "rtl",
+  "strings": {
+    "products": "المنتجات",
+    "product": "منتج",
+    "title": "المنتجات",
+    "create": "إضافة منتج",
+    "edit": "تعديل منتج",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "delete_confirm": "هل أنت متأكد من حذف هذا المنتج؟",
+    "delete_success": "تم حذف المنتج بنجاح",
+    "save_success": "تم حفظ المنتج بنجاح",
+    "update_success": "تم تحديث المنتج بنجاح",
+    "loading": "جارٍ التحميل...",
+    "saving": "جارٍ الحفظ...",
+    "deleting": "جارٍ الحذف...",
+    "no_products": "لا توجد منتجات",
+    "search_placeholder": "بحث بالاسم أو رمز SKU أو الاسم المستعار...",
+    "refresh": "تحديث",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "featured": "مميز",
+    "bestseller": "الأكثر مبيعاً",
+    "new_product": "جديد",
+    "actions": "الإجراءات",
+    "total": "المجموع",
+    "general": {
+      "general": "معلومات عامة",
+      "name": "الاسم",
+      "default_name": "الاسم الافتراضي",
+      "sku": "رمز المنتج",
+      "slug": "الاسم المستعار",
+      "barcode": "الباركود",
+      "type": "النوع",
+      "brand": "العلامة التجارية",
+      "manufacturer": "الشركة المصنعة",
+      "published_at": "تاريخ النشر",
+      "short_description": "وصف قصير",
+      "description": "الوصف",
+      "yes": "نعم",
+      "no": "لا",
+      "choose": "اختر",
+      "select": "حدد",
+      "simple": "بسيط",
+      "variable": "متغير",
+      "digital": "رقمي",
+      "bundle": "حزمة"
+    },
+    "pricing": {
+      "pricing": "التسعير",
+      "price": "السعر",
+      "compare_at_price": "سعر المقارنة",
+      "cost_price": "سعر التكلفة",
+      "tax_rate": "معدل الضريبة"
+    },
+    "inventory": {
+      "inventory": "المخزون",
+      "stock_quantity": "كمية المخزون",
+      "low_stock_threshold": "حد المخزون المنخفض",
+      "stock_status": "حالة المخزون",
+      "manage_stock": "إدارة المخزون",
+      "allow_backorder": "السماح بالطلب المسبق",
+      "in_stock": "متوفر",
+      "out_of_stock": "غير متوفر",
+      "on_backorder": "طلب مسبق"
+    },
+    "dimensions": {
+      "dimensions": "الأبعاد",
+      "weight": "الوزن",
+      "length": "الطول",
+      "width": "العرض",
+      "height": "الارتفاع"
+    },
+    "media": {
+      "images": "الصور",
+      "select_from_studio": "اختر من استوديو الوسائط"
+    },
+    "categories": {
+      "categories": "التصنيفات",
+      "hierarchy_info": "اختر تصنيف رئيسي واحد وتصنيفات ثانوية متعددة"
+    },
+    "attributes": {
+      "attributes": "الخصائص",
+      "attribute": "خاصية",
+      "value": "قيمة",
+      "custom_value": "قيمة مخصصة",
+      "add_attribute": "إضافة خاصية",
+      "remove": "إزالة"
+    },
+    "variants": {
+      "variants": "المتغيرات",
+      "variant_sku": "رمز المتغير",
+      "variant_stock": "مخزون المتغير",
+      "variant_price": "سعر المتغير",
+      "variant_active": "متغير نشط",
+      "remove_variant": "إزالة المتغير",
+      "generate_variants": "توليد المتغيرات",
+      "generate_from_attributes": "توليد المتغيرات من الخصائص أو إضافة يدوياً"
+    },
+    "translations": {
+      "translations": "الترجمات",
+      "toggle_translations": "عرض/إخفاء الترجمات",
+      "fill_from_default": "ملء من الافتراضي",
+      "add_language": "إضافة لغة",
+      "each_language_panel": "كل لوحة لغة تحتوي على جميع الحقول",
+      "collapse": "طي",
+      "open": "فتح",
+      "short_description": "وصف قصير",
+      "specifications": "المواصفات",
+      "meta_title": "عنوان الميتا",
+      "meta_description": "وصف الميتا",
+      "meta_keywords": "كلمات الميتا المفتاحية",
+      "enter_language_code": "أدخل رمز اللغة (مثل ar)",
+      "enter_language_name": "أدخل اسم اللغة (مثل العربية)",
+      "remove_language": "إزالة اللغة"
+    },
+    "validation": {
+      "sku_required": "رمز المنتج مطلوب",
+      "name_required": "اسم المنتج مطلوب"
+    },
+    "messages": {
+      "are_you_sure": "هل أنت متأكد؟",
+      "network_error": "حدث خطأ في الشبكة",
+      "server_error": "حدث خطأ في الخادم"
+    }
+  }
+}

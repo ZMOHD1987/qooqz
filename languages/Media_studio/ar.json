@@ -1,0 +1,86 @@
+{
+    "media_studio_title": "استوديو الوسائط",
+    "media_studio_subtitle": "إدارة الصور وملفات الوسائط",
+    "add_image_button": "إضافة صورة",
+    "upload_images_button": "رفع الصور",
+    "select_button": "تحديد",
+    "confirm_selection": "تأكيد الاختيار",
+    "selected": "محدد",
+    
+    "form_add_title": "إضافة صورة",
+    "form_edit_title": "تعديل الصورة",
+    "upload_title": "رفع الصور",
+    
+    "label_owner_id": "معرّف المالك",
+    "label_image_type": "نوع الصورة",
+    "label_tenant_id": "معرّف المستأجر",
+    "label_upload_files": "اختيار الصور",
+    
+    "placeholder_owner_id": "أدخل معرّف المالك",
+    "placeholder_image_type": "اختر أو ابحث عن النوع",
+    "placeholder_filter_filename": "البحث باسم الملف",
+    "placeholder_filter_type": "كل الأنواع",
+    
+    "save_button": "حفظ",
+    "cancel_button": "إلغاء",
+    "upload_button": "رفع",
+    "saving": "جاري الحفظ...",
+    "uploading": "جاري الرفع...",
+    
+    "filter_filename_label": "اسم الملف",
+    "filter_type_label": "نوع الصورة",
+    "filter_visibility_label": "الظهور",
+    "filter_apply": "تطبيق الفلاتر",
+    "filter_reset": "إعادة تعيين الفلاتر",
+    
+    "all_visibility": "كل حالات الظهور",
+    "public_option": "عام",
+    "private_option": "خاص",
+    
+    "table_image": "الصورة",
+    "table_id": "المعرف",
+    "table_filename": "اسم الملف",
+    "table_owner": "معرف المالك",
+    "table_type": "النوع",
+    "table_visibility": "الظهور",
+    "table_created_at": "تاريخ الإنشاء",
+    "table_actions": "الإجراءات",
+    
+    "loading_images": "جاري تحميل الصور...",
+    "showing_results": "عرض {from} إلى {to} من {total} نتيجة",
+    "showing_results_range": "عرض {from}-{to} من {total}",
+    "item": "عنصر",
+    "items": "عناصر",
+    
+    "empty_title": "لم يتم العثور على صور",
+    "empty_description": "ابدأ بإضافة صور",
+    "empty_add_button": "إضافة أول صورة",
+    
+    "error_title": "خطأ في تحميل البيانات",
+    "error_message": "حدث خطأ أثناء تحميل الصور",
+    "retry_button": "إعادة المحاولة",
+    
+    "edit": "تعديل",
+    "delete": "حذف",
+    "select": "تحديد",
+    
+    "upload_hint": "يمكنك اختيار أكثر من صورة. الحد الأقصى لحجم الملف: 5 ميجابايت للصورة الواحدة.",
+    
+    "success_saved": "تم حفظ الصورة بنجاح",
+    "success_uploaded": "تم رفع الصور بنجاح",
+    "success_deleted": "تم حذف الصورة بنجاح",
+    "success_selected": "تم تحديد {count} صورة",
+    
+    "error_invalid_owner_id": "الرجاء إدخال معرف مالك صحيح",
+    "error_invalid_image_type": "الرجاء اختيار نوع صورة صالح",
+    "error_no_files_selected": "الرجاء اختيار صورة واحدة على الأقل",
+    "error_no_selection": "الرجاء اختيار صورة واحدة على الأقل",
+    "error_item_not_found": "الصورة غير موجودة",
+    "error_save_failed": "فشل حفظ الصورة",
+    "error_upload_failed": "فشل رفع الصور",
+    "error_delete_failed": "فشل حذف الصورة",
+    "error_loading_data": "خطأ في تحميل البيانات: {error}",
+    "error_network": "خطأ في الشبكة. الرجاء المحاولة مرة أخرى.",
+    
+    "confirm_delete": "هل أنت متأكد أنك تريد حذف هذه الصورة؟"
+}

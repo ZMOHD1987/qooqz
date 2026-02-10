@@ -1,0 +1,149 @@
+{
+  "categories": {
+    "title": "الفئات",
+    "subtitle": "إدارة فئات المنتجات والمحتوى",
+    "add_new": "إضافة فئة",
+    "loading": "جارٍ التحميل...",
+    "no_data": "لا توجد بيانات",
+    "error": "حدث خطأ",
+    "retry": "إعادة المحاولة"
+  },
+  "table": {
+    "headers": {
+      "id": "المعرف",
+      "tenant": "المشترك",
+      "image": "الصورة",
+      "name": "الاسم",
+      "slug": "الرابط",
+      "parent": "الأصل",
+      "sort_order": "ترتيب الفرز",
+      "status": "الحالة",
+      "featured": "مميز",
+      "actions": "الإجراءات"
+    },
+    "actions": {
+      "edit": "تعديل",
+      "delete": "حذف",
+      "duplicate": "نسخ",
+      "confirm_delete": "هل أنت متأكد من أنك تريد حذف هذه الفئة؟ هذا الإجراء لا يمكن التراجع عنه."
+    },
+    "status": {
+      "active": "نشط",
+      "inactive": "غير نشط"
+    },
+    "empty": {
+      "title": "لا توجد فئات",
+      "message": "ابدأ بإضافة فئات",
+      "add_first": "إضافة الفئة الأولى"
+    }
+  },
+  "filters": {
+    "search": "البحث",
+    "search_placeholder": "البحث...",
+    "tenant_id": "معرف المشترك",
+    "tenant_placeholder": "فلترة حسب المشترك",
+    "parent_id": "معرف الأصل",
+    "parent_options": {
+      "all": "جميع الأصول"
+    },
+    "status": "الحالة",
+    "status_options": {
+      "all": "جميع الحالات",
+      "active": "نشط",
+      "inactive": "غير نشط"
+    },
+    "featured": "مميز",
+    "featured_options": {
+      "all": "الكل",
+      "yes": "مميز",
+      "no": "غير مميز"
+    },
+    "apply": "تطبيق",
+    "reset": "إعادة تعيين"
+  },
+  "form": {
+    "add_title": "إضافة فئة",
+    "edit_title": "تعديل فئة",
+    "fields": {
+      "tenant_id": {
+        "label": "معرف المشترك"
+      },
+      "name": {
+        "label": "الاسم",
+        "placeholder": "أدخل اسم الفئة"
+      },
+      "slug": {
+        "label": "الرابط",
+        "placeholder": "أدخل الرابط"
+      },
+      "parent_id": {
+        "label": "الفئة الأصلية",
+        "none": "لا شيء (جذر)"
+      },
+      "sort_order": {
+        "label": "ترتيب الفرز",
+        "placeholder": "ترتيب الفرز"
+      },
+      "status": {
+        "label": "الحالة",
+        "active": "نشط",
+        "inactive": "غير نشط"
+      },
+      "featured": {
+        "label": "مميز",
+        "no": "لا",
+        "yes": "نعم"
+      },
+      "description": {
+        "label": "الوصف",
+        "placeholder": "أدخل الوصف"
+      },
+      "image": {
+        "label": "الصورة"
+      }
+    },
+    "translations": {
+      "select_lang": "اختر اللغة",
+      "choose_lang": "اختر اللغة",
+      "name_in_lang": "الاسم في {lang}",
+      "slug_in_lang": "الرابط في {lang}",
+      "description_in_lang": "الوصف في {lang}",
+      "remove": "إزالة",
+      "add_translation": "إضافة ترجمة"
+    },
+    "buttons": {
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "saving": "جارٍ الحفظ...",
+      "updating": "جارٍ التحديث..."
+    }
+  },
+  "messages": {
+    "success": {
+      "created": "تم إنشاء الفئة بنجاح",
+      "updated": "تم تحديث الفئة بنجاح",
+      "deleted": "تم حذف الفئة بنجاح",
+      "duplicated": "تم نسخ الفئة بنجاح"
+    },
+    "error": {
+      "load_failed": "فشل في تحميل البيانات",
+      "save_failed": "فشل في حفظ البيانات",
+      "delete_failed": "فشل في حذف البيانات",
+      "duplicate_failed": "فشل في نسخ البيانات",
+      "not_found": "العنصر غير موجود"
+    }
+  },
+  "validation": {
+    "required": "مطلوب"
+  },
+  "common": {
+    "select_image": "اختر الصورة",
+    "duplicate": "نسخ"
+  },
+  "accessibility": {
+    "close": "إغلاق"
+  },
+  "pagination": {
+    "showing": "عرض"
+  }
+}
