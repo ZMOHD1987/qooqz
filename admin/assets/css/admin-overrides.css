@@ -1,0 +1,33 @@
+/* admin/assets/css/admin-overrides.css
+ * Production Overrides - Minimal & Safe
+ * ONLY critical fixes that can't be in admin.css
+ */
+
+/* Force hide backdrop by default - NO exceptions */
+.sidebar-backdrop {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* ONLY on mobile when sidebar is actually open */
+@media (max-width: 768px) {
+    body.sidebar-open .sidebar-backdrop {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+    }
+}
+
+/* Desktop - NEVER show backdrop */
+@media (min-width: 769px) {
+    .sidebar-backdrop {
+        display: none !important;
+    }
+    
+    body.sidebar-open .sidebar-backdrop {
+        display: none !important;
+    }
+}

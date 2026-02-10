@@ -1,0 +1,190 @@
+/* admin/assets/css/pages/roles.css
+   Styling consistent with admin theme variables from database.
+*/
+
+:root {
+  --roles-bg: var(--theme-background, #0A0A0A);
+  --roles-text: var(--theme-text-primary, #FFFFFF);
+  --roles-text-secondary: var(--theme-text-secondary, #B0B0B0);
+  --roles-border: var(--theme-border, #333333);
+  --roles-primary: var(--theme-primary, #FF0000);
+  --roles-primary-hover: var(--theme-primary-hover, #2563EB);
+  --roles-card: var(--theme-background-secondary, #1A1A1A);
+  --roles-error: var(--theme-error, #EF4444);
+  --roles-success: var(--theme-success, #10B981);
+  --roles-radius: 8px;
+}
+
+#adminRoles { 
+  max-width:1200px;
+  margin:16px auto;
+  padding:12px;
+  font-family:var(--theme-font-primary, Inter, system-ui);
+  color:var(--roles-text);
+  background:var(--roles-bg);
+}
+
+.tools { 
+  display:flex;
+  gap:8px;
+  align-items:center;
+  margin-bottom:10px;
+  flex-wrap: wrap;
+}
+
+.tools input[type="search"] {
+  flex:1;
+  min-width:200px;
+  padding:8px 12px;
+  border-radius:6px;
+  border:1px solid var(--roles-border);
+  background:var(--roles-card);
+  color:var(--roles-text);
+  font-size:14px;
+}
+
+.table-wrap { 
+  border:1px solid var(--roles-border);
+  border-radius:var(--roles-radius);
+  overflow:auto;
+  background:var(--roles-card);
+}
+
+#rolesTable { 
+  width:100%;
+  border-collapse:collapse;
+  font-size:14px;
+}
+
+#rolesTable thead th { 
+  padding:12px 10px;
+  background:var(--roles-bg);
+  text-align:left;
+  font-weight:600;
+  border-bottom:2px solid var(--roles-border);
+  color:var(--roles-text);
+}
+
+#rolesTable tbody td { 
+  padding:12px 10px;
+  border-bottom:1px solid var(--roles-border);
+  vertical-align:middle;
+  color:var(--roles-text);
+}
+
+#rolesTable tbody tr:hover {
+  background:rgba(255, 255, 255, 0.03);
+}
+
+.btn { 
+  padding:8px 16px;
+  border-radius:6px;
+  border:1px solid var(--roles-border);
+  background:var(--roles-card);
+  color:var(--roles-text);
+  cursor:pointer;
+  font-size:14px;
+  font-weight:500;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  background:var(--roles-primary);
+  border-color:var(--roles-primary);
+  color:#fff;
+}
+
+.btn:disabled {
+  opacity:0.5;
+  cursor:not-allowed;
+}
+
+.btn.primary { 
+  background:var(--roles-primary);
+  color:#fff;
+  border-color:transparent;
+}
+
+.btn.primary:hover {
+  background:var(--roles-primary-hover);
+}
+
+.btn.danger { 
+  border-color:var(--roles-error);
+  color:var(--roles-error);
+}
+
+.btn.danger:hover {
+  background:var(--roles-error);
+  color:#fff;
+}
+
+.form-wrap { 
+  margin-top:12px;
+  padding:16px;
+  border-radius:var(--roles-radius);
+  background:var(--roles-card);
+  border:1px solid var(--roles-border);
+}
+
+.form-wrap h3 {
+  margin:0 0 16px 0;
+  color:var(--roles-text);
+  font-size:18px;
+}
+
+.form-wrap label {
+  display:block;
+  margin-bottom:6px;
+  color:var(--roles-text);
+  font-weight:500;
+  font-size:14px;
+}
+
+.form-wrap input {
+  width:100%;
+  padding:10px 12px;
+  border:1px solid var(--roles-border);
+  border-radius:6px;
+  background:var(--roles-bg);
+  color:var(--roles-text);
+  font-size:14px;
+}
+
+.form-wrap input:focus {
+  outline:none;
+  border-color:var(--roles-primary);
+}
+
+.status { 
+  min-height:22px;
+  color:var(--roles-primary);
+  font-size:14px;
+  font-weight:500;
+}
+
+.alert { 
+  padding:12px 16px;
+  border-radius:6px;
+  background:var(--roles-card);
+  border:1px solid var(--roles-error);
+  color:var(--roles-text);
+  margin-bottom:16px;
+}
+
+.field-error { 
+  color:var(--roles-error);
+  font-size:13px;
+  margin-top:6px;
+}
+
+@media (max-width:820px) { 
+  .tools { 
+    flex-direction:column;
+    align-items:stretch;
+  }
+  
+  .tools input[type="search"] {
+    min-width:100%;
+  }
+}

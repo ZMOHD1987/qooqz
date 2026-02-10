@@ -1,0 +1,91 @@
+/* htdocs/admin/assets/css/pages/image-studio.css
+   Styles for Image Studio fragment (upload + gallery).
+   Load this file in the admin header or ensure images.php references it.
+   Save as UTF-8 without BOM.
+*/
+
+.image-studio {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 12px;
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #222;
+}
+
+.image-studio header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:12px;
+}
+
+.image-studio h2 { margin:0; font-size:1.25rem; }
+
+.image-studio .btn {
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:6px;
+  border:1px solid #cfcfcf;
+  background:#fff;
+  cursor:pointer;
+  font-size:0.95rem;
+}
+
+.image-studio .btn.primary {
+  background:#0b6ea8;
+  color:#fff;
+  border-color:#0b6ea8;
+}
+
+.image-studio .upload { margin:12px 0; }
+
+.image-studio .upload input[type="file"] {
+  display:inline-block;
+  cursor:pointer;
+}
+
+.image-studio .upload label { margin-left:6px; font-size:0.95rem; }
+
+.image-studio .upload #uploadStatus { margin-left:8px; color:#666; }
+
+.image-studio .gallery {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:12px;
+}
+
+.image-studio .thumb {
+  width:120px;
+  height:90px;
+  border:1px solid #eee;
+  cursor:pointer;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:6px;
+  background:#fff;
+  transition: box-shadow .12s ease, transform .08s ease;
+}
+.image-studio .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+.image-studio .thumb:hover { box-shadow:0 6px 18px rgba(0,0,0,0.12); transform:translateY(-2px); }
+
+.image-studio .empty-state {
+  color:#666;
+  padding:16px;
+}
+
+/* ensure the close button (fragment-level) is visible inside modal */
+.image-studio .studio-close {
+  background:transparent;
+  border:1px solid rgba(0,0,0,0.06);
+  padding:6px 8px;
+  border-radius:6px;
+}
+
+@media (max-width:680px) {
+  .image-studio .thumb { width:90px; height:70px; }
+  .image-studio { padding:8px; }
+}
