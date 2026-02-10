@@ -41,11 +41,17 @@
         "confirm_delete": "هل أنت متأكد؟",
         "no_entities": "لا توجد كيانات",
         "manage_entities": "إدارة الكيانات والفروع",
+        "try_again": "حاول مرة أخرى",
+        "image_saved": "تم حفظ الصورة بنجاح",
+        "image_deleted": "تم حذف الصورة بنجاح",
+        "address_saved": "تم حفظ العنوان بنجاح",
+        "address_deleted": "تم حذف العنوان بنجاح",
         "general": {
             "general": "عام",
             "basic": "معلومات أساسية",
             "store_name": "اسم المتجر",
             "slug": "الرابط",
+            "description": "الوصف",
             "is_main": "كيان رئيسي",
             "branch_code": "رمز الفرع",
             "registration_number": "رقم التسجيل",
@@ -96,6 +102,7 @@
             "cover": "صورة الغلاف",
             "license": "الرخصة",
             "select_from_studio": "اختر من الاستوديو",
+            "delete": "حذف الصورة",
             "no_logo": "لم يتم اختيار شعار",
             "no_cover": "لم يتم اختيار صورة غلاف",
             "no_license": "لم يتم اختيار رخصة",
@@ -131,12 +138,21 @@
         },
         "messages": {
             "validation_failed": "يرجى ملء جميع الحقول المطلوبة",
+            "save_entity_first": "يرجى حفظ الكيان أولاً لإدارة العناوين",
+            "confirm_delete_image": "هل أنت متأكد من حذف هذه الصورة؟",
+            "created": "تم إنشاء الكيان بنجاح",
+            "updated": "تم تحديث الكيان بنجاح",
+            "deleted": "تم حذف الكيان بنجاح",
+            "address_saved": "تم حفظ العنوان بنجاح",
+            "address_deleted": "تم حذف العنوان بنجاح",
+            "image_saved": "تم حفظ الصورة بنجاح",
+            "image_deleted": "تم حذف الصورة بنجاح",
             "error": {
                 "load_failed": "فشل تحميل البيانات",
                 "save_failed": "فشل حفظ الكيان",
-                "delete_failed": "فشل حذف الكيان"
-            },
-            "address_saved": "تم حفظ العنوان بنجاح"
+                "delete_failed": "فشل الحذف",
+                "unknown": "حدث خطأ غير معروف"
+            }
         },
         "table": {
             "headers": {

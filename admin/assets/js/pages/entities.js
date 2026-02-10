@@ -42,6 +42,7 @@
         entitySettings: {},
         entityWorkingHours: [],
         addressData: null,
+        deletedTranslationIds: [],
         permissions: PERMS,
         language: window.USER_LANGUAGE || CONFIG.lang || 'en',
         direction: window.USER_DIRECTION || 'ltr',
@@ -130,7 +131,8 @@
                 subtitle: s.manage_entities || 'Manage your entities',
                 add_new: s.create,
                 loading: s.loading,
-                retry: s.refresh || 'Retry'
+                retry: s.refresh || 'Retry',
+                found: s.found || 'entities found'
             },
             tabs: {
                 basic: g.basic || 'Basic',
@@ -154,8 +156,14 @@
                     store_type: { label: store.store_type },
                     registration_number: { label: g.registration_number, placeholder: g.registration_number },
                     tax_number: { label: g.tax_number, placeholder: g.tax_number },
-                    status: { label: stats.status },
-                    is_verified: { label: stats.verified, yes: g.yes, no: g.no },
+                    status: {
+                        label: stats.status || s.status,
+                        pending: stats.pending || s.pending || 'Pending',
+                        approved: stats.approved || s.approved || 'Approved',
+                        suspended: stats.suspended || s.suspended || 'Suspended',
+                        rejected: stats.rejected || s.rejected || 'Rejected'
+                    },
+                    is_verified: { label: stats.verified || s.verified, yes: s.yes || g.yes, no: s.no || g.no },
                     phone: { label: cnt.phone, placeholder: cnt.phone },
                     mobile: { label: cnt.mobile, placeholder: cnt.mobile },
                     email: { label: cnt.email, placeholder: cnt.email },
@@ -204,7 +212,8 @@
                     no_license: med.no_license || 'No license document selected',
                     logo_url: med.logo_url || 'Logo URL will appear here',
                     cover_url: med.cover_url || 'Cover URL will appear here',
-                    license_url: med.license_url || 'License URL will appear here'
+                    license_url: med.license_url || 'License URL will appear here',
+                    delete: med.delete || 'Delete image'
                 },
                 working_hours: {
                     day: wh.day || 'Day',
@@ -266,7 +275,27 @@
             },
             pagination: { showing: s.total || 'Showing' },
             messages: {
-                error: { load_failed: msg.server_error || 'Error loading data' }
+                error: {
+                    load_failed: msg.error?.load_failed || msg.server_error || 'Error loading data',
+                    save_failed: msg.error?.save_failed || 'Failed to save',
+                    delete_failed: msg.error?.delete_failed || 'Failed to delete',
+                    unknown: msg.error?.unknown || 'An unknown error occurred'
+                },
+                validation_failed: msg.validation_failed || s.validation_failed || 'Please fill all required fields',
+                save_entity_first: msg.save_entity_first || 'Please save the entity first to manage addresses',
+                confirm_delete_image: msg.confirm_delete_image || 'Are you sure you want to delete this image?',
+                created: msg.created || s.save_success || 'Created successfully',
+                updated: msg.updated || s.update_success || 'Updated successfully',
+                deleted: msg.deleted || s.delete_success || 'Deleted successfully',
+                confirm_delete: s.confirm_delete || 'Are you sure?',
+                address_saved: msg.address_saved || s.address_saved || 'Address saved successfully',
+                address_deleted: msg.address_deleted || s.address_deleted || 'Address deleted successfully',
+                image_saved: msg.image_saved || s.image_saved || 'Image saved successfully',
+                image_deleted: msg.image_deleted || s.image_deleted || 'Image deleted successfully',
+                save_first: s.save_first || 'Please save the entity first',
+                try_again: msg.try_again || s.try_again || 'Please try again',
+                attribute_exists: s.attribute_exists || 'Attribute already added',
+                translation_exists: s.translation_exists || 'Translation already added'
             },
             strings: {
                 save_success: s.save_success || 'Entity saved successfully',
@@ -569,6 +598,7 @@
         state.entitySettings = {};
         state.entityWorkingHours = [];
         state.addressData = null;
+        state.deletedTranslationIds = [];
 
         mediaUrls.logo = null;
         mediaUrls.cover = null;
@@ -744,7 +774,7 @@
                 await saveEntityAttributes(savedEntityId, isEdit);
 
                 const translations = collectTranslations();
-                if (Object.keys(translations).length > 0) {
+                if (Object.keys(translations).length > 0 || state.deletedTranslationIds.length > 0) {
                     await saveEntityTranslations(savedEntityId, translations);
                 }
 
@@ -881,6 +911,20 @@
 
     async function saveEntityTranslations(entityId, translations) {
         try {
+            // Delete removed translations
+            for (const deletedId of state.deletedTranslationIds) {
+                try {
+                    await apiCall(`/api/entity_translations`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: deletedId })
+                    });
+                } catch (e) {
+                    console.warn('[Entities] Failed to delete translation:', deletedId, e);
+                }
+            }
+            state.deletedTranslationIds = [];
+
             // Check existing translations
             let existingTranslations = [];
             try {
@@ -893,8 +937,6 @@
             }
 
             for (const [langCode, trans] of Object.entries(translations)) {
-                // Skip empty translations if needed, but usually we save what we have
-
                 const transData = {
                     entity_id: parseInt(entityId),
                     language_code: langCode,
@@ -908,21 +950,13 @@
 
                 if (existingTrans) {
                     transData.id = parseInt(existingTrans.id);
-                    await apiCall(`${API.entities}/../entity_translations`, {
-                        method: 'POST', // The generic saving logic in repository handles update if ID exists, but let's be safe and use POST as upsert or handle in backend
-                        // Actually my backend implementation for entity_translations.php allows POST/PUT and repository handles upsert logic 
-                        // But wait, the repo checks for ID or uniqueness.
-                        // Ideally checking ID is safer.
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(transData)
-                    });
-                } else {
-                    await apiCall(`${API.entities}/../entity_translations`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(transData)
-                    });
                 }
+
+                await apiCall(`${API.entities}/../entity_translations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(transData)
+                });
             }
         } catch (err) {
             console.warn('[Entities] Failed to save translations:', err);
@@ -1466,6 +1500,12 @@
             return;
         }
 
+        // Check if iframe is already loaded for this entity
+        const existingFrame = document.getElementById('addressFrame');
+        if (existingFrame && existingFrame.dataset.ownerId === String(ownerId)) {
+            return;
+        }
+
         el.addressEmbeddedContainer.innerHTML = `
             <div class="loading-state" id="addressLoading">
                 <div class="spinner"></div>
@@ -1475,12 +1515,10 @@
 
         const iframe = document.createElement('iframe');
         iframe.id = 'addressFrame';
-        const addressFragmentUrl = CONFIG.addressesFragment || '/admin/fragments/addresses.php';
-        iframe.src = `${addressFragmentUrl}?embedded=1&tenant_id=${state.tenantId}&lang=${state.language}&owner_type=entity&owner_id=${ownerId}`;
-        iframe.style = 'width:100%; height:500px; border:none;';
+        iframe.dataset.ownerId = String(ownerId);
+        iframe.style.cssText = 'width:100%; height:500px; border:none;';
         iframe.onload = () => {
             document.getElementById('addressLoading')?.remove();
-            el.addressEmbeddedContainer.appendChild(iframe);
 
             try {
                 iframe.contentWindow.postMessage({
@@ -1502,6 +1540,11 @@
                 </div>
             `;
         };
+
+        // Append iframe to DOM first, then set src to trigger loading
+        el.addressEmbeddedContainer.appendChild(iframe);
+        const addressFragmentUrl = CONFIG.addressesFragment || '/admin/fragments/addresses.php';
+        iframe.src = `${addressFragmentUrl}?embedded=1&tenant_id=${state.tenantId}&lang=${state.language}&owner_type=entity&owner_id=${ownerId}`;
     }
 
     function clearAddress() {
@@ -1638,11 +1681,14 @@
         const panel = document.createElement('div');
         panel.className = 'translation-panel';
         panel.dataset.lang = langCode;
+        if (data.id) {
+            panel.dataset.translationId = data.id;
+        }
 
         panel.innerHTML = `
             <div class="translation-panel-header">
                 <h5><i class="fas fa-language"></i> ${esc(langName)} (${esc(langCode)})</h5>
-                <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('.translation-panel').remove()">
+                <button type="button" class="btn btn-sm btn-danger btn-remove-translation">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -1665,6 +1711,15 @@
                 </div>
             </div>
         `;
+
+        // Attach delete handler with proper tracking
+        panel.querySelector('.btn-remove-translation').addEventListener('click', function() {
+            const translationId = panel.dataset.translationId;
+            if (translationId) {
+                state.deletedTranslationIds.push(parseInt(translationId));
+            }
+            panel.remove();
+        });
 
         return panel;
     }
@@ -1701,6 +1756,7 @@
                 items.forEach(trans => {
                     const langName = state.languages.find(l => l.code === trans.language_code)?.name || trans.language_code;
                     const panel = createTranslationPanel(trans.language_code, langName, {
+                        id: trans.id,
                         store_name: trans.store_name || '',
                         description: trans.description || '',
                         meta_title: trans.meta_title || '',

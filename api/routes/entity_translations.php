@@ -94,7 +94,7 @@ try {
                  $result = $controller->delete($id);
                  ResponseFormatter::success($result, 'Deleted successfully');
              } elseif (isset($_GET['id'])) {
-                 $id = (int)$$_GET['id'];
+                 $id = (int)$_GET['id'];
                  $result = $controller->delete($id);
                  ResponseFormatter::success($result, 'Deleted successfully');
              } else {
