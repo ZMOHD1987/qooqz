@@ -168,7 +168,7 @@ try {
 
         case 'DELETE':
             // DELETE /api/entities_attribute_values/entity/{entity_id} - حذف جميع قيم كيان
-            if (isset($_GET['action']) && $_GET['action'] === 'entity' && isset($_GET['entity_id'])) {
+            if ((isset($_GET['action']) && $_GET['action'] === 'entity' && isset($_GET['entity_id'])) || (isset($_GET['entity_id']) && !isset($_GET['id']))) {
                 $controller->deleteEntityValues((int)$_GET['entity_id']);
                 ResponseFormatter::success(null, 'All entity values deleted successfully');
                 exit;
@@ -201,6 +201,7 @@ try {
     safe_log('error','entities_attribute_values.runtime', ['error'=>$e->getMessage()]);
     ResponseFormatter::error($e->getMessage(), 400);
 } catch (Throwable $e) {
+    error_log("Error in entities_attribute_values: " . $e->getMessage() . "\n" . $e->getTraceAsString(), 3, __DIR__ . '/../error_log.txt');
     safe_log('critical','entities_attribute_values.fatal', ['error'=>$e->getMessage(),'trace'=>$e->getTraceAsString()]);
-    ResponseFormatter::error('Internal Server Error', 500);
+    ResponseFormatter::error('Internal Server Error: ' . $e->getMessage(), 500);
 }
