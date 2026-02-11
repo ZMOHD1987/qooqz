@@ -60,7 +60,7 @@ $apiBase = '/api';
 // TRANSLATION HELPERS
 // ════════════════════════════════════════════════════════════
 $_bwStrings = [];
-$_bwAllowedLangs = ['ar', 'en', 'fr', 'tr', 'ur', 'de', 'es'];
+$_bwAllowedLangs = ['ar', 'en', 'fr', 'tr', 'ur', 'de', 'es', 'fa', 'he', 'hi', 'zh', 'ja', 'ko', 'pt', 'ru', 'it', 'nl', 'sv', 'pl', 'th', 'vi', 'id', 'ms', 'bn', 'sw', 'tl'];
 $_bwSafeLang = in_array($lang, $_bwAllowedLangs, true) ? $lang : 'en';
 $_bwLangFile = __DIR__ . '/../../languages/BadWords/' . $_bwSafeLang . '.json';
 if (file_exists($_bwLangFile)) {
@@ -195,13 +195,7 @@ if (!function_exists('_bwt')) {
             <div class="form-group">
                 <label data-i18n="translations.language"><?= htmlspecialchars(_bwt('translations.language', 'Language'), ENT_QUOTES, 'UTF-8') ?></label>
                 <select id="transLangCode" class="form-control">
-                    <option value="ar">ar</option>
-                    <option value="en">en</option>
-                    <option value="fr">fr</option>
-                    <option value="tr">tr</option>
-                    <option value="ur">ur</option>
-                    <option value="de">de</option>
-                    <option value="es">es</option>
+                    <!-- Languages loaded dynamically from /api/languages -->
                 </select>
             </div>
             <div class="form-group">

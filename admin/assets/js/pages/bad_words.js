@@ -6,6 +6,7 @@
     var CAN_CREATE = CFG.canCreate || false;
     var CAN_EDIT = CFG.canEdit || false;
     var CAN_DELETE = CFG.canDelete || false;
+    var FALLBACK_LANGS = ['ar','en','fr','tr','ur','de','es'];
 
     // Translation helper - resolves dot-separated keys
     function t(key, fallback) {
@@ -267,51 +268,89 @@
         });
     }
 
-    // DOMContentLoaded
-    document.addEventListener('DOMContentLoaded', function(){
+    // Load languages dynamically from /api/languages
+    function loadLanguages(){
+        var select = document.getElementById('transLangCode');
+        if(!select) return;
+        fetch(API_BASE + '/languages')
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            select.innerHTML = '';
+            var items = [];
+            if(d.success && d.data){
+                items = Array.isArray(d.data) ? d.data : (d.data.items || []);
+            }
+            if(items.length > 0){
+                items.forEach(function(lang){
+                    var opt = document.createElement('option');
+                    opt.value = lang.code || lang.language_code || lang.id;
+                    opt.textContent = (lang.native_name || lang.name || lang.code || lang.id);
+                    select.appendChild(opt);
+                });
+            } else {
+                // Fallback if API returns no items
+                FALLBACK_LANGS.forEach(function(code){
+                    var opt = document.createElement('option');
+                    opt.value = code;
+                    opt.textContent = code;
+                    select.appendChild(opt);
+                });
+            }
+        })
+        .catch(function(){
+            // Fallback on error
+            FALLBACK_LANGS.forEach(function(code){
+                var opt = document.createElement('option');
+                opt.value = code;
+                opt.textContent = code;
+                select.appendChild(opt);
+            });
+        });
+    }
 
+    // Init function - called when DOM is ready
+    function init(){
         // Close modal buttons
         document.querySelectorAll('.btn-close-modal').forEach(function(btn){
             btn.addEventListener('click', function(){ closeModal(btn.dataset.modal); });
         });
 
         // Add Word button
-        document.getElementById('btnAddWord')?.addEventListener('click', function(){
-            openAddModal();
-        });
+        var btnAdd = document.getElementById('btnAddWord');
+        if(btnAdd) btnAdd.addEventListener('click', function(){ openAddModal(); });
 
         // Bad Word Form submit
-        document.getElementById('badWordForm')?.addEventListener('submit', function(e){
+        var form = document.getElementById('badWordForm');
+        if(form) form.addEventListener('submit', function(e){
             e.preventDefault();
             saveBadWord(new FormData(this));
         });
 
         // Filter button
-        document.getElementById('btnFilter')?.addEventListener('click', function(){
-            filterBadWords();
-        });
+        var btnFilt = document.getElementById('btnFilter');
+        if(btnFilt) btnFilt.addEventListener('click', function(){ filterBadWords(); });
 
         // Search input Enter key
-        document.getElementById('filterSearch')?.addEventListener('keydown', function(e){
+        var searchInput = document.getElementById('filterSearch');
+        if(searchInput) searchInput.addEventListener('keydown', function(e){
             if(e.key === 'Enter'){ e.preventDefault(); filterBadWords(); }
         });
 
         // Open Check Text modal button
-        document.getElementById('btnOpenCheckText')?.addEventListener('click', function(){
-            openModal('textCheckModal');
-        });
+        var btnCheck = document.getElementById('btnOpenCheckText');
+        if(btnCheck) btnCheck.addEventListener('click', function(){ openModal('textCheckModal'); });
 
         // Check Text button
-        document.getElementById('btnCheckText')?.addEventListener('click', function(){
-            checkText();
-        });
+        var btnDoCheck = document.getElementById('btnCheckText');
+        if(btnDoCheck) btnDoCheck.addEventListener('click', function(){ checkText(); });
 
         // Add Translation button
-        document.getElementById('btnAddTranslation')?.addEventListener('click', function(){
-            var langCode = document.getElementById('transLangCode')?.value;
-            var word = document.getElementById('transWord')?.value;
-            if(!word){ alert(t('enter_text', 'Please enter a word')); return; }
-            saveTranslation(currentTranslationBadWordId, langCode, word);
+        var btnTrans = document.getElementById('btnAddTranslation');
+        if(btnTrans) btnTrans.addEventListener('click', function(){
+            var langCode = document.getElementById('transLangCode');
+            var word = document.getElementById('transWord');
+            if(!word || !word.value){ alert(t('enter_text', 'Please enter a word')); return; }
+            saveTranslation(currentTranslationBadWordId, langCode ? langCode.value : '', word.value);
         });
 
         // Event delegation for edit, delete, translations buttons
@@ -341,7 +380,23 @@
             }
         });
 
-        // Auto-load on init
+        // Load languages for translation dropdown
+        loadLanguages();
+
+        // Auto-load bad words table
         loadBadWords();
-    });
+    }
+
+    // Fragment support
+    window.page = { run: init };
+
+    // Auto-init: handle both fresh page load and dynamic fragment loading
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function(){
+            init();
+        });
+    } else {
+        // DOM already loaded (fragment loaded dynamically)
+        init();
+    }
 })();
