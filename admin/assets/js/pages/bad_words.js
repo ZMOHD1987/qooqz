@@ -34,6 +34,30 @@
     function openModal(id){ document.getElementById(id).style.display='block'; }
     function closeModal(id){ document.getElementById(id).style.display='none'; }
 
+    // In-page notification (toast) instead of alert()
+    function showNotification(message, type){
+        type = type || 'info';
+        var container = document.getElementById('bwNotifications');
+        if(!container){
+            container = document.createElement('div');
+            container.id = 'bwNotifications';
+            container.className = 'bw-notifications';
+            var pageContainer = document.getElementById('badWordsPageContainer');
+            if(pageContainer) pageContainer.insertBefore(container, pageContainer.firstChild);
+            else document.body.appendChild(container);
+        }
+        var toast = document.createElement('div');
+        toast.className = 'bw-toast bw-toast-' + type;
+        toast.textContent = message;
+        var closeBtn = document.createElement('span');
+        closeBtn.className = 'bw-toast-close';
+        closeBtn.textContent = '\u00d7';
+        closeBtn.onclick = function(){ toast.remove(); };
+        toast.appendChild(closeBtn);
+        container.appendChild(toast);
+        setTimeout(function(){ toast.remove(); }, 4000);
+    }
+
     // Severity badge CSS class
     function severityClass(level){
         switch(String(level)){
@@ -136,10 +160,10 @@
                 closeModal('badWordModal');
                 document.getElementById('badWordForm').reset();
                 document.getElementById('badWordId').value = '';
-                alert(t('saved', 'Saved successfully'));
+                showNotification(t('saved', 'Saved successfully'), 'success');
                 loadBadWords();
             } else {
-                alert(d.message || t('unknown_error', 'Unknown error'));
+                showNotification(d.message || t('unknown_error', 'Unknown error'), 'error');
             }
         });
     }
@@ -151,8 +175,8 @@
             method: 'DELETE',
             headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF}
         }).then(function(r){ return r.json(); }).then(function(d){
-            if(d.success){ alert(t('deleted', 'Deleted successfully')); loadBadWords(); }
-            else alert(d.message || t('delete_failed', 'Delete failed'));
+            if(d.success){ showNotification(t('deleted', 'Deleted successfully'), 'success'); loadBadWords(); }
+            else showNotification(d.message || t('delete_failed', 'Delete failed'), 'error');
         });
     }
 
@@ -199,10 +223,10 @@
             body: JSON.stringify({bad_word_id: badWordId, language_code: langCode, word: word})
         }).then(function(r){ return r.json(); }).then(function(d){
             if(d.success){
-                alert(t('saved', 'Saved successfully'));
+                showNotification(t('saved', 'Saved successfully'), 'success');
                 openTranslationsModal(badWordId);
             } else {
-                alert(d.message || t('unknown_error', 'Unknown error'));
+                showNotification(d.message || t('unknown_error', 'Unknown error'), 'error');
             }
         });
     }
@@ -210,15 +234,15 @@
     // Delete Translation
     function deleteTranslation(id){
         if(!confirm(t('confirm_delete_translation', 'Are you sure you want to delete this translation?'))) return;
-        fetch(API_BASE + '/bad_words/translations?id=' + encodeURIComponent(id), {
+        fetch(API_BASE + '/api/bad_words/translations?id=' + encodeURIComponent(id), {
             method: 'DELETE',
             headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF}
         }).then(function(r){ return r.json(); }).then(function(d){
             if(d.success){
-                alert(t('deleted', 'Deleted successfully'));
+                showNotification(t('deleted', 'Deleted successfully'), 'success');
                 if(currentTranslationBadWordId) openTranslationsModal(currentTranslationBadWordId);
             } else {
-                alert(d.message || t('delete_failed', 'Delete failed'));
+                showNotification(d.message || t('delete_failed', 'Delete failed'), 'error');
             }
         });
     }
@@ -227,7 +251,7 @@
     function checkText(){
         var textInput = document.getElementById('textCheckInput');
         var text = textInput ? textInput.value : '';
-        if(!text){ alert(t('enter_text', 'Please enter text to check')); return; }
+        if(!text){ showNotification(t('enter_text', 'Please enter text to check'), 'warning'); return; }
 
         var body = {text: text};
 
@@ -261,10 +285,14 @@
         var search = document.getElementById('filterSearch');
         var severity = document.getElementById('filterSeverity');
         var status = document.getElementById('filterStatus');
+        var statusVal = status ? status.value : '';
+        // Map active/inactive to 1/0 for API
+        if(statusVal === 'active') statusVal = '1';
+        else if(statusVal === 'inactive') statusVal = '0';
         loadBadWords({
             search: search ? search.value : '',
             severity: severity ? severity.value : '',
-            is_active: status ? status.value : ''
+            is_active: statusVal
         });
     }
 
@@ -349,7 +377,7 @@
         if(btnTrans) btnTrans.addEventListener('click', function(){
             var langCode = document.getElementById('transLangCode');
             var word = document.getElementById('transWord');
-            if(!word || !word.value){ alert(t('enter_text', 'Please enter a word')); return; }
+            if(!word || !word.value){ showNotification(t('enter_text', 'Please enter a word'), 'warning'); return; }
             saveTranslation(currentTranslationBadWordId, langCode ? langCode.value : '', word.value);
         });
 
