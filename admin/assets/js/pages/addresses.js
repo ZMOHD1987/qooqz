@@ -449,7 +449,7 @@
             }
         } catch (e) {
             console.error('❌ saveAddress error:', e);
-            const errorMsg = e.message || t('failed_save', 'Failed to save address');
+            const errorMsg = e.message || t('save_failed', 'Failed to save address');
             showMessage(errorMsg, 'error');
         }
     }
@@ -477,7 +477,7 @@
             }
         } catch (e) {
             console.error('❌ deleteAddress error:', e);
-            showMessage(t('failed_delete', 'Failed to delete address'), 'error');
+            showMessage(t('delete_failed', 'Failed to delete address'), 'error');
         }
     }
 
