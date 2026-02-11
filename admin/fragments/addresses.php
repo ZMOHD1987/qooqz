@@ -112,7 +112,14 @@ $apiBase = '/api';
 
 ?>
 <?php if ($isFragment): ?>
+<!DOCTYPE html>
+<html lang="<?= htmlspecialchars($lang) ?>" dir="<?= htmlspecialchars($dir) ?>">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="/admin/assets/css/pages/addresses.css?v=<?= time() ?>">
+</head>
+<body dir="<?= htmlspecialchars($dir) ?>" style="margin:0;padding:0;">
 <?php endif; ?>
 
 <meta data-page="addresses">
@@ -295,6 +302,8 @@ window.ADDRESSES_CONFIG = {
 <?php if ($isFragment): ?>
 <script src="/admin/assets/js/admin_framework.js?v=<?= time() ?>"></script>
 <script src="/admin/assets/js/pages/addresses.js?v=<?= time() ?>"></script>
+</body>
+</html>
 <?php else: ?>
 <script src="/admin/assets/js/pages/addresses.js?v=<?= time() ?>"></script>
 <?php endif; ?>

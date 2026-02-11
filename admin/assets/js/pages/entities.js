@@ -619,7 +619,7 @@
 
             if (el.entityStoreName) el.entityStoreName.value = entity.store_name || '';
             if (el.entitySlug) el.entitySlug.value = entity.slug || '';
-            if (el.entityIsMain) el.entityIsMain.value = entity.is_main || '1';
+            if (el.entityIsMain) el.entityIsMain.value = entity.is_main ?? '1';
             if (el.entityBranchCode) el.entityBranchCode.value = entity.branch_code || '';
             if (el.entityVendorType) el.entityVendorType.value = entity.vendor_type || 'product_seller';
             if (el.entityStoreType) el.entityStoreType.value = entity.store_type || 'individual';
@@ -725,7 +725,7 @@
             const entityData = {
                 store_name: formData.get('store_name'),
                 slug: formData.get('slug') || generateSlug(formData.get('store_name')),
-                is_main: formData.get('is_main') || '1',
+                is_main: formData.get('is_main') ?? '1',
                 branch_code: formData.get('branch_code') || null,
                 vendor_type: formData.get('vendor_type') || 'product_seller',
                 store_type: formData.get('store_type') || 'individual',
