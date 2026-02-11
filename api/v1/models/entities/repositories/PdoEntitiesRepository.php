@@ -32,6 +32,7 @@ final class PdoEntitiesRepository
     ): array {
         $sql = "
             SELECT e.*,
+                   e.store_name AS original_store_name,
                    COALESCE(et.store_name, e.store_name) AS store_name,
                    et.description,
                    et.meta_title,
@@ -97,6 +98,7 @@ final class PdoEntitiesRepository
     {
         $stmt = $this->pdo->prepare("
             SELECT e.*,
+                   e.store_name AS original_store_name,
                    COALESCE(et.store_name, e.store_name) AS store_name,
                    et.description,
                    et.meta_title,

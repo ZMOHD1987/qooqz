@@ -617,7 +617,7 @@
             if (el.formTitle) el.formTitle.textContent = t('form.edit_title', 'Edit Entity');
             if (el.formId) el.formId.value = entity.id || '';
 
-            if (el.entityStoreName) el.entityStoreName.value = entity.store_name || '';
+            if (el.entityStoreName) el.entityStoreName.value = entity.original_store_name || entity.store_name || '';
             if (el.entitySlug) el.entitySlug.value = entity.slug || '';
             if (el.entityIsMain) el.entityIsMain.value = entity.is_main ?? '1';
             if (el.entityBranchCode) el.entityBranchCode.value = entity.branch_code || '';
