@@ -60,21 +60,25 @@ if (is_array($fontsRaw)) {
     }
 }
 
-// Map known color keys to CSS variables (extend as needed)
+// Map known color keys to CSS variables matching the names used in CSS files
 $map = [
-    'primary_color' => '--color-primary',
-    'primary_hover' => '--color-primary-dark',
-    'secondary_color' => '--color-secondary',
-    'accent_color' => '--color-accent',
-    'background_main' => '--color-bg',
-    'background_secondary' => '--color-surface',
-    'text_primary' => '--color-text',
-    'text_secondary' => '--color-muted',
-    'border_color' => '--color-border',
-    'success_color' => '--color-success',
-    'error_color' => '--color-error',
-    'warning_color' => '--color-warning',
-    'info_color' => '--color-info',
+    'primary_color'        => '--primary-color',
+    'primary_hover'        => '--primary-hover',
+    'secondary_color'      => '--secondary-color',
+    'accent_color'         => '--accent-color',
+    'background_main'      => '--background-main',
+    'background_secondary' => '--background-secondary',
+    'text_primary'         => '--text-primary',
+    'text_secondary'       => '--text-secondary',
+    'border_color'         => '--border-color',
+    'success_color'        => '--success-color',
+    'danger_color'         => '--danger-color',
+    'error_color'          => '--danger-color',  // alias: some themes use error_color
+    'warning_color'        => '--warning-color',
+    'info_color'           => '--info-color',
+    'card_bg'              => '--card-bg',
+    'input_bg'             => '--input-bg',
+    'thead_bg'             => '--thead-bg',
 ];
 
 // Build cssVars
@@ -102,19 +106,38 @@ foreach ($designs as $k => $v) {
     if ($safe === 'logo_url') $cssVars['--logo-url'] = $val;
 }
 
+// Extract font families from fonts array (first match per category wins)
+foreach ($fonts as $f) {
+    $cat = strtolower($f['category'] ?? 'body');
+    if (in_array($cat, ['body', 'main', 'primary', 'default']) && !isset($cssVars['--body-font-family'])) {
+        $cssVars['--body-font-family'] = $f['font_family'];
+    } elseif (in_array($cat, ['heading', 'title', 'header']) && !isset($cssVars['--heading-font-family'])) {
+        $cssVars['--heading-font-family'] = $f['font_family'];
+    }
+}
+
 // Ensure sensible defaults for critical variables
 $defaults = [
-    '--color-primary' => $cssVars['--color-primary'] ?? '#3B82F6',
-    '--color-primary-dark' => $cssVars['--color-primary-dark'] ?? ($cssVars['--color-primary'] ?? '#2563EB'),
-    '--color-accent' => $cssVars['--color-accent'] ?? '#F59E0B',
-    '--color-bg' => $cssVars['--color-bg'] ?? '#FFFFFF',
-    '--color-surface' => $cssVars['--color-surface'] ?? ($cssVars['--color-bg'] ?? '#FFFFFF'),
-    '--color-text' => $cssVars['--color-text'] ?? '#111827',
-    '--color-muted' => $cssVars['--color-muted'] ?? '#6B7280',
-    '--color-border' => $cssVars['--color-border'] ?? '#E5E7EB',
-    '--font-family' => $cssVars['--font-family'] ?? $fonts[0]['font_family'] ?? '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial',
-    '--font-size' => $cssVars['--font-size'] ?? '14px',
-    '--header-height' => $cssVars['--header-height'] ?? '64px'
+    '--primary-color'        => $cssVars['--primary-color'] ?? '#3B82F6',
+    '--primary-hover'        => $cssVars['--primary-hover'] ?? ($cssVars['--primary-color'] ?? '#2563EB'),
+    '--secondary-color'      => $cssVars['--secondary-color'] ?? '#64748b',
+    '--accent-color'         => $cssVars['--accent-color'] ?? '#F59E0B',
+    '--background-main'      => $cssVars['--background-main'] ?? '#0a0f1e',
+    '--background-secondary' => $cssVars['--background-secondary'] ?? '#0f1724',
+    '--text-primary'         => $cssVars['--text-primary'] ?? '#ffffff',
+    '--text-secondary'       => $cssVars['--text-secondary'] ?? '#94a3b8',
+    '--border-color'         => $cssVars['--border-color'] ?? '#263044',
+    '--danger-color'         => $cssVars['--danger-color'] ?? '#ef4444',
+    '--success-color'        => $cssVars['--success-color'] ?? '#22c55e',
+    '--warning-color'        => $cssVars['--warning-color'] ?? '#f59e0b',
+    '--info-color'           => $cssVars['--info-color'] ?? '#3b82f6',
+    '--card-bg'              => $cssVars['--card-bg'] ?? '#081127',
+    '--input-bg'             => $cssVars['--input-bg'] ?? '#0b1220',
+    '--thead-bg'             => $cssVars['--thead-bg'] ?? '#061021',
+    '--body-font-family'     => $cssVars['--body-font-family'] ?? $fonts[0]['font_family'] ?? '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial',
+    '--heading-font-family'  => $cssVars['--heading-font-family'] ?? $cssVars['--body-font-family'] ?? $fonts[0]['font_family'] ?? '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial',
+    '--font-size'            => $cssVars['--font-size'] ?? '14px',
+    '--header-height'        => $cssVars['--header-height'] ?? '64px'
 ];
 foreach ($defaults as $k => $v) {
     if (!isset($cssVars[$k])) $cssVars[$k] = $v;
