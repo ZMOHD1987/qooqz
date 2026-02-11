@@ -57,20 +57,61 @@ $entityId = isset($_GET['entity_id']) && (int)$_GET['entity_id'] > 0
 
 // API base
 $apiBase = '/api';
+
+// ════════════════════════════════════════════════════════════
+// TRANSLATION HELPERS
+// ════════════════════════════════════════════════════════════
+if (!function_exists('__t')) {
+    function __t($key, $fallback = '') {
+        if (function_exists('i18n_get')) {
+            $v = i18n_get($key);
+            return $v ?? ($fallback ?? $key);
+        }
+        return $fallback ?? $key;
+    }
+}
+
+// Load translation file for server-side rendering
+$_paymentStrings = [];
+$_allowedLangs = ['en', 'ar', 'fa', 'he', 'ur', 'tr', 'fr', 'de', 'es'];
+$_safeLang = in_array($lang, $_allowedLangs, true) ? $lang : 'en';
+$_langFile = __DIR__ . '/../../languages/EntitiesPayment/' . $_safeLang . '.json';
+if (file_exists($_langFile)) {
+    $_json = json_decode(file_get_contents($_langFile), true);
+    if (isset($_json['strings'])) {
+        $_paymentStrings = $_json['strings'];
+    }
+}
+
+function _pt($key, $fallback = '') {
+    global $_paymentStrings;
+    $keys = explode('.', $key);
+    $val = $_paymentStrings;
+    foreach ($keys as $k) {
+        if (is_array($val) && isset($val[$k])) {
+            $val = $val[$k];
+        } else {
+            return $fallback ?: $key;
+        }
+    }
+    return is_string($val) ? $val : ($fallback ?: $key);
+}
 ?>
 
 <link rel="stylesheet" href="/admin/assets/css/pages/entities_payment.css?v=<?= time() ?>">
+<meta data-page="entities_payment"
+      data-i18n-files="/languages/EntitiesPayment/<?= rawurlencode($lang) ?>.json">
 
 <div class="page-container" id="entitiesPaymentPageContainer" dir="<?= htmlspecialchars($dir) ?>">
 
     <!-- Page Header -->
     <div class="page-header">
-        <h1>Entity Payment Methods</h1>
-        <p>Manage payment gateways and bank accounts</p>
+        <h1 data-i18n="title"><?= htmlspecialchars(_pt('title', 'Entity Payment Methods')) ?></h1>
+        <p data-i18n="subtitle"><?= htmlspecialchars(_pt('subtitle', 'Manage payment gateways and bank accounts')) ?></p>
         <div class="page-header-actions">
             <?php if ($canManagePayment): ?>
-                <button id="btnAddPayment" class="btn btn-primary">Add Payment</button>
-                <button id="btnAddBank" class="btn btn-primary">Add Bank</button>
+                <button id="btnAddPayment" class="btn btn-primary" data-i18n="add_payment"><?= htmlspecialchars(_pt('add_payment', 'Add Payment')) ?></button>
+                <button id="btnAddBank" class="btn btn-primary" data-i18n="add_bank"><?= htmlspecialchars(_pt('add_bank', 'Add Bank')) ?></button>
             <?php endif; ?>
         </div>
     </div>
@@ -80,29 +121,29 @@ $apiBase = '/api';
     <div class="card">
         <div class="card-body">
             <select id="entitySelector" class="form-control">
-                <option value="">Select Entity...</option>
+                <option value="" data-i18n="select_entity"><?= htmlspecialchars(_pt('select_entity', 'Select Entity...')) ?></option>
             </select>
-            <button id="btnLoadEntityPayments" class="btn btn-primary" disabled>Load</button>
+            <button id="btnLoadEntityPayments" class="btn btn-primary" disabled data-i18n="load"><?= htmlspecialchars(_pt('load', 'Load')) ?></button>
         </div>
     </div>
     <?php endif; ?>
 
     <!-- Tabs -->
     <div class="content-tabs" <?= $entityId ? '' : 'style="display:none;"' ?>>
-        <button class="tab-btn active" data-tab="payment_methods">Payment Methods</button>
-        <button class="tab-btn" data-tab="bank_accounts">Bank Accounts</button>
+        <button class="tab-btn active" data-tab="payment_methods" data-i18n="payment_methods.title"><?= htmlspecialchars(_pt('payment_methods.title', 'Payment Methods')) ?></button>
+        <button class="tab-btn" data-tab="bank_accounts" data-i18n="bank_accounts.title"><?= htmlspecialchars(_pt('bank_accounts.title', 'Bank Accounts')) ?></button>
 
         <!-- Payment Methods -->
         <div class="tab-content active" id="tab-payment_methods">
             <table class="data-table" id="paymentMethodsTable">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Gateway</th>
-                        <th>Account Email</th>
-                        <th>Account ID</th>
-                        <th>Active</th>
-                        <th>Actions</th>
+                        <th data-i18n="table.id"><?= htmlspecialchars(_pt('table.id', 'ID')) ?></th>
+                        <th data-i18n="payment_methods.gateway"><?= htmlspecialchars(_pt('payment_methods.gateway', 'Gateway')) ?></th>
+                        <th data-i18n="payment_methods.account_email"><?= htmlspecialchars(_pt('payment_methods.account_email', 'Account Email')) ?></th>
+                        <th data-i18n="payment_methods.account_id"><?= htmlspecialchars(_pt('payment_methods.account_id', 'Account ID')) ?></th>
+                        <th data-i18n="payment_methods.active"><?= htmlspecialchars(_pt('payment_methods.active', 'Active')) ?></th>
+                        <th data-i18n="table.actions"><?= htmlspecialchars(_pt('table.actions', 'Actions')) ?></th>
                     </tr>
                 </thead>
                 <tbody id="paymentMethodsBody"></tbody>
@@ -114,15 +155,15 @@ $apiBase = '/api';
             <table class="data-table" id="bankAccountsTable">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Bank Name</th>
-                        <th>Account Holder</th>
-                        <th>Account Number</th>
-                        <th>IBAN</th>
-                        <th>SWIFT Code</th>
-                        <th>Primary</th>
-                        <th>Verified</th>
-                        <th>Actions</th>
+                        <th data-i18n="table.id"><?= htmlspecialchars(_pt('table.id', 'ID')) ?></th>
+                        <th data-i18n="bank_accounts.bank_name"><?= htmlspecialchars(_pt('bank_accounts.bank_name', 'Bank Name')) ?></th>
+                        <th data-i18n="bank_accounts.account_holder"><?= htmlspecialchars(_pt('bank_accounts.account_holder', 'Account Holder')) ?></th>
+                        <th data-i18n="bank_accounts.account_number"><?= htmlspecialchars(_pt('bank_accounts.account_number', 'Account Number')) ?></th>
+                        <th data-i18n="bank_accounts.iban"><?= htmlspecialchars(_pt('bank_accounts.iban', 'IBAN')) ?></th>
+                        <th data-i18n="bank_accounts.swift_code"><?= htmlspecialchars(_pt('bank_accounts.swift_code', 'SWIFT Code')) ?></th>
+                        <th data-i18n="bank_accounts.primary"><?= htmlspecialchars(_pt('bank_accounts.primary', 'Primary')) ?></th>
+                        <th data-i18n="bank_accounts.verified"><?= htmlspecialchars(_pt('bank_accounts.verified', 'Verified')) ?></th>
+                        <th data-i18n="table.actions"><?= htmlspecialchars(_pt('table.actions', 'Actions')) ?></th>
                     </tr>
                 </thead>
                 <tbody id="bankAccountsBody"></tbody>
@@ -133,15 +174,15 @@ $apiBase = '/api';
     <!-- Payment Method Modal -->
     <div id="paymentMethodModal" class="modal" style="display:none;">
         <div class="modal-content">
-            <h3 id="paymentModalTitle">Add Payment Method</h3>
+            <h3 id="paymentModalTitle" data-i18n="payment_methods.add"><?= htmlspecialchars(_pt('payment_methods.add', 'Add Payment Method')) ?></h3>
             <form id="paymentMethodForm">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
                 <input type="hidden" name="entity_id" value="<?= $entityId ?>">
                 <input type="hidden" name="id" id="pmEditId" value="">
                 <div class="form-group">
-                    <label>Gateway *</label>
+                    <label data-i18n="payment_methods.gateway"><?= htmlspecialchars(_pt('payment_methods.gateway', 'Gateway')) ?> *</label>
                     <select name="gateway_name" id="pmGateway" class="form-control" required>
-                        <option value="">Select</option>
+                        <option value="" data-i18n="payment_methods.select_gateway"><?= htmlspecialchars(_pt('payment_methods.select_gateway', 'Select')) ?></option>
                         <option value="stripe">Stripe</option>
                         <option value="paypal">PayPal</option>
                         <option value="moyasar">Moyasar</option>
@@ -154,23 +195,23 @@ $apiBase = '/api';
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Account Email</label>
+                    <label data-i18n="payment_methods.account_email"><?= htmlspecialchars(_pt('payment_methods.account_email', 'Account Email')) ?></label>
                     <input type="email" name="account_email" id="pmEmail" class="form-control">
                 </div>
                 <div class="form-group">
-                    <label>Account ID</label>
+                    <label data-i18n="payment_methods.account_id"><?= htmlspecialchars(_pt('payment_methods.account_id', 'Account ID')) ?></label>
                     <input type="text" name="account_id" id="pmAccountId" class="form-control">
                 </div>
                 <div class="form-group">
-                    <label>Active</label>
+                    <label data-i18n="payment_methods.active"><?= htmlspecialchars(_pt('payment_methods.active', 'Active')) ?></label>
                     <select name="is_active" id="pmActive" class="form-control">
-                        <option value="1">Yes</option>
-                        <option value="0">No</option>
+                        <option value="1" data-i18n="table.yes"><?= htmlspecialchars(_pt('table.yes', 'Yes')) ?></option>
+                        <option value="0" data-i18n="table.no"><?= htmlspecialchars(_pt('table.no', 'No')) ?></option>
                     </select>
                 </div>
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Save</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('paymentMethodModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="form.save"><?= htmlspecialchars(_pt('form.save', 'Save')) ?></button>
+                    <button type="button" class="btn btn-secondary btn-close-modal" data-modal="paymentMethodModal" data-i18n="form.cancel"><?= htmlspecialchars(_pt('form.cancel', 'Cancel')) ?></button>
                 </div>
             </form>
         </div>
@@ -179,48 +220,48 @@ $apiBase = '/api';
     <!-- Bank Account Modal -->
     <div id="bankAccountModal" class="modal" style="display:none;">
         <div class="modal-content">
-            <h3 id="bankModalTitle">Add Bank Account</h3>
+            <h3 id="bankModalTitle" data-i18n="bank_accounts.add"><?= htmlspecialchars(_pt('bank_accounts.add', 'Add Bank Account')) ?></h3>
             <form id="bankAccountForm">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
                 <input type="hidden" name="entity_id" value="<?= $entityId ?>">
                 <input type="hidden" name="id" id="baEditId" value="">
                 <div class="form-group">
-                    <label>Bank Name *</label>
+                    <label data-i18n="bank_accounts.bank_name"><?= htmlspecialchars(_pt('bank_accounts.bank_name', 'Bank Name')) ?> *</label>
                     <input type="text" name="bank_name" id="baBankName" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label>Account Holder *</label>
+                    <label data-i18n="bank_accounts.account_holder"><?= htmlspecialchars(_pt('bank_accounts.account_holder', 'Account Holder')) ?> *</label>
                     <input type="text" name="account_holder_name" id="baHolderName" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label>Account Number *</label>
+                    <label data-i18n="bank_accounts.account_number"><?= htmlspecialchars(_pt('bank_accounts.account_number', 'Account Number')) ?> *</label>
                     <input type="text" name="account_number" id="baAccountNumber" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label>IBAN</label>
+                    <label data-i18n="bank_accounts.iban"><?= htmlspecialchars(_pt('bank_accounts.iban', 'IBAN')) ?></label>
                     <input type="text" name="iban" id="baIban" class="form-control">
                 </div>
                 <div class="form-group">
-                    <label>SWIFT Code</label>
+                    <label data-i18n="bank_accounts.swift_code"><?= htmlspecialchars(_pt('bank_accounts.swift_code', 'SWIFT Code')) ?></label>
                     <input type="text" name="swift_code" id="baSwift" class="form-control">
                 </div>
                 <div class="form-group">
-                    <label>Primary</label>
+                    <label data-i18n="bank_accounts.primary"><?= htmlspecialchars(_pt('bank_accounts.primary', 'Primary')) ?></label>
                     <select name="is_primary" id="baPrimary" class="form-control">
-                        <option value="0">No</option>
-                        <option value="1">Yes</option>
+                        <option value="0" data-i18n="table.no"><?= htmlspecialchars(_pt('table.no', 'No')) ?></option>
+                        <option value="1" data-i18n="table.yes"><?= htmlspecialchars(_pt('table.yes', 'Yes')) ?></option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Verified</label>
+                    <label data-i18n="bank_accounts.verified"><?= htmlspecialchars(_pt('bank_accounts.verified', 'Verified')) ?></label>
                     <select name="is_verified" id="baVerified" class="form-control">
-                        <option value="0">No</option>
-                        <option value="1">Yes</option>
+                        <option value="0" data-i18n="table.no"><?= htmlspecialchars(_pt('table.no', 'No')) ?></option>
+                        <option value="1" data-i18n="table.yes"><?= htmlspecialchars(_pt('table.yes', 'Yes')) ?></option>
                     </select>
                 </div>
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Save</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('bankAccountModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="form.save"><?= htmlspecialchars(_pt('form.save', 'Save')) ?></button>
+                    <button type="button" class="btn btn-secondary btn-close-modal" data-modal="bankAccountModal" data-i18n="form.cancel"><?= htmlspecialchars(_pt('form.cancel', 'Cancel')) ?></button>
                 </div>
             </form>
         </div>
@@ -232,10 +273,30 @@ $apiBase = '/api';
 (function(){
     var API_BASE = '<?= $apiBase ?>';
     var CSRF = <?= json_encode($csrf) ?>;
+    var STRINGS = <?= json_encode($_paymentStrings, JSON_UNESCAPED_UNICODE) ?>;
+
+    // Translation helper - resolves dot-separated keys
+    function t(key, fallback) {
+        var keys = key.split('.');
+        var val = STRINGS;
+        for (var i = 0; i < keys.length; i++) {
+            if (val && typeof val === 'object' && keys[i] in val) {
+                val = val[keys[i]];
+            } else {
+                return fallback || key;
+            }
+        }
+        return (typeof val === 'string') ? val : (fallback || key);
+    }
 
     // Modal helpers
     window.openModal = function(id){ document.getElementById(id).style.display='block'; };
     window.closeModal = function(id){ document.getElementById(id).style.display='none'; };
+
+    // Close modal buttons (delegated)
+    document.querySelectorAll('.btn-close-modal').forEach(function(btn){
+        btn.addEventListener('click', function(){ closeModal(btn.dataset.modal); });
+    });
 
     // Tab switching
     document.querySelectorAll('.tab-btn').forEach(function(btn){
@@ -250,13 +311,13 @@ $apiBase = '/api';
 
     // Add Payment / Bank buttons
     document.getElementById('btnAddPayment')?.addEventListener('click', function(){
-        document.getElementById('paymentModalTitle').textContent = 'Add Payment Method';
+        document.getElementById('paymentModalTitle').textContent = t('payment_methods.add', 'Add Payment Method');
         document.getElementById('paymentMethodForm').reset();
         document.getElementById('pmEditId').value = '';
         openModal('paymentMethodModal');
     });
     document.getElementById('btnAddBank')?.addEventListener('click', function(){
-        document.getElementById('bankModalTitle').textContent = 'Add Bank Account';
+        document.getElementById('bankModalTitle').textContent = t('bank_accounts.add', 'Add Bank Account');
         document.getElementById('bankAccountForm').reset();
         document.getElementById('baEditId').value = '';
         openModal('bankAccountModal');
@@ -316,7 +377,7 @@ $apiBase = '/api';
     // Submit Payment Method
     document.getElementById('paymentMethodForm')?.addEventListener('submit', function(e){
         e.preventDefault();
-        if(!entityId){ alert('Please select an entity first.'); return; }
+        if(!entityId){ alert(t('select_entity_first', 'Please select an entity first.')); return; }
         var editId = document.getElementById('pmEditId').value;
         var method = editId ? 'PUT' : 'POST';
         fetch(API_BASE + '/entity_payment_methods', {
@@ -328,10 +389,10 @@ $apiBase = '/api';
                 closeModal('paymentMethodModal');
                 document.getElementById('paymentMethodForm').reset();
                 document.getElementById('pmEditId').value = '';
-                alert('Saved');
+                alert(t('saved', 'Saved successfully'));
                 loadPayments();
             } else {
-                alert('Error: ' + (d.message || 'Unknown error'));
+                alert(d.message || t('unknown_error', 'Unknown error'));
             }
         });
     });
@@ -339,7 +400,7 @@ $apiBase = '/api';
     // Submit Bank Account
     document.getElementById('bankAccountForm')?.addEventListener('submit', function(e){
         e.preventDefault();
-        if(!entityId){ alert('Please select an entity first.'); return; }
+        if(!entityId){ alert(t('select_entity_first', 'Please select an entity first.')); return; }
         var editId = document.getElementById('baEditId').value;
         var method = editId ? 'PUT' : 'POST';
         fetch(API_BASE + '/entity_bank_accounts', {
@@ -351,10 +412,10 @@ $apiBase = '/api';
                 closeModal('bankAccountModal');
                 document.getElementById('bankAccountForm').reset();
                 document.getElementById('baEditId').value = '';
-                alert('Saved');
+                alert(t('saved', 'Saved successfully'));
                 loadBanks();
             } else {
-                alert('Error: ' + (d.message || 'Unknown error'));
+                alert(d.message || t('unknown_error', 'Unknown error'));
             }
         });
     });
@@ -384,10 +445,10 @@ $apiBase = '/api';
                         '<td>' + esc(p.gateway_name) + '</td>' +
                         '<td>' + esc(p.account_email || '') + '</td>' +
                         '<td>' + esc(p.account_id || '') + '</td>' +
-                        '<td>' + (p.is_active ? 'Yes' : 'No') + '</td>' +
+                        '<td>' + (p.is_active ? t('table.yes', 'Yes') : t('table.no', 'No')) + '</td>' +
                         '<td>' +
-                            '<button class="btn btn-sm btn-info edit-payment-btn" data-id="' + esc(p.id) + '">Edit</button> ' +
-                            '<button class="btn btn-sm btn-danger delete-payment-btn" data-id="' + esc(p.id) + '">Delete</button>' +
+                            '<button class="btn btn-sm btn-info edit-payment-btn" data-id="' + esc(p.id) + '">' + t('table.edit', 'Edit') + '</button> ' +
+                            '<button class="btn btn-sm btn-danger delete-payment-btn" data-id="' + esc(p.id) + '">' + t('table.delete', 'Delete') + '</button>' +
                         '</td>';
                     tbody.appendChild(tr);
                 });
@@ -414,11 +475,11 @@ $apiBase = '/api';
                         '<td>' + esc(b.account_number) + '</td>' +
                         '<td>' + esc(b.iban || '') + '</td>' +
                         '<td>' + esc(b.swift_code || '') + '</td>' +
-                        '<td>' + (b.is_primary ? 'Yes' : 'No') + '</td>' +
-                        '<td>' + (b.is_verified ? 'Yes' : 'No') + '</td>' +
+                        '<td>' + (b.is_primary ? t('table.yes', 'Yes') : t('table.no', 'No')) + '</td>' +
+                        '<td>' + (b.is_verified ? t('table.yes', 'Yes') : t('table.no', 'No')) + '</td>' +
                         '<td>' +
-                            '<button class="btn btn-sm btn-info edit-bank-btn" data-id="' + esc(b.id) + '">Edit</button> ' +
-                            '<button class="btn btn-sm btn-danger delete-bank-btn" data-id="' + esc(b.id) + '">Delete</button>' +
+                            '<button class="btn btn-sm btn-info edit-bank-btn" data-id="' + esc(b.id) + '">' + t('table.edit', 'Edit') + '</button> ' +
+                            '<button class="btn btn-sm btn-danger delete-bank-btn" data-id="' + esc(b.id) + '">' + t('table.delete', 'Delete') + '</button>' +
                         '</td>';
                     tbody.appendChild(tr);
                 });
@@ -441,7 +502,7 @@ $apiBase = '/api';
                     document.getElementById('pmEmail').value = rec.account_email || '';
                     document.getElementById('pmAccountId').value = rec.account_id || '';
                     document.getElementById('pmActive').value = rec.is_active ? '1' : '0';
-                    document.getElementById('paymentModalTitle').textContent = 'Edit Payment Method';
+                    document.getElementById('paymentModalTitle').textContent = t('payment_methods.edit', 'Edit Payment Method');
                     openModal('paymentMethodModal');
                 }
             });
@@ -464,7 +525,7 @@ $apiBase = '/api';
                     document.getElementById('baSwift').value = rec.swift_code || '';
                     document.getElementById('baPrimary').value = rec.is_primary ? '1' : '0';
                     document.getElementById('baVerified').value = rec.is_verified ? '1' : '0';
-                    document.getElementById('bankModalTitle').textContent = 'Edit Bank Account';
+                    document.getElementById('bankModalTitle').textContent = t('bank_accounts.edit', 'Edit Bank Account');
                     openModal('bankAccountModal');
                 }
             });
@@ -474,14 +535,14 @@ $apiBase = '/api';
         // Delete Payment
         var delPm = e.target.closest('.delete-payment-btn');
         if(delPm){
-            if(!confirm('Are you sure you want to delete this payment method?')) return;
+            if(!confirm(t('confirm_delete_payment', 'Are you sure you want to delete this payment method?'))) return;
             var delId = delPm.dataset.id;
             fetch(API_BASE + '/entity_payment_methods?id=' + delId + '&entity_id=' + entityId, {
                 method: 'DELETE',
                 headers: {'X-CSRF-TOKEN': CSRF}
             }).then(function(r){ return r.json(); }).then(function(d){
-                if(d.success){ alert('Deleted'); loadPayments(); }
-                else alert('Error: ' + (d.message || 'Delete failed'));
+                if(d.success){ alert(t('deleted', 'Deleted successfully')); loadPayments(); }
+                else alert(d.message || t('delete_failed', 'Delete failed'));
             });
             return;
         }
@@ -489,14 +550,14 @@ $apiBase = '/api';
         // Delete Bank
         var delBa = e.target.closest('.delete-bank-btn');
         if(delBa){
-            if(!confirm('Are you sure you want to delete this bank account?')) return;
+            if(!confirm(t('confirm_delete_bank', 'Are you sure you want to delete this bank account?'))) return;
             var delId2 = delBa.dataset.id;
             fetch(API_BASE + '/entity_bank_accounts?id=' + delId2 + '&entity_id=' + entityId, {
                 method: 'DELETE',
                 headers: {'X-CSRF-TOKEN': CSRF}
             }).then(function(r){ return r.json(); }).then(function(d){
-                if(d.success){ alert('Deleted'); loadBanks(); }
-                else alert('Error: ' + (d.message || 'Delete failed'));
+                if(d.success){ alert(t('deleted', 'Deleted successfully')); loadBanks(); }
+                else alert(d.message || t('delete_failed', 'Delete failed'));
             });
             return;
         }
