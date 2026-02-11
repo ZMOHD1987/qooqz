@@ -12,6 +12,9 @@
     const COUNTRIES_API = CFG.countriesApi || '/api/countries';
     const CITIES_API = CFG.citiesApi || '/api/cities';
 
+    const S = CFG.strings || {};
+    function t(key, fallback) { return S[key] || fallback || key; }
+
     const state = {
         language: CFG.lang || 'ar',
         items: [],
@@ -53,14 +56,14 @@
     
     function getUserLocation() {
         if (!navigator.geolocation) {
-            showMessage('Geolocation is not supported by your browser', 'error');
+            showMessage(t('location_not_supported', 'Geolocation is not supported by your browser'), 'error');
             return;
         }
 
         const btnGetLocation = document.getElementById('btnGetLocation');
         if (btnGetLocation) {
             btnGetLocation.disabled = true;
-            btnGetLocation.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting location...';
+            btnGetLocation.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + t('getting_location', 'Getting location...');
         }
 
         navigator.geolocation.getCurrentPosition(
@@ -71,25 +74,25 @@
                 if (el.latitude) el.latitude.value = lat.toFixed(7);
                 if (el.longitude) el.longitude.value = lng.toFixed(7);
 
-                showMessage('Location retrieved successfully!', 'success');
+                showMessage(t('location_success', 'Location retrieved successfully!'), 'success');
                 
                 if (btnGetLocation) {
                     btnGetLocation.disabled = false;
-                    btnGetLocation.innerHTML = '<i class="fas fa-map-marker-alt"></i> Get Location';
+                    btnGetLocation.innerHTML = '<i class="fas fa-map-marker-alt"></i> ' + t('get_location', 'Get Location');
                 }
             },
             (error) => {
-                let errorMsg = 'Unable to retrieve your location';
+                let errorMsg = t('location_error', 'Unable to retrieve your location');
                 
                 switch(error.code) {
                     case error.PERMISSION_DENIED:
-                        errorMsg = 'Location access denied. Please enable location permissions.';
+                        errorMsg = t('location_denied', 'Location access denied. Please enable location permissions.');
                         break;
                     case error.POSITION_UNAVAILABLE:
-                        errorMsg = 'Location information is unavailable.';
+                        errorMsg = t('location_unavailable', 'Location information is unavailable.');
                         break;
                     case error.TIMEOUT:
-                        errorMsg = 'Location request timed out.';
+                        errorMsg = t('location_timeout', 'Location request timed out.');
                         break;
                 }
 
@@ -97,7 +100,7 @@
                 
                 if (btnGetLocation) {
                     btnGetLocation.disabled = false;
-                    btnGetLocation.innerHTML = '<i class="fas fa-map-marker-alt"></i> Get Location';
+                    btnGetLocation.innerHTML = '<i class="fas fa-map-marker-alt"></i> ' + t('get_location', 'Get Location');
                 }
             },
             {
@@ -134,7 +137,7 @@
             }
 
             if (el.country) {
-                el.country.innerHTML = '<option value="">Select Country</option>';
+                el.country.innerHTML = '<option value="">' + t('select_country', 'Select Country') + '</option>';
                 state.countries.forEach(country => {
                     const option = document.createElement('option');
                     option.value = country.id;
@@ -154,7 +157,7 @@
             console.log('✓ Countries loaded:', state.countries.length);
         } catch (e) {
             console.error('❌ loadCountries error:', e);
-            showMessage('Failed to load countries', 'error');
+            showMessage(t('failed_load_countries', 'Failed to load countries'), 'error');
         }
     }
 
@@ -165,7 +168,7 @@
     async function loadCities(countryId, selectedId = null) {
         if (!el.city) return;
 
-        el.city.innerHTML = '<option value="">Select City</option>';
+        el.city.innerHTML = '<option value="">' + t('select_city', 'Select City') + '</option>';
         el.city.disabled = true;
 
         if (!countryId) {
@@ -206,7 +209,7 @@
             console.log('✓ Cities loaded:', state.cities.length);
         } catch (e) {
             console.error('❌ loadCities error:', e);
-            showMessage('Failed to load cities', 'error');
+            showMessage(t('failed_load_cities', 'Failed to load cities'), 'error');
         }
     }
 
@@ -217,7 +220,7 @@
     async function loadAddresses() {
         if (!el.tbody) return;
 
-        el.tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Loading...</td></tr>';
+        el.tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">' + t('loading', 'Loading...') + '</td></tr>';
 
         try {
             const params = new URLSearchParams({
@@ -265,8 +268,8 @@
             console.log('✓ Addresses loaded:', state.items.length);
         } catch (e) {
             console.error('❌ loadAddresses error:', e);
-            el.tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:red">Error loading addresses</td></tr>';
-            showMessage('Failed to load addresses', 'error');
+            el.tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:red">' + t('error_loading', 'Error loading addresses') + '</td></tr>';
+            showMessage(t('failed_load_list', 'Failed to load addresses'), 'error');
         }
     }
 
@@ -280,7 +283,7 @@
         console.log('🎨 Rendering table with items:', items);
 
         if (!items || items.length === 0) {
-            el.tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888">No addresses found</td></tr>';
+            el.tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888">' + t('no_addresses', 'No addresses found') + '</td></tr>';
             return;
         }
 
@@ -292,10 +295,10 @@
             const isPrimary = addr.is_primary || addr.is_default || false;
 
             const editBtn = CFG.permissions.canEdit 
-                ? `<button class="btn btn-sm btn-secondary btnEdit" data-id="${addr.id}">Edit</button>` 
+                ? `<button class="btn btn-sm btn-secondary btnEdit" data-id="${addr.id}">${t('edit', 'Edit')}</button>` 
                 : '';
             const deleteBtn = CFG.permissions.canDelete 
-                ? `<button class="btn btn-sm btn-danger btnDelete" data-id="${addr.id}">Delete</button>` 
+                ? `<button class="btn btn-sm btn-danger btnDelete" data-id="${addr.id}">${t('delete', 'Delete')}</button>` 
                 : '';
 
             return `
@@ -305,7 +308,7 @@
                     <td>${esc(cityName)}</td>
                     <td>${esc(addressLine)}</td>
                     <td>${esc(postalCode)}</td>
-                    <td>${isPrimary ? '✔' : ''}</td>
+                    <td>${isPrimary ? t('primary_yes', '✔') : ''}</td>
                     <td>${editBtn} ${deleteBtn}</td>
                 </tr>
             `;
@@ -330,7 +333,7 @@
     function addAddress() {
         if (el.form) el.form.reset();
         if (el.formCard) el.formCard.style.display = 'block';
-        if (el.formTitle) el.formTitle.textContent = 'Add Address';
+        if (el.formTitle) el.formTitle.textContent = t('add_address', 'Add Address');
         if (el.btnDelete) el.btnDelete.style.display = 'none';
 
         // Set default values for Super Admin fields
@@ -344,7 +347,7 @@
         // Reset selects
         loadCountries();
         if (el.city) {
-            el.city.innerHTML = '<option value="">Select City</option>';
+            el.city.innerHTML = '<option value="">' + t('select_city', 'Select City') + '</option>';
             el.city.disabled = true;
         }
         
@@ -365,7 +368,7 @@
             const addr = result.data || result;
 
             if (el.formCard) el.formCard.style.display = 'block';
-            if (el.formTitle) el.formTitle.textContent = 'Edit Address';
+            if (el.formTitle) el.formTitle.textContent = t('edit_address', 'Edit Address');
             if (el.btnDelete) el.btnDelete.style.display = 'block';
 
             // Fill form
@@ -395,7 +398,7 @@
 
         } catch (e) {
             console.error('❌ editAddress error:', e);
-            showMessage('Failed to load address', 'error');
+            showMessage(t('failed_load', 'Failed to load address'), 'error');
         }
     }
 
@@ -436,17 +439,17 @@
             console.log('📥 Save response:', result);
 
             if (result.success !== false) {
-                showMessage(id ? 'Address updated successfully' : 'Address created successfully', 'success');
+                showMessage(id ? t('address_updated', 'Address updated successfully') : t('address_created', 'Address created successfully'), 'success');
                 if (el.formCard) el.formCard.style.display = 'none';
                 loadAddresses();
             } else {
-                const errorMsg = result.message || result.error || 'Save failed';
+                const errorMsg = result.message || result.error || t('save_failed', 'Save failed');
                 showMessage(errorMsg, 'error');
                 console.error('Save failed:', result);
             }
         } catch (e) {
             console.error('❌ saveAddress error:', e);
-            const errorMsg = e.message || 'Failed to save address';
+            const errorMsg = e.message || t('failed_save', 'Failed to save address');
             showMessage(errorMsg, 'error');
         }
     }
@@ -456,7 +459,7 @@
     // ═══════════════════════════════════════════════════════════
     
     async function deleteAddress(id) {
-        if (!confirm('Are you sure you want to delete this address?')) {
+        if (!confirm(t('confirm_delete', 'Are you sure you want to delete this address?'))) {
             return;
         }
 
@@ -467,14 +470,14 @@
             });
 
             if (result.success !== false) {
-                showMessage('Address deleted successfully', 'success');
+                showMessage(t('address_deleted', 'Address deleted successfully'), 'success');
                 loadAddresses();
             } else {
-                showMessage(result.message || 'Delete failed', 'error');
+                showMessage(result.message || t('delete_failed', 'Delete failed'), 'error');
             }
         } catch (e) {
             console.error('❌ deleteAddress error:', e);
-            showMessage('Failed to delete address', 'error');
+            showMessage(t('failed_delete', 'Failed to delete address'), 'error');
         }
     }
 

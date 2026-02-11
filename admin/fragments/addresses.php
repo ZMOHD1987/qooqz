@@ -78,8 +78,31 @@ if (!$canView) {
 // ════════════════════════════════════════════════════════════
 // TRANSLATION HELPER
 // ════════════════════════════════════════════════════════════
-function __t($key, $fallback = '') {
-    return function_exists('i18n_get') ? (i18n_get($key) ?? $fallback) : $fallback;
+$_addrStrings = [];
+$_allowedLangs = ['en', 'ar', 'fa', 'he', 'ur', 'tr', 'fr', 'de', 'es'];
+$_safeLang = in_array($lang, $_allowedLangs, true) ? $lang : 'en';
+$_langFile = __DIR__ . '/../../languages/Addresses/' . $_safeLang . '.json';
+if (file_exists($_langFile)) {
+    $_json = json_decode(file_get_contents($_langFile), true);
+    if (isset($_json['strings'])) {
+        $_addrStrings = $_json['strings'];
+    }
+}
+
+if (!function_exists('__t')) {
+    function __t($key, $fallback = '') {
+        global $_addrStrings;
+        $keys = explode('.', $key);
+        $val = $_addrStrings;
+        foreach ($keys as $k) {
+            if (is_array($val) && isset($val[$k])) {
+                $val = $val[$k];
+            } else {
+                return $fallback ?: $key;
+            }
+        }
+        return is_string($val) ? $val : ($fallback ?: $key);
+    }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -99,14 +122,14 @@ $apiBase = '/api';
     <!-- Header -->
     <div class="page-header">
         <div>
-            <h1><?= __t('addresses.title', 'Addresses') ?></h1>
-            <p><?= __t('addresses.subtitle', 'Manage addresses') ?></p>
+            <h1><?= __t('title', 'Addresses') ?></h1>
+            <p><?= __t('subtitle', 'Manage addresses') ?></p>
         </div>
 
         <?php if ($canCreate): ?>
         <button id="btnAddAddress" class="btn btn-primary">
             <i class="fas fa-plus"></i>
-            <?= __t('addresses.add', 'Add Address') ?>
+            <?= __t('add_address', 'Add Address') ?>
         </button>
         <?php endif; ?>
     </div>
@@ -114,7 +137,7 @@ $apiBase = '/api';
     <!-- Form -->
     <div class="card form-card" id="addressFormCard" style="display:none">
         <div class="card-header">
-            <h3 id="addressFormTitle"><?= __t('addresses.form.add', 'Add Address') ?></h3>
+            <h3 id="addressFormTitle"><?= __t('add_address', 'Add Address') ?></h3>
             <button type="button" id="btnCloseForm">&times;</button>
         </div>
 
@@ -130,20 +153,20 @@ $apiBase = '/api';
                 <?php else: ?>
                 <!-- Super Admin Fields -->
                 <div class="alert-info" style="padding: 12px; background: #dbeafe; border: 1px solid #3b82f6; border-radius: 6px; margin-bottom: 16px;">
-                    <i class="fas fa-crown"></i> <?= __t('addresses.super_admin_mode', 'Super Admin Mode - Full Control') ?>
+                    <i class="fas fa-crown"></i> <?= __t('super_admin_mode', 'Super Admin Mode - Full Control') ?>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label><?= __t('addresses.owner_type', 'Owner Type') ?> <span class="required">*</span></label>
+                        <label><?= __t('owner_type', 'Owner Type') ?> <span class="required">*</span></label>
                         <select name="owner_type" id="ownerTypeSelect" class="form-control" required>
-                            <option value="user"><?= __t('addresses.owner_user', 'User') ?></option>
-                            <option value="entity"><?= __t('addresses.owner_entity', 'Entity') ?></option>
+                            <option value="user"><?= __t('owner_user', 'User') ?></option>
+                            <option value="entity"><?= __t('owner_entity', 'Entity') ?></option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label><?= __t('addresses.owner_id', 'Owner ID') ?> <span class="required">*</span></label>
+                        <label><?= __t('owner_id', 'Owner ID') ?> <span class="required">*</span></label>
                         <input type="number" name="owner_id" id="ownerIdInput" class="form-control" required min="1">
                     </div>
                 </div>
@@ -151,70 +174,70 @@ $apiBase = '/api';
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label><?= __t('addresses.country', 'Country') ?> <span class="required">*</span></label>
+                        <label><?= __t('country', 'Country') ?> <span class="required">*</span></label>
                         <select id="countrySelect" name="country_id" required>
-                            <option value=""><?= __t('common.select', 'Select...') ?></option>
+                            <option value=""><?= __t('select', 'Select...') ?></option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label><?= __t('addresses.city', 'City') ?> <span class="required">*</span></label>
+                        <label><?= __t('city', 'City') ?> <span class="required">*</span></label>
                         <select id="citySelect" name="city_id" required disabled>
-                            <option value=""><?= __t('common.select', 'Select...') ?></option>
+                            <option value=""><?= __t('select', 'Select...') ?></option>
                         </select>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label><?= __t('addresses.address_line1', 'Address Line 1') ?> <span class="required">*</span></label>
+                    <label><?= __t('address_line1', 'Address Line 1') ?> <span class="required">*</span></label>
                     <input type="text" name="address_line1" class="form-control" required>
                 </div>
 
                 <div class="form-group">
-                    <label><?= __t('addresses.address_line2', 'Address Line 2') ?></label>
+                    <label><?= __t('address_line2', 'Address Line 2') ?></label>
                     <input type="text" name="address_line2" class="form-control">
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label><?= __t('addresses.postal_code', 'Postal Code') ?></label>
+                        <label><?= __t('postal_code', 'Postal Code') ?></label>
                         <input type="text" name="postal_code" class="form-control">
                     </div>
 
                     <div class="form-group">
-                        <label><?= __t('addresses.is_primary', 'Primary Address') ?></label>
+                        <label><?= __t('is_primary', 'Primary Address') ?></label>
                         <select name="is_primary" class="form-control">
-                            <option value="0"><?= __t('common.no', 'No') ?></option>
-                            <option value="1"><?= __t('common.yes', 'Yes') ?></option>
+                            <option value="0"><?= __t('no', 'No') ?></option>
+                            <option value="1"><?= __t('yes', 'Yes') ?></option>
                         </select>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label>
-                        <?= __t('addresses.coordinates', 'Coordinates') ?>
-                        <button type="button" id="btnGetLocation" class="btn btn-sm btn-outline" title="<?= __t('addresses.get_my_location', 'Get My Location') ?>">
-                            <i class="fas fa-map-marker-alt"></i> <?= __t('addresses.get_location', 'Get Location') ?>
+                        <?= __t('coordinates', 'Coordinates') ?>
+                        <button type="button" id="btnGetLocation" class="btn btn-sm btn-outline" title="<?= __t('get_my_location', 'Get My Location') ?>">
+                            <i class="fas fa-map-marker-alt"></i> <?= __t('get_location', 'Get Location') ?>
                         </button>
                     </label>
                     <div class="form-row">
                         <div class="form-group">
-                            <input type="text" name="latitude" id="latitude" class="form-control" placeholder="<?= __t('addresses.latitude', 'Latitude') ?>" step="any">
+                            <input type="text" name="latitude" id="latitude" class="form-control" placeholder="<?= __t('latitude', 'Latitude') ?>" step="any">
                         </div>
                         <div class="form-group">
-                            <input type="text" name="longitude" id="longitude" class="form-control" placeholder="<?= __t('addresses.longitude', 'Longitude') ?>" step="any">
+                            <input type="text" name="longitude" id="longitude" class="form-control" placeholder="<?= __t('longitude', 'Longitude') ?>" step="any">
                         </div>
                     </div>
                 </div>
 
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> <?= __t('common.save', 'Save') ?>
+                        <i class="fas fa-save"></i> <?= __t('save', 'Save') ?>
                     </button>
 
                     <?php if ($canDelete): ?>
                     <button type="button" id="btnDeleteAddress" class="btn btn-danger" style="display:none">
-                        <i class="fas fa-trash"></i> <?= __t('common.delete', 'Delete') ?>
+                        <i class="fas fa-trash"></i> <?= __t('delete', 'Delete') ?>
                     </button>
                     <?php endif; ?>
                 </div>
@@ -230,16 +253,16 @@ $apiBase = '/api';
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th><?= __t('addresses.country', 'Country') ?></th>
-                        <th><?= __t('addresses.city', 'City') ?></th>
-                        <th><?= __t('addresses.address', 'Address') ?></th>
-                        <th><?= __t('addresses.postal_code', 'Postal Code') ?></th>
-                        <th><?= __t('addresses.primary', 'Primary') ?></th>
-                        <th><?= __t('common.actions', 'Actions') ?></th>
+                        <th><?= __t('country', 'Country') ?></th>
+                        <th><?= __t('city', 'City') ?></th>
+                        <th><?= __t('address', 'Address') ?></th>
+                        <th><?= __t('postal_code', 'Postal Code') ?></th>
+                        <th><?= __t('primary', 'Primary') ?></th>
+                        <th><?= __t('actions', 'Actions') ?></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td colspan="7" style="text-align:center"><?= __t('common.loading', 'Loading...') ?></td></tr>
+                    <tr><td colspan="7" style="text-align:center"><?= __t('loading', 'Loading...') ?></td></tr>
                 </tbody>
             </table>
         </div>
@@ -264,7 +287,8 @@ window.ADDRESSES_CONFIG = {
         canCreate: <?= json_encode($canCreate) ?>,
         canEdit: <?= json_encode($canEdit) ?>,
         canDelete: <?= json_encode($canDelete) ?>
-    }
+    },
+    strings: <?= json_encode($_addrStrings, JSON_UNESCAPED_UNICODE) ?>
 };
 </script>
 
