@@ -2,9 +2,9 @@
     var CFG = window.BAD_WORDS_CONFIG || {};
     var CSRF = CFG.csrfToken || '';
     var STRINGS = CFG.strings || {};
-    var CAN_CREATE = CFG.canCreate || false;
-    var CAN_EDIT = CFG.canEdit || false;
-    var CAN_DELETE = CFG.canDelete || false;
+    var CAN_CREATE = !!CFG.canCreate;
+    var CAN_EDIT = !!CFG.canEdit;
+    var CAN_DELETE = !!CFG.canDelete;
     var FALLBACK_LANGS = ['ar','en','fr','tr','ur','de','es'];
 
     // Translation helper - resolves dot-separated keys
@@ -190,8 +190,11 @@
         .then(function(d){
             var tbody = document.getElementById('translationsBody');
             tbody.innerHTML = '';
-            if(d.success && d.data && d.data.items && d.data.items.length > 0){
-                d.data.items.forEach(function(item){
+            var items = [];
+            if(d.data && d.data.items) { items = d.data.items; }
+            else if(Array.isArray(d.data)) { items = d.data; }
+            if(items.length > 0){
+                items.forEach(function(item){
                     var tr = document.createElement('tr');
                     tr.innerHTML =
                         '<td>' + esc(item.language_code) + '</td>' +
@@ -261,18 +264,16 @@
         }).then(function(r){ return r.json(); }).then(function(d){
             var resultsDiv = document.getElementById('textCheckResults');
             resultsDiv.innerHTML = '';
-            if(d.success && d.data){
-                if(d.data.matches && d.data.matches.length > 0){
-                    var ul = document.createElement('ul');
-                    d.data.matches.forEach(function(match){
-                        var li = document.createElement('li');
-                        li.textContent = (match.word || '') + ' (' + t('table.severity', 'Severity') + ': ' + (match.severity || '') + ')';
-                        ul.appendChild(li);
-                    });
-                    resultsDiv.appendChild(ul);
-                } else {
-                    resultsDiv.textContent = t('no_bad_words_found', 'No bad words found in the text.');
-                }
+            if(d.success && d.data && d.data.found && d.data.found.length > 0){
+                var ul = document.createElement('ul');
+                d.data.found.forEach(function(match){
+                    var li = document.createElement('li');
+                    li.textContent = (match.word || '') + ' (' + t('table.severity', 'Severity') + ': ' + (match.severity || '') + ')';
+                    ul.appendChild(li);
+                });
+                resultsDiv.appendChild(ul);
+            } else if(d.success) {
+                resultsDiv.textContent = t('no_bad_words_found', 'No bad words found in the text.');
             } else {
                 resultsDiv.textContent = d.message || t('check_failed', 'Check failed');
             }
