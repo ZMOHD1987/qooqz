@@ -53,7 +53,7 @@
         if(params.is_active !== undefined && params.is_active !== '') query.push('is_active=' + encodeURIComponent(params.is_active));
         if(params.limit) query.push('limit=' + encodeURIComponent(params.limit));
         if(params.offset) query.push('offset=' + encodeURIComponent(params.offset));
-        var url = API_BASE + '/bad_words' + (query.length ? '?' + query.join('&') : '');
+        var url = API_BASE + '/api/bad_words' + (query.length ? '?' + query.join('&') : '');
 
         fetch(url)
         .then(function(r){ return r.json(); })
@@ -99,7 +99,7 @@
 
     // Open Edit Modal
     function openEditModal(id){
-        fetch(API_BASE + '/bad_words?id=' + encodeURIComponent(id))
+        fetch(API_BASE + '/api/bad_words?id=' + encodeURIComponent(id))
         .then(function(r){ return r.json(); })
         .then(function(d){
             if(d.success && d.data){
@@ -127,7 +127,7 @@
         };
         if(editId) body.id = editId;
 
-        fetch(API_BASE + '/bad_words', {
+        fetch(API_BASE + '/api/bad_words', {
             method: method,
             headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF},
             body: JSON.stringify(body)
@@ -147,7 +147,7 @@
     // Delete Bad Word
     function deleteBadWord(id){
         if(!confirm(t('confirm_delete', 'Are you sure you want to delete this word?'))) return;
-        fetch(API_BASE + '/bad_words?id=' + encodeURIComponent(id), {
+        fetch(API_BASE + '/api/bad_words?id=' + encodeURIComponent(id), {
             method: 'DELETE',
             headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF}
         }).then(function(r){ return r.json(); }).then(function(d){
@@ -162,7 +162,7 @@
     // Open Translations Modal
     function openTranslationsModal(badWordId){
         currentTranslationBadWordId = badWordId;
-        fetch(API_BASE + '/bad_words/translations?bad_word_id=' + encodeURIComponent(badWordId))
+        fetch(API_BASE + '/api/bad_words/translations?bad_word_id=' + encodeURIComponent(badWordId))
         .then(function(r){ return r.json(); })
         .then(function(d){
             var tbody = document.getElementById('translationsBody');
@@ -193,7 +193,7 @@
 
     // Save Translation
     function saveTranslation(badWordId, langCode, word){
-        fetch(API_BASE + '/bad_words/translations', {
+        fetch(API_BASE + '/api/bad_words/translations', {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF},
             body: JSON.stringify({bad_word_id: badWordId, language_code: langCode, word: word})
@@ -231,7 +231,7 @@
 
         var body = {text: text};
 
-        fetch(API_BASE + '/bad_words/check', {
+        fetch(API_BASE + '/api/bad_words/check', {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF},
             body: JSON.stringify(body)
@@ -272,7 +272,7 @@
     function loadLanguages(){
         var select = document.getElementById('transLangCode');
         if(!select) return;
-        fetch(API_BASE + '/languages')
+        fetch(API_BASE + '/api/languages')
         .then(function(r){ return r.json(); })
         .then(function(d){
             select.innerHTML = '';
