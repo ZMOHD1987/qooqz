@@ -1,0 +1,149 @@
+<?php
+declare(strict_types=1);
+
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+ini_set('error_log', __DIR__ . '/../../logs/php_errors.log');
+
+date_default_timezone_set('Asia/Riyadh');
+
+$baseDir = dirname(__DIR__);
+require_once $baseDir . '/bootstrap.php';
+require_once $baseDir . '/shared/core/ResponseFormatter.php';
+require_once $baseDir . '/shared/core/QueueManager.php';
+require_once $baseDir . '/shared/helpers/safe_helpers.php';
+require_once $baseDir . '/shared/config/db.php';
+
+// CORS
+header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? '*'));
+header('Access-Control-Allow-Credentials: true');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-API-Key');
+header('Content-Type: application/json; charset=utf-8');
+
+if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
+    session_start();
+}
+
+if (!isset($GLOBALS['ADMIN_DB']) || !$GLOBALS['ADMIN_DB'] instanceof PDO) {
+    ResponseFormatter::error('Database connection failed', 500);
+    exit;
+}
+
+try {
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        http_response_code(204);
+        exit;
+    }
+
+    $method   = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+    $rawInput = file_get_contents('php://input');
+    $data     = $rawInput ? json_decode($rawInput, true) : [];
+    if ($method === 'POST' && !empty($_POST)) {
+        $data = array_merge($data ?? [], $_POST);
+    }
+
+    $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+    $path       = parse_url($requestUri, PHP_URL_PATH);
+
+    $isStatsRoute   = str_contains($path, '/queues/stats');
+    $isRetryRoute   = str_contains($path, '/queues/retry');
+    $isArchiveRoute = str_contains($path, '/queues/archive');
+    $isPurgeRoute   = str_contains($path, '/queues/purge');
+    $isNamesRoute   = str_contains($path, '/queues/names');
+
+    // ── GET /api/queues/stats ──
+    if ($isStatsRoute && $method === 'GET') {
+        ResponseFormatter::success(QueueManager::stats());
+        exit;
+    }
+
+    // ── GET /api/queues/names ──
+    if ($isNamesRoute && $method === 'GET') {
+        ResponseFormatter::success(QueueManager::getQueueNames());
+        exit;
+    }
+
+    // ── POST /api/queues/retry ──
+    if ($isRetryRoute && $method === 'POST') {
+        $id = (int)($data['id'] ?? $_GET['id'] ?? 0);
+        if ($id <= 0) {
+            ResponseFormatter::error('Job ID is required', 400);
+            exit;
+        }
+        $ok = QueueManager::retry($id);
+        if ($ok) {
+            ResponseFormatter::success(null, 'Job queued for retry');
+        } else {
+            ResponseFormatter::error('Job not found or not in failed status', 404);
+        }
+        exit;
+    }
+
+    // ── POST /api/queues/archive ──
+    if ($isArchiveRoute && $method === 'POST') {
+        $count = QueueManager::archiveDone();
+        ResponseFormatter::success(['archived' => $count], "Archived {$count} completed jobs");
+        exit;
+    }
+
+    // ── POST /api/queues/purge ──
+    if ($isPurgeRoute && $method === 'POST') {
+        $status = $data['status'] ?? 'done';
+        $days   = isset($data['days']) ? (int)$data['days'] : 30;
+        if ($days < 1) $days = 1;
+        $count = QueueManager::purge($status, $days);
+        ResponseFormatter::success(['purged' => $count], "Purged {$count} jobs");
+        exit;
+    }
+
+    // ── Main CRUD ──
+    switch ($method) {
+        case 'GET':
+            if (isset($_GET['id'])) {
+                $item = QueueManager::getById((int)$_GET['id']);
+                if (!$item) {
+                    ResponseFormatter::error('Job not found', 404);
+                    exit;
+                }
+                ResponseFormatter::success($item);
+            } else {
+                $limit    = isset($_GET['limit'])     ? (int)$_GET['limit']     : 25;
+                $offset   = isset($_GET['offset'])    ? (int)$_GET['offset']    : 0;
+                $orderBy  = $_GET['order_by']  ?? 'id';
+                $orderDir = $_GET['order_dir'] ?? 'DESC';
+
+                $filters = [];
+                foreach (['queue', 'status', 'search'] as $f) {
+                    if (isset($_GET[$f]) && $_GET[$f] !== '') {
+                        $filters[$f] = $_GET[$f];
+                    }
+                }
+
+                $result = QueueManager::list($limit, $offset, $filters, $orderBy, $orderDir);
+                ResponseFormatter::success($result);
+            }
+            break;
+
+        case 'DELETE':
+            $id = (int)($data['id'] ?? $_GET['id'] ?? 0);
+            if ($id <= 0) {
+                ResponseFormatter::error('Job ID is required', 400);
+                exit;
+            }
+            $ok = QueueManager::delete($id);
+            if ($ok) {
+                ResponseFormatter::success(null, 'Job deleted');
+            } else {
+                ResponseFormatter::error('Job not found', 404);
+            }
+            break;
+
+        default:
+            ResponseFormatter::error('Method not allowed', 405);
+    }
+
+} catch (Throwable $e) {
+    error_log("Error in queues: " . $e->getMessage());
+    ResponseFormatter::error('Internal Server Error: ' . $e->getMessage(), 500);
+}

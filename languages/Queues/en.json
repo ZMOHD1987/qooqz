@@ -1,0 +1,79 @@
+{
+    "strings": {
+        "title": "Queue Management",
+        "subtitle": "Monitor and manage background job queues",
+        "add_job": "Add Job",
+        "filter": {
+            "search_placeholder": "Search in payload or error...",
+            "all_queues": "All Queues",
+            "all_statuses": "All Statuses",
+            "apply": "Filter",
+            "clear": "Clear Filters"
+        },
+        "status": {
+            "pending": "Pending",
+            "working": "Working",
+            "done": "Done",
+            "failed": "Failed",
+            "unknown": "Unknown"
+        },
+        "table": {
+            "id": "ID",
+            "queue": "Queue",
+            "payload": "Payload",
+            "status": "Status",
+            "attempts": "Attempts",
+            "error": "Error",
+            "created_at": "Created",
+            "updated_at": "Updated",
+            "actions": "Actions",
+            "no_records": "No jobs found"
+        },
+        "actions": {
+            "retry": "Retry",
+            "delete": "Delete",
+            "view": "View Details",
+            "archive": "Archive Done",
+            "purge": "Purge Old",
+            "refresh": "Refresh"
+        },
+        "stats": {
+            "title": "Queue Statistics",
+            "total": "Total Jobs",
+            "pending": "Pending",
+            "working": "Working",
+            "done": "Done",
+            "failed": "Failed",
+            "queues": "Queue Names"
+        },
+        "modal": {
+            "view_title": "Job Details",
+            "purge_title": "Purge Old Jobs",
+            "purge_status": "Status to purge",
+            "purge_days": "Older than (days)",
+            "purge_confirm": "Are you sure? This cannot be undone."
+        },
+        "messages": {
+            "retry_success": "Job queued for retry",
+            "retry_failed": "Failed to retry job",
+            "delete_success": "Job deleted",
+            "delete_failed": "Failed to delete job",
+            "archive_success": "Archived completed jobs",
+            "archive_failed": "Failed to archive jobs",
+            "purge_success": "Purged old jobs",
+            "purge_failed": "Failed to purge jobs",
+            "confirm_delete": "Are you sure you want to delete this job?",
+            "confirm_archive": "Archive all completed jobs to archive table?"
+        },
+        "form": {
+            "save": "Save",
+            "cancel": "Cancel",
+            "close": "Close",
+            "confirm": "Confirm"
+        },
+        "pagination": {
+            "showing": "Showing",
+            "of": "of"
+        }
+    }
+}
