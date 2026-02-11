@@ -15,6 +15,9 @@
     const S = CFG.strings || {};
     function t(key, fallback) { return S[key] || fallback || key; }
 
+    const PER_PAGE = 10;
+    let currentPage = 1;
+
     const state = {
         language: CFG.lang || 'ar',
         items: [],
@@ -264,13 +267,78 @@
             }
 
             state.items = items;
-            renderTable(state.items);
+            currentPage = 1;
+            renderPage();
             console.log('✓ Addresses loaded:', state.items.length);
         } catch (e) {
             console.error('❌ loadAddresses error:', e);
             el.tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:red">' + t('error_loading', 'Error loading addresses') + '</td></tr>';
             showMessage(t('failed_load_list', 'Failed to load addresses'), 'error');
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // PAGINATION
+    // ═══════════════════════════════════════════════════════════
+
+    function renderPage() {
+        const total = state.items.length;
+        const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+        if (currentPage > totalPages) currentPage = totalPages;
+        const start = (currentPage - 1) * PER_PAGE;
+        const pageItems = state.items.slice(start, start + PER_PAGE);
+        renderTable(pageItems);
+        renderPagination(total, totalPages);
+    }
+
+    function renderPagination(total, totalPages) {
+        const infoEl = document.getElementById('paginationInfo');
+        const pagEl = document.getElementById('pagination');
+        if (!infoEl || !pagEl) return;
+
+        if (total === 0) {
+            infoEl.textContent = '';
+            pagEl.innerHTML = '';
+            return;
+        }
+
+        const start = (currentPage - 1) * PER_PAGE + 1;
+        const end = Math.min(currentPage * PER_PAGE, total);
+        infoEl.textContent = t('pagination_showing', 'Showing') + ' ' + start + '-' + end + ' ' + t('pagination_of', 'of') + ' ' + total;
+
+        let html = '';
+        // Prev
+        html += '<button class="page-btn" data-page="' + (currentPage - 1) + '"' + (currentPage <= 1 ? ' disabled' : '') + '>&laquo;</button>';
+
+        // Page numbers
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                html += '<button class="page-btn' + (i === currentPage ? ' active' : '') + '" data-page="' + i + '">' + i + '</button>';
+            } else if (i === currentPage - 3 || i === currentPage + 3) {
+                html += '<span class="page-ellipsis">...</span>';
+            }
+        }
+
+        // Next
+        html += '<button class="page-btn" data-page="' + (currentPage + 1) + '"' + (currentPage >= totalPages ? ' disabled' : '') + '>&raquo;</button>';
+
+        pagEl.innerHTML = html;
+
+        pagEl.querySelectorAll('.page-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const page = parseInt(this.getAttribute('data-page'));
+                if (page >= 1 && page <= totalPages) {
+                    goToPage(page);
+                }
+            });
+        });
+    }
+
+    function goToPage(page) {
+        currentPage = page;
+        renderPage();
+        const table = document.getElementById('addressesTable');
+        if (table) table.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     // ═══════════════════════════════════════════════════════════

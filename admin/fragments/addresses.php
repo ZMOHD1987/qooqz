@@ -272,6 +272,12 @@ $apiBase = '/api';
                     <tr><td colspan="7" style="text-align:center"><?= __t('loading', 'Loading...') ?></td></tr>
                 </tbody>
             </table>
+
+            <!-- Pagination -->
+            <div class="pagination-wrapper">
+                <div class="pagination-info" id="paginationInfo"></div>
+                <div class="pagination" id="pagination"></div>
+            </div>
         </div>
     </div>
 

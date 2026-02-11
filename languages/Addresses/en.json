@@ -53,6 +53,8 @@
         "location_denied": "Location access denied. Please enable location permissions.",
         "location_unavailable": "Location information is unavailable.",
         "location_timeout": "Location request timed out.",
-        "location_error": "Unable to retrieve your location"
+        "location_error": "Unable to retrieve your location",
+        "pagination_showing": "Showing",
+        "pagination_of": "of"
     }
 }

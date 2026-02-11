@@ -53,6 +53,8 @@
         "location_denied": "تم رفض الوصول للموقع. يرجى تفعيل أذونات الموقع.",
         "location_unavailable": "معلومات الموقع غير متاحة.",
         "location_timeout": "انتهت مهلة طلب الموقع.",
-        "location_error": "تعذّر تحديد موقعك"
+        "location_error": "تعذّر تحديد موقعك",
+        "pagination_showing": "عرض",
+        "pagination_of": "من"
     }
 }
