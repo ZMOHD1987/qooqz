@@ -18,7 +18,6 @@ $ADMIN_UI_PAYLOAD = $ADMIN_UI_PAYLOAD ?? ($GLOBALS['ADMIN_UI'] ?? []);
 $lang      = $_GET['lang'] ?? $ADMIN_UI_PAYLOAD['lang'] ?? 'ar';
 $rtlLangs  = ['ar', 'fa', 'he', 'ur', 'ps', 'sd', 'ku'];
 $direction = in_array(substr($lang, 0, 2), $rtlLangs, true) ? 'rtl' : 'ltr';
-$strings   = $ADMIN_UI_PAYLOAD['strings'] ?? [];
 $theme     = $ADMIN_UI_PAYLOAD['theme'] ?? [];
 
 $csrf      = htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES);
@@ -39,10 +38,21 @@ $dangerText    = $theme['colors_map']['danger-text'] ?? '#f87171';
 $successColor  = '#16a34a';
 $fontFamily    = $theme['fonts'][0]['font_family'] ?? "'Segoe UI', sans-serif";
 
-// Translation helper
+// ── Load translations from JSON file ──
+$_addrStrings = [];
+$_allowedLangs = ['en', 'ar', 'fa', 'he', 'ur', 'tr', 'fr', 'de', 'es'];
+$_safeLang = in_array($lang, $_allowedLangs, true) ? $lang : 'en';
+$_langFile = __DIR__ . '/../../languages/Addresses/' . $_safeLang . '.json';
+if (file_exists($_langFile)) {
+    $_json = json_decode(file_get_contents($_langFile), true);
+    if (isset($_json['strings'])) {
+        $_addrStrings = $_json['strings'];
+    }
+}
+
 function addr_t(string $key, string $fallback = ''): string {
-    global $strings;
-    return $strings[$key] ?? $fallback;
+    global $_addrStrings;
+    return $_addrStrings[$key] ?? ($fallback ?: $key);
 }
 ?>
 <!DOCTYPE html>
@@ -50,7 +60,7 @@ function addr_t(string $key, string $fallback = ''): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?= addr_t('addresses', 'Addresses') ?></title>
+<title><?= addr_t('title', 'Addresses') ?></title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -208,7 +218,7 @@ body {
 
 <div class="addr-card">
     <div class="addr-header">
-        <h2><?= addr_t('addresses', 'Addresses') ?></h2>
+        <h2><?= addr_t('title', 'Addresses') ?></h2>
         <button type="button" class="btn btn-primary" id="btnAddNew">
             + <?= addr_t('add_new', 'Add New') ?>
         </button>
@@ -286,7 +296,10 @@ body {
             saveFailed: <?= json_encode(addr_t('save_failed', 'Failed to save address')) ?>,
             deleteFailed: <?= json_encode(addr_t('delete_failed', 'Failed to delete address')) ?>,
             saved: <?= json_encode(addr_t('address_saved', 'Address saved')) ?>,
-            deleted: <?= json_encode(addr_t('address_deleted', 'Address deleted')) ?>
+            deleted: <?= json_encode(addr_t('address_deleted', 'Address deleted')) ?>,
+            city: <?= json_encode(addr_t('city', 'City')) ?>,
+            country: <?= json_encode(addr_t('country', 'Country')) ?>,
+            primaryBadge: <?= json_encode(addr_t('primary_badge', 'Primary')) ?>
         }
     };
 
@@ -365,14 +378,14 @@ body {
             const parts = [a.address_line1];
             if (a.address_line2) parts.push(a.address_line2);
             const meta = [];
-            if (a.city_id) meta.push('City: ' + a.city_id);
-            if (a.country_id) meta.push('Country: ' + a.country_id);
+            if (a.city_id) meta.push(CFG.texts.city + ': ' + a.city_id);
+            if (a.country_id) meta.push(CFG.texts.country + ': ' + a.country_id);
             if (a.postal_code) meta.push(a.postal_code);
             if (a.latitude && a.longitude) meta.push('📍 ' + a.latitude + ', ' + a.longitude);
 
             return `<div class="addr-item${isPrimary ? ' primary' : ''}" data-id="${a.id}">
                 <div class="addr-info">
-                    <div class="line1">${escHtml(parts.join(', '))}${isPrimary ? '<span class="badge-primary">★</span>' : ''}</div>
+                    <div class="line1">${escHtml(parts.join(', '))}${isPrimary ? '<span class="badge-primary">★ ' + escHtml(CFG.texts.primaryBadge) + '</span>' : ''}</div>
                     ${meta.length ? '<div class="meta">' + escHtml(meta.join(' · ')) + '</div>' : ''}
                 </div>
                 <div class="addr-actions">
