@@ -1,11 +1,16 @@
 (function(){
-    var CFG = window.BAD_WORDS_CONFIG || {};
-    var CSRF = CFG.csrfToken || '';
-    var STRINGS = CFG.strings || {};
-    var CAN_CREATE = !!CFG.canCreate;
-    var CAN_EDIT = !!CFG.canEdit;
-    var CAN_DELETE = !!CFG.canDelete;
+    var CFG, CSRF, STRINGS, CAN_CREATE, CAN_EDIT, CAN_DELETE;
     var FALLBACK_LANGS = ['ar','en','fr','tr','ur','de','es'];
+
+    function reloadConfig(){
+        CFG = window.BAD_WORDS_CONFIG || {};
+        CSRF = CFG.csrfToken || '';
+        STRINGS = CFG.strings || {};
+        CAN_CREATE = !!CFG.canCreate;
+        CAN_EDIT = !!CFG.canEdit;
+        CAN_DELETE = !!CFG.canDelete;
+    }
+    reloadConfig();
 
     // Translation helper - resolves dot-separated keys
     function t(key, fallback) {
@@ -338,6 +343,9 @@
 
     // Init function - called when DOM is ready
     function init(){
+        // Re-read config (may have been updated by inline script on re-navigation)
+        reloadConfig();
+
         // Close modal buttons
         document.querySelectorAll('.btn-close-modal').forEach(function(btn){
             btn.addEventListener('click', function(){ closeModal(btn.dataset.modal); });
@@ -415,8 +423,11 @@
         loadBadWords();
     }
 
-    // Fragment support
+    // Fragment support - register with admin framework for re-navigation
     window.page = { run: init };
+    if(window.Admin && Admin.page && typeof Admin.page.register === 'function'){
+        Admin.page.register('bad_words', init);
+    }
 
     // Auto-init: handle both fresh page load and dynamic fragment loading
     if (document.readyState === 'loading') {

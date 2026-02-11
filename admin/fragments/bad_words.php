@@ -238,7 +238,7 @@ if (!function_exists('_bwt')) {
 </div>
 
 <script>
-var BAD_WORDS_CONFIG = {
+window.BAD_WORDS_CONFIG = {
     apiBase:   <?= json_encode($apiBase) ?>,
     csrfToken: <?= json_encode($csrf) ?>,
     entityId:  <?= $entityId ?>,
