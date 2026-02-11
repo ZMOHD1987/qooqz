@@ -1,0 +1,81 @@
+{
+    "strings": {
+        "title": "SEO Meta Management",
+        "subtitle": "Manage SEO metadata for products, categories, entities and pages",
+        "add_new": "Add SEO Record",
+        "edit_record": "Edit SEO Record",
+        "filter": {
+            "search_placeholder": "Search by canonical URL...",
+            "all_entity_types": "All Entity Types",
+            "product": "Product",
+            "category": "Category",
+            "entity": "Entity",
+            "page": "Page",
+            "apply": "Filter",
+            "clear": "Clear Filters"
+        },
+        "entity_type": {
+            "product": "Product",
+            "category": "Category",
+            "entity": "Entity",
+            "page": "Page"
+        },
+        "robots": {
+            "index_follow": "index,follow",
+            "noindex_nofollow": "noindex,nofollow",
+            "index_nofollow": "index,nofollow",
+            "noindex_follow": "noindex,follow"
+        },
+        "table": {
+            "id": "ID",
+            "entity_type": "Entity Type",
+            "entity_id": "Entity ID",
+            "canonical_url": "Canonical URL",
+            "robots": "Robots",
+            "created": "Created",
+            "actions": "Actions",
+            "no_records": "No records found",
+            "edit": "Edit",
+            "delete": "Delete",
+            "translations": "Translations"
+        },
+        "modal": {
+            "add_title": "Add SEO Record",
+            "edit_title": "Edit SEO Record"
+        },
+        "form": {
+            "entity_type": "Entity Type",
+            "entity_id": "Entity ID",
+            "canonical_url": "Canonical URL",
+            "robots": "Robots",
+            "schema_markup": "Schema Markup (JSON)",
+            "save": "Save",
+            "cancel": "Cancel"
+        },
+        "translations": {
+            "title": "SEO Translations",
+            "language": "Language",
+            "meta_title": "Meta Title",
+            "meta_description": "Meta Description",
+            "meta_keywords": "Meta Keywords",
+            "og_title": "OG Title",
+            "og_description": "OG Description",
+            "og_image": "OG Image",
+            "add": "Add Translation",
+            "word": "Translation"
+        },
+        "saved": "Saved successfully",
+        "deleted": "Deleted successfully",
+        "unknown_error": "Unknown error",
+        "delete_failed": "Delete failed",
+        "confirm_delete": "Are you sure you want to delete this SEO record?",
+        "confirm_delete_translation": "Are you sure you want to delete this translation?",
+        "no_items": "No SEO records found",
+        "no_translations": "No translations found",
+        "enter_text": "Please enter a value",
+        "pagination": {
+            "showing": "Showing",
+            "of": "of"
+        }
+    }
+}
