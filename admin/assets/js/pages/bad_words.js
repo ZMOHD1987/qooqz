@@ -1,6 +1,9 @@
 (function(){
     var CFG, CSRF, STRINGS, CAN_CREATE, CAN_EDIT, CAN_DELETE;
     var FALLBACK_LANGS = ['ar','en','fr','tr','ur','de','es'];
+    var PER_PAGE = 25;
+    var currentPage = 1;
+    var currentFilters = {};
 
     function reloadConfig(){
         CFG = window.BAD_WORDS_CONFIG || {};
@@ -75,12 +78,15 @@
     // Load Bad Words
     function loadBadWords(params){
         params = params || {};
+        var page = params.page || 1;
+        currentPage = page;
+        currentFilters = params;
         var query = [];
         if(params.search) query.push('search=' + encodeURIComponent(params.search));
         if(params.severity) query.push('severity=' + encodeURIComponent(params.severity));
         if(params.is_active !== undefined && params.is_active !== '') query.push('is_active=' + encodeURIComponent(params.is_active));
-        if(params.limit) query.push('limit=' + encodeURIComponent(params.limit));
-        if(params.offset) query.push('offset=' + encodeURIComponent(params.offset));
+        query.push('limit=' + PER_PAGE);
+        query.push('offset=' + ((page - 1) * PER_PAGE));
         var url = '/api/bad_words' + (query.length ? '?' + query.join('&') : '');
 
         fetch(url)
@@ -88,7 +94,9 @@
         .then(function(d){
             var tbody = document.getElementById('badWordsBody');
             tbody.innerHTML = '';
+            var total = 0;
             if(d.success && d.data && d.data.items && d.data.items.length > 0){
+                total = d.data.meta ? d.data.meta.total : d.data.items.length;
                 d.data.items.forEach(function(item){
                     var tr = document.createElement('tr');
                     tr.innerHTML =
@@ -114,7 +122,64 @@
                 tr.appendChild(td);
                 tbody.appendChild(tr);
             }
+            renderPagination(page, total);
         });
+    }
+
+    // Render Pagination
+    function renderPagination(page, total){
+        var totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+        var start = total > 0 ? (page - 1) * PER_PAGE + 1 : 0;
+        var end = Math.min(page * PER_PAGE, total);
+
+        var infoEl = document.getElementById('paginationInfo');
+        if(infoEl) infoEl.textContent = start + '-' + end + ' ' + t('pagination.of', 'of') + ' ' + total;
+
+        var pagEl = document.getElementById('pagination');
+        if(!pagEl) return;
+        pagEl.innerHTML = '';
+
+        if(totalPages <= 1) return;
+
+        // Previous button
+        var prevBtn = document.createElement('button');
+        prevBtn.className = 'pagination-btn';
+        prevBtn.innerHTML = '&laquo;';
+        prevBtn.disabled = (page <= 1);
+        prevBtn.addEventListener('click', function(){ goToPage(page - 1); });
+        pagEl.appendChild(prevBtn);
+
+        // Page numbers
+        for(var i = 1; i <= totalPages; i++){
+            if(i === 1 || i === totalPages || (i >= page - 2 && i <= page + 2)){
+                var pageBtn = document.createElement('button');
+                pageBtn.className = 'pagination-btn' + (i === page ? ' active' : '');
+                pageBtn.textContent = i;
+                (function(pg){ pageBtn.addEventListener('click', function(){ goToPage(pg); }); })(i);
+                pagEl.appendChild(pageBtn);
+            } else if(i === page - 3 || i === page + 3){
+                var ellipsis = document.createElement('span');
+                ellipsis.className = 'pagination-ellipsis';
+                ellipsis.textContent = '...';
+                pagEl.appendChild(ellipsis);
+            }
+        }
+
+        // Next button
+        var nextBtn = document.createElement('button');
+        nextBtn.className = 'pagination-btn';
+        nextBtn.innerHTML = '&raquo;';
+        nextBtn.disabled = (page >= totalPages);
+        nextBtn.addEventListener('click', function(){ goToPage(page + 1); });
+        pagEl.appendChild(nextBtn);
+    }
+
+    // Navigate to page
+    function goToPage(page){
+        var params = {};
+        for(var k in currentFilters){ if(k !== 'page') params[k] = currentFilters[k]; }
+        params.page = page;
+        loadBadWords(params);
     }
 
     // Open Add Modal
@@ -297,8 +362,20 @@
         loadBadWords({
             search: search ? search.value : '',
             severity: severity ? severity.value : '',
-            is_active: statusVal
+            is_active: statusVal,
+            page: 1
         });
+    }
+
+    // Clear Filters
+    function clearFilters(){
+        var search = document.getElementById('filterSearch');
+        var severity = document.getElementById('filterSeverity');
+        var status = document.getElementById('filterStatus');
+        if(search) search.value = '';
+        if(severity) severity.value = '';
+        if(status) status.value = '';
+        loadBadWords({ page: 1 });
     }
 
     // Load languages dynamically from /api/languages
@@ -365,6 +442,10 @@
         // Filter button
         var btnFilt = document.getElementById('btnFilter');
         if(btnFilt) btnFilt.addEventListener('click', function(){ filterBadWords(); });
+
+        // Clear Filters button
+        var btnClear = document.getElementById('btnClearFilters');
+        if(btnClear) btnClear.addEventListener('click', function(){ clearFilters(); });
 
         // Search input Enter key
         var searchInput = document.getElementById('filterSearch');

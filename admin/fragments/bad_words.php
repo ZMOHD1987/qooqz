@@ -121,6 +121,7 @@ if (!function_exists('_bwt')) {
                 <option value="inactive" data-i18n="filter.inactive"><?= htmlspecialchars(_bwt('filter.inactive', 'Inactive'), ENT_QUOTES, 'UTF-8') ?></option>
             </select>
             <button id="btnFilter" class="btn btn-primary" data-i18n="filter.apply"><?= htmlspecialchars(_bwt('filter.apply', 'Filter'), ENT_QUOTES, 'UTF-8') ?></button>
+            <button id="btnClearFilters" class="btn btn-secondary" data-i18n="filter.clear"><?= htmlspecialchars(_bwt('filter.clear', 'Clear Filters'), ENT_QUOTES, 'UTF-8') ?></button>
         </div>
     </div>
 
@@ -145,6 +146,14 @@ if (!function_exists('_bwt')) {
                     </tr>
                 </tbody>
             </table>
+        </div>
+        <!-- Pagination -->
+        <div class="pagination-wrapper">
+            <div class="pagination-info">
+                <span data-i18n="pagination.showing"><?= htmlspecialchars(_bwt('pagination.showing', 'Showing'), ENT_QUOTES, 'UTF-8') ?></span>
+                <span id="paginationInfo">0-0 <?= htmlspecialchars(_bwt('pagination.of', 'of'), ENT_QUOTES, 'UTF-8') ?> 0</span>
+            </div>
+            <div class="pagination" id="pagination"></div>
         </div>
     </div>
 

@@ -10,7 +10,8 @@
             "all_statuses": "جميع الحالات",
             "active": "نشط",
             "inactive": "غير نشط",
-            "apply": "تصفية"
+            "apply": "تصفية",
+            "clear": "إلغاء الفلاتر"
         },
         "severity": {
             "low": "منخفضة",
@@ -66,6 +67,10 @@
         "no_translations": "لا توجد ترجمات",
         "enter_text": "الرجاء إدخال نص",
         "no_bad_words_found": "لم يتم العثور على كلمات محظورة في النص.",
-        "check_failed": "فشل الفحص"
+        "check_failed": "فشل الفحص",
+        "pagination": {
+            "showing": "عرض",
+            "of": "من"
+        }
     }
 }

@@ -10,7 +10,8 @@
             "all_statuses": "All Statuses",
             "active": "Active",
             "inactive": "Inactive",
-            "apply": "Filter"
+            "apply": "Filter",
+            "clear": "Clear Filters"
         },
         "severity": {
             "low": "Low",
@@ -66,6 +67,10 @@
         "no_translations": "No translations found",
         "enter_text": "Please enter text",
         "no_bad_words_found": "No bad words found in the text.",
-        "check_failed": "Check failed"
+        "check_failed": "Check failed",
+        "pagination": {
+            "showing": "Showing",
+            "of": "of"
+        }
     }
 }
