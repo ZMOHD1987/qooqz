@@ -5,6 +5,7 @@ $baseDir = dirname(__DIR__);
 require_once $baseDir . '/bootstrap.php';
 require_once $baseDir . '/shared/core/ResponseFormatter.php';
 require_once $baseDir . '/shared/helpers/safe_helpers.php';
+require_once $baseDir . '/shared/helpers/SeoAutoManager.php';
 require_once $baseDir . '/shared/config/db.php';
 
 $modelsPath = API_VERSION_PATH . '/models/entities';
@@ -130,6 +131,18 @@ try {
                 $lang
             );
 
+            // Auto-populate SEO meta
+            try {
+                SeoAutoManager::sync($pdo, 'entity', (int)$newId, [
+                    'name'        => $data['store_name'] ?? '',
+                    'slug'        => $data['slug'] ?? '',
+                    'description' => $data['description'] ?? '',
+                    'tenant_id'   => $tenantId,
+                ]);
+            } catch (\Throwable $e) {
+                // SEO sync failure should not break entity creation
+            }
+
             ResponseFormatter::success(
                 ['id' => $newId],
                 'Created successfully',
@@ -153,6 +166,18 @@ try {
                 $data,
                 $lang
             );
+
+            // Auto-update SEO meta
+            try {
+                SeoAutoManager::sync($pdo, 'entity', (int)$updatedId, [
+                    'name'        => $data['store_name'] ?? '',
+                    'slug'        => $data['slug'] ?? '',
+                    'description' => $data['description'] ?? '',
+                    'tenant_id'   => $tenantId,
+                ]);
+            } catch (\Throwable $e) {
+                // SEO sync failure should not break entity update
+            }
 
             ResponseFormatter::success(
                 ['id' => $updatedId],

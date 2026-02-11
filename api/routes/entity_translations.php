@@ -14,6 +14,7 @@ $baseDir = dirname(__DIR__);
 require_once $baseDir . '/bootstrap.php';
 require_once $baseDir . '/shared/core/ResponseFormatter.php';
 require_once $baseDir . '/shared/helpers/safe_helpers.php';
+require_once $baseDir . '/shared/helpers/SeoAutoManager.php';
 require_once $baseDir . '/shared/config/db.php';
 
 // Load classes
@@ -85,6 +86,23 @@ try {
                  exit;
             }
             $id = $controller->save($data);
+
+            // Auto-sync SEO translation
+            try {
+                SeoAutoManager::syncTranslation(
+                    $pdo,
+                    'entity',
+                    (int)$data['entity_id'],
+                    $data['language_code'],
+                    [
+                        'name'        => $data['store_name'] ?? '',
+                        'description' => $data['description'] ?? '',
+                    ]
+                );
+            } catch (\Throwable $e) {
+                // SEO sync failure should not break translation save
+            }
+
             ResponseFormatter::success(['id' => $id], 'Saved successfully', 201);
             break;
 
