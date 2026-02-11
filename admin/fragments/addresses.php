@@ -42,7 +42,7 @@ if (!is_admin_logged_in()) {
 $user      = admin_user();
 $isSuperAdmin = function_exists('is_super_admin') && is_super_admin();
 $lang      = $_GET['lang'] ?? (function_exists('admin_lang') ? admin_lang() : 'ar');
-$dir       = function_exists('admin_dir') ? admin_dir() : 'rtl';
+$dir       = in_array($lang, ['ar', 'he', 'fa', 'ur']) ? 'rtl' : 'ltr';
 $csrf      = function_exists('admin_csrf') ? admin_csrf() : bin2hex(random_bytes(16));
 $tenantId  = (int)($_GET['tenant_id'] ?? (function_exists('admin_tenant_id') ? admin_tenant_id() : 1));
 

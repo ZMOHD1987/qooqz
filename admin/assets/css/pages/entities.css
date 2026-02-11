@@ -305,7 +305,7 @@ textarea.form-control {
 
 .data-table th {
     padding: 12px;
-    text-align: left;
+    text-align: start;
     font-size: 0.8rem;
     color: var(--text-secondary, #94a3b8);
     text-transform: uppercase;
@@ -626,6 +626,11 @@ textarea.form-control {
 }
 
 /* RTL Support */
+[dir="rtl"] {
+    direction: rtl;
+    text-align: start;
+}
+
 [dir="rtl"] .table-actions {
     flex-direction: row-reverse;
 }
@@ -641,6 +646,28 @@ textarea.form-control {
 [dir="rtl"] .is-open-checkbox {
     margin-right: 0;
     margin-left: 6px;
+}
+
+[dir="rtl"] .form-control,
+[dir="rtl"] select,
+[dir="rtl"] input,
+[dir="rtl"] textarea {
+    text-align: start;
+    direction: rtl;
+}
+
+[dir="rtl"] label {
+    text-align: start;
+    display: block;
+}
+
+[dir="rtl"] .data-table th,
+[dir="rtl"] .data-table td {
+    text-align: start;
+}
+
+[dir="rtl"] .data-table {
+    direction: rtl;
 }
 
 /* Responsive */

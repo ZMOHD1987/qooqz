@@ -48,7 +48,7 @@ if (!is_admin_logged_in()) {
 // ════════════════════════════════════════════════════════════
 $user = admin_user();
 $lang = admin_lang();
-$dir = admin_dir();
+$dir = in_array($lang, ['ar', 'he', 'fa', 'ur']) ? 'rtl' : 'ltr';
 $csrf = admin_csrf();
 $tenantId = admin_tenant_id();
 $userId = admin_user_id();

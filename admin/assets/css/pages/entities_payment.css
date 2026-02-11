@@ -132,7 +132,7 @@
 
 .data-table th {
     padding: 12px;
-    text-align: left;
+    text-align: start;
     font-size: 0.8rem;
     color: var(--text-secondary, #94a3b8);
     text-transform: uppercase;
@@ -370,6 +370,11 @@
 }
 
 /* RTL Support */
+[dir="rtl"] {
+    direction: rtl;
+    text-align: start;
+}
+
 [dir="rtl"] .page-header-actions {
     flex-direction: row-reverse;
 }
@@ -380,7 +385,7 @@
 
 [dir="rtl"] .data-table th,
 [dir="rtl"] .data-table td {
-    text-align: right;
+    text-align: start;
 }
 
 [dir="rtl"] .tab-btn {
@@ -392,11 +397,23 @@
 }
 
 [dir="rtl"] .modal-content h3 {
-    text-align: right;
+    text-align: start;
 }
 
 [dir="rtl"] .form-group label {
-    text-align: right;
+    text-align: start;
+}
+
+[dir="rtl"] .form-control,
+[dir="rtl"] select,
+[dir="rtl"] input,
+[dir="rtl"] textarea {
+    text-align: start;
+    direction: rtl;
+}
+
+[dir="rtl"] .data-table {
+    direction: rtl;
 }
 
 /* Responsive */
