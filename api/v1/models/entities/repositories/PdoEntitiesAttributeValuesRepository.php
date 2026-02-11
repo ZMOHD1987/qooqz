@@ -393,6 +393,25 @@ final class PdoEntitiesAttributeValuesRepository
     }
 
     // ================================
+    // Get statistics
+    // ================================
+    public function getStatistics(): array
+    {
+        $stats = [];
+
+        $stmt = $this->pdo->query("SELECT COUNT(*) FROM entities_attribute_values");
+        $stats['total_values'] = (int)$stmt->fetchColumn();
+
+        $stmt = $this->pdo->query("SELECT COUNT(DISTINCT entity_id) FROM entities_attribute_values");
+        $stats['entities_with_values'] = (int)$stmt->fetchColumn();
+
+        $stmt = $this->pdo->query("SELECT COUNT(DISTINCT attribute_id) FROM entities_attribute_values");
+        $stats['attributes_with_values'] = (int)$stmt->fetchColumn();
+
+        return $stats;
+    }
+
+    // ================================
     // Validate entity and attribute exist
     // ================================
     private function validateEntityAndAttribute(int $entityId, int $attributeId): void

@@ -235,23 +235,23 @@ function handleDeleteRequest(
 ): void {
     // Check if deleting by entity ID via query param (POST/DELETE body)
     if (isset($data['entity_id'])) {
-        $result = $controller->deleteByEntity((int)$data['entity_id']);
-        ResponseFormatter::success($result, 'Deleted successfully');
+        $controller->deleteByEntity((int)$data['entity_id']);
+        ResponseFormatter::success(null, 'Deleted successfully');
         return;
     }
 
     // Check if deleting by entity ID via GET query param (Standard DELETE)
     if (isset($_GET['entity_id'])) {
-        $result = $controller->deleteByEntity((int)$$_GET['entity_id']);
-        ResponseFormatter::success($result, 'Deleted successfully');
+        $controller->deleteByEntity((int)$_GET['entity_id']);
+        ResponseFormatter::success(null, 'Deleted successfully');
         return;
     }
     
     // Check if deleting by entity ID via path
     if (preg_match('#/entities_working_hours/entity/(\d+)#', $path, $matches)) {
         $entityId = (int)$matches[1];
-        $result = $controller->deleteByEntity($entityId);
-        ResponseFormatter::success($result, 'Deleted successfully');
+        $controller->deleteByEntity($entityId);
+        ResponseFormatter::success(null, 'Deleted successfully');
         return;
     }
 
@@ -265,18 +265,10 @@ function handleDeleteRequest(
     }
 
     if (!$id) {
-        // Validation for missing ID
-        // If entity_id is also missing, then we have a problem
-        if (isset($_GET['entity_id'])) {
-             $result = $controller->deleteByEntity((int)$_GET['entity_id']);
-             ResponseFormatter::success($result, 'Deleted successfully');
-             return;
-        }
-
         ResponseFormatter::error('ID is required for deletion', 400);
         return;
     }
 
-    $result = $controller->delete($id);
-    ResponseFormatter::success($result, 'Deleted successfully');
+    $controller->delete($id);
+    ResponseFormatter::success(null, 'Deleted successfully');
 }

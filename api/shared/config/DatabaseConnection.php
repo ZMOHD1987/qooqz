@@ -10,11 +10,11 @@ final class DatabaseConnection
             return self::$pdo;
         }
 
-        $host = getenv('DB_HOST');
-        $db   = getenv('DB_NAME');
-        $user = getenv('DB_USER');
-        $pass = getenv('DB_PASS');
-        $port = getenv('DB_PORT') ?: 3306;
+        $host = getenv('DB_HOST') ?: (defined('DB_HOST') ? DB_HOST : '');
+        $db   = getenv('DB_NAME') ?: (defined('DB_NAME') ? DB_NAME : '');
+        $user = getenv('DB_USER') ?: (defined('DB_USER') ? DB_USER : '');
+        $pass = getenv('DB_PASS') ?: (defined('DB_PASS') ? DB_PASS : '');
+        $port = getenv('DB_PORT') ?: (defined('DB_PORT') ? DB_PORT : 3306);
         $charset = 'utf8mb4';
 
         if (!$host || !$db || !$user) {
