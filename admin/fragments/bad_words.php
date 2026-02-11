@@ -101,6 +101,7 @@ if (!function_exists('_bwt')) {
             <?php if ($canCreate): ?>
                 <button id="btnAddWord" class="btn btn-primary" data-i18n="add_word"><?= htmlspecialchars(_bwt('add_word', 'Add Word'), ENT_QUOTES, 'UTF-8') ?></button>
             <?php endif; ?>
+            <button id="btnOpenCheckText" class="btn btn-secondary" data-i18n="text_check.title"><?= htmlspecialchars(_bwt('text_check.title', 'Check Text'), ENT_QUOTES, 'UTF-8') ?></button>
         </div>
     </div>
 
@@ -153,7 +154,7 @@ if (!function_exists('_bwt')) {
             <h3 id="badWordModalTitle" data-i18n="modal.add_title"><?= htmlspecialchars(_bwt('modal.add_title', 'Add Bad Word'), ENT_QUOTES, 'UTF-8') ?></h3>
             <form id="badWordForm">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
-                <input type="hidden" name="id" id="bwEditId" value="">
+                <input type="hidden" name="id" id="badWordId" value="">
                 <div class="form-group">
                     <label data-i18n="form.word"><?= htmlspecialchars(_bwt('form.word', 'Word'), ENT_QUOTES, 'UTF-8') ?> *</label>
                     <input type="text" name="word" id="bwWord" class="form-control" required>

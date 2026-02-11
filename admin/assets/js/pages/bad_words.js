@@ -36,9 +36,9 @@
     // Severity badge CSS class
     function severityClass(level){
         switch(String(level)){
-            case '1': return 'badge-info';
-            case '2': return 'badge-warning';
-            case '3': return 'badge-danger';
+            case 'low': return 'badge-low';
+            case 'medium': return 'badge-medium';
+            case 'high': return 'badge-high';
             default: return 'badge-secondary';
         }
     }
@@ -116,7 +116,7 @@
 
     // Save Bad Word
     function saveBadWord(formData){
-        var editId = formData.get('id') || document.getElementById('badWordId').value;
+        var editId = document.getElementById('badWordId').value;
         var method = editId ? 'PUT' : 'POST';
         var body = {
             word: formData.get('word'),
@@ -224,29 +224,25 @@
 
     // Check Text
     function checkText(){
-        var textInput = document.getElementById('checkTextInput');
+        var textInput = document.getElementById('textCheckInput');
         var text = textInput ? textInput.value : '';
         if(!text){ alert(t('enter_text', 'Please enter text to check')); return; }
 
-        var langSelect = document.getElementById('checkTextLanguage');
-        var langCode = langSelect ? langSelect.value : '';
-
         var body = {text: text};
-        if(langCode) body.language_code = langCode;
 
         fetch(API_BASE + '/bad_words/check', {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF},
             body: JSON.stringify(body)
         }).then(function(r){ return r.json(); }).then(function(d){
-            var resultsDiv = document.getElementById('checkResults');
+            var resultsDiv = document.getElementById('textCheckResults');
             resultsDiv.innerHTML = '';
             if(d.success && d.data){
                 if(d.data.matches && d.data.matches.length > 0){
                     var ul = document.createElement('ul');
                     d.data.matches.forEach(function(match){
                         var li = document.createElement('li');
-                        li.textContent = (match.word || '') + ' (' + t('severity', 'Severity') + ': ' + (match.severity || '') + ')';
+                        li.textContent = (match.word || '') + ' (' + t('table.severity', 'Severity') + ': ' + (match.severity || '') + ')';
                         ul.appendChild(li);
                     });
                     resultsDiv.appendChild(ul);
@@ -300,20 +296,22 @@
             if(e.key === 'Enter'){ e.preventDefault(); filterBadWords(); }
         });
 
+        // Open Check Text modal button
+        document.getElementById('btnOpenCheckText')?.addEventListener('click', function(){
+            openModal('textCheckModal');
+        });
+
         // Check Text button
         document.getElementById('btnCheckText')?.addEventListener('click', function(){
             checkText();
         });
 
-        // Translation Form submit
-        document.getElementById('translationForm')?.addEventListener('submit', function(e){
-            e.preventDefault();
-            var fd = new FormData(this);
-            saveTranslation(
-                currentTranslationBadWordId,
-                fd.get('language_code'),
-                fd.get('word')
-            );
+        // Add Translation button
+        document.getElementById('btnAddTranslation')?.addEventListener('click', function(){
+            var langCode = document.getElementById('transLangCode')?.value;
+            var word = document.getElementById('transWord')?.value;
+            if(!word){ alert(t('enter_text', 'Please enter a word')); return; }
+            saveTranslation(currentTranslationBadWordId, langCode, word);
         });
 
         // Event delegation for edit, delete, translations buttons
