@@ -8,6 +8,12 @@ final class QueueManager
     private const STATUS_DONE     = 2;
     private const STATUS_FAILED   = 3;
 
+    /** Max retry attempts before moving to dead letter */
+    private const MAX_ATTEMPTS = 5;
+
+    /** Base backoff seconds (exponential: base * 2^attempts) */
+    private const BACKOFF_BASE = 5;
+
     private function __construct() {}
     private function __clone() {}
 
@@ -39,8 +45,11 @@ final class QueueManager
 
     /* =========================
      * Fetch next job (LOCKED)
+     * Uses SKIP LOCKED for parallel worker support
+     * Filters by max_attempts to avoid re-processing dead jobs
+     * Sets processed_at for performance tracking
      * ========================= */
-    public static function pop(string $queue): ?array
+    public static function pop(string $queue, int $maxAttempts = self::MAX_ATTEMPTS): ?array
     {
         $pdo = DatabaseConnection::getConnection();
 
@@ -48,18 +57,21 @@ final class QueueManager
             $pdo->beginTransaction();
 
             $stmt = $pdo->prepare("
-                SELECT id, payload
+                SELECT id, payload, attempts
                 FROM queues
                 WHERE queue = :queue
                   AND status = :status
+                  AND attempts < :max_attempts
+                  AND (available_at IS NULL OR available_at <= NOW())
                 ORDER BY created_at ASC
                 LIMIT 1
-                FOR UPDATE
+                FOR UPDATE SKIP LOCKED
             ");
 
             $stmt->execute([
-                ':queue'  => $queue,
-                ':status' => self::STATUS_PENDING,
+                ':queue'        => $queue,
+                ':status'       => self::STATUS_PENDING,
+                ':max_attempts' => $maxAttempts,
             ]);
 
             $job = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -71,7 +83,10 @@ final class QueueManager
 
             $pdo->prepare("
                 UPDATE queues
-                SET status = :working, attempts = attempts + 1, updated_at = NOW()
+                SET status = :working,
+                    attempts = attempts + 1,
+                    processed_at = NOW(),
+                    updated_at = NOW()
                 WHERE id = :id
             ")->execute([
                 ':working' => self::STATUS_WORKING,
@@ -110,32 +125,75 @@ final class QueueManager
     }
 
     /* =========================
-     * Mark job failed
+     * Mark job failed with retry/backoff
+     * If attempts < MAX_ATTEMPTS: reschedule with exponential backoff
+     * If attempts >= MAX_ATTEMPTS: mark as FAILED (dead letter)
      * ========================= */
-    public static function markFailed(int $id, string $reason): void
+    public static function markFailed(int $id, string $reason, int $maxAttempts = self::MAX_ATTEMPTS): void
     {
         $pdo = DatabaseConnection::getConnection();
 
-        $pdo->prepare("
-            UPDATE queues
-            SET status = :failed, error = :error, updated_at = NOW()
-            WHERE id = :id
-        ")->execute([
-            ':failed' => self::STATUS_FAILED,
-            ':error'  => $reason,
-            ':id'     => $id,
-        ]);
+        // Check current attempts
+        $stmt = $pdo->prepare("SELECT attempts FROM queues WHERE id = :id LIMIT 1");
+        $stmt->execute([':id' => $id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $attempts = $row ? (int) $row['attempts'] : 0;
 
-        Logger::error("Queue job {$id} failed: {$reason}");
+        if ($attempts < $maxAttempts) {
+            // Retry with exponential backoff: 5s, 10s, 20s, 40s, 80s...
+            $backoffSeconds = self::BACKOFF_BASE * (int) pow(2, max($attempts, 1) - 1);
+            $pdo->prepare("
+                UPDATE queues
+                SET status = :pending,
+                    error = :error,
+                    available_at = DATE_ADD(NOW(), INTERVAL :backoff SECOND),
+                    updated_at = NOW()
+                WHERE id = :id
+            ")->execute([
+                ':pending' => self::STATUS_PENDING,
+                ':error'   => $reason,
+                ':backoff' => $backoffSeconds,
+                ':id'      => $id,
+            ]);
+            Logger::warning("Queue job {$id} attempt {$attempts}/{$maxAttempts} failed, retrying in {$backoffSeconds}s: {$reason}");
+        } else {
+            // Max attempts exceeded → dead letter (final FAILED)
+            $pdo->prepare("
+                UPDATE queues
+                SET status = :failed, error = :error, updated_at = NOW()
+                WHERE id = :id
+            ")->execute([
+                ':failed' => self::STATUS_FAILED,
+                ':error'  => "[DEAD LETTER] Max attempts ({$maxAttempts}) exceeded. Last error: {$reason}",
+                ':id'     => $id,
+            ]);
+            Logger::error("Queue job {$id} moved to dead letter after {$maxAttempts} attempts: {$reason}");
+        }
     }
 
     /* =========================
-     * Worker loop
+     * Worker loop with graceful shutdown
+     * Handles SIGTERM/SIGINT to finish current job before stopping
      * ========================= */
-    public static function work(string $queue, callable $handler, int $sleep = 1): void
+    public static function work(string $queue, callable $handler, int $sleep = 1, int $maxAttempts = self::MAX_ATTEMPTS): void
     {
-        while (true) {
-            $job = self::pop($queue);
+        $shouldStop = false;
+
+        // Install signal handlers for graceful shutdown
+        if (function_exists('pcntl_async_signals')) {
+            pcntl_async_signals(true);
+            $stopHandler = function () use (&$shouldStop) {
+                $shouldStop = true;
+                Logger::info('Queue worker received shutdown signal, finishing current job...');
+            };
+            pcntl_signal(SIGTERM, $stopHandler);
+            pcntl_signal(SIGINT, $stopHandler);
+        }
+
+        Logger::info("Queue worker started for '{$queue}' (max_attempts={$maxAttempts})");
+
+        while (!$shouldStop) {
+            $job = self::pop($queue, $maxAttempts);
 
             if (!$job) {
                 sleep($sleep);
@@ -146,9 +204,11 @@ final class QueueManager
                 $handler($job['payload']);
                 self::markDone($job['id']);
             } catch (Throwable $e) {
-                self::markFailed($job['id'], $e->getMessage());
+                self::markFailed($job['id'], $e->getMessage(), $maxAttempts);
             }
         }
+
+        Logger::info("Queue worker for '{$queue}' shut down gracefully.");
     }
 
     /* =========================
@@ -186,14 +246,14 @@ final class QueueManager
             $params[':status']  = (int) $filters['status'];
         }
         if (isset($filters['search']) && $filters['search'] !== '') {
-            $where[]            = '(payload LIKE :search OR error LIKE :search2)';
+            $where[]            = '(queue LIKE :search OR error LIKE :search2)';
             $params[':search']  = '%' . $filters['search'] . '%';
             $params[':search2'] = '%' . $filters['search'] . '%';
         }
 
         $whereSQL = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
-        $allowed  = ['id', 'queue', 'status', 'attempts', 'created_at', 'updated_at'];
+        $allowed  = ['id', 'queue', 'status', 'attempts', 'created_at', 'updated_at', 'processed_at', 'available_at'];
         $orderBy  = in_array($orderBy, $allowed, true) ? $orderBy : 'id';
         $orderDir = strtoupper($orderDir) === 'ASC' ? 'ASC' : 'DESC';
 
@@ -282,7 +342,9 @@ final class QueueManager
     }
 
     /* =========================
-     * Archive done jobs
+     * Archive done jobs (with safety window)
+     * Only archives jobs updated more than 10 seconds ago
+     * to prevent race conditions with active workers
      * ========================= */
     public static function archiveDone(): int
     {
@@ -291,11 +353,17 @@ final class QueueManager
         try {
             $archiveStmt = $pdo->prepare("
                 INSERT INTO queues_archive (queue, payload, status, attempts, error, created_at, available_at, updated_at, processed_at)
-                SELECT queue, payload, status, attempts, error, created_at, available_at, updated_at, NOW()
-                FROM queues WHERE status = :done_status
+                SELECT queue, payload, status, attempts, error, created_at, available_at, updated_at, COALESCE(processed_at, updated_at)
+                FROM queues
+                WHERE status = :done_status
+                  AND updated_at < DATE_SUB(NOW(), INTERVAL 10 SECOND)
             ");
             $archiveStmt->execute([':done_status' => self::STATUS_DONE]);
-            $stmt = $pdo->prepare("DELETE FROM queues WHERE status = :done");
+            $stmt = $pdo->prepare("
+                DELETE FROM queues
+                WHERE status = :done
+                  AND updated_at < DATE_SUB(NOW(), INTERVAL 10 SECOND)
+            ");
             $stmt->execute([':done' => self::STATUS_DONE]);
             $count = $stmt->rowCount();
             $pdo->commit();
@@ -338,6 +406,35 @@ final class QueueManager
         $pdo  = DatabaseConnection::getConnection();
         $stmt = $pdo->query("SELECT DISTINCT queue FROM queues ORDER BY queue ASC");
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    /* =========================
+     * Detect and recover stuck jobs
+     * Jobs stuck in WORKING status for more than $minutes
+     * are reset to PENDING for retry
+     * ========================= */
+    public static function detectStuck(int $minutes = 30): int
+    {
+        $pdo  = DatabaseConnection::getConnection();
+        $stmt = $pdo->prepare("
+            UPDATE queues
+            SET status = :pending,
+                error = :stuck_msg,
+                updated_at = NOW()
+            WHERE status = :working
+              AND processed_at < DATE_SUB(NOW(), INTERVAL :minutes MINUTE)
+        ");
+        $stuckMsg = "[STUCK] Reset after {$minutes} minutes of no response";
+        $stmt->bindValue(':pending',   self::STATUS_PENDING, PDO::PARAM_INT);
+        $stmt->bindValue(':stuck_msg', $stuckMsg);
+        $stmt->bindValue(':working',   self::STATUS_WORKING, PDO::PARAM_INT);
+        $stmt->bindValue(':minutes',   $minutes, PDO::PARAM_INT);
+        $stmt->execute();
+        $count = $stmt->rowCount();
+        if ($count > 0) {
+            Logger::warning("Queue: reset {$count} stuck jobs (working > {$minutes} min)");
+        }
+        return $count;
     }
 
     /* =========================
