@@ -1,0 +1,90 @@
+{
+    "title": "إدارة العروض السريعة",
+    "subtitle": "إدارة العروض السريعة والمنتجات والترجمات",
+    "add_sale": "إضافة عرض",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "yes": "نعم",
+    "no": "لا",
+    "stats": {
+        "total": "الإجمالي",
+        "active": "نشط",
+        "upcoming": "قادم",
+        "ended": "منتهي"
+    },
+    "filter": {
+        "search": "بحث...",
+        "all_status": "جميع الحالات",
+        "active": "نشط",
+        "upcoming": "قادم",
+        "ended": "منتهي",
+        "all_active": "الكل",
+        "enabled": "مفعل",
+        "disabled": "معطل",
+        "apply": "تصفية",
+        "clear": "إلغاء الفلتر"
+    },
+    "table": {
+        "id": "المعرف",
+        "name": "الاسم",
+        "discount": "الخصم",
+        "start": "البداية",
+        "end": "النهاية",
+        "status": "الحالة",
+        "products": "المنتجات",
+        "sales": "المبيعات",
+        "actions": "الإجراءات",
+        "loading": "جاري التحميل...",
+        "no_records": "لا توجد سجلات"
+    },
+    "modal": {
+        "add_title": "إضافة عرض سريع",
+        "edit_title": "تعديل العرض السريع"
+    },
+    "form": {
+        "sale_name": "اسم العرض",
+        "discount_type": "نوع الخصم",
+        "percentage": "نسبة مئوية",
+        "fixed": "مبلغ ثابت",
+        "discount_value": "قيمة الخصم",
+        "max_discount": "الحد الأقصى للخصم",
+        "start_date": "تاريخ البدء",
+        "end_date": "تاريخ الانتهاء",
+        "description": "الوصف",
+        "banner_image": "رابط صورة البانر",
+        "is_active": "نشط"
+    },
+    "products": {
+        "title": "المنتجات",
+        "add": "إضافة منتج",
+        "product": "المنتج",
+        "original_price": "السعر الأصلي",
+        "sale_price": "سعر العرض",
+        "stock": "المخزون",
+        "sold": "المباع",
+        "active": "نشط",
+        "select_product": "اختر منتج",
+        "select": "اختر...",
+        "max_per_user": "الحد الأقصى لكل مستخدم"
+    },
+    "translations": {
+        "title": "الترجمات",
+        "language": "اللغة",
+        "field": "الحقل",
+        "value": "القيمة",
+        "add": "إضافة ترجمة"
+    },
+    "messages": {
+        "created": "تم الإنشاء بنجاح",
+        "updated": "تم التحديث بنجاح",
+        "deleted": "تم الحذف بنجاح",
+        "error": "حدث خطأ",
+        "confirm_delete": "هل أنت متأكد من الحذف؟"
+    },
+    "pagination": {
+        "showing": "عرض",
+        "of": "من"
+    }
+}
