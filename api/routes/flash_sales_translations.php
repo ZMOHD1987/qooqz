@@ -1,58 +1,89 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../v1/models/flash_sales/repositories/PdoFlashSalesRepository.php';
-require_once __DIR__ . '/../v1/models/flash_sales/services/FlashSalesService.php';
-require_once __DIR__ . '/../v1/models/flash_sales/controllers/FlashSalesController.php';
-require_once __DIR__ . '/../v1/models/flash_sales/validators/FlashSalesValidator.php';
+// Error handling
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+ini_set('error_log', __DIR__ . '/../../logs/php_errors.log');
 
-$pdo = getPDO();
-$repo = new PdoFlashSalesRepository($pdo);
-$service = new FlashSalesService($repo);
-$controller = new FlashSalesController($service);
-$method = $_SERVER['REQUEST_METHOD'];
+date_default_timezone_set('Asia/Riyadh');
+
+// Load dependencies
+$baseDir = dirname(__DIR__);
+require_once $baseDir . '/bootstrap.php';
+require_once $baseDir . '/shared/core/ResponseFormatter.php';
+require_once $baseDir . '/shared/helpers/safe_helpers.php';
+require_once $baseDir . '/shared/config/db.php';
+
+// Load model classes
+$modelsPath = API_VERSION_PATH . '/models/flash_sales';
+require_once $modelsPath . '/repositories/PdoFlashSalesRepository.php';
+require_once $modelsPath . '/validators/FlashSalesValidator.php';
+require_once $modelsPath . '/services/FlashSalesService.php';
+require_once $modelsPath . '/controllers/FlashSalesController.php';
+
+// CORS headers
+header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? '*'));
+header('Access-Control-Allow-Credentials: true');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-API-Key');
+header('Content-Type: application/json; charset=utf-8');
+
+// Session
+if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
+    session_start();
+}
+
+// Database connection
+if (!isset($GLOBALS['ADMIN_DB']) || !$GLOBALS['ADMIN_DB'] instanceof PDO) {
+    ResponseFormatter::error('Database connection failed', 500);
+    exit;
+}
 
 try {
+    $pdo        = $GLOBALS['ADMIN_DB'];
+    $repo       = new PdoFlashSalesRepository($pdo);
+    $service    = new FlashSalesService($repo);
+    $controller = new FlashSalesController($service);
+    $method     = $_SERVER['REQUEST_METHOD'];
+
     switch ($method) {
         case 'GET':
             $fid = (int)($_GET['flash_sale_id'] ?? 0);
-            if ($fid <= 0) { http_response_code(400); json_response(['success' => false, 'message' => 'flash_sale_id is required']); break; }
+            if ($fid <= 0) { ResponseFormatter::error('flash_sale_id is required', 400); break; }
             $lang = isset($_GET['language_code']) ? $_GET['language_code'] : null;
             $translations = $controller->getTranslations($fid, $lang);
-            json_response(['success' => true, 'message' => 'OK', 'data' => $translations]);
+            ResponseFormatter::success($translations);
             break;
 
         case 'POST':
             $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
             $errors = FlashSalesValidator::validateTranslation($data);
-            if ($errors) { http_response_code(422); json_response(['success' => false, 'message' => implode(', ', $errors)]); break; }
+            if ($errors) { ResponseFormatter::error(implode(', ', $errors), 422); break; }
             $controller->saveTranslation($data);
-            json_response(['success' => true, 'message' => 'Translation saved']);
+            ResponseFormatter::success(null, 'Translation saved');
             break;
 
         case 'DELETE':
             $id = (int)($_GET['id'] ?? 0);
             if ($id > 0) {
                 $controller->deleteTranslation($id);
-                json_response(['success' => true, 'message' => 'Translation deleted']);
+                ResponseFormatter::success(null, 'Translation deleted');
                 break;
             }
             $fid = (int)($_GET['flash_sale_id'] ?? 0);
             $lang = $_GET['language_code'] ?? '';
             if ($fid > 0 && $lang) {
                 $controller->deleteTranslationsByLang($fid, $lang);
-                json_response(['success' => true, 'message' => 'Translations deleted']);
+                ResponseFormatter::success(null, 'Translations deleted');
                 break;
             }
-            http_response_code(400);
-            json_response(['success' => false, 'message' => 'id or (flash_sale_id + language_code) required']);
+            ResponseFormatter::error('id or (flash_sale_id + language_code) required', 400);
             break;
 
         default:
-            http_response_code(405);
-            json_response(['success' => false, 'message' => 'Method not allowed']);
+            ResponseFormatter::error('Method not allowed', 405);
     }
 } catch (Throwable $e) {
-    http_response_code(500);
-    json_response(['success' => false, 'message' => 'Internal Server Error: ' . $e->getMessage()]);
+    ResponseFormatter::error($e->getMessage(), 422);
 }
