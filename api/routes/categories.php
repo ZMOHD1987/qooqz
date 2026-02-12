@@ -8,6 +8,7 @@ $baseDir = dirname(__DIR__);
 require_once $baseDir . '/bootstrap.php';
 require_once $baseDir . '/shared/core/ResponseFormatter.php';
 require_once $baseDir . '/shared/helpers/safe_helpers.php';
+require_once $baseDir . '/shared/helpers/SeoAutoManager.php';
 require_once $baseDir . '/shared/config/db.php';
 
 // ===== تحميل ملفات categories =====
@@ -135,6 +136,22 @@ try {
     if ($method === 'POST') {
         $data = json_decode(file_get_contents('php://input'), true) ?? [];
         $created = $controller->create($tenantId, $data);
+
+        // Auto-populate SEO meta
+        try {
+            $catId = $created['id'] ?? null;
+            if ($catId) {
+                SeoAutoManager::sync($pdo, 'category', (int)$catId, [
+                    'name'        => $created['name'] ?? $data['name'] ?? '',
+                    'slug'        => $created['slug'] ?? $data['slug'] ?? '',
+                    'description' => $created['description'] ?? $data['description'] ?? '',
+                    'tenant_id'   => $tenantId,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            // SEO sync failure should not break category creation
+        }
+
         ResponseFormatter::success($created, 'Category created successfully', 201);
         return;
     }
@@ -143,6 +160,22 @@ try {
     if ($method === 'PUT') {
         $data = json_decode(file_get_contents('php://input'), true) ?? [];
         $updated = $controller->update($tenantId, $data);
+
+        // Auto-update SEO meta
+        try {
+            $catId = $updated['id'] ?? $data['id'] ?? null;
+            if ($catId) {
+                SeoAutoManager::sync($pdo, 'category', (int)$catId, [
+                    'name'        => $updated['name'] ?? $data['name'] ?? '',
+                    'slug'        => $updated['slug'] ?? $data['slug'] ?? '',
+                    'description' => $updated['description'] ?? $data['description'] ?? '',
+                    'tenant_id'   => $tenantId,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            // SEO sync failure should not break category update
+        }
+
         ResponseFormatter::success($updated, 'Category updated successfully', 200);
         return;
     }
@@ -168,6 +201,14 @@ try {
         }
         
         $controller->delete($tenantId, $data);
+
+        // Auto-delete SEO meta
+        try {
+            SeoAutoManager::delete($pdo, 'category', $id);
+        } catch (\Throwable $e) {
+            // SEO delete failure should not break category deletion
+        }
+
         ResponseFormatter::success(['deleted' => true], 'Category deleted successfully', 200);
         return;
     }
@@ -176,6 +217,17 @@ try {
     if ($method === 'DELETE') {
         $data = json_decode(file_get_contents('php://input'), true) ?? [];
         $controller->delete($tenantId, $data);
+
+        // Auto-delete SEO meta
+        try {
+            $delId = $data['id'] ?? null;
+            if ($delId) {
+                SeoAutoManager::delete($pdo, 'category', (int)$delId);
+            }
+        } catch (\Throwable $e) {
+            // SEO delete failure should not break category deletion
+        }
+
         ResponseFormatter::success(['deleted' => true], 'Category deleted successfully', 200);
         return;
     }

@@ -5,6 +5,7 @@ $baseDir = dirname(__DIR__);
 require_once $baseDir . '/bootstrap.php';
 require_once $baseDir . '/shared/core/ResponseFormatter.php';
 require_once $baseDir . '/shared/helpers/safe_helpers.php';
+require_once $baseDir . '/shared/helpers/SeoAutoManager.php';
 require_once $baseDir . '/shared/config/db.php';
 
 $modelsPath = API_VERSION_PATH . '/models/products';
@@ -50,12 +51,42 @@ try {
 
     if ($method === 'POST') {
         $res = $controller->create($data);
+
+        // Auto-sync SEO translation
+        try {
+            $prodId = $data['product_id'] ?? null;
+            $lc = $data['language_code'] ?? null;
+            if ($prodId && $lc) {
+                SeoAutoManager::syncTranslation($pdo, 'product', (int)$prodId, $lc, [
+                    'name'        => $data['name'] ?? '',
+                    'description' => $data['description'] ?? '',
+                ]);
+            }
+        } catch (\Throwable $e) {
+            // SEO sync failure should not break translation creation
+        }
+
         ResponseFormatter::success($res, 'Created', 201);
         exit;
     }
 
     if ($method === 'PUT') {
         $res = $controller->update($data);
+
+        // Auto-sync SEO translation
+        try {
+            $prodId = $data['product_id'] ?? null;
+            $lc = $data['language_code'] ?? null;
+            if ($prodId && $lc) {
+                SeoAutoManager::syncTranslation($pdo, 'product', (int)$prodId, $lc, [
+                    'name'        => $data['name'] ?? '',
+                    'description' => $data['description'] ?? '',
+                ]);
+            }
+        } catch (\Throwable $e) {
+            // SEO sync failure should not break translation update
+        }
+
         ResponseFormatter::success($res, 'Updated');
         exit;
     }

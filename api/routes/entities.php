@@ -199,6 +199,13 @@ try {
                 (int)$data['id']
             );
 
+            // Auto-delete SEO meta
+            try {
+                SeoAutoManager::delete($pdo, 'entity', (int)$data['id']);
+            } catch (\Throwable $e) {
+                // SEO delete failure should not break entity deletion
+            }
+
             ResponseFormatter::success(
                 ['deleted' => $deleted],
                 'Deleted successfully'

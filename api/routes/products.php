@@ -5,6 +5,7 @@ $baseDir = dirname(__DIR__);
 require_once $baseDir . '/bootstrap.php';
 require_once $baseDir . '/shared/core/ResponseFormatter.php';
 require_once $baseDir . '/shared/helpers/safe_helpers.php';
+require_once $baseDir . '/shared/helpers/SeoAutoManager.php';
 require_once $baseDir . '/shared/config/db.php';
 
 $modelsPath = API_VERSION_PATH . '/models/products';
@@ -115,6 +116,18 @@ try {
                 }
             }
 
+            // Auto-populate SEO meta
+            try {
+                SeoAutoManager::sync($pdo, 'product', (int)$newId, [
+                    'name'        => $data['name'] ?? '',
+                    'slug'        => $data['slug'] ?? '',
+                    'description' => $data['description'] ?? '',
+                    'tenant_id'   => $tenantId,
+                ]);
+            } catch (\Throwable $e) {
+                // SEO sync failure should not break product creation
+            }
+
             ResponseFormatter::success(['id' => $newId], 'Created successfully', 201);
             break;
 
@@ -142,6 +155,18 @@ try {
                 }
             }
 
+            // Auto-update SEO meta
+            try {
+                SeoAutoManager::sync($pdo, 'product', (int)$updatedId, [
+                    'name'        => $data['name'] ?? '',
+                    'slug'        => $data['slug'] ?? '',
+                    'description' => $data['description'] ?? '',
+                    'tenant_id'   => $tenantId,
+                ]);
+            } catch (\Throwable $e) {
+                // SEO sync failure should not break product update
+            }
+
             ResponseFormatter::success(['id' => $updatedId], 'Updated successfully');
             break;
 
@@ -150,6 +175,14 @@ try {
                 ResponseFormatter::error('Missing product ID for deletion', 400);
             }
             $deleted = $controller->delete($tenantId, (int)$data['id']);
+
+            // Auto-delete SEO meta
+            try {
+                SeoAutoManager::delete($pdo, 'product', (int)$data['id']);
+            } catch (\Throwable $e) {
+                // SEO delete failure should not break product deletion
+            }
+
             ResponseFormatter::success(['deleted' => $deleted], 'Deleted successfully');
             break;
 
