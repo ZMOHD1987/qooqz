@@ -64,6 +64,7 @@
         "product": "Product",
         "original_price": "Original Price",
         "sale_price": "Sale Price",
+        "discount": "Discount %",
         "stock": "Stock",
         "sold": "Sold",
         "active": "Active",

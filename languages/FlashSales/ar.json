@@ -64,6 +64,7 @@
         "product": "المنتج",
         "original_price": "السعر الأصلي",
         "sale_price": "سعر العرض",
+        "discount": "نسبة الخصم %",
         "stock": "المخزون",
         "sold": "المباع",
         "active": "نشط",

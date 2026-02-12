@@ -193,7 +193,7 @@ function loadProducts(fid) {
             tbody.innerHTML = '';
             var items = d.success ? (Array.isArray(d.data) ? d.data : (d.data && d.data.items ? d.data.items : [])) : [];
             if (items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center">' + t('table.no_records', 'No records') + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center">' + t('table.no_records', 'No records') + '</td></tr>';
                 return;
             }
             items.forEach(function(p){
@@ -202,8 +202,10 @@ function loadProducts(fid) {
                     '<td>' + esc(p.product_name || String(p.product_id)) + '</td>' +
                     '<td>' + esc(String(p.original_price)) + '</td>' +
                     '<td>' + esc(String(p.sale_price)) + '</td>' +
+                    '<td>' + esc(String(p.discount_percentage || 0)) + '%</td>' +
                     '<td>' + esc(String(p.stock_quantity || 0)) + '</td>' +
                     '<td>' + esc(String(p.sold_quantity || 0)) + '</td>' +
+                    '<td>' + esc(String(p.max_quantity_per_user || 5)) + '</td>' +
                     '<td>' + (p.is_active ? t('yes', 'Yes') : t('no', 'No')) + '</td>' +
                     '<td><button class="btn btn-sm btn-danger btn-delete-product" data-id="' + p.id + '">' + t('delete', 'Delete') + '</button></td>';
                 tbody.appendChild(tr);
@@ -381,13 +383,18 @@ function init() {
     });
     document.getElementById('addProductForm').addEventListener('submit', function(e){
         e.preventDefault();
+        var origP = parseFloat(document.getElementById('prodOrigPrice').value);
+        var saleP = parseFloat(document.getElementById('prodSalePrice').value);
+        var discPct = origP > 0 ? Math.max(0, Math.round((origP - saleP) / origP * 10000) / 100) : 0;
         var payload = {
             flash_sale_id: parseInt(document.getElementById('addProductFlashSaleId').value),
             product_id: parseInt(document.getElementById('productSelect').value),
-            original_price: parseFloat(document.getElementById('prodOrigPrice').value),
-            sale_price: parseFloat(document.getElementById('prodSalePrice').value),
+            original_price: origP,
+            sale_price: saleP,
+            discount_percentage: discPct,
             stock_quantity: parseInt(document.getElementById('prodStock').value) || 0,
-            max_quantity_per_user: parseInt(document.getElementById('prodMaxPerUser').value) || 5
+            max_quantity_per_user: parseInt(document.getElementById('prodMaxPerUser').value) || 5,
+            is_active: 1
         };
         fetch('/api/flash_sale_products', {
             method: 'POST',

@@ -196,8 +196,10 @@ function _fst(string $key, string $fallback = ''): string {
               <th><?= _fst('products.product', 'Product') ?></th>
               <th><?= _fst('products.original_price', 'Original Price') ?></th>
               <th><?= _fst('products.sale_price', 'Sale Price') ?></th>
+              <th><?= _fst('products.discount', 'Discount %') ?></th>
               <th><?= _fst('products.stock', 'Stock') ?></th>
               <th><?= _fst('products.sold', 'Sold') ?></th>
+              <th><?= _fst('products.max_per_user', 'Max/User') ?></th>
               <th><?= _fst('products.active', 'Active') ?></th>
               <th><?= _fst('table.actions', 'Actions') ?></th>
             </tr>
