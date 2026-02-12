@@ -118,14 +118,13 @@ try {
 
             // Auto-populate SEO meta
             try {
-                $seoLang = $langCode ?? $_GET['lang'] ?? ($_SESSION['user']['preferred_language'] ?? 'ar');
                 SeoAutoManager::sync($pdo, 'product', (int)$newId, [
                     'name'          => $data['name'] ?? '',
                     'slug'          => $data['slug'] ?? '',
                     'description'   => $data['description'] ?? '',
                     'tenant_id'     => $tenantId,
-                    'language_code' => $seoLang,
                 ]);
+                SeoAutoManager::syncAllTranslations($pdo, 'product', (int)$newId);
             } catch (\Throwable $e) {
                 // SEO sync failure should not break product creation
             }
@@ -159,14 +158,13 @@ try {
 
             // Auto-update SEO meta
             try {
-                $seoLang = $langCode ?? $_GET['lang'] ?? ($_SESSION['user']['preferred_language'] ?? 'ar');
                 SeoAutoManager::sync($pdo, 'product', (int)$updatedId, [
                     'name'          => $data['name'] ?? '',
                     'slug'          => $data['slug'] ?? '',
                     'description'   => $data['description'] ?? '',
                     'tenant_id'     => $tenantId,
-                    'language_code' => $seoLang,
                 ]);
+                SeoAutoManager::syncAllTranslations($pdo, 'product', (int)$updatedId);
             } catch (\Throwable $e) {
                 // SEO sync failure should not break product update
             }

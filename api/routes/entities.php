@@ -133,14 +133,13 @@ try {
 
             // Auto-populate SEO meta
             try {
-                $seoLang = $data['language_code'] ?? $lang ?? ($_SESSION['user']['preferred_language'] ?? 'ar');
                 SeoAutoManager::sync($pdo, 'entity', (int)$newId, [
                     'name'          => $data['store_name'] ?? '',
                     'slug'          => $data['slug'] ?? '',
                     'description'   => $data['description'] ?? '',
                     'tenant_id'     => $tenantId,
-                    'language_code' => $seoLang,
                 ]);
+                SeoAutoManager::syncAllTranslations($pdo, 'entity', (int)$newId);
             } catch (\Throwable $e) {
                 // SEO sync failure should not break entity creation
             }
@@ -171,14 +170,13 @@ try {
 
             // Auto-update SEO meta
             try {
-                $seoLang = $data['language_code'] ?? $lang ?? ($_SESSION['user']['preferred_language'] ?? 'ar');
                 SeoAutoManager::sync($pdo, 'entity', (int)$updatedId, [
                     'name'          => $data['store_name'] ?? '',
                     'slug'          => $data['slug'] ?? '',
                     'description'   => $data['description'] ?? '',
                     'tenant_id'     => $tenantId,
-                    'language_code' => $seoLang,
                 ]);
+                SeoAutoManager::syncAllTranslations($pdo, 'entity', (int)$updatedId);
             } catch (\Throwable $e) {
                 // SEO sync failure should not break entity update
             }

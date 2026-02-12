@@ -43,7 +43,9 @@ try {
             $res = $controller->get($tenantId, $id, $languageCode);
             ResponseFormatter::success($res);
         } else {
-            $res = $controller->list($tenantId, $languageCode, $limit, $offset, $filters, $orderBy, $orderDir);
+            // When listing translations for a specific product, show ALL languages
+            $langFilter = !empty($filters['product_id']) ? null : $languageCode;
+            $res = $controller->list($tenantId, $langFilter, $limit, $offset, $filters, $orderBy, $orderDir);
             ResponseFormatter::success($res);
         }
         exit;

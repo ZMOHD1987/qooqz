@@ -74,6 +74,54 @@ class SeoAutoManager
     }
 
     /**
+     * Sync SEO translations for ALL existing translations of an entity.
+     * Queries the appropriate translations table and syncs each language.
+     *
+     * @param PDO    $pdo
+     * @param string $entityType  e.g. entity, product, category
+     * @param int    $entityId
+     */
+    public static function syncAllTranslations(PDO $pdo, string $entityType, int $entityId): void
+    {
+        $seoMetaId = self::getSeoMetaId($pdo, $entityType, $entityId);
+        if (!$seoMetaId) {
+            return;
+        }
+
+        $tableMap = [
+            'entity'   => ['table' => 'entity_translations',  'fk' => 'entity_id',  'name' => 'store_name'],
+            'product'  => ['table' => 'product_translations',  'fk' => 'product_id', 'name' => 'name'],
+            'category' => ['table' => 'category_translations', 'fk' => 'category_id','name' => 'name'],
+        ];
+
+        $config = $tableMap[$entityType] ?? null;
+        if (!$config) {
+            return;
+        }
+
+        // Whitelist validation - table/column names come from internal array only
+        $allowedTables = ['entity_translations', 'product_translations', 'category_translations'];
+        if (!in_array($config['table'], $allowedTables, true)) {
+            return;
+        }
+
+        $stmt = $pdo->prepare(
+            "SELECT language_code, {$config['name']} AS name, description
+             FROM {$config['table']}
+             WHERE {$config['fk']} = ?"
+        );
+        $stmt->execute([$entityId]);
+        $translations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($translations as $tr) {
+            self::syncTranslation($pdo, $entityType, $entityId, $tr['language_code'], [
+                'name'        => $tr['name'] ?? '',
+                'description' => $tr['description'] ?? '',
+            ]);
+        }
+    }
+
+    /**
      * Sync a specific language translation for seo_meta.
      * Called when entity translations are saved.
      *
