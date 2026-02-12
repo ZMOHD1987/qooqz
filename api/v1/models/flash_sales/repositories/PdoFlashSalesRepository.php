@@ -137,13 +137,17 @@ class PdoFlashSalesRepository {
     /* ── Flash Sale Products ── */
 
     public function getProducts(int $flashSaleId): array {
-        $sql = "SELECT fsp.*, p.name AS product_name, p.slug AS product_slug
+        $lang = $_GET['lang'] ?? $_SESSION['user']['preferred_language'] ?? 'ar';
+        if (!preg_match('/^[a-z]{2,8}$/i', $lang)) { $lang = 'ar'; }
+        $sql = "SELECT fsp.*, p.sku AS product_sku, p.slug AS product_slug,
+                       COALESCE(pt.name, p.slug) AS product_name
                 FROM flash_sale_products fsp
                 LEFT JOIN products p ON p.id = fsp.product_id
+                LEFT JOIN product_translations pt ON pt.product_id = p.id AND pt.language_code = :lang
                 WHERE fsp.flash_sale_id = :fid
                 ORDER BY fsp.id ASC";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':fid' => $flashSaleId]);
+        $stmt->execute([':fid' => $flashSaleId, ':lang' => $lang]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
