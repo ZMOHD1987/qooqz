@@ -66,24 +66,11 @@ class SeoAutoManager
             ':schema_markup'  => $schema,
         ]);
 
-        // Get seo_meta id for translations
-        $seoMetaId = self::getSeoMetaId($pdo, $entityType, $entityId);
-        if (!$seoMetaId) {
-            return;
+        // If language_code is provided, auto-create translation too
+        $langCode = $data['language_code'] ?? null;
+        if ($langCode) {
+            self::syncTranslation($pdo, $entityType, $entityId, $langCode, $data);
         }
-
-        // Auto-create default translation (use entity's primary language or default)
-        $metaTitle       = $name ? mb_substr($name, 0, 255) : null;
-        $metaDescription = $description ? mb_substr($description, 0, 160) : null;
-        $metaKeywords    = self::generateKeywords($name, $description);
-
-        self::upsertTranslation($pdo, $seoMetaId, 'en', [
-            'meta_title'       => $metaTitle,
-            'meta_description' => $metaDescription,
-            'meta_keywords'    => $metaKeywords,
-            'og_title'         => $metaTitle,
-            'og_description'   => $metaDescription,
-        ]);
     }
 
     /**

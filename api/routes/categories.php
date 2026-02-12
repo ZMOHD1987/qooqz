@@ -141,11 +141,13 @@ try {
         try {
             $catId = $created['id'] ?? null;
             if ($catId) {
+                $seoLang = $data['language_code'] ?? $lang ?? ($_SESSION['user']['preferred_language'] ?? 'ar');
                 SeoAutoManager::sync($pdo, 'category', (int)$catId, [
-                    'name'        => $created['name'] ?? $data['name'] ?? '',
-                    'slug'        => $created['slug'] ?? $data['slug'] ?? '',
-                    'description' => $created['description'] ?? $data['description'] ?? '',
-                    'tenant_id'   => $tenantId,
+                    'name'          => $created['name'] ?? $data['name'] ?? '',
+                    'slug'          => $created['slug'] ?? $data['slug'] ?? '',
+                    'description'   => $created['description'] ?? $data['description'] ?? '',
+                    'tenant_id'     => $tenantId,
+                    'language_code' => $seoLang,
                 ]);
             }
         } catch (\Throwable $e) {
@@ -165,11 +167,13 @@ try {
         try {
             $catId = $updated['id'] ?? $data['id'] ?? null;
             if ($catId) {
+                $seoLang = $data['language_code'] ?? $lang ?? ($_SESSION['user']['preferred_language'] ?? 'ar');
                 SeoAutoManager::sync($pdo, 'category', (int)$catId, [
-                    'name'        => $updated['name'] ?? $data['name'] ?? '',
-                    'slug'        => $updated['slug'] ?? $data['slug'] ?? '',
-                    'description' => $updated['description'] ?? $data['description'] ?? '',
-                    'tenant_id'   => $tenantId,
+                    'name'          => $updated['name'] ?? $data['name'] ?? '',
+                    'slug'          => $updated['slug'] ?? $data['slug'] ?? '',
+                    'description'   => $updated['description'] ?? $data['description'] ?? '',
+                    'tenant_id'     => $tenantId,
+                    'language_code' => $seoLang,
                 ]);
             }
         } catch (\Throwable $e) {
