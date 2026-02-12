@@ -26,6 +26,10 @@ class PdoFlashSalesRepository {
                 case 'ended':    $where[] = 'fs.end_date < :now'; $params[':now'] = $now; break;
             }
         }
+        if (!empty($filters['entity_id'])) {
+            $where[] = 'fs.entity_id = :entity_id';
+            $params[':entity_id'] = (int)$filters['entity_id'];
+        }
         if (!empty($filters['search'])) {
             $where[] = '(fs.sale_name LIKE :search OR fs.description LIKE :search2)';
             $params[':search'] = '%' . $filters['search'] . '%';
@@ -66,7 +70,7 @@ class PdoFlashSalesRepository {
 
     public function create(array $data): int {
         $cols = ['sale_name','description','start_date','end_date','discount_type','discount_value',
-                 'max_discount_amount','is_active','banner_image'];
+                 'max_discount_amount','is_active','banner_image','entity_id'];
         $filtered = array_intersect_key($data, array_flip($cols));
         $keys = array_keys($filtered);
         $placeholders = array_map(fn($k) => ':' . $k, $keys);
@@ -80,7 +84,7 @@ class PdoFlashSalesRepository {
 
     public function update(int $id, array $data): bool {
         $cols = ['sale_name','description','start_date','end_date','discount_type','discount_value',
-                 'max_discount_amount','is_active','banner_image'];
+                 'max_discount_amount','is_active','banner_image','entity_id'];
         $filtered = array_intersect_key($data, array_flip($cols));
         if (empty($filtered)) return false;
 

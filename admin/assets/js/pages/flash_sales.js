@@ -159,6 +159,9 @@ function editFlashSale(id) {
                 document.getElementById('saleDescription').value = item.description || '';
                 document.getElementById('bannerImage').value = item.banner_image || '';
                 document.getElementById('isActive').value = item.is_active != null ? String(item.is_active) : '1';
+                if (document.getElementById('entitySelect')) {
+                    document.getElementById('entitySelect').value = item.entity_id || '';
+                }
                 document.getElementById('modalTitle').textContent = t('modal.edit_title', 'Edit Flash Sale');
                 openModal('flashSaleModal');
             }
@@ -277,11 +280,30 @@ function loadTranslations(fid) {
     }
 }
 
+/* ── Entity Options ── */
+function loadEntityOptions() {
+    var sel = document.getElementById('entitySelect');
+    if (!sel || sel.options.length > 1) return;
+    fetch('/api/entities?limit=100')
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            var items = d.success ? (d.data && d.data.items ? d.data.items : (Array.isArray(d.data) ? d.data : [])) : [];
+            items.forEach(function(e){
+                var opt = document.createElement('option');
+                opt.value = e.id;
+                opt.textContent = e.store_name || e.id;
+                sel.appendChild(opt);
+            });
+        })
+        .catch(function(){});
+}
+
 /* ── Init ── */
 function init() {
     loadStats();
     loadFlashSales(1);
     loadProductOptions();
+    loadEntityOptions();
 
     // Add button
     document.getElementById('btnAddFlashSale').addEventListener('click', function(){
@@ -312,7 +334,8 @@ function init() {
             end_date: document.getElementById('endDate').value.replace('T', ' ') + ':00',
             description: document.getElementById('saleDescription').value,
             banner_image: document.getElementById('bannerImage').value,
-            is_active: document.getElementById('isActive').value
+            is_active: document.getElementById('isActive').value,
+            entity_id: document.getElementById('entitySelect').value ? parseInt(document.getElementById('entitySelect').value) : null
         };
         if (id) payload.id = parseInt(id);
 

@@ -117,6 +117,12 @@ function _fst(string $key, string $fallback = ''): string {
       <form id="flashSaleForm">
         <input type="hidden" id="flashSaleId" value="">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+        <div class="form-group">
+          <label><?= _fst('form.entity', 'Entity') ?></label>
+          <select class="form-control" id="entitySelect" name="entity_id">
+            <option value=""><?= _fst('form.all_entities', 'All Entities (Global)') ?></option>
+          </select>
+        </div>
         <div class="form-row">
           <div class="form-group">
             <label><?= _fst('form.sale_name', 'Sale Name') ?> *</label>

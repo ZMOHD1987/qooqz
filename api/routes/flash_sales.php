@@ -63,6 +63,7 @@ try {
                 if (isset($_GET['is_active']))  $filters['is_active'] = $_GET['is_active'];
                 if (isset($_GET['status']))     $filters['status'] = $_GET['status'];
                 if (isset($_GET['search']))     $filters['search'] = $_GET['search'];
+                if (isset($_GET['entity_id']))  $filters['entity_id'] = $_GET['entity_id'];
                 if (isset($_GET['limit']))      $filters['limit'] = $_GET['limit'];
                 if (isset($_GET['offset']))     $filters['offset'] = $_GET['offset'];
                 $result = $controller->list($filters);

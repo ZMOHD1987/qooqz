@@ -45,6 +45,8 @@
     },
     "form": {
         "sale_name": "Sale Name",
+        "entity": "Entity",
+        "all_entities": "All Entities (Global)",
         "discount_type": "Discount Type",
         "percentage": "Percentage",
         "fixed": "Fixed Amount",

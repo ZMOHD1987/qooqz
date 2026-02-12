@@ -45,6 +45,8 @@
     },
     "form": {
         "sale_name": "اسم العرض",
+        "entity": "الكيان",
+        "all_entities": "جميع الكيانات (عام)",
         "discount_type": "نوع الخصم",
         "percentage": "نسبة مئوية",
         "fixed": "مبلغ ثابت",
