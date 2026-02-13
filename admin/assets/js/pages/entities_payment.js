@@ -101,8 +101,18 @@
                     fetch(API_BASE + '/tenants?id=' + tid)
                     .then(function(r){ return r.json(); })
                     .then(function(d){
-                        if(d.success && d.data && (d.data.name || d.data.id)){
-                            var tData = d.data;
+                        var tData = null;
+                        if(d.success && d.data){
+                            if(d.data.items && Array.isArray(d.data.items)){
+                                for(var i = 0; i < d.data.items.length; i++){
+                                    if(parseInt(d.data.items[i].id) === tid){ tData = d.data.items[i]; break; }
+                                }
+                                if(!tData && d.data.items.length > 0) tData = d.data.items[0];
+                            } else if(d.data.name || d.data.id){
+                                tData = d.data;
+                            }
+                        }
+                        if(tData){
                             if(tenantName) tenantName.textContent = tData.name || ('Tenant #' + tData.id);
                             if(tenantName) tenantName.classList.remove('error');
                             loadEntitiesByTenant(tid);

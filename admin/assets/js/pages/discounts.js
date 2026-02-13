@@ -777,8 +777,19 @@ function verifyTenant() {
     fetch('/api/tenants?id=' + tid)
         .then(function(r){ return r.json(); })
         .then(function(d){
+            var tData = null;
             if (d.success && d.data) {
-                var name = d.data.name || d.data.domain || 'Tenant #' + tid;
+                if (d.data.items && Array.isArray(d.data.items)) {
+                    for (var i = 0; i < d.data.items.length; i++) {
+                        if (parseInt(d.data.items[i].id) === tid) { tData = d.data.items[i]; break; }
+                    }
+                    if (!tData && d.data.items.length > 0) tData = d.data.items[0];
+                } else if (d.data.name || d.data.id) {
+                    tData = d.data;
+                }
+            }
+            if (tData) {
+                var name = tData.name || tData.domain || 'Tenant #' + tid;
                 nameEl.textContent = '✓ ' + name;
                 nameEl.style.display = 'block';
                 nameEl.style.color = 'var(--success-color,#28a745)';
