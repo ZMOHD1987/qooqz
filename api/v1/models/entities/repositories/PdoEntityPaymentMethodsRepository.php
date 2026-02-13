@@ -6,7 +6,7 @@ final class PdoEntityPaymentMethodsRepository
     private PDO $pdo;
 
     private const ALLOWED_ORDER_BY = [
-        'id','gateway_name','is_active','created_at'
+        'id','payment_method_id','is_active','created_at'
     ];
 
     public function __construct(PDO $pdo)
@@ -29,9 +29,10 @@ final class PdoEntityPaymentMethodsRepository
         $orderDir = strtoupper($orderDir) === 'ASC' ? 'ASC' : 'DESC';
 
         $sql = "
-            SELECT p.*
+            SELECT p.*, pm.method_key, pm.method_name, pm.gateway_name, pm.icon_url
             FROM entity_payment_methods p
             INNER JOIN entities e ON e.id = p.entity_id
+            LEFT JOIN payment_methods pm ON pm.id = p.payment_method_id
             WHERE e.tenant_id = :tenant_id
               AND p.entity_id = :entity_id
             ORDER BY {$orderBy} {$orderDir}
@@ -76,9 +77,10 @@ final class PdoEntityPaymentMethodsRepository
     public function find(int $tenantId, int $entityId, int $id): ?array
     {
         $stmt = $this->pdo->prepare("
-            SELECT p.*
+            SELECT p.*, pm.method_key, pm.method_name, pm.gateway_name, pm.icon_url
             FROM entity_payment_methods p
             INNER JOIN entities e ON e.id = p.entity_id
+            LEFT JOIN payment_methods pm ON pm.id = p.payment_method_id
             WHERE p.id = :id
               AND p.entity_id = :entity_id
               AND e.tenant_id = :tenant_id
@@ -130,14 +132,14 @@ final class PdoEntityPaymentMethodsRepository
         if ($isUpdate) {
             $stmt = $this->pdo->prepare("
                 UPDATE entity_payment_methods SET
-                    gateway_name = :gateway,
+                    payment_method_id = :payment_method_id,
                     account_email = :email,
                     account_id = :account_id,
                     is_active = :is_active
                 WHERE id = :id AND entity_id = :entity_id
             ");
             $stmt->execute([
-                ':gateway'=>$data['gateway_name'],
+                ':payment_method_id'=>(int)$data['payment_method_id'],
                 ':email'=>$encEmail,
                 ':account_id'=>$encAccountId,
                 ':is_active'=>(int)($data['is_active'] ?? 1),
@@ -149,14 +151,14 @@ final class PdoEntityPaymentMethodsRepository
 
         $stmt = $this->pdo->prepare("
             INSERT INTO entity_payment_methods (
-                entity_id, gateway_name, account_email, account_id, is_active
+                entity_id, payment_method_id, account_email, account_id, is_active
             ) VALUES (
-                :entity_id, :gateway, :email, :account_id, :is_active
+                :entity_id, :payment_method_id, :email, :account_id, :is_active
             )
         ");
         $stmt->execute([
             ':entity_id'=>$entityId,
-            ':gateway'=>$data['gateway_name'],
+            ':payment_method_id'=>(int)$data['payment_method_id'],
             ':email'=>$encEmail,
             ':account_id'=>$encAccountId,
             ':is_active'=>(int)($data['is_active'] ?? 1)

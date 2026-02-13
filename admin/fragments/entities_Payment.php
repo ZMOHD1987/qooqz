@@ -139,7 +139,7 @@ function _pt($key, $fallback = '') {
                 <thead>
                     <tr>
                         <th data-i18n="table.id"><?= htmlspecialchars(_pt('table.id', 'ID')) ?></th>
-                        <th data-i18n="payment_methods.gateway"><?= htmlspecialchars(_pt('payment_methods.gateway', 'Gateway')) ?></th>
+                        <th data-i18n="payment_methods.gateway"><?= htmlspecialchars(_pt('payment_methods.gateway', 'Payment Method')) ?></th>
                         <th data-i18n="payment_methods.account_email"><?= htmlspecialchars(_pt('payment_methods.account_email', 'Account Email')) ?></th>
                         <th data-i18n="payment_methods.account_id"><?= htmlspecialchars(_pt('payment_methods.account_id', 'Account ID')) ?></th>
                         <th data-i18n="payment_methods.active"><?= htmlspecialchars(_pt('payment_methods.active', 'Active')) ?></th>
@@ -180,18 +180,9 @@ function _pt($key, $fallback = '') {
                 <input type="hidden" name="entity_id" value="<?= $entityId ?>">
                 <input type="hidden" name="id" id="pmEditId" value="">
                 <div class="form-group">
-                    <label data-i18n="payment_methods.gateway"><?= htmlspecialchars(_pt('payment_methods.gateway', 'Gateway')) ?> *</label>
-                    <select name="gateway_name" id="pmGateway" class="form-control" required>
-                        <option value="" data-i18n="payment_methods.select_gateway"><?= htmlspecialchars(_pt('payment_methods.select_gateway', 'Select')) ?></option>
-                        <option value="stripe">Stripe</option>
-                        <option value="paypal">PayPal</option>
-                        <option value="moyasar">Moyasar</option>
-                        <option value="tap">Tap</option>
-                        <option value="paytabs">PayTabs</option>
-                        <option value="credit_card">Credit Card</option>
-                        <option value="bank_transfer">Bank Transfer</option>
-                        <option value="cash">Cash</option>
-                        <option value="other">Other</option>
+                    <label data-i18n="payment_methods.gateway"><?= htmlspecialchars(_pt('payment_methods.gateway', 'Payment Method')) ?> *</label>
+                    <select name="payment_method_id" id="pmPaymentMethodId" class="form-control" required>
+                        <option value="" data-i18n="payment_methods.select_gateway"><?= htmlspecialchars(_pt('payment_methods.select_gateway', 'Select Payment Method...')) ?></option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -323,6 +314,31 @@ function _pt($key, $fallback = '') {
         openModal('bankAccountModal');
     });
 
+    // Payment methods cache for name lookup
+    var paymentMethodsMap = {};
+
+    // Load payment methods for dropdown
+    function loadPaymentMethodOptions(){
+        fetch(API_BASE + '/payment_methods?limit=200')
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            var sel = document.getElementById('pmPaymentMethodId');
+            if(!sel) return;
+            // Keep first option
+            while(sel.options.length > 1) sel.remove(1);
+            if(d.success && d.data){
+                var items = d.data.items || (Array.isArray(d.data) ? d.data : []);
+                items.forEach(function(pm){
+                    paymentMethodsMap[pm.id] = pm.method_name || pm.gateway_name || pm.method_key;
+                    var opt = document.createElement('option');
+                    opt.value = pm.id;
+                    opt.textContent = pm.method_name + (pm.gateway_name ? ' (' + pm.gateway_name + ')' : '');
+                    sel.appendChild(opt);
+                });
+            }
+        });
+    }
+
     // Entity selector logic
     var entitySelector = document.getElementById('entitySelector');
     var btnLoad = document.getElementById('btnLoadEntityPayments');
@@ -380,10 +396,18 @@ function _pt($key, $fallback = '') {
         if(!entityId){ alert(t('select_entity_first', 'Please select an entity first.')); return; }
         var editId = document.getElementById('pmEditId').value;
         var method = editId ? 'PUT' : 'POST';
-        fetch(API_BASE + '/entity_payment_methods', {
+        var payload = {
+            entity_id: entityId,
+            payment_method_id: parseInt(document.getElementById('pmPaymentMethodId').value) || 0,
+            account_email: document.getElementById('pmEmail').value,
+            account_id: document.getElementById('pmAccountId').value,
+            is_active: parseInt(document.getElementById('pmActive').value)
+        };
+        if(editId) payload.id = parseInt(editId);
+        fetch(API_BASE + '/entity_payment_methods?entity_id=' + entityId, {
             method: method,
-            headers: {'X-CSRF-TOKEN': CSRF},
-            body: new FormData(this)
+            headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF},
+            body: JSON.stringify(payload)
         }).then(function(r){ return r.json(); }).then(function(d){
             if(d.success){
                 closeModal('paymentMethodModal');
@@ -439,10 +463,11 @@ function _pt($key, $fallback = '') {
             if(d.success && d.data){
                 var items = Array.isArray(d.data) ? d.data : (d.data.items || []);
                 items.forEach(function(p){
+                    var methodName = p.method_name || paymentMethodsMap[p.payment_method_id] || p.gateway_name || '';
                     var tr = document.createElement('tr');
                     tr.innerHTML =
                         '<td>' + esc(p.id) + '</td>' +
-                        '<td>' + esc(p.gateway_name) + '</td>' +
+                        '<td>' + esc(methodName) + '</td>' +
                         '<td>' + esc(p.account_email || '') + '</td>' +
                         '<td>' + esc(p.account_id || '') + '</td>' +
                         '<td>' + (p.is_active ? t('table.yes', 'Yes') : t('table.no', 'No')) + '</td>' +
@@ -498,7 +523,7 @@ function _pt($key, $fallback = '') {
                 if(d.success && d.data){
                     var rec = d.data;
                     document.getElementById('pmEditId').value = rec.id;
-                    document.getElementById('pmGateway').value = rec.gateway_name || '';
+                    document.getElementById('pmPaymentMethodId').value = rec.payment_method_id || '';
                     document.getElementById('pmEmail').value = rec.account_email || '';
                     document.getElementById('pmAccountId').value = rec.account_id || '';
                     document.getElementById('pmActive').value = rec.is_active ? '1' : '0';
@@ -564,6 +589,7 @@ function _pt($key, $fallback = '') {
     });
 
     // Load initial data if entityId exists
+    loadPaymentMethodOptions();
     if(entityId){
         loadPayments();
         loadBanks();
