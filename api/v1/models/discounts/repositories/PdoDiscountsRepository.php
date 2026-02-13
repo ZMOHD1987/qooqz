@@ -214,16 +214,17 @@ final class PdoDiscountsRepository
     // Stats
     // ================================
     /**
-     * @return array{total: int, active: int, inactive: int, expired: int, total_redemptions: int}
+     * @return array{total: int, active: int, inactive: int, expired: int, scheduled: int, total_redemptions: int}
      */
     public function stats(): array
     {
         $stmt = $this->pdo->prepare("
             SELECT
                 COUNT(*) AS total,
-                SUM(status = 'active') AS active,
-                SUM(status = 'inactive') AS inactive,
-                SUM(status = 'expired') AS expired,
+                SUM(CASE WHEN status = 'active' AND (ends_at IS NULL OR ends_at >= NOW()) THEN 1 ELSE 0 END) AS active,
+                SUM(CASE WHEN status = 'inactive' THEN 1 ELSE 0 END) AS inactive,
+                SUM(CASE WHEN ends_at IS NOT NULL AND ends_at < NOW() THEN 1 ELSE 0 END) AS expired,
+                SUM(CASE WHEN starts_at IS NOT NULL AND starts_at > NOW() AND status = 'active' THEN 1 ELSE 0 END) AS scheduled,
                 COALESCE(SUM(current_redemptions), 0) AS total_redemptions
             FROM discounts
         ");
@@ -235,6 +236,7 @@ final class PdoDiscountsRepository
             'active'            => (int)($row['active'] ?? 0),
             'inactive'          => (int)($row['inactive'] ?? 0),
             'expired'           => (int)($row['expired'] ?? 0),
+            'scheduled'         => (int)($row['scheduled'] ?? 0),
             'total_redemptions' => (int)($row['total_redemptions'] ?? 0),
         ];
     }

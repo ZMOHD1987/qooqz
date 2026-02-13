@@ -41,7 +41,15 @@ try {
     switch ($method) {
         case 'GET':
             if (isset($_GET['stats'])) {
-                $stmt = $pdo->prepare("SELECT COUNT(*) AS total, SUM(status = 'active') AS active, SUM(status = 'inactive') AS inactive, SUM(status = 'expired') AS expired FROM discounts");
+                $stmt = $pdo->prepare("
+                    SELECT
+                        COUNT(*) AS total,
+                        SUM(CASE WHEN status = 'active' AND (ends_at IS NULL OR ends_at >= NOW()) THEN 1 ELSE 0 END) AS active,
+                        SUM(CASE WHEN status = 'inactive' THEN 1 ELSE 0 END) AS inactive,
+                        SUM(CASE WHEN ends_at IS NOT NULL AND ends_at < NOW() THEN 1 ELSE 0 END) AS expired,
+                        SUM(CASE WHEN starts_at IS NOT NULL AND starts_at > NOW() AND status = 'active' THEN 1 ELSE 0 END) AS scheduled
+                    FROM discounts
+                ");
                 $stmt->execute();
                 $stats = $stmt->fetch(PDO::FETCH_ASSOC);
                 ResponseFormatter::success($stats);
