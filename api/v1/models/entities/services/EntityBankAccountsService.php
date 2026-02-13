@@ -16,9 +16,10 @@ final class EntityBankAccountsService
         ?int $limit,
         ?int $offset,
         string $orderBy,
-        string $orderDir
+        string $orderDir,
+        array $filters = []
     ): array {
-        return $this->repo->all($tenantId, $entityId, $limit, $offset, $orderBy, $orderDir);
+        return $this->repo->all($tenantId, $entityId, $limit, $offset, $orderBy, $orderDir, $filters);
     }
 
     public function get(int $tenantId, int $entityId, int $id): ?array

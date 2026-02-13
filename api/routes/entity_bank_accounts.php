@@ -35,6 +35,12 @@ try {
                     $controller->get($tenantId, $entityId, (int)$_GET['id'])
                 );
             } else {
+                $filters = [];
+                if (!empty($_GET['search'])) $filters['search'] = substr($_GET['search'], 0, 100);
+                if (isset($_GET['is_active']) && in_array($_GET['is_active'], ['0', '1'], true)) $filters['is_active'] = $_GET['is_active'];
+                if (!empty($_GET['date_from']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date_from'])) $filters['date_from'] = $_GET['date_from'];
+                if (!empty($_GET['date_to']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date_to'])) $filters['date_to'] = $_GET['date_to'];
+
                 ResponseFormatter::success(
                     $controller->list(
                         $tenantId,
@@ -42,7 +48,8 @@ try {
                         (int)($_GET['limit'] ?? 25),
                         (int)($_GET['offset'] ?? 0),
                         $_GET['order_by'] ?? 'id',
-                        $_GET['order_dir'] ?? 'DESC'
+                        $_GET['order_dir'] ?? 'DESC',
+                        $filters
                     )
                 );
             }
