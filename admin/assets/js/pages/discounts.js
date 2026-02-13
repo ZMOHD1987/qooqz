@@ -44,6 +44,29 @@ function generateCode() {
     return code;
 }
 
+/* ── Currencies ── */
+function loadCurrencies() {
+    var select = document.getElementById('currencyCode');
+    if (!select) return;
+    fetch('/api/currencies')
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            var items = [];
+            if (d.success && Array.isArray(d.data)) {
+                items = d.data;
+            } else if (Array.isArray(d)) {
+                items = d;
+            }
+            items.forEach(function(c){
+                var opt = document.createElement('option');
+                opt.value = c.code || c.currency_code || '';
+                opt.textContent = (c.code || c.currency_code || '') + (c.name ? ' - ' + c.name : '');
+                select.appendChild(opt);
+            });
+        })
+        .catch(function(){});
+}
+
 /* ── Stats ── */
 function loadStats() {
     fetch('/api/discounts?stats=1')
@@ -726,6 +749,7 @@ function init() {
     loadStats();
     loadDiscounts(1);
     loadEntityOptions();
+    loadCurrencies();
 
     // Add button
     document.getElementById('btnAddDiscount').addEventListener('click', function(){

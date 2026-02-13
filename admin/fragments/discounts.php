@@ -186,7 +186,9 @@ function _dt(string $key, string $fallback = ''): string {
           </div>
           <div class="form-group">
             <label><?= _dt('form.currency_code', 'Currency Code') ?></label>
-            <input type="text" class="form-control" id="currencyCode" name="currency_code" maxlength="3" placeholder="USD">
+            <select class="form-control" id="currencyCode" name="currency_code">
+              <option value=""><?= _dt('form.select_currency', 'Select Currency...') ?></option>
+            </select>
           </div>
         </div>
         <div class="form-row">

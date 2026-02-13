@@ -14,6 +14,7 @@ require_once $baseDir . '/bootstrap.php';
 require_once $baseDir . '/shared/core/ResponseFormatter.php';
 require_once $baseDir . '/shared/helpers/safe_helpers.php';
 require_once $baseDir . '/shared/config/db.php';
+require_once dirname(__DIR__) . '/v1/models/discounts/repositories/PdoDiscountsRepository.php';
 
 // CORS headers
 header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? '*'));
