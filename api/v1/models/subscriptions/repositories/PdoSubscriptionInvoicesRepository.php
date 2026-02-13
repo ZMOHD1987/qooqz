@@ -237,7 +237,7 @@ final class PdoSubscriptionInvoicesRepository
         $stmt = $this->pdo->prepare("
             UPDATE subscription_invoices
             SET status = 'paid', paid_at = NOW(), payment_method = :payment_method,
-                transaction_id = :transaction_id, updated_at = NOW()
+                transaction_id = :transaction_id
             WHERE id = :id
         ");
         return $stmt->execute([
