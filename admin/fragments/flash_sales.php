@@ -1,26 +1,34 @@
 <?php
 declare(strict_types=1);
 
-$isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+$isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+          strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 $isEmbedded = isset($_GET['embedded']) || isset($_POST['embedded']);
 $isFragment = $isAjax || $isEmbedded;
 
-if ($isFragment) { require_once __DIR__ . '/../includes/admin_context.php'; }
-else             { require_once __DIR__ . '/../includes/header.php'; }
-
-if (!is_admin_logged_in()) {
-    if ($isFragment) { http_response_code(401); echo json_encode(['error' => 'Not authenticated']); exit; }
-    header('Location: /admin/login.php'); exit;
+if ($isFragment) {
+    require_once __DIR__ . '/../includes/admin_context.php';
+} else {
+    require_once __DIR__ . '/../includes/header.php';
 }
 
-$user     = admin_user();
-$lang     = admin_lang();
-$rtlLangs = ['ar','he','fa','ur'];
-$dir      = in_array($lang, $rtlLangs) ? 'rtl' : 'ltr';
-$csrf     = admin_csrf();
-$canManage = can('manage_settings') || in_array('super_admin', $_SESSION['roles'] ?? []);
+// Read context (matching categories.php pattern)
+$payload = $GLOBALS['ADMIN_UI'] ?? [];
+$user = $payload['user'] ?? (function_exists('admin_user') ? admin_user() : []);
+$permissions = $user['permissions'] ?? [];
+$roles = $user['roles'] ?? [];
+$lang = $payload['lang'] ?? ($user['preferred_language'] ?? 'en');
+$dir = $payload['direction'] ?? (in_array($lang, ['ar','he','fa','ur']) ? 'rtl' : 'ltr');
+$csrf = $payload['csrf_token'] ?? (function_exists('admin_csrf') ? admin_csrf() : '');
 
-if (!$canManage) { http_response_code(403); die('Access denied'); }
+// Permissions (matching categories.php pattern)
+$isSuperAdmin = in_array('super_admin', $roles, true) || (function_exists('is_super_admin') && is_super_admin());
+$canManage = $isSuperAdmin || in_array('manage_flash_sales', $permissions, true) || in_array('manage_settings', $permissions, true);
+$canCreate = $canManage;
+$canEdit   = $canManage;
+$canDelete = $canManage;
+
+if (!$canManage && !$isSuperAdmin) { http_response_code(403); die('Access denied'); }
 
 // ─── Translation helper ───
 $_fsAllowedLangs = ['ar','en','fr','de','es','it','pt','ru','zh','ja','ko','tr','nl','sv','pl','uk','hi','bn','id','ms','th','vi','cs','ro','hu','el'];
@@ -301,7 +309,11 @@ window.FLASH_SALES_CONFIG = {
     csrf: <?= json_encode($csrf) ?>,
     lang: <?= json_encode($lang) ?>,
     dir: <?= json_encode($dir) ?>,
-    canManage: true,
+    canManage: <?= json_encode($canManage) ?>,
+    canCreate: <?= json_encode($canCreate) ?>,
+    canEdit: <?= json_encode($canEdit) ?>,
+    canDelete: <?= json_encode($canDelete) ?>,
+    isSuperAdmin: <?= json_encode($isSuperAdmin) ?>,
     strings: <?= json_encode($_fsStrings) ?>
 };
 </script>
