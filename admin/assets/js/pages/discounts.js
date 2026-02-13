@@ -367,15 +367,18 @@ function openScopesModal(discountId) {
             tbody.innerHTML = '';
             var items = d.success ? (Array.isArray(d.data) ? d.data : (d.data && d.data.items ? d.data.items : [])) : [];
             if (items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="text-center">' + t('table.no_records', 'No records') + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">' + t('table.no_records', 'No records') + '</td></tr>';
             } else {
                 items.forEach(function(item){
                     var tr = document.createElement('tr');
                     tr.innerHTML =
                         '<td>' + esc(item.scope_type || '') + '</td>' +
                         '<td>' + esc(String(item.scope_id || '')) + '</td>' +
+                        '<td class="scope-name-cell">...</td>' +
                         '<td><button class="btn btn-sm btn-danger btn-delete-scope" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button></td>';
                     tbody.appendChild(tr);
+                    var nameCell = tr.querySelector('.scope-name-cell');
+                    resolveScopeName(item.scope_type, item.scope_id, function(name){ nameCell.textContent = name; });
                 });
             }
             openModal('scopesModal');
@@ -419,6 +422,46 @@ function deleteScope(id) {
             } else showNotification(d.message || t('messages.error', 'Error'), 'error');
         })
         .catch(function(){ showNotification(t('messages.error', 'Error'), 'error'); });
+}
+
+/* ── Scope Name Lookup ── */
+var _scopeLookupTimer = null;
+function lookupScopeName() {
+    var scopeType = document.getElementById('scopeType').value;
+    var scopeId = document.getElementById('scopeId').value.trim();
+    var nameEl = document.getElementById('scopeIdName');
+    if (!nameEl) return;
+    if (!scopeId || scopeType === 'all') { nameEl.textContent = ''; nameEl.className = 'lookup-name'; return; }
+    var url = '';
+    if (scopeType === 'entity') url = '/api/entities?id=' + encodeURIComponent(scopeId);
+    else if (scopeType === 'product') url = '/api/products?id=' + encodeURIComponent(scopeId);
+    else if (scopeType === 'category') url = '/api/categories?id=' + encodeURIComponent(scopeId);
+    else { nameEl.textContent = ''; return; }
+    nameEl.textContent = '...';
+    nameEl.className = 'lookup-name';
+    fetch(url).then(function(r){ return r.json(); }).then(function(d){
+        if (d.success && d.data) {
+            var item = Array.isArray(d.data) ? d.data[0] : d.data;
+            var name = item ? (item.store_name || item.name || item.slug || '') : '';
+            nameEl.textContent = name ? '✓ ' + name : t('messages.not_found', 'Not found');
+            nameEl.className = name ? 'lookup-name' : 'lookup-name error';
+        } else { nameEl.textContent = t('messages.not_found', 'Not found'); nameEl.className = 'lookup-name error'; }
+    }).catch(function(){ nameEl.textContent = ''; });
+}
+
+function resolveScopeName(scopeType, scopeId, callback) {
+    if (!scopeId || scopeType === 'all') { callback('—'); return; }
+    var url = '';
+    if (scopeType === 'entity') url = '/api/entities?id=' + encodeURIComponent(scopeId);
+    else if (scopeType === 'product') url = '/api/products?id=' + encodeURIComponent(scopeId);
+    else if (scopeType === 'category') url = '/api/categories?id=' + encodeURIComponent(scopeId);
+    else { callback('—'); return; }
+    fetch(url).then(function(r){ return r.json(); }).then(function(d){
+        if (d.success && d.data) {
+            var item = Array.isArray(d.data) ? d.data[0] : d.data;
+            callback(item ? (item.store_name || item.name || item.slug || '—') : '—');
+        } else callback('—');
+    }).catch(function(){ callback('—'); });
 }
 
 /* ── Conditions ── */
@@ -910,6 +953,19 @@ function init() {
     // Save sub-entity buttons
     document.getElementById('btnSaveTranslation').addEventListener('click', saveTranslation);
     document.getElementById('btnAddScope').addEventListener('click', saveScope);
+    document.getElementById('scopeId').addEventListener('input', function(){
+        clearTimeout(_scopeLookupTimer);
+        _scopeLookupTimer = setTimeout(lookupScopeName, 400);
+    });
+    document.getElementById('scopeType').addEventListener('change', function(){
+        var label = document.getElementById('scopeIdLabel');
+        var type = this.value;
+        if (label) {
+            var labels = { product: t('scopes.product_id', 'Product ID'), category: t('scopes.category_id', 'Category ID'), entity: t('scopes.entity_id', 'Entity ID'), brand: t('scopes.brand', 'Brand'), all: t('scopes.scope_id', 'Scope ID') };
+            label.textContent = labels[type] || t('scopes.scope_id', 'Scope ID');
+        }
+        lookupScopeName();
+    });
     document.getElementById('btnAddCondition').addEventListener('click', saveCondition);
     document.getElementById('btnAddAction').addEventListener('click', saveAction);
     document.getElementById('btnAddExclusion').addEventListener('click', saveExclusion);

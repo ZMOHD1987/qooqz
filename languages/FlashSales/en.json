@@ -24,7 +24,9 @@
         "enabled": "Enabled",
         "disabled": "Disabled",
         "apply": "Filter",
-        "clear": "Clear"
+        "clear": "Clear",
+        "date_from": "From",
+        "date_to": "To"
     },
     "table": {
         "id": "ID",

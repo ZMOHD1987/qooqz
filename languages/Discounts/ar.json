@@ -113,7 +113,12 @@
         "collection": "مجموعة",
         "supplier": "مورد",
         "customer_group": "مجموعة عملاء",
-        "entity": "كيان"
+        "entity": "كيان",
+        "product_id": "رقم المنتج",
+        "category_id": "رقم الفئة",
+        "entity_id": "رقم الكيان",
+        "enter_id": "أدخل الرقم",
+        "name": "الاسم"
     },
     "conditions": {
         "title": "شروط الخصم",
@@ -169,7 +174,8 @@
         "confirm_delete": "هل أنت متأكد من الحذف؟",
         "error": "حدث خطأ",
         "no_records": "لا توجد سجلات",
-        "loading": "جاري التحميل..."
+        "loading": "جاري التحميل...",
+        "not_found": "غير موجود"
     },
     "pagination": {
         "showing": "عرض",

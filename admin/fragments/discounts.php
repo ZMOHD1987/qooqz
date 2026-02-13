@@ -317,8 +317,9 @@ function _dt(string $key, string $fallback = ''): string {
             </select>
           </div>
           <div class="form-group">
-            <label><?= _dt('scopes.scope_id', 'Scope ID') ?></label>
-            <input type="text" class="form-control" id="scopeId">
+            <label id="scopeIdLabel"><?= _dt('scopes.scope_id', 'Scope ID') ?></label>
+            <input type="text" class="form-control" id="scopeId" placeholder="<?= _dt('scopes.enter_id', 'Enter ID') ?>">
+            <span id="scopeIdName" class="lookup-name"></span>
           </div>
           <div class="form-group form-group-btn">
             <button class="btn btn-primary btn-sm" id="btnAddScope">+ <?= _dt('scopes.add', 'Add Scope') ?></button>
@@ -329,6 +330,7 @@ function _dt(string $key, string $fallback = ''): string {
             <tr>
               <th><?= _dt('scopes.scope_type', 'Scope Type') ?></th>
               <th><?= _dt('scopes.scope_id', 'Scope ID') ?></th>
+              <th><?= _dt('scopes.name', 'Name') ?></th>
               <th><?= _dt('table.actions', 'Actions') ?></th>
             </tr>
           </thead>

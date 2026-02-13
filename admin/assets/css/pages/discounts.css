@@ -772,3 +772,15 @@
 .notification-error { background: var(--danger-color, #ef4444); }
 .notification-warning { background: var(--warning-color, #f59e0b); color: #333; }
 .notification-info { background: var(--info-color, #3b82f6); }
+
+/* Lookup Name */
+.lookup-name {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--success-color, #10b981);
+    margin-top: 4px;
+    min-height: 1.2em;
+}
+.lookup-name.error {
+    color: var(--danger-color, #ef4444);
+}

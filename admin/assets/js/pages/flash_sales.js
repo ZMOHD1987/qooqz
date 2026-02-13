@@ -365,7 +365,9 @@ function init() {
         currentFilters = {
             search: document.getElementById('searchInput').value,
             status: document.getElementById('statusFilter').value,
-            is_active: document.getElementById('activeFilter').value
+            is_active: document.getElementById('activeFilter').value,
+            date_from: document.getElementById('dateFrom').value,
+            date_to: document.getElementById('dateTo').value
         };
         loadFlashSales(1);
     });
@@ -373,6 +375,8 @@ function init() {
         document.getElementById('searchInput').value = '';
         document.getElementById('statusFilter').value = '';
         document.getElementById('activeFilter').value = '';
+        document.getElementById('dateFrom').value = '';
+        document.getElementById('dateTo').value = '';
         currentFilters = {};
         loadFlashSales(1);
     });

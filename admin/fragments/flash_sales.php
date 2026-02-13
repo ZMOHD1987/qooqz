@@ -81,6 +81,14 @@ function _fst(string $key, string $fallback = ''): string {
       <option value="1"><?= _fst('filter.enabled', 'Enabled') ?></option>
       <option value="0"><?= _fst('filter.disabled', 'Disabled') ?></option>
     </select>
+    <div class="date-range">
+      <label for="dateFrom"><?= _fst('filter.date_from', 'From') ?></label>
+      <input type="date" class="form-control" id="dateFrom">
+    </div>
+    <div class="date-range">
+      <label for="dateTo"><?= _fst('filter.date_to', 'To') ?></label>
+      <input type="date" class="form-control" id="dateTo">
+    </div>
     <button class="btn btn-secondary" id="btnFilter"><?= _fst('filter.apply', 'Filter') ?></button>
     <button class="btn btn-secondary" id="btnClearFilter"><?= _fst('filter.clear', 'Clear') ?></button>
   </div>
