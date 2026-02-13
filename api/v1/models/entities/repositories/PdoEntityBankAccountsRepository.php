@@ -30,7 +30,15 @@ final class PdoEntityBankAccountsRepository
         $orderDir = strtoupper($orderDir) === 'ASC' ? 'ASC' : 'DESC';
 
         $where = [];
-        $params = [':tenant_id' => $tenantId, ':entity_id' => $entityId];
+        $params = [];
+        if ($tenantId > 0) {
+            $where[] = "e.tenant_id = :tenant_id";
+            $params[':tenant_id'] = $tenantId;
+        }
+        if ($entityId > 0) {
+            $where[] = "b.entity_id = :entity_id";
+            $params[':entity_id'] = $entityId;
+        }
 
         if (!empty($filters['search'])) {
             $where[] = "(b.bank_name LIKE :search OR b.account_holder_name LIKE :search)";
@@ -49,15 +57,13 @@ final class PdoEntityBankAccountsRepository
             $params[':date_to'] = $filters['date_to'] . ' 23:59:59';
         }
 
-        $extraWhere = count($where) > 0 ? ' AND ' . implode(' AND ', $where) : '';
+        $allWhere = count($where) > 0 ? 'WHERE ' . implode(' AND ', $where) : '';
 
         $sql = "
-            SELECT b.*
+            SELECT b.*, e.store_name AS entity_name
             FROM entity_bank_accounts b
             INNER JOIN entities e ON e.id = b.entity_id
-            WHERE e.tenant_id = :tenant_id
-              AND b.entity_id = :entity_id
-              {$extraWhere}
+            {$allWhere}
             ORDER BY {$orderBy} {$orderDir}
         ";
 

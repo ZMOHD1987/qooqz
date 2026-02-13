@@ -29,8 +29,17 @@ final class PdoEntityPaymentMethodsRepository
         $orderBy  = in_array($orderBy, self::ALLOWED_ORDER_BY, true) ? $orderBy : 'id';
         $orderDir = strtoupper($orderDir) === 'ASC' ? 'ASC' : 'DESC';
 
-        $where = "e.tenant_id = :tenant_id AND p.entity_id = :entity_id";
-        $params = [':tenant_id' => $tenantId, ':entity_id' => $entityId];
+        $whereParts = [];
+        $params = [];
+        if ($tenantId > 0) {
+            $whereParts[] = "e.tenant_id = :tenant_id";
+            $params[':tenant_id'] = $tenantId;
+        }
+        if ($entityId > 0) {
+            $whereParts[] = "p.entity_id = :entity_id";
+            $params[':entity_id'] = $entityId;
+        }
+        $where = count($whereParts) > 0 ? implode(' AND ', $whereParts) : '1=1';
 
         if (!empty($filters['search'])) {
             $where .= " AND (p.account_email LIKE :search OR p.account_id LIKE :search OR pm.method_name LIKE :search)";
@@ -54,7 +63,7 @@ final class PdoEntityPaymentMethodsRepository
         }
 
         $sql = "
-            SELECT p.*, pm.method_key, pm.method_name, pm.gateway_name, pm.icon_url
+            SELECT p.*, pm.method_key, pm.method_name, pm.gateway_name, pm.icon_url, e.store_name AS entity_name
             FROM entity_payment_methods p
             INNER JOIN entities e ON e.id = p.entity_id
             LEFT JOIN payment_methods pm ON pm.id = p.payment_method_id
