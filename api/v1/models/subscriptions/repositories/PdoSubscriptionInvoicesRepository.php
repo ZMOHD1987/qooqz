@@ -178,11 +178,11 @@ final class PdoSubscriptionInvoicesRepository
             INSERT INTO subscription_invoices
                 (invoice_number, subscription_id, tenant_id, amount, tax_amount,
                  total_amount, currency_code, billing_period_start, billing_period_end,
-                 due_date, status, payment_method, notes, created_at, updated_at)
+                 due_date, status, payment_method, notes, created_at)
             VALUES
                 (:invoice_number, :subscription_id, :tenant_id, :amount, :tax_amount,
                  :total_amount, :currency_code, :billing_period_start, :billing_period_end,
-                 :due_date, :status, :payment_method, :notes, NOW(), NOW())
+                 :due_date, :status, :payment_method, :notes, NOW())
         ");
 
         $stmt->execute([
@@ -223,7 +223,6 @@ final class PdoSubscriptionInvoicesRepository
             throw new InvalidArgumentException("No valid fields provided for update");
         }
 
-        $setClauses[] = "updated_at = NOW()";
         $sql = "UPDATE subscription_invoices SET " . implode(', ', $setClauses) . " WHERE id = :id";
         $stmt = $this->pdo->prepare($sql);
         return $stmt->execute($params);

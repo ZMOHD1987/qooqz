@@ -327,8 +327,9 @@ function loadSubs(page) {
         }).catch(function(){ showNotification(t('messages.error', 'Error'), 'error'); });
 }
 
+var plansCache = [];
 function loadPlanOptions() {
-    fetch('/api/subscription_plans?limit=100')
+    fetch('/api/subscription_plans?limit=100&is_active=1')
         .then(function(r){ return r.json(); })
         .then(function(d){
             var select = document.getElementById('subPlanId');
@@ -336,15 +337,61 @@ function loadPlanOptions() {
             var current = select.value;
             select.innerHTML = '<option value="">' + t('form.select_plan', 'Select Plan...') + '</option>';
             if (d.success && d.data && d.data.items) {
+                plansCache = d.data.items;
                 d.data.items.forEach(function(p){
                     var opt = document.createElement('option');
                     opt.value = p.id;
-                    opt.textContent = p.plan_name + ' (' + p.plan_type + ')';
+                    opt.textContent = p.plan_name + ' (' + p.plan_type + ' - ' + p.billing_period + ' - ' + p.price + ' ' + (p.currency_code || 'SAR') + ')';
+                    opt.setAttribute('data-plan', JSON.stringify(p));
                     select.appendChild(opt);
                 });
             }
             if (current) select.value = current;
+            select.onchange = function() { autoFillFromPlan(this.value); };
         }).catch(function(){});
+}
+
+function autoFillFromPlan(planId) {
+    if (!planId) return;
+    var plan = null;
+    for (var i = 0; i < plansCache.length; i++) {
+        if (String(plansCache[i].id) === String(planId)) { plan = plansCache[i]; break; }
+    }
+    if (!plan) return;
+    var bp = document.getElementById('subBillingPeriod');
+    var pr = document.getElementById('subPrice');
+    var cur = document.getElementById('subCurrency');
+    var sd = document.getElementById('subStartDate');
+    var ed = document.getElementById('subEndDate');
+    var td = document.getElementById('subTrialEndDate');
+    var nb = document.getElementById('subNextBilling');
+    var st = document.getElementById('subStatus');
+    if (bp) bp.value = plan.billing_period;
+    if (pr) pr.value = plan.price;
+    if (cur) cur.value = plan.currency_code || 'SAR';
+    var today = new Date();
+    var startStr = today.toISOString().split('T')[0];
+    if (sd) sd.value = startStr;
+    var endDate = new Date(today);
+    switch (plan.billing_period) {
+        case 'daily': endDate.setDate(endDate.getDate() + 1); break;
+        case 'weekly': endDate.setDate(endDate.getDate() + 7); break;
+        case 'monthly': endDate.setMonth(endDate.getMonth() + 1); break;
+        case 'quarterly': endDate.setMonth(endDate.getMonth() + 3); break;
+        case 'yearly': endDate.setFullYear(endDate.getFullYear() + 1); break;
+        case 'lifetime': endDate.setFullYear(endDate.getFullYear() + 100); break;
+    }
+    if (ed) ed.value = endDate.toISOString().split('T')[0];
+    if (nb) nb.value = endDate.toISOString().split('T')[0];
+    if (plan.trial_period_days > 0) {
+        var trialEnd = new Date(today);
+        trialEnd.setDate(trialEnd.getDate() + plan.trial_period_days);
+        if (td) td.value = trialEnd.toISOString().split('T')[0];
+        if (st) st.value = 'trial';
+    } else {
+        if (td) td.value = '';
+        if (st) st.value = 'active';
+    }
 }
 
 function saveSub(e) {
