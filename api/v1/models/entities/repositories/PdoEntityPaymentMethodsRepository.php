@@ -63,7 +63,7 @@ final class PdoEntityPaymentMethodsRepository
         }
 
         $sql = "
-            SELECT p.*, pm.method_key, pm.method_name, pm.gateway_name, pm.icon_url, e.store_name AS entity_name
+            SELECT p.*, pm.method_key, pm.method_name, pm.gateway_name, pm.icon_url, e.store_name AS entity_name, e.tenant_id AS row_tenant_id
             FROM entity_payment_methods p
             INNER JOIN entities e ON e.id = p.entity_id
             LEFT JOIN payment_methods pm ON pm.id = p.payment_method_id
@@ -85,21 +85,26 @@ final class PdoEntityPaymentMethodsRepository
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($rows as &$row) {
+            $decTenant = (int)($row['row_tenant_id'] ?? $tenantId);
+            $decEntity = (int)($row['entity_id'] ?? $entityId);
+
             try {
                 $row['account_email'] = $row['account_email']
-                    ? Security::decryptForEntity($row['account_email'], $tenantId, $entityId)
+                    ? Security::decryptForEntity($row['account_email'], $decTenant, $decEntity)
                     : null;
             } catch (Throwable $e) {
-                $row['account_email'] = null; // Decryption failed
+                $row['account_email'] = null;
             }
 
             try {
                 $row['account_id'] = $row['account_id']
-                    ? Security::decryptForEntity($row['account_id'], $tenantId, $entityId)
+                    ? Security::decryptForEntity($row['account_id'], $decTenant, $decEntity)
                     : null;
             } catch (Throwable $e) {
-                $row['account_id'] = null; // Decryption failed
+                $row['account_id'] = null;
             }
+
+            unset($row['row_tenant_id']);
         }
 
         return $rows;

@@ -60,7 +60,7 @@ final class PdoEntityBankAccountsRepository
         $allWhere = count($where) > 0 ? 'WHERE ' . implode(' AND ', $where) : '';
 
         $sql = "
-            SELECT b.*, e.store_name AS entity_name
+            SELECT b.*, e.store_name AS entity_name, e.tenant_id AS row_tenant_id
             FROM entity_bank_accounts b
             INNER JOIN entities e ON e.id = b.entity_id
             {$allWhere}
@@ -83,9 +83,12 @@ final class PdoEntityBankAccountsRepository
         // فك التشفير
         // فك التشفير
         foreach ($rows as &$row) {
+            $decTenant = (int)($row['row_tenant_id'] ?? $tenantId);
+            $decEntity = (int)($row['entity_id'] ?? $entityId);
+
             try {
                 $row['account_number'] = Security::decryptForEntity(
-                    $row['account_number'], $tenantId, $entityId
+                    $row['account_number'], $decTenant, $decEntity
                 );
             } catch (Throwable $e) {
                 $row['account_number'] = null;
@@ -93,7 +96,7 @@ final class PdoEntityBankAccountsRepository
 
             try {
                 $row['iban'] = $row['iban']
-                    ? Security::decryptForEntity($row['iban'], $tenantId, $entityId)
+                    ? Security::decryptForEntity($row['iban'], $decTenant, $decEntity)
                     : null;
             } catch (Throwable $e) {
                 $row['iban'] = null;
@@ -101,11 +104,13 @@ final class PdoEntityBankAccountsRepository
 
             try {
                 $row['swift_code'] = $row['swift_code']
-                    ? Security::decryptForEntity($row['swift_code'], $tenantId, $entityId)
+                    ? Security::decryptForEntity($row['swift_code'], $decTenant, $decEntity)
                     : null;
             } catch (Throwable $e) {
                 $row['swift_code'] = null;
             }
+
+            unset($row['row_tenant_id']);
         }
 
         return $rows;
