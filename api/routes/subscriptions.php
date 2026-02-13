@@ -84,6 +84,43 @@ try {
 
         case 'PUT':
             $data = json_decode(file_get_contents('php://input'), true) ?: [];
+
+            // Upgrade flow: cancel old subscription + create new one from plan
+            if (!empty($data['upgrade']) && !empty($data['plan_id']) && !empty($data['tenant_id'])) {
+                $planId = (int)$data['plan_id'];
+                $tid = (int)$data['tenant_id'];
+                // Fetch plan details
+                $planStmt = $pdo->prepare("SELECT * FROM subscription_plans WHERE id = :id AND is_active = 1 LIMIT 1");
+                $planStmt->execute([':id' => $planId]);
+                $plan = $planStmt->fetch(PDO::FETCH_ASSOC);
+                if (!$plan) { ResponseFormatter::error('Plan not found or inactive', 404); break; }
+                $newId = $repo->upgrade($tid, $planId, $plan);
+                AuditLogger::log('subscription_upgraded', 'subscription', $newId);
+                ResponseFormatter::success(['id' => $newId], 'Subscription upgraded', 200);
+                break;
+            }
+
+            // Check active subscription for tenant (product limit endpoint)
+            if (isset($_GET['check_limit']) && !empty($data['tenant_id'])) {
+                $tid = (int)$data['tenant_id'];
+                $active = $repo->hasActiveSubscription($tid);
+                if (!$active) {
+                    ResponseFormatter::success(['allowed' => false, 'reason' => 'no_subscription', 'current' => 0, 'max' => 0]);
+                    break;
+                }
+                $maxProducts = (int)($active['max_products'] ?? 0);
+                $currentCount = $repo->getTenantProductCount($tid);
+                $allowed = $maxProducts === 0 || $currentCount < $maxProducts; // 0 = unlimited
+                ResponseFormatter::success([
+                    'allowed' => $allowed,
+                    'current' => $currentCount,
+                    'max' => $maxProducts,
+                    'plan_name' => $active['plan_name'] ?? '',
+                    'subscription_id' => (int)$active['id'],
+                ]);
+                break;
+            }
+
             $id = (int)($data['id'] ?? $_GET['id'] ?? 0);
             if ($id <= 0) { ResponseFormatter::error('ID is required', 400); break; }
             if (isset($data['status']) && count($data) === 2 && isset($data['id'])) {

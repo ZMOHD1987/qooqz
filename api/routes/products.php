@@ -93,6 +93,33 @@ try {
             break;
 
         case 'POST':
+            // Check subscription product limit before creating
+            try {
+                $limitStmt = $pdo->prepare(
+                    "SELECT s.id, sp.max_products, sp.plan_name
+                     FROM subscriptions s
+                     JOIN subscription_plans sp ON s.plan_id = sp.id
+                     WHERE s.tenant_id = :tid AND s.status IN ('active','trial')
+                     ORDER BY s.id DESC LIMIT 1"
+                );
+                $limitStmt->execute([':tid' => $tenantId]);
+                $activePlan = $limitStmt->fetch(PDO::FETCH_ASSOC);
+                if ($activePlan && (int)$activePlan['max_products'] > 0) {
+                    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM products WHERE tenant_id = :tid");
+                    $countStmt->execute([':tid' => $tenantId]);
+                    $currentCount = (int)$countStmt->fetchColumn();
+                    if ($currentCount >= (int)$activePlan['max_products']) {
+                        ResponseFormatter::error(
+                            'Product limit reached (' . $currentCount . '/' . $activePlan['max_products'] . '). Upgrade your plan to add more products.',
+                            403
+                        );
+                        break;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Don't block product creation if limit check fails
+            }
+
             $newId = $controller->create($tenantId, $data);
 
             // حفظ الترجمة الأساسية (الاسم) في product_translations إذا تم تقديم اسم
