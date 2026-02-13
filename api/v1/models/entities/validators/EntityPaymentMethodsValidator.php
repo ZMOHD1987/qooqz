@@ -7,12 +7,12 @@ final class EntityPaymentMethodsValidator
 {
     public function validate(array $data, bool $isUpdate=false): void
     {
-        if (!$isUpdate && empty($data['gateway_name'])) {
-            throw new InvalidArgumentException('gateway_name is required');
+        if (!$isUpdate && empty($data['payment_method_id'])) {
+            throw new InvalidArgumentException('payment_method_id is required');
         }
 
-        if (isset($data['gateway_name']) && strlen($data['gateway_name']) > 100) {
-            throw new InvalidArgumentException('Invalid gateway_name');
+        if (!empty($data['payment_method_id']) && !is_numeric($data['payment_method_id'])) {
+            throw new InvalidArgumentException('Invalid payment_method_id');
         }
 
         if (isset($data['account_email']) && strlen($data['account_email']) > 191) {

@@ -116,8 +116,29 @@ function _pt($key, $fallback = '') {
         </div>
     </div>
 
-    <!-- Entity Selector -->
-    <?php if (!$entityId): ?>
+    <!-- Super Admin: Tenant + Entity Cascade Selector -->
+    <?php if (is_super_admin()): ?>
+    <div class="card" id="tenantEntitySelector">
+        <div class="card-body" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="form-group" style="flex:0 0 200px;">
+                <label><?= htmlspecialchars(_pt('tenant_id', 'Tenant ID')) ?></label>
+                <div style="display:flex;gap:5px;">
+                    <input type="number" id="tenantIdInput" class="form-control" min="1" value="<?= $tenantId ?>" placeholder="<?= htmlspecialchars(_pt('enter_tenant_id', 'Enter Tenant ID')) ?>">
+                    <button type="button" id="btnVerifyTenant" class="btn btn-secondary"><?= htmlspecialchars(_pt('verify', 'Verify')) ?></button>
+                </div>
+                <small id="tenantNameDisplay" class="lookup-name"></small>
+            </div>
+            <div class="form-group" style="flex:1;min-width:200px;">
+                <label><?= htmlspecialchars(_pt('select_entity', 'Select Entity')) ?></label>
+                <select id="entitySelector" class="form-control">
+                    <option value=""><?= htmlspecialchars(_pt('select_entity', 'Select Entity...')) ?></option>
+                </select>
+            </div>
+            <button id="btnLoadEntityPayments" class="btn btn-primary" disabled data-i18n="load"><?= htmlspecialchars(_pt('load', 'Load')) ?></button>
+        </div>
+    </div>
+    <?php elseif (!$entityId): ?>
+    <!-- Normal User: Entity Selector Only -->
     <div class="card">
         <div class="card-body">
             <select id="entitySelector" class="form-control">
@@ -265,6 +286,8 @@ window.ENTITIES_PAYMENT_CONFIG = {
     apiBase: <?= json_encode($apiBase) ?>,
     csrfToken: <?= json_encode($csrf) ?>,
     entityId: <?= $entityId ?>,
+    tenantId: <?= (int)$tenantId ?>,
+    userId: <?= (int)$userId ?>,
     canEdit: <?= json_encode($canManagePayment) ?>,
     canDelete: <?= json_encode($canManagePayment) ?>,
     isSuperAdmin: <?= json_encode(is_super_admin()) ?>,

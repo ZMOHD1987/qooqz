@@ -88,7 +88,77 @@
         var btnLoad = document.getElementById('btnLoadEntityPayments');
         if(!entitySelector) return;
 
-        fetch(API_BASE + '/entities?limit=200')
+        // Super admin: tenant verification + entity cascade
+        if(IS_SUPER){
+            var btnVerify = document.getElementById('btnVerifyTenant');
+            var tenantInput = document.getElementById('tenantIdInput');
+            var tenantName = document.getElementById('tenantNameDisplay');
+
+            if(btnVerify && tenantInput){
+                btnVerify.addEventListener('click', function(){
+                    var tid = parseInt(tenantInput.value);
+                    if(!tid){ showNotification(t('enter_tenant_id', 'Enter Tenant ID'), 'error'); return; }
+                    fetch(API_BASE + '/tenants?id=' + tid)
+                    .then(function(r){ return r.json(); })
+                    .then(function(d){
+                        if(d.success && d.data && (d.data.name || d.data.id)){
+                            var tData = d.data;
+                            if(tenantName) tenantName.textContent = tData.name || ('Tenant #' + tData.id);
+                            if(tenantName) tenantName.classList.remove('error');
+                            loadEntitiesByTenant(tid);
+                        } else {
+                            if(tenantName){ tenantName.textContent = t('tenant_not_found', 'Tenant not found'); tenantName.classList.add('error'); }
+                            while(entitySelector.options.length > 1) entitySelector.remove(1);
+                            if(btnLoad) btnLoad.disabled = true;
+                        }
+                    })
+                    .catch(function(){
+                        if(tenantName){ tenantName.textContent = t('tenant_not_found', 'Tenant not found'); tenantName.classList.add('error'); }
+                    });
+                });
+            }
+
+            // Auto-verify current tenant
+            if(tenantInput && parseInt(tenantInput.value) > 0){
+                setTimeout(function(){ if(btnVerify) btnVerify.click(); }, 200);
+            }
+        } else {
+            // Non-super admin: load own entities
+            loadEntitiesByTenant(CFG.tenantId || 0);
+        }
+
+        entitySelector.addEventListener('change', function(){
+            if(btnLoad) btnLoad.disabled = !entitySelector.value;
+        });
+
+        if(btnLoad){
+            btnLoad.addEventListener('click', function(){
+                var val = entitySelector.value;
+                if(!val) return;
+                entityId = parseInt(val);
+                document.querySelectorAll('input[name="entity_id"]').forEach(function(inp){
+                    inp.value = entityId;
+                });
+                var tabs = document.querySelector('.content-tabs');
+                if(tabs) tabs.style.display = 'block';
+                loadPayments();
+                loadBanks();
+            });
+        }
+    }
+
+    // Load entities by tenant ID into the selector
+    function loadEntitiesByTenant(tenantId){
+        var entitySelector = document.getElementById('entitySelector');
+        var btnLoad = document.getElementById('btnLoadEntityPayments');
+        if(!entitySelector) return;
+
+        while(entitySelector.options.length > 1) entitySelector.remove(1);
+
+        var url = API_BASE + '/entities?limit=200';
+        if(tenantId && tenantId > 0) url += '&tenant_id=' + tenantId;
+
+        fetch(url)
         .then(function(r){ return r.json(); })
         .then(function(d){
             if(d.success && d.data){
@@ -106,26 +176,10 @@
                     entitySelector.value = defaultId;
                     if(btnLoad) btnLoad.disabled = false;
                 }
-                entitySelector.addEventListener('change', function(){
-                    if(btnLoad) btnLoad.disabled = !entitySelector.value;
-                });
-                if(btnLoad){
-                    btnLoad.addEventListener('click', function(){
-                        var val = entitySelector.value;
-                        if(!val) return;
-                        entityId = parseInt(val);
-                        document.querySelectorAll('input[name="entity_id"]').forEach(function(inp){
-                            inp.value = entityId;
-                        });
-                        var tabs = document.querySelector('.content-tabs');
-                        if(tabs) tabs.style.display = 'block';
-                        loadPayments();
-                        loadBanks();
-                    });
-                }
                 if(defaultId && btnLoad) btnLoad.click();
             }
-        });
+        })
+        .catch(function(err){ console.error('Failed to load entities:', err); });
     }
 
     // Load Payment Methods table
