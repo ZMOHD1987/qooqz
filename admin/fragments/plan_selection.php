@@ -57,6 +57,55 @@ function _ps(string $key, string $fallback = ''): string {
     <div id="planCardsGrid" class="plan-cards-grid">
         <div class="loading-spinner"><?= _ps('loading', 'Loading plans...') ?></div>
     </div>
+
+    <!-- Payment Step (hidden initially) -->
+    <div id="paymentStep" class="payment-step" style="display:none;">
+        <button class="btn-back" onclick="backToPlans()">← <?= _ps('payment.back_to_plans', 'Back to Plans') ?></button>
+        <h3 id="paymentStepTitle"><?= _ps('payment.choose_method', 'Choose Payment Method') ?></h3>
+        <p id="paymentStepAmount" class="payment-amount"></p>
+
+        <!-- Payment Methods -->
+        <div id="paymentMethodsList" class="payment-methods-list"></div>
+
+        <!-- Bank Transfer Details (shown when bank transfer selected) -->
+        <div id="bankTransferDetails" class="bank-transfer-details" style="display:none;">
+            <h4><?= _ps('payment.bank_transfer', 'Bank Transfer Details') ?></h4>
+            <p class="bank-notice"><?= _ps('payment.bank_notice', 'Please transfer to the following bank account and your subscription will be activated after verification.') ?></p>
+            <div id="bankAccountInfo" class="bank-account-info"></div>
+            <button class="btn-confirm-bank" onclick="confirmBankTransfer()"><?= _ps('payment.confirm_transfer', 'I have made the transfer') ?></button>
+        </div>
+
+        <!-- Card Payment Form (shown when gateway selected) -->
+        <div id="cardPaymentForm" class="card-payment-form" style="display:none;">
+            <h4><?= _ps('payment.card_details', 'Card Details') ?></h4>
+            <div class="form-group">
+                <label><?= _ps('payment.card_number', 'Card Number') ?></label>
+                <input type="text" id="cardNumber" maxlength="19" placeholder="0000 0000 0000 0000">
+            </div>
+            <div class="card-row">
+                <div class="form-group">
+                    <label><?= _ps('payment.expiry', 'Expiry') ?></label>
+                    <input type="text" id="cardExpiry" maxlength="5" placeholder="MM/YY">
+                </div>
+                <div class="form-group">
+                    <label><?= _ps('payment.cvv', 'CVV') ?></label>
+                    <input type="text" id="cardCVV" maxlength="4" placeholder="***">
+                </div>
+            </div>
+            <div class="form-group">
+                <label><?= _ps('payment.cardholder', 'Cardholder Name') ?></label>
+                <input type="text" id="cardholderName" placeholder="<?= _ps('payment.cardholder_placeholder', 'Name on card') ?>">
+            </div>
+            <button class="btn-pay" onclick="processCardPayment()"><?= _ps('payment.pay_now', 'Pay Now') ?></button>
+        </div>
+
+        <!-- Confirmation (shown after payment) -->
+        <div id="paymentConfirmation" class="payment-confirmation" style="display:none;">
+            <div class="confirmation-icon">✓</div>
+            <h3><?= _ps('payment.success', 'Payment Submitted!') ?></h3>
+            <p id="confirmationMessage"></p>
+        </div>
+    </div>
 </div>
 
 <link rel="stylesheet" href="assets/css/pages/plan_selection.css?v=<?= time() ?>">

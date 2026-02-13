@@ -139,3 +139,138 @@
 @media print {
     .btn-select-plan { display: none; }
 }
+
+/* Payment Step */
+.payment-step {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px;
+}
+.btn-back {
+    background: none;
+    border: 1px solid var(--ps-border);
+    color: var(--ps-text);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+.btn-back:hover { background: rgba(255,255,255,0.05); }
+.payment-amount {
+    font-size: 1.3em;
+    color: var(--ps-primary);
+    font-weight: bold;
+    margin-bottom: 20px;
+    text-align: center;
+}
+.payment-methods-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.payment-method-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--ps-bg);
+    border: 2px solid var(--ps-border);
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+.payment-method-card:hover { border-color: var(--ps-primary); }
+.payment-method-card.selected {
+    border-color: var(--ps-accent);
+    background: rgba(243,156,18,0.08);
+}
+.pm-icon { font-size: 2em; min-width: 50px; text-align: center; }
+.pm-icon img { width: 40px; height: 40px; object-fit: contain; }
+.pm-info h4 { margin: 0 0 4px; color: var(--ps-text); }
+.pm-info p { margin: 0; color: #999; font-size: 0.85em; }
+.no-methods { text-align: center; color: #999; padding: 20px; }
+
+/* Bank Transfer */
+.bank-transfer-details {
+    background: var(--ps-bg);
+    border: 2px solid var(--ps-success);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 16px;
+}
+.bank-transfer-details h4 { margin: 0 0 8px; color: var(--ps-success); }
+.bank-notice { color: #aaa; font-size: 0.9em; margin-bottom: 16px; }
+.bank-account-info {
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+.bank-detail-row { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.bank-detail-row:last-child { border-bottom: none; }
+.btn-confirm-bank {
+    width: 100%;
+    padding: 12px;
+    background: var(--ps-success);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+}
+.btn-confirm-bank:hover { opacity: 0.9; }
+
+/* Card Form */
+.card-payment-form {
+    background: var(--ps-bg);
+    border: 2px solid var(--ps-primary);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 16px;
+}
+.card-payment-form h4 { margin: 0 0 16px; color: var(--ps-primary); }
+.card-payment-form .form-group { margin-bottom: 14px; }
+.card-payment-form label { display: block; margin-bottom: 4px; color: #ccc; font-size: 0.85em; }
+.card-payment-form input {
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--ps-border);
+    border-radius: 6px;
+    color: var(--ps-text);
+    font-size: 1em;
+    box-sizing: border-box;
+}
+.card-payment-form input:focus { border-color: var(--ps-primary); outline: none; }
+.card-row { display: flex; gap: 12px; }
+.card-row .form-group { flex: 1; }
+.btn-pay {
+    width: 100%;
+    padding: 14px;
+    background: var(--ps-primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 8px;
+}
+.btn-pay:hover { opacity: 0.9; }
+
+/* Confirmation */
+.payment-confirmation { text-align: center; padding: 40px 20px; }
+.confirmation-icon {
+    font-size: 3em;
+    color: var(--ps-success);
+    background: rgba(39,174,96,0.15);
+    width: 80px;
+    height: 80px;
+    line-height: 80px;
+    border-radius: 50%;
+    margin: 0 auto 16px;
+}
+.payment-confirmation h3 { color: var(--ps-success); margin: 0 0 10px; }
+.payment-confirmation p { color: #aaa; }
