@@ -721,6 +721,67 @@ function renderRedemptionsPagination(meta, discountId) {
 }
 
 /* ── Entity Options ── */
+/* ── Tenant/Entity Cascade ── */
+function verifyTenant() {
+    var input = document.getElementById('tenantIdInput');
+    var nameEl = document.getElementById('tenantName');
+    if (!input) return;
+    var tid = parseInt(input.value);
+    if (!tid || tid < 1) {
+        nameEl.style.display = 'none';
+        return;
+    }
+    fetch('/api/tenants?id=' + tid)
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            if (d.success && d.data) {
+                var name = d.data.name || d.data.domain || 'Tenant #' + tid;
+                nameEl.textContent = '✓ ' + name;
+                nameEl.style.display = 'block';
+                nameEl.style.color = 'var(--success-color,#28a745)';
+                loadEntitiesByTenant(tid);
+            } else {
+                nameEl.textContent = '✗ ' + t('tenant_not_found', 'Tenant not found');
+                nameEl.style.display = 'block';
+                nameEl.style.color = 'var(--danger-color,#dc3545)';
+            }
+        })
+        .catch(function(){
+            nameEl.textContent = '✗ ' + t('error', 'Error');
+            nameEl.style.display = 'block';
+            nameEl.style.color = 'var(--danger-color,#dc3545)';
+        });
+}
+
+function loadEntitiesByTenant(tenantId) {
+    var selectors = [document.getElementById('entitySelector'), document.getElementById('entitySelect')];
+    var url = '/api/entities?limit=200';
+    if (tenantId) url += '&tenant_id=' + tenantId;
+    fetch(url)
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            var items = d.success ? (d.data && d.data.items ? d.data.items : (Array.isArray(d.data) ? d.data : [])) : [];
+            selectors.forEach(function(sel){
+                if (!sel) return;
+                // Keep first "All Entities" option, remove the rest
+                while (sel.options.length > 1) sel.remove(1);
+                items.forEach(function(e){
+                    var opt = document.createElement('option');
+                    opt.value = e.id;
+                    opt.textContent = e.store_name || e.name || ('Entity #' + e.id);
+                    sel.appendChild(opt);
+                });
+            });
+            // Auto-select if only 1 entity
+            if (items.length === 1) {
+                selectors.forEach(function(sel){
+                    if (sel && sel.options.length === 2) sel.selectedIndex = 1;
+                });
+            }
+        })
+        .catch(function(){});
+}
+
 function loadEntityOptions() {
     var selectors = [document.getElementById('entitySelector'), document.getElementById('entitySelect')];
     selectors.forEach(function(sel){
@@ -747,9 +808,51 @@ function loadEntityOptions() {
 function init() {
     reloadConfig();
     loadStats();
-    loadDiscounts(1);
-    loadEntityOptions();
     loadCurrencies();
+
+    // Tenant/Entity cascade based on role
+    if (CFG.isSuperAdmin) {
+        // Super admin: show tenant input, load all entities initially
+        loadEntityOptions();
+        var btnVerify = document.getElementById('btnVerifyTenant');
+        if (btnVerify) {
+            btnVerify.addEventListener('click', verifyTenant);
+            // Also verify on Enter key
+            var tenantInput = document.getElementById('tenantIdInput');
+            if (tenantInput) {
+                tenantInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') { e.preventDefault(); verifyTenant(); }
+                });
+            }
+        }
+    } else if (CFG.tenantId) {
+        // Tenant admin: load their entities
+        loadEntitiesByTenant(CFG.tenantId);
+    } else if (CFG.entityId) {
+        // Entity user: auto-set entity
+        var sel = document.getElementById('entitySelector');
+        if (sel) {
+            var opt = document.createElement('option');
+            opt.value = CFG.entityId;
+            opt.textContent = t('my_entity', 'My Entity');
+            opt.selected = true;
+            sel.appendChild(opt);
+            sel.disabled = true;
+        }
+        var formSel = document.getElementById('entitySelect');
+        if (formSel) {
+            var formOpt = document.createElement('option');
+            formOpt.value = CFG.entityId;
+            formOpt.textContent = t('my_entity', 'My Entity');
+            formOpt.selected = true;
+            formSel.appendChild(formOpt);
+            formSel.disabled = true;
+        }
+    } else {
+        loadEntityOptions();
+    }
+
+    loadDiscounts(1);
 
     // Add button
     document.getElementById('btnAddDiscount').addEventListener('click', function(){

@@ -2,6 +2,11 @@
     "title": "إدارة الخصومات",
     "subtitle": "إدارة أكواد الخصم والقواعد وعمليات الاسترداد",
     "add_discount": "إضافة خصم",
+    "tenant_id": "معرف المستأجر",
+    "enter_tenant_id": "أدخل معرف المستأجر",
+    "verify": "تحقق",
+    "tenant_not_found": "المستأجر غير موجود",
+    "my_entity": "كياني",
     "entity_selector": "الكيان",
     "all_entities": "جميع الكيانات",
     "edit": "تعديل",
@@ -101,11 +106,14 @@
         "scope_id": "معرف النطاق",
         "add": "إضافة نطاق",
         "no_scopes": "لا توجد نطاقات",
+        "all": "الكل",
         "product": "منتج",
         "category": "فئة",
-        "entity": "كيان",
-        "order": "طلب",
-        "user": "مستخدم"
+        "brand": "علامة تجارية",
+        "collection": "مجموعة",
+        "supplier": "مورد",
+        "customer_group": "مجموعة عملاء",
+        "entity": "كيان"
     },
     "conditions": {
         "title": "شروط الخصم",
@@ -114,18 +122,16 @@
         "value": "القيمة",
         "add": "إضافة شرط",
         "no_conditions": "لا توجد شروط",
-        "type_placeholder": "مثال: min_order_total",
-        "operator_placeholder": "مثال: >=",
-        "operators": {
-            "eq": "=",
-            "neq": "!=",
-            "gt": ">",
-            "lt": "<",
-            "gte": ">=",
-            "lte": "<=",
-            "in": "ضمن",
-            "not_in": "ليس ضمن"
-        }
+        "contains": "يحتوي",
+        "min_cart_total": "الحد الأدنى لإجمالي السلة",
+        "min_items_count": "الحد الأدنى لعدد العناصر",
+        "first_order_only": "أول طلب فقط",
+        "weekend_only": "عطلة نهاية الأسبوع فقط",
+        "specific_payment_method": "طريقة دفع محددة",
+        "customer_segment": "شريحة العملاء",
+        "geo_location": "الموقع الجغرافي",
+        "time_window": "النافذة الزمنية",
+        "custom_rule": "قاعدة مخصصة"
     },
     "actions": {
         "title": "إجراءات الخصم",

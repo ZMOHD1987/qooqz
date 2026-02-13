@@ -2,6 +2,11 @@
     "title": "Discount Management",
     "subtitle": "Manage discount codes, rules, and redemptions",
     "add_discount": "Add Discount",
+    "tenant_id": "Tenant ID",
+    "enter_tenant_id": "Enter Tenant ID",
+    "verify": "Verify",
+    "tenant_not_found": "Tenant not found",
+    "my_entity": "My Entity",
     "entity_selector": "Entity",
     "all_entities": "All Entities",
     "edit": "Edit",
@@ -101,11 +106,14 @@
         "scope_id": "Scope ID",
         "add": "Add Scope",
         "no_scopes": "No scopes found",
+        "all": "All",
         "product": "Product",
         "category": "Category",
-        "entity": "Entity",
-        "order": "Order",
-        "user": "User"
+        "brand": "Brand",
+        "collection": "Collection",
+        "supplier": "Supplier",
+        "customer_group": "Customer Group",
+        "entity": "Entity"
     },
     "conditions": {
         "title": "Discount Conditions",
@@ -114,18 +122,16 @@
         "value": "Value",
         "add": "Add Condition",
         "no_conditions": "No conditions found",
-        "type_placeholder": "e.g. min_order_total",
-        "operator_placeholder": "e.g. >=",
-        "operators": {
-            "eq": "=",
-            "neq": "!=",
-            "gt": ">",
-            "lt": "<",
-            "gte": ">=",
-            "lte": "<=",
-            "in": "in",
-            "not_in": "not in"
-        }
+        "contains": "Contains",
+        "min_cart_total": "Min Cart Total",
+        "min_items_count": "Min Items Count",
+        "first_order_only": "First Order Only",
+        "weekend_only": "Weekend Only",
+        "specific_payment_method": "Specific Payment Method",
+        "customer_segment": "Customer Segment",
+        "geo_location": "Geo Location",
+        "time_window": "Time Window",
+        "custom_rule": "Custom Rule"
     },
     "actions": {
         "title": "Discount Actions",

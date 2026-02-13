@@ -21,6 +21,11 @@ $lang = $payload['lang'] ?? ($user['preferred_language'] ?? 'en');
 $dir = $payload['direction'] ?? (in_array($lang, ['ar','he','fa','ur']) ? 'rtl' : 'ltr');
 $csrf = $payload['csrf_token'] ?? (function_exists('admin_csrf') ? admin_csrf() : '');
 
+// User context
+$tenantId = $payload['tenant_id'] ?? ($_SESSION['tenant_id'] ?? 0);
+$entityId = $payload['entity_id'] ?? ($_SESSION['entity_id'] ?? 0);
+$userId   = $user['id'] ?? ($_SESSION['user_id'] ?? 0);
+
 // Permissions (matching categories.php pattern)
 $isSuperAdmin = in_array('super_admin', $roles, true) || (function_exists('is_super_admin') && is_super_admin());
 $canManage = $isSuperAdmin || in_array('manage_discounts', $permissions, true);
@@ -59,12 +64,24 @@ function _dt(string $key, string $fallback = ''): string {
     </div>
   </div>
 
-  <!-- Entity Selector -->
-  <div class="entity-selector">
-    <label><?= _dt('entity_selector', 'Entity') ?></label>
-    <select class="form-control" id="entitySelector">
-      <option value=""><?= _dt('all_entities', 'All Entities') ?></option>
-    </select>
+  <!-- Tenant/Entity Cascade Selector -->
+  <div class="entity-selector" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px">
+    <?php if ($isSuperAdmin): ?>
+    <div class="form-group" style="margin:0">
+      <label><?= _dt('tenant_id', 'Tenant ID') ?></label>
+      <div style="display:flex;gap:6px">
+        <input type="number" class="form-control" id="tenantIdInput" placeholder="<?= _dt('enter_tenant_id', 'Enter Tenant ID') ?>" min="1" style="width:140px">
+        <button class="btn btn-secondary btn-sm" id="btnVerifyTenant"><?= _dt('verify', 'Verify') ?></button>
+      </div>
+      <small id="tenantName" style="display:none;color:var(--success-color,#28a745);margin-top:4px"></small>
+    </div>
+    <?php endif; ?>
+    <div class="form-group" style="margin:0">
+      <label><?= _dt('entity_selector', 'Entity') ?></label>
+      <select class="form-control" id="entitySelector" style="min-width:200px">
+        <option value=""><?= _dt('all_entities', 'All Entities') ?></option>
+      </select>
+    </div>
   </div>
 
   <!-- Stats Cards -->
@@ -289,11 +306,14 @@ function _dt(string $key, string $fallback = ''): string {
           <div class="form-group">
             <label><?= _dt('scopes.scope_type', 'Scope Type') ?></label>
             <select class="form-control" id="scopeType">
+              <option value="all"><?= _dt('scopes.all', 'All') ?></option>
               <option value="product"><?= _dt('scopes.product', 'Product') ?></option>
               <option value="category"><?= _dt('scopes.category', 'Category') ?></option>
+              <option value="brand"><?= _dt('scopes.brand', 'Brand') ?></option>
+              <option value="collection"><?= _dt('scopes.collection', 'Collection') ?></option>
+              <option value="supplier"><?= _dt('scopes.supplier', 'Supplier') ?></option>
+              <option value="customer_group"><?= _dt('scopes.customer_group', 'Customer Group') ?></option>
               <option value="entity"><?= _dt('scopes.entity', 'Entity') ?></option>
-              <option value="order"><?= _dt('scopes.order', 'Order') ?></option>
-              <option value="user"><?= _dt('scopes.user', 'User') ?></option>
             </select>
           </div>
           <div class="form-group">
@@ -330,11 +350,32 @@ function _dt(string $key, string $fallback = ''): string {
         <div class="form-row">
           <div class="form-group">
             <label><?= _dt('conditions.condition_type', 'Condition Type') ?></label>
-            <input type="text" class="form-control" id="conditionType" placeholder="<?= _dt('conditions.type_placeholder', 'e.g. min_order_total') ?>">
+            <select class="form-control" id="conditionType">
+              <option value="min_cart_total"><?= _dt('conditions.min_cart_total', 'Min Cart Total') ?></option>
+              <option value="min_items_count"><?= _dt('conditions.min_items_count', 'Min Items Count') ?></option>
+              <option value="first_order_only"><?= _dt('conditions.first_order_only', 'First Order Only') ?></option>
+              <option value="weekend_only"><?= _dt('conditions.weekend_only', 'Weekend Only') ?></option>
+              <option value="specific_payment_method"><?= _dt('conditions.specific_payment_method', 'Specific Payment Method') ?></option>
+              <option value="customer_segment"><?= _dt('conditions.customer_segment', 'Customer Segment') ?></option>
+              <option value="geo_location"><?= _dt('conditions.geo_location', 'Geo Location') ?></option>
+              <option value="time_window"><?= _dt('conditions.time_window', 'Time Window') ?></option>
+              <option value="custom_rule"><?= _dt('conditions.custom_rule', 'Custom Rule') ?></option>
+            </select>
           </div>
           <div class="form-group">
             <label><?= _dt('conditions.operator', 'Operator') ?></label>
-            <input type="text" class="form-control" id="conditionOperator" placeholder="<?= _dt('conditions.operator_placeholder', 'e.g. >=') ?>">
+            <select class="form-control" id="conditionOperator">
+              <option value="=">=</option>
+              <option value="!=">!=</option>
+              <option value=">">&gt;</option>
+              <option value=">=">&gt;=</option>
+              <option value="<">&lt;</option>
+              <option value="<=">&lt;=</option>
+              <option value="in">IN</option>
+              <option value="not_in">NOT IN</option>
+              <option value="between">BETWEEN</option>
+              <option value="contains"><?= _dt('conditions.contains', 'Contains') ?></option>
+            </select>
           </div>
           <div class="form-group">
             <label><?= _dt('conditions.value', 'Value') ?></label>
@@ -473,6 +514,9 @@ window.DISCOUNTS_CONFIG = {
     canEdit: <?= json_encode($canEdit) ?>,
     canDelete: <?= json_encode($canDelete) ?>,
     isSuperAdmin: <?= json_encode($isSuperAdmin) ?>,
+    tenantId: <?= json_encode((int)$tenantId) ?>,
+    entityId: <?= json_encode((int)$entityId) ?>,
+    userId: <?= json_encode((int)$userId) ?>,
     strings: <?= json_encode($_dtStrings) ?>
 };
 </script>
