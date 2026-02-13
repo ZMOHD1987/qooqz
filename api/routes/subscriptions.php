@@ -13,6 +13,7 @@ $baseDir = dirname(__DIR__);
 require_once $baseDir . '/bootstrap.php';
 require_once $baseDir . '/shared/core/ResponseFormatter.php';
 require_once $baseDir . '/shared/helpers/safe_helpers.php';
+require_once $baseDir . '/shared/helpers/AuditLogger.php';
 require_once $baseDir . '/shared/config/db.php';
 
 // Load model classes
@@ -42,6 +43,7 @@ if (!isset($GLOBALS['ADMIN_DB']) || !$GLOBALS['ADMIN_DB'] instanceof PDO) {
 
 try {
     $pdo        = $GLOBALS['ADMIN_DB'];
+    AuditLogger::init($pdo);
     $repo       = new PdoSubscriptionsRepository($pdo);
     $service    = new SubscriptionsService($repo);
     $controller = new SubscriptionsController($service);
@@ -76,6 +78,7 @@ try {
             $errors = SubscriptionsValidator::validateCreate($data);
             if ($errors) { ResponseFormatter::error(implode(', ', $errors), 422); break; }
             $id = $controller->create($data);
+            AuditLogger::log('subscription_created', 'subscription', $id);
             ResponseFormatter::success(['id' => $id], 'Subscription created', 201);
             break;
 
@@ -85,12 +88,14 @@ try {
             if ($id <= 0) { ResponseFormatter::error('ID is required', 400); break; }
             if (isset($data['status']) && count($data) === 2 && isset($data['id'])) {
                 $controller->updateStatus($id, $data['status']);
+                AuditLogger::log('subscription_updated', 'subscription', $id);
                 ResponseFormatter::success(null, 'Subscription status updated');
                 break;
             }
             $errors = SubscriptionsValidator::validateUpdate($data);
             if ($errors) { ResponseFormatter::error(implode(', ', $errors), 422); break; }
             $controller->update($id, $data);
+            AuditLogger::log('subscription_updated', 'subscription', $id);
             ResponseFormatter::success(null, 'Subscription updated');
             break;
 
@@ -98,6 +103,7 @@ try {
             $id = (int)($_GET['id'] ?? 0);
             if ($id <= 0) { ResponseFormatter::error('ID is required', 400); break; }
             $controller->delete($id);
+            AuditLogger::log('subscription_deleted', 'subscription', $id);
             ResponseFormatter::success(null, 'Subscription deleted');
             break;
 

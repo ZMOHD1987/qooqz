@@ -13,6 +13,7 @@ $baseDir = dirname(__DIR__);
 require_once $baseDir . '/bootstrap.php';
 require_once $baseDir . '/shared/core/ResponseFormatter.php';
 require_once $baseDir . '/shared/helpers/safe_helpers.php';
+require_once $baseDir . '/shared/helpers/AuditLogger.php';
 require_once $baseDir . '/shared/config/db.php';
 
 // Load model classes
@@ -42,6 +43,7 @@ if (!isset($GLOBALS['ADMIN_DB']) || !$GLOBALS['ADMIN_DB'] instanceof PDO) {
 
 try {
     $pdo        = $GLOBALS['ADMIN_DB'];
+    AuditLogger::init($pdo);
     $repo       = new PdoEscrowTransactionsRepository($pdo);
     $service    = new EscrowTransactionsService($repo);
     $controller = new EscrowTransactionsController($service);
@@ -78,6 +80,7 @@ try {
             $errors = EscrowTransactionsValidator::validateCreate($data);
             if ($errors) { ResponseFormatter::error(implode(', ', $errors), 422); break; }
             $id = $controller->create($data);
+            AuditLogger::log('escrow_created', 'escrow_transaction', $id);
             ResponseFormatter::success(['id' => $id], 'Escrow transaction created', 201);
             break;
 
@@ -87,12 +90,14 @@ try {
             if ($id <= 0) { ResponseFormatter::error('ID is required', 400); break; }
             if (isset($data['update_status']) && isset($data['status'])) {
                 $controller->updateStatus($id, $data['status']);
+                AuditLogger::log('escrow_updated', 'escrow_transaction', $id);
                 ResponseFormatter::success(null, 'Escrow status updated');
                 break;
             }
             $errors = EscrowTransactionsValidator::validateUpdate($data);
             if ($errors) { ResponseFormatter::error(implode(', ', $errors), 422); break; }
             $controller->update($id, $data);
+            AuditLogger::log('escrow_updated', 'escrow_transaction', $id);
             ResponseFormatter::success(null, 'Escrow transaction updated');
             break;
 
@@ -100,6 +105,7 @@ try {
             $id = (int)($_GET['id'] ?? 0);
             if ($id <= 0) { ResponseFormatter::error('ID is required', 400); break; }
             $controller->delete($id);
+            AuditLogger::log('escrow_deleted', 'escrow_transaction', $id);
             ResponseFormatter::success(null, 'Escrow transaction deleted');
             break;
 

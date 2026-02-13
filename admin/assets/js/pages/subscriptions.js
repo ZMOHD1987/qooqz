@@ -933,6 +933,18 @@ function init() {
     loadTabData('plans');
 }
 
+function exportInvoicesCSV() {
+    var params = '?export=csv';
+    var statusEl = document.getElementById('invoiceFilterStatus');
+    var dateFromEl = document.getElementById('invoiceFilterDateFrom');
+    var dateToEl = document.getElementById('invoiceFilterDateTo');
+    if (statusEl && statusEl.value) params += '&status=' + statusEl.value;
+    if (dateFromEl && dateFromEl.value) params += '&date_from=' + dateFromEl.value;
+    if (dateToEl && dateToEl.value) params += '&date_to=' + dateToEl.value;
+    window.location.href = '/api/subscription_invoices' + params;
+}
+window.exportInvoicesCSV = exportInvoicesCSV;
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {

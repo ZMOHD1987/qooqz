@@ -167,7 +167,28 @@ final class PdoSubscriptionsRepository
             ':auto_renew'          => (int)($data['auto_renew'] ?? 1),
         ]);
 
-        return (int)$this->pdo->lastInsertId();
+        $id = (int)$this->pdo->lastInsertId();
+
+        // Auto-generate invoice
+        try {
+            $invoiceNumber = 'INV-' . date('Ymd') . '-' . str_pad((string)random_int(0, 99999), 5, '0', STR_PAD_LEFT);
+            $invStmt = $this->pdo->prepare("INSERT INTO subscription_invoices (invoice_number, subscription_id, tenant_id, amount, tax_amount, total_amount, currency_code, billing_period_start, billing_period_end, due_date, status) VALUES (:inv_num, :sub_id, :tenant_id, :amount, 0, :total, :currency, :start, :end, :due, 'pending')");
+            $invStmt->execute([
+                ':inv_num' => $invoiceNumber,
+                ':sub_id' => $id,
+                ':tenant_id' => $data['tenant_id'],
+                ':amount' => $data['price'],
+                ':total' => $data['price'],
+                ':currency' => $data['currency_code'] ?? 'USD',
+                ':start' => $data['start_date'],
+                ':end' => $data['end_date'] ?? $data['start_date'],
+                ':due' => $data['start_date']
+            ]);
+        } catch (\Throwable $e) {
+            // Invoice creation failure shouldn't break subscription creation
+        }
+
+        return $id;
     }
 
     // ================================

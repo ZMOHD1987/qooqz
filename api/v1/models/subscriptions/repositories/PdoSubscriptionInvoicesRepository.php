@@ -124,6 +124,40 @@ final class PdoSubscriptionInvoicesRepository
     }
 
     // ================================
+    // All with tenant name JOIN and filters (for CSV export)
+    // ================================
+    public function all(int $limit = 25, int $offset = 0, array $filters = []): array
+    {
+        $sql = "SELECT i.*, t.name AS tenant_name FROM subscription_invoices i LEFT JOIN tenants t ON i.tenant_id = t.id WHERE 1=1";
+        $params = [];
+
+        if (isset($filters['status']) && $filters['status'] !== '') {
+            $sql .= " AND i.status = :status";
+            $params[':status'] = $filters['status'];
+        }
+        if (isset($filters['date_from']) && $filters['date_from'] !== '') {
+            $sql .= " AND i.created_at >= :date_from";
+            $params[':date_from'] = $filters['date_from'];
+        }
+        if (isset($filters['date_to']) && $filters['date_to'] !== '') {
+            $sql .= " AND i.created_at <= :date_to";
+            $params[':date_to'] = $filters['date_to'] . ' 23:59:59';
+        }
+
+        $sql .= " ORDER BY i.id DESC LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value, PDO::PARAM_STR);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // ================================
     // Find by ID
     // ================================
     public function find(int $id): ?array

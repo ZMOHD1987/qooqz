@@ -214,6 +214,30 @@ function _st(string $key, string $fallback = ''): string {
       <button class="btn btn-secondary" id="btnInvFilter"><?= _st('filter.apply', 'Filter') ?></button>
       <button class="btn btn-secondary" id="btnInvClear"><?= _st('filter.clear', 'Clear') ?></button>
     </div>
+    <div class="filter-bar" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;align-items:flex-end;">
+        <div class="filter-group">
+            <label>Status</label>
+            <select id="invoiceFilterStatus" class="form-control">
+                <option value="">All</option>
+                <option value="pending">Pending</option>
+                <option value="paid">Paid</option>
+                <option value="overdue">Overdue</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="refunded">Refunded</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>From</label>
+            <input type="date" id="invoiceFilterDateFrom" class="form-control">
+        </div>
+        <div class="filter-group">
+            <label>To</label>
+            <input type="date" id="invoiceFilterDateTo" class="form-control">
+        </div>
+        <button class="btn btn-primary" onclick="if(typeof loadInvoices==='function')loadInvoices();">Filter</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('invoiceFilterStatus').value='';document.getElementById('invoiceFilterDateFrom').value='';document.getElementById('invoiceFilterDateTo').value='';if(typeof loadInvoices==='function')loadInvoices();">Clear</button>
+        <button class="btn btn-success" onclick="if(typeof exportInvoicesCSV==='function')exportInvoicesCSV();">Export CSV</button>
+    </div>
     <div class="card">
       <div class="card-body" style="overflow-x:auto">
         <table class="data-table" id="invTable">
