@@ -116,25 +116,16 @@ function _pt($key, $fallback = '') {
         </div>
     </div>
 
-    <!-- Super Admin: Tenant + Entity Cascade Selector -->
+    <!-- Super Admin: Entity Filter -->
     <?php if (is_super_admin()): ?>
-    <div class="card" id="tenantEntitySelector">
+    <div class="card" id="entityFilterCard">
         <div class="card-body" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
-            <div class="form-group" style="flex:0 0 200px;">
-                <label><?= htmlspecialchars(_pt('tenant_id', 'Tenant ID')) ?></label>
-                <div style="display:flex;gap:5px;">
-                    <input type="number" id="tenantIdInput" class="form-control" min="1" value="<?= $tenantId ?>" placeholder="<?= htmlspecialchars(_pt('enter_tenant_id', 'Enter Tenant ID')) ?>">
-                    <button type="button" id="btnVerifyTenant" class="btn btn-secondary"><?= htmlspecialchars(_pt('verify', 'Verify')) ?></button>
-                </div>
-                <small id="tenantNameDisplay" class="lookup-name"></small>
-            </div>
-            <div class="form-group" style="flex:1;min-width:200px;">
-                <label><?= htmlspecialchars(_pt('select_entity', 'Select Entity')) ?></label>
-                <select id="entitySelector" class="form-control">
-                    <option value=""><?= htmlspecialchars(_pt('select_entity', 'Select Entity...')) ?></option>
+            <div class="form-group" style="flex:1;min-width:250px;">
+                <label><?= htmlspecialchars(_pt('filter_entity', 'Filter by Entity')) ?></label>
+                <select id="globalEntityFilter" class="form-control">
+                    <option value=""><?= htmlspecialchars(_pt('all_entities', 'All Entities')) ?></option>
                 </select>
             </div>
-            <button id="btnLoadEntityPayments" class="btn btn-primary" disabled data-i18n="load"><?= htmlspecialchars(_pt('load', 'Load')) ?></button>
         </div>
     </div>
     <?php elseif (!$entityId): ?>

@@ -92,114 +92,47 @@
         .catch(function(err){ console.error('Failed to load payment methods:', err); });
     }
 
-    // Load entity selector
+    // Load entity filter for super admin, or auto-load for regular user
     function loadEntitySelector(){
-        var entitySelector = document.getElementById('entitySelector');
-        var btnLoad = document.getElementById('btnLoadEntityPayments');
-        if(!entitySelector) return;
-
-        // Super admin: tenant verification + entity cascade
         if(IS_SUPER){
-            var btnVerify = document.getElementById('btnVerifyTenant');
-            var tenantInput = document.getElementById('tenantIdInput');
-            var tenantName = document.getElementById('tenantNameDisplay');
+            // Super admin: load entity dropdown filter + load all data immediately
+            var filter = document.getElementById('globalEntityFilter');
+            if(filter){
+                fetch(API_BASE + '/entities?limit=200')
+                .then(function(r){ return r.json(); })
+                .then(function(d){
+                    if(d.success && d.data){
+                        var items = d.data.items || (Array.isArray(d.data) ? d.data : []);
+                        items.forEach(function(ent){
+                            var opt = document.createElement('option');
+                            opt.value = ent.id;
+                            opt.textContent = ent.store_name || ent.name || ('Entity #' + ent.id);
+                            filter.appendChild(opt);
+                        });
+                    }
+                })
+                .catch(function(err){ console.error('Failed to load entities:', err); });
 
-            if(btnVerify && tenantInput){
-                btnVerify.addEventListener('click', function(){
-                    var tid = parseInt(tenantInput.value);
-                    if(!tid){ showNotification(t('enter_tenant_id', 'Enter Tenant ID'), 'error'); return; }
-                    fetch(API_BASE + '/tenants?id=' + tid)
-                    .then(function(r){ return r.json(); })
-                    .then(function(d){
-                        var tData = null;
-                        if(d.success && d.data){
-                            if(d.data.items && Array.isArray(d.data.items)){
-                                for(var i = 0; i < d.data.items.length; i++){
-                                    if(parseInt(d.data.items[i].id) === tid){ tData = d.data.items[i]; break; }
-                                }
-                                if(!tData && d.data.items.length > 0) tData = d.data.items[0];
-                            } else if(d.data.name || d.data.id){
-                                tData = d.data;
-                            }
-                        }
-                        if(tData){
-                            if(tenantName) tenantName.textContent = tData.name || ('Tenant #' + tData.id);
-                            if(tenantName) tenantName.classList.remove('error');
-                            loadEntitiesByTenant(tid);
-                        } else {
-                            if(tenantName){ tenantName.textContent = t('tenant_not_found', 'Tenant not found'); tenantName.classList.add('error'); }
-                            while(entitySelector.options.length > 1) entitySelector.remove(1);
-                            if(btnLoad) btnLoad.disabled = true;
-                        }
-                    })
-                    .catch(function(){
-                        if(tenantName){ tenantName.textContent = t('tenant_not_found', 'Tenant not found'); tenantName.classList.add('error'); }
-                    });
+                filter.addEventListener('change', function(){
+                    entityId = filter.value ? parseInt(filter.value) : 0;
+                    loadPayments();
+                    loadBanks();
                 });
             }
 
-            // Auto-verify current tenant
-            if(tenantInput && parseInt(tenantInput.value) > 0){
-                setTimeout(function(){ if(btnVerify) btnVerify.click(); }, 200);
-            }
+            // Show tabs and load ALL data immediately
+            entityId = 0;
+            var tabs = document.querySelector('.content-tabs');
+            if(tabs) tabs.style.display = 'block';
+            loadPayments();
+            loadBanks();
         } else {
-            // Non-super admin: load own entities
-            loadEntitiesByTenant(CFG.tenantId || 0);
+            // Non-super admin: load own entity data directly
+            var tabs = document.querySelector('.content-tabs');
+            if(tabs) tabs.style.display = 'block';
+            loadPayments();
+            loadBanks();
         }
-
-        entitySelector.addEventListener('change', function(){
-            if(btnLoad) btnLoad.disabled = !entitySelector.value;
-        });
-
-        if(btnLoad){
-            btnLoad.addEventListener('click', function(){
-                var val = entitySelector.value;
-                if(!val) return;
-                entityId = parseInt(val);
-                document.querySelectorAll('input[name="entity_id"]').forEach(function(inp){
-                    inp.value = entityId;
-                });
-                var tabs = document.querySelector('.content-tabs');
-                if(tabs) tabs.style.display = 'block';
-                loadPayments();
-                loadBanks();
-            });
-        }
-    }
-
-    // Load entities by tenant ID into the selector
-    function loadEntitiesByTenant(tenantId){
-        var entitySelector = document.getElementById('entitySelector');
-        var btnLoad = document.getElementById('btnLoadEntityPayments');
-        if(!entitySelector) return;
-
-        while(entitySelector.options.length > 1) entitySelector.remove(1);
-
-        var url = API_BASE + '/entities?limit=200';
-        if(tenantId && tenantId > 0) url += '&tenant_id=' + tenantId;
-
-        fetch(url)
-        .then(function(r){ return r.json(); })
-        .then(function(d){
-            if(d.success && d.data){
-                var items = d.data.items || (Array.isArray(d.data) ? d.data : []);
-                var defaultId = null;
-                items.forEach(function(ent){
-                    var opt = document.createElement('option');
-                    opt.value = ent.id;
-                    opt.textContent = ent.store_name || ent.name || ('Entity #' + ent.id);
-                    if(ent.is_main == 1 && !defaultId) defaultId = ent.id;
-                    entitySelector.appendChild(opt);
-                });
-                if(!defaultId && items.length > 0) defaultId = items[0].id;
-                if(defaultId){
-                    entitySelector.value = defaultId;
-                    if(btnLoad) btnLoad.disabled = false;
-                }
-                if(defaultId && btnLoad) btnLoad.click();
-            }
-        })
-        .catch(function(err){ console.error('Failed to load entities:', err); });
     }
 
     // Collect payment filters
@@ -236,9 +169,11 @@
             if(d.success && d.data){
                 var items = Array.isArray(d.data) ? d.data : (d.data.items || []);
                 if(items.length === 0){
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">' + t('no_records', 'No records found') + '</td></tr>';
+                    var cols = IS_SUPER && !entityId ? 7 : 6;
+                    tbody.innerHTML = '<tr><td colspan="' + cols + '" style="text-align:center;">' + t('no_records', 'No records found') + '</td></tr>';
                     return;
                 }
+                var showAll = IS_SUPER && !entityId;
                 items.forEach(function(p){
                     var methodName = p.method_name || paymentMethodsMap[p.payment_method_id] || p.gateway_name || '-';
                     var tr = document.createElement('tr');
@@ -251,6 +186,7 @@
                     }
                     tr.innerHTML =
                         '<td>' + esc(p.id) + '</td>' +
+                        (showAll ? '<td>' + esc(p.entity_name || 'Entity #' + p.entity_id) + '</td>' : '') +
                         '<td>' + esc(methodName) + '</td>' +
                         '<td>' + esc(p.account_email || '') + '</td>' +
                         '<td>' + esc(p.account_id || '') + '</td>' +
@@ -295,9 +231,11 @@
             if(d.success && d.data){
                 var items = Array.isArray(d.data) ? d.data : (d.data.items || []);
                 if(items.length === 0){
-                    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">' + t('no_records', 'No records found') + '</td></tr>';
+                    var cols = IS_SUPER && !entityId ? 10 : 9;
+                    tbody.innerHTML = '<tr><td colspan="' + cols + '" style="text-align:center;">' + t('no_records', 'No records found') + '</td></tr>';
                     return;
                 }
+                var showAll = IS_SUPER && !entityId;
                 items.forEach(function(b){
                     var tr = document.createElement('tr');
                     var actionsHtml = '';
@@ -309,6 +247,7 @@
                     }
                     tr.innerHTML =
                         '<td>' + esc(b.id) + '</td>' +
+                        (showAll ? '<td>' + esc(b.entity_name || 'Entity #' + b.entity_id) + '</td>' : '') +
                         '<td>' + esc(b.bank_name) + '</td>' +
                         '<td>' + esc(b.account_holder_name) + '</td>' +
                         '<td>' + esc(b.account_number) + '</td>' +
