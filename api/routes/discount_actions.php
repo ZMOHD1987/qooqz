@@ -33,18 +33,29 @@ if (!isset($GLOBALS['ADMIN_DB']) || !$GLOBALS['ADMIN_DB'] instanceof PDO) {
     exit;
 }
 
+// Load controller stack
+$modelsDir = dirname(__DIR__) . '/v1/models/discounts';
+require_once $modelsDir . '/repositories/PdoDiscountsRepository.php';
+require_once $modelsDir . '/repositories/PdoDiscountTranslationsRepository.php';
+require_once $modelsDir . '/repositories/PdoDiscountScopesRepository.php';
+require_once $modelsDir . '/repositories/PdoDiscountConditionsRepository.php';
+require_once $modelsDir . '/repositories/PdoDiscountActionsRepository.php';
+require_once $modelsDir . '/repositories/PdoDiscountRedemptionsRepository.php';
+require_once $modelsDir . '/repositories/PdoDiscountExclusionsRepository.php';
+require_once $modelsDir . '/services/DiscountsService.php';
+require_once $modelsDir . '/controllers/DiscountsController.php';
+
 try {
-    $pdo    = $GLOBALS['ADMIN_DB'];
-    $method = $_SERVER['REQUEST_METHOD'];
+    $pdo        = $GLOBALS['ADMIN_DB'];
+    $controller = new DiscountsController(new DiscountsService($pdo));
+    $method     = $_SERVER['REQUEST_METHOD'];
 
     switch ($method) {
         case 'GET':
             $discountId = (int)($_GET['discount_id'] ?? 0);
             if ($discountId <= 0) { ResponseFormatter::error('discount_id is required', 400); break; }
 
-            $stmt = $pdo->prepare("SELECT * FROM discount_actions WHERE discount_id = :discount_id ORDER BY id");
-            $stmt->execute([':discount_id' => $discountId]);
-            $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $items = $controller->listActions($discountId);
             ResponseFormatter::success($items);
             break;
 
@@ -57,13 +68,8 @@ try {
             }
             if ($missing) { ResponseFormatter::error('Missing required fields: ' . implode(', ', $missing), 422); break; }
 
-            $stmt = $pdo->prepare("INSERT INTO discount_actions (discount_id, action_type, action_value) VALUES (:discount_id, :action_type, :action_value)");
-            $stmt->execute([
-                ':discount_id'  => (int)$data['discount_id'],
-                ':action_type'  => $data['action_type'],
-                ':action_value' => $data['action_value'],
-            ]);
-            ResponseFormatter::success(['id' => (int)$pdo->lastInsertId()], 'Action created', 201);
+            $id = $controller->createAction($data);
+            ResponseFormatter::success(['id' => $id], 'Action created', 201);
             break;
 
         case 'PUT':
@@ -71,27 +77,17 @@ try {
             $id   = (int)($data['id'] ?? $_GET['id'] ?? 0);
             if ($id <= 0) { ResponseFormatter::error('ID is required', 400); break; }
 
-            $allowed = ['action_type', 'action_value'];
-            $sets   = [];
-            $params = [':id' => $id];
-            foreach ($allowed as $col) {
-                if (array_key_exists($col, $data)) {
-                    $sets[]          = "$col = :$col";
-                    $params[":$col"] = $data[$col];
-                }
-            }
-            if (empty($sets)) { ResponseFormatter::error('No fields to update', 422); break; }
+            unset($data['id']);
+            if (empty($data)) { ResponseFormatter::error('No fields to update', 422); break; }
 
-            $stmt = $pdo->prepare("UPDATE discount_actions SET " . implode(', ', $sets) . " WHERE id = :id");
-            $stmt->execute($params);
+            $controller->updateAction($id, $data);
             ResponseFormatter::success(null, 'Action updated');
             break;
 
         case 'DELETE':
             $id = (int)($_GET['id'] ?? 0);
             if ($id <= 0) { ResponseFormatter::error('ID is required', 400); break; }
-            $stmt = $pdo->prepare("DELETE FROM discount_actions WHERE id = :id");
-            $stmt->execute([':id' => $id]);
+            $controller->deleteAction($id);
             ResponseFormatter::success(null, 'Action deleted');
             break;
 

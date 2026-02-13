@@ -33,18 +33,29 @@ if (!isset($GLOBALS['ADMIN_DB']) || !$GLOBALS['ADMIN_DB'] instanceof PDO) {
     exit;
 }
 
+// Load controller stack
+$modelsDir = dirname(__DIR__) . '/v1/models/discounts';
+require_once $modelsDir . '/repositories/PdoDiscountsRepository.php';
+require_once $modelsDir . '/repositories/PdoDiscountTranslationsRepository.php';
+require_once $modelsDir . '/repositories/PdoDiscountScopesRepository.php';
+require_once $modelsDir . '/repositories/PdoDiscountConditionsRepository.php';
+require_once $modelsDir . '/repositories/PdoDiscountActionsRepository.php';
+require_once $modelsDir . '/repositories/PdoDiscountRedemptionsRepository.php';
+require_once $modelsDir . '/repositories/PdoDiscountExclusionsRepository.php';
+require_once $modelsDir . '/services/DiscountsService.php';
+require_once $modelsDir . '/controllers/DiscountsController.php';
+
 try {
-    $pdo    = $GLOBALS['ADMIN_DB'];
-    $method = $_SERVER['REQUEST_METHOD'];
+    $pdo        = $GLOBALS['ADMIN_DB'];
+    $controller = new DiscountsController(new DiscountsService($pdo));
+    $method     = $_SERVER['REQUEST_METHOD'];
 
     switch ($method) {
         case 'GET':
             $discountId = (int)($_GET['discount_id'] ?? 0);
             if ($discountId <= 0) { ResponseFormatter::error('discount_id is required', 400); break; }
 
-            $stmt = $pdo->prepare("SELECT * FROM discount_scopes WHERE discount_id = :discount_id ORDER BY id");
-            $stmt->execute([':discount_id' => $discountId]);
-            $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $items = $controller->listScopes($discountId);
             ResponseFormatter::success($items);
             break;
 
@@ -57,20 +68,14 @@ try {
             }
             if ($missing) { ResponseFormatter::error('Missing required fields: ' . implode(', ', $missing), 422); break; }
 
-            $stmt = $pdo->prepare("INSERT INTO discount_scopes (discount_id, scope_type, scope_id) VALUES (:discount_id, :scope_type, :scope_id)");
-            $stmt->execute([
-                ':discount_id' => (int)$data['discount_id'],
-                ':scope_type'  => $data['scope_type'],
-                ':scope_id'    => $data['scope_id'],
-            ]);
-            ResponseFormatter::success(['id' => (int)$pdo->lastInsertId()], 'Scope created', 201);
+            $id = $controller->createScope($data);
+            ResponseFormatter::success(['id' => $id], 'Scope created', 201);
             break;
 
         case 'DELETE':
             $id = (int)($_GET['id'] ?? 0);
             if ($id <= 0) { ResponseFormatter::error('ID is required', 400); break; }
-            $stmt = $pdo->prepare("DELETE FROM discount_scopes WHERE id = :id");
-            $stmt->execute([':id' => $id]);
+            $controller->deleteScope($id);
             ResponseFormatter::success(null, 'Scope deleted');
             break;
 

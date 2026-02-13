@@ -33,18 +33,29 @@ if (!isset($GLOBALS['ADMIN_DB']) || !$GLOBALS['ADMIN_DB'] instanceof PDO) {
     exit;
 }
 
+// Load controller stack
+$modelsDir = dirname(__DIR__) . '/v1/models/discounts';
+require_once $modelsDir . '/repositories/PdoDiscountsRepository.php';
+require_once $modelsDir . '/repositories/PdoDiscountTranslationsRepository.php';
+require_once $modelsDir . '/repositories/PdoDiscountScopesRepository.php';
+require_once $modelsDir . '/repositories/PdoDiscountConditionsRepository.php';
+require_once $modelsDir . '/repositories/PdoDiscountActionsRepository.php';
+require_once $modelsDir . '/repositories/PdoDiscountRedemptionsRepository.php';
+require_once $modelsDir . '/repositories/PdoDiscountExclusionsRepository.php';
+require_once $modelsDir . '/services/DiscountsService.php';
+require_once $modelsDir . '/controllers/DiscountsController.php';
+
 try {
-    $pdo    = $GLOBALS['ADMIN_DB'];
-    $method = $_SERVER['REQUEST_METHOD'];
+    $pdo        = $GLOBALS['ADMIN_DB'];
+    $controller = new DiscountsController(new DiscountsService($pdo));
+    $method     = $_SERVER['REQUEST_METHOD'];
 
     switch ($method) {
         case 'GET':
             $discountId = (int)($_GET['discount_id'] ?? 0);
             if ($discountId <= 0) { ResponseFormatter::error('discount_id is required', 400); break; }
 
-            $stmt = $pdo->prepare("SELECT * FROM discount_translations WHERE discount_id = :discount_id ORDER BY language_code");
-            $stmt->execute([':discount_id' => $discountId]);
-            $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $items = $controller->listTranslations($discountId);
             ResponseFormatter::success($items);
             break;
 
@@ -57,24 +68,14 @@ try {
             }
             if ($missing) { ResponseFormatter::error('Missing required fields: ' . implode(', ', $missing), 422); break; }
 
-            $stmt = $pdo->prepare("INSERT INTO discount_translations (discount_id, language_code, name, description, terms_conditions, marketing_badge) VALUES (:discount_id, :language_code, :name, :description, :terms_conditions, :marketing_badge) ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description), terms_conditions = VALUES(terms_conditions), marketing_badge = VALUES(marketing_badge)");
-            $stmt->execute([
-                ':discount_id'      => (int)$data['discount_id'],
-                ':language_code'    => $data['language_code'],
-                ':name'             => $data['name'],
-                ':description'      => $data['description'] ?? null,
-                ':terms_conditions' => $data['terms_conditions'] ?? null,
-                ':marketing_badge'  => $data['marketing_badge'] ?? null,
-            ]);
-            $id = (int)$pdo->lastInsertId();
+            $id = $controller->upsertTranslation((int)$data['discount_id'], $data['language_code'], $data);
             ResponseFormatter::success(['id' => $id], 'Translation saved', 201);
             break;
 
         case 'DELETE':
             $id = (int)($_GET['id'] ?? 0);
             if ($id <= 0) { ResponseFormatter::error('ID is required', 400); break; }
-            $stmt = $pdo->prepare("DELETE FROM discount_translations WHERE id = :id");
-            $stmt->execute([':id' => $id]);
+            $controller->deleteTranslation($id);
             ResponseFormatter::success(null, 'Translation deleted');
             break;
 
