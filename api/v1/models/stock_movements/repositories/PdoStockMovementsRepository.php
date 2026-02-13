@@ -233,8 +233,57 @@ final class PdoStockMovementsRepository
     // ================================
     public function delete(int $id): bool
     {
-        $stmt = $this->pdo->prepare("DELETE FROM product_stock_movements WHERE id = :id");
-        return $stmt->execute([':id' => $id]);
+        // Find movement to reverse stock changes
+        $movement = $this->find($id);
+        if (!$movement) {
+            return false;
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            // Reverse stock quantity on product
+            $updateProduct = $this->pdo->prepare("
+                UPDATE products
+                SET stock_quantity = stock_quantity - :qty
+                WHERE id = :product_id
+            ");
+            $updateProduct->execute([
+                ':qty'        => (int)$movement['change_quantity'],
+                ':product_id' => (int)$movement['product_id'],
+            ]);
+
+            // Reverse stock quantity on variant if applicable
+            if (!empty($movement['variant_id'])) {
+                $updateVariant = $this->pdo->prepare("
+                    UPDATE product_variants
+                    SET stock_quantity = stock_quantity - :qty
+                    WHERE id = :variant_id AND product_id = :product_id
+                ");
+                $updateVariant->execute([
+                    ':qty'        => (int)$movement['change_quantity'],
+                    ':variant_id' => (int)$movement['variant_id'],
+                    ':product_id' => (int)$movement['product_id'],
+                ]);
+            }
+
+            // Update stock_status based on new quantity
+            $stmtQty = $this->pdo->prepare("SELECT stock_quantity FROM products WHERE id = :product_id");
+            $stmtQty->execute([':product_id' => (int)$movement['product_id']]);
+            $newQty = (int)$stmtQty->fetchColumn();
+            $stockStatus = $newQty > 0 ? 'in_stock' : 'out_of_stock';
+            $updateStatus = $this->pdo->prepare("UPDATE products SET stock_status = :status WHERE id = :product_id");
+            $updateStatus->execute([':status' => $stockStatus, ':product_id' => (int)$movement['product_id']]);
+
+            // Delete the movement record
+            $stmt = $this->pdo->prepare("DELETE FROM product_stock_movements WHERE id = :id");
+            $result = $stmt->execute([':id' => $id]);
+
+            $this->pdo->commit();
+            return $result;
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
     }
 
     // ================================

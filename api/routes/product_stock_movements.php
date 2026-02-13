@@ -44,59 +44,20 @@ try {
     switch ($method) {
         case 'GET':
             if (isset($_GET['stats'])) {
+                $repo = new PdoStockMovementsRepository($pdo);
                 $filters = [];
                 if (isset($_GET['product_id'])) $filters['product_id'] = $_GET['product_id'];
                 if (isset($_GET['type'])) $filters['type'] = $_GET['type'];
                 if (isset($_GET['date_from'])) $filters['date_from'] = $_GET['date_from'];
                 if (isset($_GET['date_to'])) $filters['date_to'] = $_GET['date_to'];
-
-                $stmt = $pdo->prepare("
-                    SELECT
-                        COUNT(*) AS total_movements,
-                        COALESCE(SUM(CASE WHEN type = 'restock' THEN change_quantity ELSE 0 END), 0) AS total_restocked,
-                        COALESCE(SUM(CASE WHEN type = 'sale' THEN ABS(change_quantity) ELSE 0 END), 0) AS total_sold,
-                        COALESCE(SUM(CASE WHEN type = 'return' THEN change_quantity ELSE 0 END), 0) AS total_returned,
-                        COALESCE(SUM(CASE WHEN type = 'adjustment' THEN change_quantity ELSE 0 END), 0) AS total_adjusted
-                    FROM product_stock_movements
-                ");
-                $stmt->execute();
-                $stats = $stmt->fetch(PDO::FETCH_ASSOC);
+                $stats = $repo->stats($filters);
                 ResponseFormatter::success($stats);
                 break;
             }
 
             if (isset($_GET['barcode']) && $_GET['barcode'] !== '') {
-                $barcode = trim($_GET['barcode']);
-                // Search products table
-                $stmt = $pdo->prepare("
-                    SELECT p.id, p.sku, p.barcode, p.stock_quantity, p.stock_status, p.manage_stock,
-                           pt.name AS product_name, NULL AS variant_id
-                    FROM products p
-                    LEFT JOIN product_translations pt ON pt.product_id = p.id AND pt.language_code = 'en'
-                    WHERE p.barcode = :barcode
-                    LIMIT 1
-                ");
-                $stmt->execute([':barcode' => $barcode]);
-                $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-                if (!$row) {
-                    // Search product_variants table
-                    $stmt = $pdo->prepare("
-                        SELECT p.id, p.sku AS product_sku, p.barcode AS product_barcode,
-                               p.stock_quantity AS product_stock_quantity, p.stock_status, p.manage_stock,
-                               pt.name AS product_name,
-                               pv.id AS variant_id, pv.sku AS variant_sku, pv.barcode AS variant_barcode,
-                               pv.stock_quantity AS variant_stock_quantity
-                        FROM product_variants pv
-                        JOIN products p ON p.id = pv.product_id
-                        LEFT JOIN product_translations pt ON pt.product_id = p.id AND pt.language_code = 'en'
-                        WHERE pv.barcode = :barcode
-                        LIMIT 1
-                    ");
-                    $stmt->execute([':barcode' => $barcode]);
-                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-                }
-
+                $repo = new PdoStockMovementsRepository($pdo);
+                $row = $repo->lookupByBarcode(trim($_GET['barcode']));
                 if (!$row) {
                     ResponseFormatter::error('Barcode not found', 404);
                     break;
@@ -203,8 +164,8 @@ try {
         case 'DELETE':
             $id = (int)($_GET['id'] ?? 0);
             if ($id <= 0) { ResponseFormatter::error('ID is required', 400); break; }
-            $stmt = $pdo->prepare("DELETE FROM product_stock_movements WHERE id = :id");
-            $stmt->execute([':id' => $id]);
+            $repo = new PdoStockMovementsRepository($pdo);
+            $repo->delete($id);
             ResponseFormatter::success(null, 'Stock movement deleted');
             break;
 
