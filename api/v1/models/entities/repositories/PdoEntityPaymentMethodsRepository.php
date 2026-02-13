@@ -23,18 +23,42 @@ final class PdoEntityPaymentMethodsRepository
         ?int $limit = null,
         ?int $offset = null,
         string $orderBy = 'id',
-        string $orderDir = 'DESC'
+        string $orderDir = 'DESC',
+        array $filters = []
     ): array {
         $orderBy  = in_array($orderBy, self::ALLOWED_ORDER_BY, true) ? $orderBy : 'id';
         $orderDir = strtoupper($orderDir) === 'ASC' ? 'ASC' : 'DESC';
+
+        $where = "e.tenant_id = :tenant_id AND p.entity_id = :entity_id";
+        $params = [':tenant_id' => $tenantId, ':entity_id' => $entityId];
+
+        if (!empty($filters['search'])) {
+            $where .= " AND (p.account_email LIKE :search OR p.account_id LIKE :search OR pm.method_name LIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
+        if (!empty($filters['payment_method_id'])) {
+            $where .= " AND p.payment_method_id = :pm_id";
+            $params[':pm_id'] = (int)$filters['payment_method_id'];
+        }
+        if (isset($filters['is_active']) && $filters['is_active'] !== '') {
+            $where .= " AND p.is_active = :is_active";
+            $params[':is_active'] = (int)$filters['is_active'];
+        }
+        if (!empty($filters['date_from']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $filters['date_from'])) {
+            $where .= " AND p.created_at >= :date_from";
+            $params[':date_from'] = $filters['date_from'] . ' 00:00:00';
+        }
+        if (!empty($filters['date_to']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $filters['date_to'])) {
+            $where .= " AND p.created_at <= :date_to";
+            $params[':date_to'] = $filters['date_to'] . ' 23:59:59';
+        }
 
         $sql = "
             SELECT p.*, pm.method_key, pm.method_name, pm.gateway_name, pm.icon_url
             FROM entity_payment_methods p
             INNER JOIN entities e ON e.id = p.entity_id
             LEFT JOIN payment_methods pm ON pm.id = p.payment_method_id
-            WHERE e.tenant_id = :tenant_id
-              AND p.entity_id = :entity_id
+            WHERE {$where}
             ORDER BY {$orderBy} {$orderDir}
         ";
 
@@ -42,8 +66,9 @@ final class PdoEntityPaymentMethodsRepository
         if ($offset !== null) $sql .= " OFFSET :offset";
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':tenant_id', $tenantId, PDO::PARAM_INT);
-        $stmt->bindValue(':entity_id', $entityId, PDO::PARAM_INT);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val, is_int($val) ? PDO::PARAM_INT : PDO::PARAM_STR);
+        }
         if ($limit !== null)  $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         if ($offset !== null) $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 

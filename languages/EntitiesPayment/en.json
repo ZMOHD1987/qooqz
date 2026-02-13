@@ -48,6 +48,20 @@
             "save": "Save",
             "cancel": "Cancel",
             "required": "Required"
+        },
+        "filter": {
+            "search": "Search",
+            "search_payments": "Email, Account ID...",
+            "search_banks": "Bank name, account, IBAN...",
+            "payment_method": "Payment Method",
+            "status": "Status",
+            "all": "All",
+            "active": "Active",
+            "inactive": "Inactive",
+            "date_from": "From",
+            "date_to": "To",
+            "apply": "Filter",
+            "clear": "Clear Filters"
         }
     }
 }

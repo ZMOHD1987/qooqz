@@ -66,16 +66,26 @@
         .then(function(r){ return r.json(); })
         .then(function(d){
             var sel = document.getElementById('pmPaymentMethodId');
-            if(!sel) return;
-            while(sel.options.length > 1) sel.remove(1);
+            var filterSel = document.getElementById('pmFilterMethod');
+            if(sel) while(sel.options.length > 1) sel.remove(1);
+            if(filterSel) while(filterSel.options.length > 1) filterSel.remove(1);
             if(d.success && d.data){
                 var items = d.data.items || (Array.isArray(d.data) ? d.data : []);
                 items.forEach(function(pm){
                     paymentMethodsMap[pm.id] = pm.method_name || pm.gateway_name || pm.method_key;
-                    var opt = document.createElement('option');
-                    opt.value = pm.id;
-                    opt.textContent = pm.method_name + (pm.gateway_name ? ' (' + pm.gateway_name + ')' : '');
-                    sel.appendChild(opt);
+                    var label = pm.method_name + (pm.gateway_name ? ' (' + pm.gateway_name + ')' : '');
+                    if(sel){
+                        var opt = document.createElement('option');
+                        opt.value = pm.id;
+                        opt.textContent = label;
+                        sel.appendChild(opt);
+                    }
+                    if(filterSel){
+                        var opt2 = document.createElement('option');
+                        opt2.value = pm.id;
+                        opt2.textContent = label;
+                        filterSel.appendChild(opt2);
+                    }
                 });
             }
         })
@@ -192,11 +202,31 @@
         .catch(function(err){ console.error('Failed to load entities:', err); });
     }
 
+    // Collect payment filters
+    function collectPaymentFilters(){
+        var params = [];
+        var search = document.getElementById('pmFilterSearch');
+        var method = document.getElementById('pmFilterMethod');
+        var status = document.getElementById('pmFilterStatus');
+        var dateFrom = document.getElementById('pmFilterDateFrom');
+        var dateTo = document.getElementById('pmFilterDateTo');
+        if(search && search.value.trim()) params.push('search=' + encodeURIComponent(search.value.trim()));
+        if(method && method.value) params.push('payment_method_id=' + encodeURIComponent(method.value));
+        if(status && status.value !== '') params.push('is_active=' + encodeURIComponent(status.value));
+        if(dateFrom && dateFrom.value) params.push('date_from=' + encodeURIComponent(dateFrom.value));
+        if(dateTo && dateTo.value) params.push('date_to=' + encodeURIComponent(dateTo.value));
+        return params;
+    }
+
     // Load Payment Methods table
     function loadPayments(){
         if(!entityId && !IS_SUPER) return;
         var url = API_BASE + '/entity_payment_methods';
-        if(entityId) url += '?entity_id=' + entityId;
+        var params = [];
+        if(entityId) params.push('entity_id=' + entityId);
+        var filters = collectPaymentFilters();
+        params = params.concat(filters);
+        if(params.length) url += '?' + params.join('&');
         fetch(url)
         .then(function(r){ return r.json(); })
         .then(function(d){
@@ -233,11 +263,29 @@
         .catch(function(err){ console.error('Failed to load payments:', err); });
     }
 
+    // Collect bank filters
+    function collectBankFilters(){
+        var params = [];
+        var search = document.getElementById('bankFilterSearch');
+        var status = document.getElementById('bankFilterStatus');
+        var dateFrom = document.getElementById('bankFilterDateFrom');
+        var dateTo = document.getElementById('bankFilterDateTo');
+        if(search && search.value.trim()) params.push('search=' + encodeURIComponent(search.value.trim()));
+        if(status && status.value !== '') params.push('is_active=' + encodeURIComponent(status.value));
+        if(dateFrom && dateFrom.value) params.push('date_from=' + encodeURIComponent(dateFrom.value));
+        if(dateTo && dateTo.value) params.push('date_to=' + encodeURIComponent(dateTo.value));
+        return params;
+    }
+
     // Load Bank Accounts table
     function loadBanks(){
         if(!entityId && !IS_SUPER) return;
         var url = API_BASE + '/entity_bank_accounts';
-        if(entityId) url += '?entity_id=' + entityId;
+        var params = [];
+        if(entityId) params.push('entity_id=' + entityId);
+        var filters = collectBankFilters();
+        params = params.concat(filters);
+        if(params.length) url += '?' + params.join('&');
         fetch(url)
         .then(function(r){ return r.json(); })
         .then(function(d){
@@ -371,6 +419,31 @@
                 var target = document.getElementById('tab-' + btn.dataset.tab);
                 if(target) target.classList.add('active');
             });
+        });
+
+        // Filter Payment Methods
+        var btnFilterPm = document.getElementById('btnFilterPayments');
+        if(btnFilterPm) btnFilterPm.addEventListener('click', function(){ loadPayments(); });
+        var btnClearPm = document.getElementById('btnClearPaymentFilters');
+        if(btnClearPm) btnClearPm.addEventListener('click', function(){
+            var s = document.getElementById('pmFilterSearch'); if(s) s.value = '';
+            var m = document.getElementById('pmFilterMethod'); if(m) m.value = '';
+            var st = document.getElementById('pmFilterStatus'); if(st) st.value = '';
+            var df = document.getElementById('pmFilterDateFrom'); if(df) df.value = '';
+            var dt = document.getElementById('pmFilterDateTo'); if(dt) dt.value = '';
+            loadPayments();
+        });
+
+        // Filter Bank Accounts
+        var btnFilterBa = document.getElementById('btnFilterBanks');
+        if(btnFilterBa) btnFilterBa.addEventListener('click', function(){ loadBanks(); });
+        var btnClearBa = document.getElementById('btnClearBankFilters');
+        if(btnClearBa) btnClearBa.addEventListener('click', function(){
+            var s = document.getElementById('bankFilterSearch'); if(s) s.value = '';
+            var st = document.getElementById('bankFilterStatus'); if(st) st.value = '';
+            var df = document.getElementById('bankFilterDateFrom'); if(df) df.value = '';
+            var dt = document.getElementById('bankFilterDateTo'); if(dt) dt.value = '';
+            loadBanks();
         });
 
         // Add Payment button

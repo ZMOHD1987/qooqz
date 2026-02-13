@@ -48,6 +48,20 @@
             "save": "حفظ",
             "cancel": "إلغاء",
             "required": "مطلوب"
+        },
+        "filter": {
+            "search": "بحث",
+            "search_payments": "بريد إلكتروني، معرف الحساب...",
+            "search_banks": "اسم البنك، رقم الحساب، IBAN...",
+            "payment_method": "طريقة الدفع",
+            "status": "الحالة",
+            "all": "الكل",
+            "active": "نشط",
+            "inactive": "غير نشط",
+            "date_from": "من",
+            "date_to": "إلى",
+            "apply": "تصفية",
+            "clear": "مسح الفلاتر"
         }
     }
 }

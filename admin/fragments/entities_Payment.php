@@ -156,6 +156,38 @@ function _pt($key, $fallback = '') {
 
         <!-- Payment Methods -->
         <div class="tab-content active" id="tab-payment_methods">
+            <div class="filter-bar" id="paymentFilters">
+                <div class="filter-group">
+                    <label><?= htmlspecialchars(_pt('filter.search', 'Search')) ?></label>
+                    <input type="text" id="pmFilterSearch" class="form-control" placeholder="<?= htmlspecialchars(_pt('filter.search_payments', 'Email, Account ID...')) ?>">
+                </div>
+                <div class="filter-group">
+                    <label><?= htmlspecialchars(_pt('filter.payment_method', 'Payment Method')) ?></label>
+                    <select id="pmFilterMethod" class="form-control">
+                        <option value=""><?= htmlspecialchars(_pt('filter.all', 'All')) ?></option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label><?= htmlspecialchars(_pt('filter.status', 'Status')) ?></label>
+                    <select id="pmFilterStatus" class="form-control">
+                        <option value=""><?= htmlspecialchars(_pt('filter.all', 'All')) ?></option>
+                        <option value="1"><?= htmlspecialchars(_pt('filter.active', 'Active')) ?></option>
+                        <option value="0"><?= htmlspecialchars(_pt('filter.inactive', 'Inactive')) ?></option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label><?= htmlspecialchars(_pt('filter.date_from', 'From')) ?></label>
+                    <input type="date" id="pmFilterDateFrom" class="form-control">
+                </div>
+                <div class="filter-group">
+                    <label><?= htmlspecialchars(_pt('filter.date_to', 'To')) ?></label>
+                    <input type="date" id="pmFilterDateTo" class="form-control">
+                </div>
+                <div class="filter-actions">
+                    <button type="button" id="btnFilterPayments" class="btn btn-primary"><?= htmlspecialchars(_pt('filter.apply', 'Filter')) ?></button>
+                    <button type="button" id="btnClearPaymentFilters" class="btn btn-secondary"><?= htmlspecialchars(_pt('filter.clear', 'Clear')) ?></button>
+                </div>
+            </div>
             <table class="data-table" id="paymentMethodsTable">
                 <thead>
                     <tr>
@@ -173,6 +205,32 @@ function _pt($key, $fallback = '') {
 
         <!-- Bank Accounts -->
         <div class="tab-content" id="tab-bank_accounts">
+            <div class="filter-bar" id="bankFilters">
+                <div class="filter-group">
+                    <label><?= htmlspecialchars(_pt('filter.search', 'Search')) ?></label>
+                    <input type="text" id="bankFilterSearch" class="form-control" placeholder="<?= htmlspecialchars(_pt('filter.search_banks', 'Bank name, account, IBAN...')) ?>">
+                </div>
+                <div class="filter-group">
+                    <label><?= htmlspecialchars(_pt('filter.status', 'Status')) ?></label>
+                    <select id="bankFilterStatus" class="form-control">
+                        <option value=""><?= htmlspecialchars(_pt('filter.all', 'All')) ?></option>
+                        <option value="1"><?= htmlspecialchars(_pt('filter.active', 'Active')) ?></option>
+                        <option value="0"><?= htmlspecialchars(_pt('filter.inactive', 'Inactive')) ?></option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label><?= htmlspecialchars(_pt('filter.date_from', 'From')) ?></label>
+                    <input type="date" id="bankFilterDateFrom" class="form-control">
+                </div>
+                <div class="filter-group">
+                    <label><?= htmlspecialchars(_pt('filter.date_to', 'To')) ?></label>
+                    <input type="date" id="bankFilterDateTo" class="form-control">
+                </div>
+                <div class="filter-actions">
+                    <button type="button" id="btnFilterBanks" class="btn btn-primary"><?= htmlspecialchars(_pt('filter.apply', 'Filter')) ?></button>
+                    <button type="button" id="btnClearBankFilters" class="btn btn-secondary"><?= htmlspecialchars(_pt('filter.clear', 'Clear')) ?></button>
+                </div>
+            </div>
             <table class="data-table" id="bankAccountsTable">
                 <thead>
                     <tr>
