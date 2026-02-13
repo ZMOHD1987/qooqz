@@ -19,8 +19,15 @@ $data = parse_request_data();
 // Get entity_id from query string or parsed body
 $entityId = (int)($_REQUEST['entity_id'] ?? $data['entity_id'] ?? 0);
 
-if (!$tenantId || !$entityId) {
+$roles = $_SESSION['roles'] ?? [];
+$isSuperAdmin = in_array('super_admin', $roles);
+
+if (!$tenantId && !$isSuperAdmin) {
     ResponseFormatter::error('Unauthorized', 401);
+    exit;
+}
+if (!$entityId && !$isSuperAdmin) {
+    ResponseFormatter::error('entity_id is required', 400);
     exit;
 }
 
