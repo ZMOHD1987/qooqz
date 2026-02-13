@@ -116,10 +116,18 @@ function _pt($key, $fallback = '') {
         </div>
     </div>
 
-    <!-- Super Admin: Entity Filter -->
+    <!-- Super Admin: Tenant → Entity Cascade -->
     <?php if (is_super_admin()): ?>
     <div class="card" id="entityFilterCard">
         <div class="card-body" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="form-group" style="min-width:150px;">
+                <label><?= htmlspecialchars(_pt('tenant_id', 'Tenant ID')) ?></label>
+                <div style="display:flex;gap:5px;">
+                    <input type="number" id="tenantIdInput" class="form-control" placeholder="<?= htmlspecialchars(_pt('enter_tenant_id', 'Enter Tenant ID')) ?>" min="1" style="width:120px;">
+                    <button id="btnVerifyTenant" class="btn btn-secondary" style="white-space:nowrap;"><?= htmlspecialchars(_pt('verify', 'Verify')) ?></button>
+                </div>
+                <small id="tenantNameDisplay" style="display:none;margin-top:4px;"></small>
+            </div>
             <div class="form-group" style="flex:1;min-width:250px;">
                 <label><?= htmlspecialchars(_pt('filter_entity', 'Filter by Entity')) ?></label>
                 <select id="globalEntityFilter" class="form-control">
@@ -129,13 +137,15 @@ function _pt($key, $fallback = '') {
         </div>
     </div>
     <?php elseif (!$entityId): ?>
-    <!-- Normal User: Entity Selector Only -->
+    <!-- Tenant Admin: Entity Selector -->
     <div class="card">
-        <div class="card-body">
-            <select id="entitySelector" class="form-control">
-                <option value="" data-i18n="select_entity"><?= htmlspecialchars(_pt('select_entity', 'Select Entity...')) ?></option>
-            </select>
-            <button id="btnLoadEntityPayments" class="btn btn-primary" disabled data-i18n="load"><?= htmlspecialchars(_pt('load', 'Load')) ?></button>
+        <div class="card-body" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="form-group" style="flex:1;min-width:250px;">
+                <label><?= htmlspecialchars(_pt('filter_entity', 'Filter by Entity')) ?></label>
+                <select id="globalEntityFilter" class="form-control">
+                    <option value=""><?= htmlspecialchars(_pt('select_entity', 'Select Entity...')) ?></option>
+                </select>
+            </div>
         </div>
     </div>
     <?php endif; ?>
