@@ -213,8 +213,46 @@ final class PdoSubscriptionPlansRepository
     // ================================
     public function delete(int $id): bool
     {
-        $stmt = $this->pdo->prepare("DELETE FROM subscription_plans WHERE id = :id");
-        return $stmt->execute([':id' => $id]);
+        $this->pdo->beginTransaction();
+        try {
+            // 1. Delete subscription_payments linked via invoices
+            $stmt = $this->pdo->prepare("
+                DELETE FROM subscription_payments
+                WHERE invoice_id IN (
+                    SELECT si.id FROM subscription_invoices si
+                    INNER JOIN subscriptions s ON si.subscription_id = s.id
+                    WHERE s.plan_id = :plan_id
+                )
+            ");
+            $stmt->execute([':plan_id' => $id]);
+
+            // 2. Delete subscription_invoices linked via subscriptions
+            $stmt = $this->pdo->prepare("
+                DELETE FROM subscription_invoices
+                WHERE subscription_id IN (
+                    SELECT id FROM subscriptions WHERE plan_id = :plan_id
+                )
+            ");
+            $stmt->execute([':plan_id' => $id]);
+
+            // 3. Delete subscriptions for this plan
+            $stmt = $this->pdo->prepare("DELETE FROM subscriptions WHERE plan_id = :plan_id");
+            $stmt->execute([':plan_id' => $id]);
+
+            // 4. Delete plan translations
+            $stmt = $this->pdo->prepare("DELETE FROM subscription_plan_translations WHERE plan_id = :plan_id");
+            $stmt->execute([':plan_id' => $id]);
+
+            // 5. Delete the plan itself
+            $stmt = $this->pdo->prepare("DELETE FROM subscription_plans WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+
+            $this->pdo->commit();
+            return true;
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
     }
 
     // ================================
