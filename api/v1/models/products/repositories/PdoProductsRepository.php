@@ -36,17 +36,22 @@ final class PdoProductsRepository
         string $orderBy = 'id',
         string $orderDir = 'DESC'
     ): array {
-        $sql = "SELECT * FROM products WHERE tenant_id = :tenant_id";
-        $params = [':tenant_id' => $tenantId];
+        $lang = $_GET['lang'] ?? $_SESSION['user']['preferred_language'] ?? 'ar';
+        if (!preg_match('/^[a-z]{2,8}$/i', $lang)) { $lang = 'ar'; }
+        $sql = "SELECT p.*, COALESCE(pt.name, p.sku) AS name
+                FROM products p
+                LEFT JOIN product_translations pt ON pt.product_id = p.id AND pt.language_code = :lang
+                WHERE p.tenant_id = :tenant_id";
+        $params = [':tenant_id' => $tenantId, ':lang' => $lang];
 
         // تطبيق كل الفلاتر بشكل ديناميكي
         foreach (self::FILTERABLE_COLUMNS as $col) {
             if (isset($filters[$col]) && $filters[$col] !== '') {
                 if (in_array($col, ['sku','slug','barcode'])) {
-                    $sql .= " AND {$col} LIKE :{$col}";
+                    $sql .= " AND p.{$col} LIKE :{$col}";
                     $params[":{$col}"] = '%' . $filters[$col] . '%';
                 } else {
-                    $sql .= " AND {$col} = :{$col}";
+                    $sql .= " AND p.{$col} = :{$col}";
                     $params[":{$col}"] = $filters[$col];
                 }
             }
@@ -55,7 +60,7 @@ final class PdoProductsRepository
         // الفرز
         $orderBy = in_array($orderBy, self::ALLOWED_ORDER_BY, true) ? $orderBy : 'id';
         $orderDir = strtoupper($orderDir) === 'ASC' ? 'ASC' : 'DESC';
-        $sql .= " ORDER BY {$orderBy} {$orderDir}";
+        $sql .= " ORDER BY p.{$orderBy} {$orderDir}";
 
         // Pagination
         if ($limit !== null) $sql .= " LIMIT :limit";
@@ -104,10 +109,15 @@ final class PdoProductsRepository
     // ================================
     public function find(int $tenantId, int $id): ?array
     {
+        $lang = $_GET['lang'] ?? $_SESSION['user']['preferred_language'] ?? 'ar';
+        if (!preg_match('/^[a-z]{2,8}$/i', $lang)) { $lang = 'ar'; }
         $stmt = $this->pdo->prepare(
-            "SELECT * FROM products WHERE tenant_id = :tenant_id AND id = :id LIMIT 1"
+            "SELECT p.*, COALESCE(pt.name, p.sku) AS name
+             FROM products p
+             LEFT JOIN product_translations pt ON pt.product_id = p.id AND pt.language_code = :lang
+             WHERE p.tenant_id = :tenant_id AND p.id = :id LIMIT 1"
         );
-        $stmt->execute([':tenant_id'=>$tenantId, ':id'=>$id]);
+        $stmt->execute([':tenant_id'=>$tenantId, ':id'=>$id, ':lang'=>$lang]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
     }

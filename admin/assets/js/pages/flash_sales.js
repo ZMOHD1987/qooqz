@@ -218,14 +218,14 @@ function loadProducts(fid) {
 function loadProductOptions() {
     var sel = document.getElementById('productSelect');
     if (sel.options.length > 1) return;
-    fetch('/api/products?limit=100')
+    fetch('/api/products?limit=200')
         .then(function(r){ return r.json(); })
         .then(function(d){
             var items = d.success ? (d.data && d.data.items ? d.data.items : (Array.isArray(d.data) ? d.data : [])) : [];
             items.forEach(function(p){
                 var opt = document.createElement('option');
                 opt.value = p.id;
-                opt.textContent = p.name || p.id;
+                opt.textContent = p.name || p.sku || p.slug || ('Product #' + p.id);
                 sel.appendChild(opt);
             });
         })
