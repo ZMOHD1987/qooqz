@@ -3,8 +3,17 @@
   "subtitle": "Track product inventory - restock, sales, returns, adjustments",
   "add_movement": "Add Movement",
   "scan_barcode": "Scan Barcode",
-  "scan_placeholder": "Enter barcode number...",
+  "scan_placeholder": "Enter barcode...",
   "scan_btn": "Scan",
+  "lookup": {
+    "title": "Product Lookup",
+    "sku": "Search by SKU",
+    "sku_placeholder": "Enter SKU...",
+    "search": "Search",
+    "camera": "Camera Scanner",
+    "open_camera": "Open Camera",
+    "stop_camera": "Stop Camera"
+  },
   "stats": {
     "total": "Total Movements",
     "restocked": "Restocked",
@@ -32,7 +41,9 @@
     "reference_id": "Reference ID",
     "notes": "Notes",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete"
   },
   "types": {
     "restock": "Restock",
@@ -55,6 +66,9 @@
     "product_found": "Product found",
     "product_not_found": "Product not found",
     "barcode_not_found": "Barcode not found",
+    "sku_not_found": "SKU not found",
+    "camera_not_supported": "Camera not supported on this device",
+    "camera_error": "Cannot access camera",
     "error": "An error occurred"
   },
   "pagination": {

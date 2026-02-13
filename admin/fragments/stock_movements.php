@@ -64,14 +64,38 @@ function _smt(string $key, string $fallback = ''): string {
     </div>
   </div>
 
-  <!-- Barcode Scanner -->
-  <div class="barcode-scanner">
-    <label><?= _smt('scan_barcode', 'Scan Barcode') ?></label>
-    <div class="input-group">
-      <input type="text" class="form-control" id="barcodeInput" placeholder="<?= _smt('scan_placeholder', 'Enter barcode number...') ?>">
-      <button class="btn btn-secondary btn-sm" id="btnScanBarcode"><?= _smt('scan_btn', 'Scan') ?></button>
+  <!-- Product Lookup Section -->
+  <div class="product-lookup-section">
+    <h4><?= _smt('lookup.title', 'Product Lookup') ?></h4>
+    <div class="lookup-methods">
+      <div class="lookup-method">
+        <label><?= _smt('scan_barcode', 'Scan Barcode') ?></label>
+        <div class="input-group">
+          <input type="text" class="form-control" id="barcodeInput" placeholder="<?= _smt('scan_placeholder', 'Enter barcode...') ?>">
+          <button type="button" class="btn btn-secondary btn-sm" id="btnScanBarcode"><?= _smt('scan_btn', 'Scan') ?></button>
+        </div>
+      </div>
+      <div class="lookup-method">
+        <label><?= _smt('lookup.sku', 'Search by SKU') ?></label>
+        <div class="input-group">
+          <input type="text" class="form-control" id="skuInput" placeholder="<?= _smt('lookup.sku_placeholder', 'Enter SKU...') ?>">
+          <button type="button" class="btn btn-secondary btn-sm" id="btnSearchSku"><?= _smt('lookup.search', 'Search') ?></button>
+        </div>
+      </div>
+      <div class="lookup-method">
+        <label><?= _smt('lookup.camera', 'Camera Scanner') ?></label>
+        <button type="button" class="btn btn-info" id="btnCameraScanner">📷 <?= _smt('lookup.open_camera', 'Open Camera') ?></button>
+      </div>
     </div>
     <small id="barcodeResult" style="display:none;margin-top:4px"></small>
+    <!-- Camera Preview -->
+    <div class="camera-container" id="cameraContainer" style="display:none">
+      <video id="cameraVideo" autoplay playsinline></video>
+      <canvas id="cameraCanvas" style="display:none"></canvas>
+      <div class="camera-controls">
+        <button type="button" class="btn btn-danger btn-sm" id="btnStopCamera"><?= _smt('lookup.stop_camera', 'Stop Camera') ?></button>
+      </div>
+    </div>
   </div>
 
   <!-- Stats Cards -->
@@ -137,6 +161,7 @@ function _smt(string $key, string $fallback = ''): string {
       </div>
       <form id="movementForm">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+        <input type="hidden" id="movementId" name="id" value="">
         <div class="form-group">
           <label><?= _smt('form.product_id', 'Product ID') ?> *</label>
           <div class="input-group">

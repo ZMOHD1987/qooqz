@@ -80,7 +80,8 @@ function loadMovements(page) {
                         '<td>' + esc(item.notes || '-') + '</td>' +
                         '<td>' + esc(item.created_at || '-') + '</td>' +
                         '<td class="actions-cell">' +
-                            (CFG.canDelete ? '<button class="btn btn-sm btn-danger btn-delete" data-id="' + item.id + '">' + t('messages.confirm_delete', 'Delete') + '</button>' : '') +
+                            (CFG.canEdit ? '<button class="btn btn-sm btn-info btn-edit" data-id="' + item.id + '">' + t('form.edit', 'Edit') + '</button> ' : '') +
+                            (CFG.canDelete ? '<button class="btn btn-sm btn-danger btn-delete" data-id="' + item.id + '">' + t('form.delete', 'Delete') + '</button>' : '') +
                         '</td>';
                     tbody.appendChild(tr);
                 });
@@ -197,6 +198,8 @@ function lookupProduct() {
 /* ── Save Movement ── */
 function saveMovement(e) {
     e.preventDefault();
+    var editId = document.getElementById('movementId').value;
+    var isEdit = editId && parseInt(editId) > 0;
     var payload = {
         product_id: parseInt(document.getElementById('productIdInput').value) || 0,
         change_quantity: parseInt(document.getElementById('changeQuantity').value) || 0,
@@ -212,8 +215,16 @@ function saveMovement(e) {
     var notes = document.getElementById('movementNotes').value;
     if (notes) payload.notes = notes;
 
-    fetch('/api/product_stock_movements', {
-        method: 'POST',
+    var url = '/api/product_stock_movements';
+    var method = 'POST';
+    if (isEdit) {
+        payload.id = parseInt(editId);
+        url += '?id=' + editId;
+        method = 'PUT';
+    }
+
+    fetch(url, {
+        method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     })
@@ -223,6 +234,7 @@ function saveMovement(e) {
             closeModal('movementModal');
             showNotification(t('messages.saved', 'Movement saved successfully'), 'success');
             document.getElementById('movementForm').reset();
+            document.getElementById('movementId').value = '';
             document.getElementById('productName').textContent = '';
             loadMovements(currentPage);
             loadStats();
@@ -249,6 +261,129 @@ function deleteMovement(id) {
             }
         })
         .catch(function(){ showNotification(t('messages.error', 'Error'), 'error'); });
+}
+
+/* ── Edit Movement ── */
+function editMovement(id) {
+    fetch('/api/product_stock_movements?id=' + id)
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            if (d.success && d.data) {
+                var item = d.data;
+                document.getElementById('movementId').value = item.id;
+                document.getElementById('productIdInput').value = item.product_id || '';
+                document.getElementById('variantIdInput').value = item.variant_id || '';
+                document.getElementById('movementType').value = item.type || 'restock';
+                document.getElementById('changeQuantity').value = item.change_quantity || 0;
+                document.getElementById('referenceId').value = item.reference_id || '';
+                document.getElementById('movementNotes').value = item.notes || '';
+                document.getElementById('modalTitle').textContent = t('form.edit', 'Edit') + ' #' + id;
+                lookupProduct();
+                openModal('movementModal');
+            } else {
+                showNotification(d.message || t('messages.error', 'Error'), 'error');
+            }
+        })
+        .catch(function(){ showNotification(t('messages.error', 'Error'), 'error'); });
+}
+
+/* ── SKU Lookup ── */
+function skuLookup() {
+    var sku = document.getElementById('skuInput').value.trim();
+    if (!sku) return;
+
+    fetch('/api/product_stock_movements?sku=' + encodeURIComponent(sku))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            var resultEl = document.getElementById('barcodeResult');
+            if (d.success && d.data) {
+                resultEl.style.display = 'block';
+                resultEl.style.color = 'var(--success-color, #10b981)';
+                resultEl.textContent = t('messages.product_found', 'Product found') + ': ' + (d.data.product_name || '') + ' (#' + d.data.id + ')';
+                document.getElementById('productIdInput').value = d.data.id;
+                if (d.data.variant_id) {
+                    document.getElementById('variantIdInput').value = d.data.variant_id;
+                }
+                lookupProduct();
+                openModal('movementModal');
+            } else {
+                resultEl.style.display = 'block';
+                resultEl.style.color = 'var(--danger-color, #ef4444)';
+                resultEl.textContent = t('messages.sku_not_found', 'SKU not found');
+            }
+        })
+        .catch(function(){
+            showNotification(t('messages.error', 'An error occurred'), 'error');
+        });
+}
+
+/* ── Camera Scanner ── */
+var cameraStream = null;
+var cameraInterval = null;
+
+function startCameraScanner() {
+    var container = document.getElementById('cameraContainer');
+    var video = document.getElementById('cameraVideo');
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showNotification(t('messages.camera_not_supported', 'Camera not supported on this device'), 'error');
+        return;
+    }
+
+    container.style.display = 'block';
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(function(stream) {
+            cameraStream = stream;
+            video.srcObject = stream;
+
+            // Create BarcodeDetector once if available
+            var detector = null;
+            if (window.BarcodeDetector) {
+                detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'qr_code', 'upc_a', 'upc_e'] });
+            }
+
+            // Poll frames for barcode detection
+            var SCAN_INTERVAL_MS = 800;
+            cameraInterval = setInterval(function() {
+                var canvas = document.getElementById('cameraCanvas');
+                var ctx = canvas.getContext('2d');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0);
+
+                if (detector) {
+                    detector.detect(canvas)
+                        .then(function(barcodes) {
+                            if (barcodes.length > 0) {
+                                var code = barcodes[0].rawValue;
+                                stopCameraScanner();
+                                document.getElementById('barcodeInput').value = code;
+                                scanBarcode();
+                            }
+                        })
+                        .catch(function() { /* ignore detection errors */ });
+                }
+            }, SCAN_INTERVAL_MS);
+        })
+        .catch(function(err) {
+            showNotification(t('messages.camera_error', 'Cannot access camera: ') + err.message, 'error');
+            container.style.display = 'none';
+        });
+}
+
+function stopCameraScanner() {
+    if (cameraInterval) {
+        clearInterval(cameraInterval);
+        cameraInterval = null;
+    }
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(function(track) { track.stop(); });
+        cameraStream = null;
+    }
+    var video = document.getElementById('cameraVideo');
+    if (video) video.srcObject = null;
+    document.getElementById('cameraContainer').style.display = 'none';
 }
 
 /* ── Clear Filters ── */
@@ -284,6 +419,7 @@ function init() {
     // Add movement modal
     document.getElementById('btnAddMovement').addEventListener('click', function(){
         document.getElementById('movementForm').reset();
+        document.getElementById('movementId').value = '';
         document.getElementById('productName').textContent = '';
         document.getElementById('modalTitle').textContent = t('add_movement', 'Add Movement');
         openModal('movementModal');
@@ -307,9 +443,25 @@ function init() {
 
     // Delete delegation
     document.getElementById('movementsBody').addEventListener('click', function(e){
-        var btn = e.target.closest('.btn-delete');
-        if (btn) deleteMovement(parseInt(btn.getAttribute('data-id')));
+        var btnDel = e.target.closest('.btn-delete');
+        if (btnDel) deleteMovement(parseInt(btnDel.getAttribute('data-id')));
+        var btnEdit = e.target.closest('.btn-edit');
+        if (btnEdit) editMovement(parseInt(btnEdit.getAttribute('data-id')));
     });
+
+    // SKU lookup
+    var skuBtn = document.getElementById('btnSearchSku');
+    if (skuBtn) skuBtn.addEventListener('click', skuLookup);
+    var skuInput = document.getElementById('skuInput');
+    if (skuInput) skuInput.addEventListener('keypress', function(e){
+        if (e.key === 'Enter') { e.preventDefault(); skuLookup(); }
+    });
+
+    // Camera scanner
+    var camBtn = document.getElementById('btnCameraScanner');
+    if (camBtn) camBtn.addEventListener('click', startCameraScanner);
+    var stopBtn = document.getElementById('btnStopCamera');
+    if (stopBtn) stopBtn.addEventListener('click', stopCameraScanner);
 
     // Search on Enter
     document.getElementById('searchInput').addEventListener('keypress', function(e){

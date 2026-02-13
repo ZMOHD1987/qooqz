@@ -66,6 +66,42 @@ try {
                 break;
             }
 
+            if (isset($_GET['sku']) && $_GET['sku'] !== '') {
+                $sku = trim($_GET['sku']);
+                $lang = $_GET['lang'] ?? ($_SESSION['user']['preferred_language'] ?? 'ar');
+                // Search products.sku
+                $stmt = $pdo->prepare("
+                    SELECT p.id, p.sku, p.barcode, p.stock_quantity, p.stock_status,
+                           pt.name AS product_name, NULL AS variant_id
+                    FROM products p
+                    LEFT JOIN product_translations pt ON pt.product_id = p.id AND pt.language_code = :lang
+                    WHERE p.sku = :sku
+                    LIMIT 1
+                ");
+                $stmt->execute([':sku' => $sku, ':lang' => $lang]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                if (!$row) {
+                    // Search product_variants.sku
+                    $stmt2 = $pdo->prepare("
+                        SELECT p.id, pv.sku, pv.barcode, pv.stock_quantity, 'variant' AS stock_status,
+                               pt.name AS product_name, pv.id AS variant_id
+                        FROM product_variants pv
+                        JOIN products p ON p.id = pv.product_id
+                        LEFT JOIN product_translations pt ON pt.product_id = p.id AND pt.language_code = :lang
+                        WHERE pv.sku = :sku
+                        LIMIT 1
+                    ");
+                    $stmt2->execute([':sku' => $sku, ':lang' => $lang]);
+                    $row = $stmt2->fetch(PDO::FETCH_ASSOC);
+                }
+                if (!$row) {
+                    ResponseFormatter::error('SKU not found', 404);
+                    break;
+                }
+                ResponseFormatter::success($row);
+                break;
+            }
+
             if (isset($_GET['id']) && (int)$_GET['id'] > 0) {
                 $stmt = $pdo->prepare("
                     SELECT sm.*, pt.name AS product_name
@@ -159,6 +195,59 @@ try {
             $repo = new PdoStockMovementsRepository($pdo);
             $id = $repo->create($data);
             ResponseFormatter::success(['id' => $id], 'Stock movement created', 201);
+            break;
+
+        case 'PUT':
+            $data = json_decode(file_get_contents('php://input'), true) ?: [];
+            $id = (int)($_GET['id'] ?? ($data['id'] ?? 0));
+            if ($id <= 0) { ResponseFormatter::error('ID is required', 400); break; }
+
+            $validation = StockMovementsValidator::validateCreate($data);
+            if (!$validation['valid']) {
+                ResponseFormatter::error('Validation failed: ' . implode(', ', $validation['errors']), 422);
+                break;
+            }
+
+            // Get old record to reverse stock
+            $repo = new PdoStockMovementsRepository($pdo);
+            $old = $repo->find($id);
+            if (!$old) { ResponseFormatter::error('Movement not found', 404); break; }
+
+            // Reverse old stock change
+            $reverseQty = -1 * (int)$old['change_quantity'];
+            if ($old['variant_id']) {
+                $pdo->prepare("UPDATE product_variants SET stock_quantity = stock_quantity + :qty WHERE id = :vid")
+                    ->execute([':qty' => $reverseQty, ':vid' => $old['variant_id']]);
+            }
+            $pdo->prepare("UPDATE products SET stock_quantity = stock_quantity + :qty WHERE id = :pid")
+                ->execute([':qty' => $reverseQty, ':pid' => $old['product_id']]);
+
+            // Update movement record
+            $pdo->prepare("
+                UPDATE product_stock_movements
+                SET product_id = :product_id, variant_id = :variant_id, change_quantity = :qty,
+                    type = :type, reference_id = :ref_id, notes = :notes
+                WHERE id = :id
+            ")->execute([
+                ':product_id' => (int)$data['product_id'],
+                ':variant_id' => isset($data['variant_id']) ? (int)$data['variant_id'] : null,
+                ':qty' => (int)$data['change_quantity'],
+                ':type' => $data['type'],
+                ':ref_id' => isset($data['reference_id']) ? (int)$data['reference_id'] : null,
+                ':notes' => $data['notes'] ?? null,
+                ':id' => $id
+            ]);
+
+            // Apply new stock change
+            $newQty = (int)$data['change_quantity'];
+            if (isset($data['variant_id']) && $data['variant_id']) {
+                $pdo->prepare("UPDATE product_variants SET stock_quantity = stock_quantity + :qty WHERE id = :vid")
+                    ->execute([':qty' => $newQty, ':vid' => (int)$data['variant_id']]);
+            }
+            $pdo->prepare("UPDATE products SET stock_quantity = stock_quantity + :qty WHERE id = :pid")
+                ->execute([':qty' => $newQty, ':pid' => (int)$data['product_id']]);
+
+            ResponseFormatter::success(['id' => $id], 'Stock movement updated');
             break;
 
         case 'DELETE':
