@@ -282,22 +282,32 @@ final class PdoCommissionInvoicesRepository
     {
         $datePrefix = 'CINV-' . date('Ymd') . '-';
 
-        $stmt = $this->pdo->prepare("
-            SELECT invoice_number FROM commission_invoices
-            WHERE invoice_number LIKE :prefix
-            ORDER BY invoice_number DESC
-            LIMIT 1
-        ");
-        $stmt->execute([':prefix' => $datePrefix . '%']);
-        $last = $stmt->fetchColumn();
+        $this->pdo->beginTransaction();
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT invoice_number FROM commission_invoices
+                WHERE invoice_number LIKE :prefix
+                ORDER BY invoice_number DESC
+                LIMIT 1
+                FOR UPDATE
+            ");
+            $stmt->execute([':prefix' => $datePrefix . '%']);
+            $last = $stmt->fetchColumn();
 
-        if ($last) {
-            $lastSeq = (int)substr($last, -5);
-            $nextSeq = $lastSeq + 1;
-        } else {
-            $nextSeq = 1;
+            if ($last) {
+                $lastSeq = (int)substr($last, -5);
+                $nextSeq = $lastSeq + 1;
+            } else {
+                $nextSeq = 1;
+            }
+
+            $number = $datePrefix . str_pad((string)$nextSeq, 5, '0', STR_PAD_LEFT);
+            $this->pdo->commit();
+
+            return $number;
+        } catch (Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
         }
-
-        return $datePrefix . str_pad((string)$nextSeq, 5, '0', STR_PAD_LEFT);
     }
 }

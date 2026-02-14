@@ -35,8 +35,8 @@ final class CommissionInvoicesValidator
             $errors[] = 'period_end is required';
         }
 
-        if (!isset($data['grand_total']) || !is_numeric($data['grand_total'])) {
-            $errors[] = 'grand_total is required and must be numeric';
+        if (!isset($data['grand_total']) || !is_numeric($data['grand_total']) || (float)$data['grand_total'] < 0) {
+            $errors[] = 'grand_total is required and must be >= 0';
         }
 
         if (isset($data['status']) && !in_array($data['status'], self::ALLOWED_STATUSES, true)) {
