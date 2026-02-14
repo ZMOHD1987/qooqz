@@ -223,7 +223,7 @@ final class PdoSubscriptionsRepository
     // ================================
     // Upgrade subscription (cancel old + create new)
     // ================================
-    public function upgrade(int $tenantId, int $newPlanId, array $planData): int
+    public function upgrade(int $tenantId, int $newPlanId, array $planData): array
     {
         // Cancel existing active subscription
         $existing = $this->hasActiveSubscription($tenantId);
@@ -285,11 +285,12 @@ final class PdoSubscriptionsRepository
                 ':end' => $endDate,
                 ':due' => $startDate
             ]);
+            $invoiceId = (int)$this->pdo->lastInsertId();
         } catch (\Throwable $e) {
             // Silent
         }
 
-        return $newId;
+        return ['id' => $newId, 'invoice_id' => $invoiceId ?? 0];
     }
 
     // ================================

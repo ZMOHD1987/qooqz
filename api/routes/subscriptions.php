@@ -94,9 +94,9 @@ try {
                 $planStmt->execute([':id' => $planId]);
                 $plan = $planStmt->fetch(PDO::FETCH_ASSOC);
                 if (!$plan) { ResponseFormatter::error('Plan not found or inactive', 404); break; }
-                $newId = $repo->upgrade($tid, $planId, $plan);
-                AuditLogger::log('subscription_upgraded', 'subscription', $newId);
-                ResponseFormatter::success(['id' => $newId], 'Subscription upgraded', 200);
+                $result = $repo->upgrade($tid, $planId, $plan);
+                AuditLogger::log('subscription_upgraded', 'subscription', $result['id']);
+                ResponseFormatter::success(['id' => $result['id'], 'invoice_id' => $result['invoice_id'] ?? 0], 'Subscription upgraded', 200);
                 break;
             }
 
