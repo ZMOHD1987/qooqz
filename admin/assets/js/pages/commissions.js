@@ -645,7 +645,7 @@ function deleteCreditNote(id) {
 function loadBalances(page) {
     pages.balances = page || 1;
     var offset = (pages.balances - 1) * PER_PAGE;
-    var url = CFG.apiBase + '/commission_balances?limit=' + PER_PAGE + '&offset=' + offset;
+    var url = CFG.apiBase + '/entity_financial_balances?limit=' + PER_PAGE + '&offset=' + offset;
 
     fetch(url)
         .then(function(r){ return r.json(); })
