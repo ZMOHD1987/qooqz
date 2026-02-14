@@ -212,15 +212,17 @@ function saveTransaction(e) {
     e.preventDefault();
     var id = document.getElementById('txnId').value;
     var payload = {
+        tenant_id: CFG.tenantId || 1,
         entity_id: parseInt(document.getElementById('txnEntityId').value) || 0,
         order_id: document.getElementById('txnOrderId').value ? parseInt(document.getElementById('txnOrderId').value) : null,
+        order_date: document.getElementById('txnOrderDate').value || new Date().toISOString().slice(0, 19).replace('T', ' '),
         transaction_type: document.getElementById('txnType').value,
-        base_amount: parseFloat(document.getElementById('txnBaseAmount').value) || 0,
-        commission_rate: parseFloat(document.getElementById('txnCommissionRate').value) || 0,
+        order_amount: parseFloat(document.getElementById('txnOrderAmount').value) || 0,
         commission_amount: parseFloat(document.getElementById('txnCommissionAmount').value) || 0,
+        vat_amount: parseFloat(document.getElementById('txnVatAmount').value) || 0,
+        net_commission: parseFloat(document.getElementById('txnNetCommission').value) || 0,
         currency_code: document.getElementById('txnCurrency').value || 'SAR',
-        status: document.getElementById('txnStatus').value,
-        description: document.getElementById('txnDescription').value || null
+        status: document.getElementById('txnStatus').value
     };
     if (id) payload.id = parseInt(id);
 
@@ -251,13 +253,14 @@ function editTransaction(id) {
                 document.getElementById('txnId').value = item.id;
                 document.getElementById('txnEntityId').value = item.entity_id || '';
                 document.getElementById('txnOrderId').value = item.order_id || '';
-                document.getElementById('txnType').value = item.transaction_type || 'order_commission';
-                document.getElementById('txnBaseAmount').value = item.base_amount || 0;
-                document.getElementById('txnCommissionRate').value = item.commission_rate || 0;
+                document.getElementById('txnOrderDate').value = item.order_date ? item.order_date.replace(' ', 'T').slice(0, 16) : '';
+                document.getElementById('txnType').value = item.transaction_type || 'sale';
+                document.getElementById('txnOrderAmount').value = item.order_amount || 0;
                 document.getElementById('txnCommissionAmount').value = item.commission_amount || 0;
+                document.getElementById('txnVatAmount').value = item.vat_amount || 0;
+                document.getElementById('txnNetCommission').value = item.net_commission || 0;
                 document.getElementById('txnCurrency').value = item.currency_code || 'SAR';
                 document.getElementById('txnStatus').value = item.status || 'pending';
-                document.getElementById('txnDescription').value = item.description || '';
                 document.getElementById('txnModalTitle').textContent = t('modal.edit_transaction', 'Edit Commission Transaction');
                 openModal('txnModal');
             }

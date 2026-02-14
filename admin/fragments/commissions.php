@@ -337,13 +337,16 @@ function _dt(string $key, string $fallback = ''): string {
           <div class="form-group">
             <label><?= _dt('form.transaction_type', 'Transaction Type') ?> *</label>
             <select class="form-control" id="txnType" name="transaction_type" required>
-              <option value="order_commission"><?= _dt('type.order_commission', 'Order Commission') ?></option>
-              <option value="subscription_commission"><?= _dt('type.subscription_commission', 'Subscription Commission') ?></option>
-              <option value="delivery_commission"><?= _dt('type.delivery_commission', 'Delivery Commission') ?></option>
-              <option value="refund_commission"><?= _dt('type.refund_commission', 'Refund Commission') ?></option>
-              <option value="adjustment"><?= _dt('type.adjustment', 'Adjustment') ?></option>
+              <option value="sale"><?= _dt('type.sale', 'Sale') ?></option>
+              <option value="refund"><?= _dt('type.refund', 'Refund') ?></option>
             </select>
           </div>
+          <div class="form-group">
+            <label><?= _dt('form.order_date', 'Order Date') ?> *</label>
+            <input type="datetime-local" class="form-control" id="txnOrderDate" name="order_date" required>
+          </div>
+        </div>
+        <div class="form-row">
           <div class="form-group">
             <label><?= _dt('form.status', 'Status') ?></label>
             <select class="form-control" id="txnStatus" name="status">
@@ -353,30 +356,30 @@ function _dt(string $key, string $fallback = ''): string {
               <option value="cancelled"><?= _dt('status.cancelled', 'Cancelled') ?></option>
             </select>
           </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label><?= _dt('form.base_amount', 'Base Amount') ?> *</label>
-            <input type="number" class="form-control" id="txnBaseAmount" name="base_amount" step="0.01" min="0" required>
-          </div>
-          <div class="form-group">
-            <label><?= _dt('form.commission_rate', 'Commission Rate (%)') ?> *</label>
-            <input type="number" class="form-control" id="txnCommissionRate" name="commission_rate" step="0.01" min="0" max="100" required>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label><?= _dt('form.commission_amount', 'Commission Amount') ?></label>
-            <input type="number" class="form-control" id="txnCommissionAmount" name="commission_amount" step="0.01" min="0">
-          </div>
           <div class="form-group">
             <label><?= _dt('form.currency_code', 'Currency') ?></label>
             <input type="text" class="form-control" id="txnCurrency" name="currency_code" value="SAR" maxlength="3">
           </div>
         </div>
-        <div class="form-group">
-          <label><?= _dt('form.description', 'Description') ?></label>
-          <textarea class="form-control" id="txnDescription" name="description" rows="3"></textarea>
+        <div class="form-row">
+          <div class="form-group">
+            <label><?= _dt('form.order_amount', 'Order Amount') ?> *</label>
+            <input type="number" class="form-control" id="txnOrderAmount" name="order_amount" step="0.01" min="0" required>
+          </div>
+          <div class="form-group">
+            <label><?= _dt('form.commission_amount', 'Commission Amount') ?> *</label>
+            <input type="number" class="form-control" id="txnCommissionAmount" name="commission_amount" step="0.01" min="0" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label><?= _dt('form.vat_amount', 'VAT Amount') ?></label>
+            <input type="number" class="form-control" id="txnVatAmount" name="vat_amount" step="0.01" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label><?= _dt('form.net_commission', 'Net Commission') ?> *</label>
+            <input type="number" class="form-control" id="txnNetCommission" name="net_commission" step="0.01" min="0" required>
+          </div>
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn-secondary" id="btnCancelTxnModal"><?= _dt('cancel', 'Cancel') ?></button>

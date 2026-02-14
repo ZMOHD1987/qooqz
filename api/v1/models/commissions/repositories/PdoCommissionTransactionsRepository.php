@@ -213,8 +213,20 @@ final class PdoCommissionTransactionsRepository
     // ================================
     public function delete(int $id): bool
     {
-        $stmt = $this->pdo->prepare("DELETE FROM commission_transactions WHERE id = :id");
-        return $stmt->execute([':id' => $id]);
+        $this->pdo->beginTransaction();
+        try {
+            $stmt = $this->pdo->prepare("DELETE FROM commission_credit_notes WHERE related_transaction_id = :id");
+            $stmt->execute([':id' => $id]);
+            $stmt = $this->pdo->prepare("DELETE FROM commission_invoice_items WHERE transaction_id = :id");
+            $stmt->execute([':id' => $id]);
+            $stmt = $this->pdo->prepare("DELETE FROM commission_transactions WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+            $this->pdo->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
     }
 
     // ================================
