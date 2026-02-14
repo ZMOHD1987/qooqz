@@ -156,7 +156,7 @@ final class PdoSubscriptionsRepository
     // ================================
     // Create (with duplicate check)
     // ================================
-    public function create(array $data): int
+    public function create(array $data): array
     {
         $tenantId = (int)$data['tenant_id'];
 
@@ -195,6 +195,7 @@ final class PdoSubscriptionsRepository
         ]);
 
         $id = (int)$this->pdo->lastInsertId();
+        $invoiceId = 0;
 
         // Auto-generate invoice
         try {
@@ -211,11 +212,12 @@ final class PdoSubscriptionsRepository
                 ':end' => $data['end_date'] ?? $data['start_date'] ?? date('Y-m-d'),
                 ':due' => $data['start_date'] ?? date('Y-m-d')
             ]);
+            $invoiceId = (int)$this->pdo->lastInsertId();
         } catch (\Throwable $e) {
             // Invoice creation failure shouldn't break subscription creation
         }
 
-        return $id;
+        return ['id' => $id, 'invoice_id' => $invoiceId];
     }
 
     // ================================

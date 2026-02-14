@@ -77,9 +77,9 @@ try {
             $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
             $errors = SubscriptionsValidator::validateCreate($data);
             if ($errors) { ResponseFormatter::error(implode(', ', $errors), 422); break; }
-            $id = $controller->create($data);
-            AuditLogger::log('subscription_created', 'subscription', $id);
-            ResponseFormatter::success(['id' => $id], 'Subscription created', 201);
+            $result = $controller->create($data);
+            AuditLogger::log('subscription_created', 'subscription', $result['id']);
+            ResponseFormatter::success(['id' => $result['id'], 'invoice_id' => $result['invoice_id'] ?? 0], 'Subscription created', 201);
             break;
 
         case 'PUT':
