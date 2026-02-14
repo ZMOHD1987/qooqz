@@ -82,6 +82,9 @@ try {
 
         case 'POST':
             $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+            if (empty($data['tenant_id'])) {
+                $data['tenant_id'] = $_SESSION['tenant_id'] ?? 1;
+            }
             $errors = CommissionInvoicesValidator::validateCreate($data);
             if ($errors) { ResponseFormatter::error(implode(', ', $errors), 422); break; }
             $id = $controller->create($data);
@@ -101,7 +104,18 @@ try {
         case 'DELETE':
             $id = (int)($_GET['id'] ?? 0);
             if ($id <= 0) { ResponseFormatter::error('ID is required', 400); break; }
-            $controller->delete($id);
+            // Cascade delete: remove related payments, credit notes, and invoice items first
+            try {
+                $pdo->beginTransaction();
+                $pdo->prepare('DELETE FROM commission_payments WHERE commission_invoice_id = :id')->execute(['id' => $id]);
+                $pdo->prepare('DELETE FROM commission_credit_notes WHERE invoice_id = :id')->execute(['id' => $id]);
+                $pdo->prepare('DELETE FROM commission_invoice_items WHERE invoice_id = :id')->execute(['id' => $id]);
+                $controller->delete($id);
+                $pdo->commit();
+            } catch (Throwable $e) {
+                if ($pdo->inTransaction()) $pdo->rollBack();
+                throw $e;
+            }
             ResponseFormatter::success(null, 'Commission invoice deleted');
             break;
 

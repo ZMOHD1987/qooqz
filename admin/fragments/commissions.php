@@ -169,8 +169,9 @@ function _dt(string $key, string $fallback = ''): string {
       </select>
       <select class="form-control" id="cinvFilterType">
         <option value=""><?= _dt('filter.all_types', 'All Types') ?></option>
-        <option value="platform_to_entity"><?= _dt('type.platform_to_entity', 'Platform to Entity') ?></option>
-        <option value="entity_to_platform"><?= _dt('type.entity_to_platform', 'Entity to Platform') ?></option>
+        <option value="monthly"><?= _dt('type.monthly', 'Monthly') ?></option>
+        <option value="quarterly"><?= _dt('type.quarterly', 'Quarterly') ?></option>
+        <option value="custom"><?= _dt('type.custom', 'Custom') ?></option>
       </select>
       <button class="btn btn-secondary" id="btnCinvFilter"><?= _dt('filter.apply', 'Filter') ?></button>
       <button class="btn btn-secondary" id="btnCinvClear"><?= _dt('filter.clear', 'Clear') ?></button>
@@ -266,8 +267,8 @@ function _dt(string $key, string $fallback = ''): string {
               <th><?= _dt('table.id', 'ID') ?></th>
               <th><?= _dt('table.credit_note_number', 'Credit Note #') ?></th>
               <th><?= _dt('table.invoice_id', 'Invoice') ?></th>
-              <th><?= _dt('table.entity_id', 'Entity') ?></th>
-              <th><?= _dt('table.amount', 'Amount') ?></th>
+              <th><?= _dt('table.transaction_id', 'Transaction') ?></th>
+              <th><?= _dt('table.credit_amount', 'Credit Amount') ?></th>
               <th><?= _dt('table.reason', 'Reason') ?></th>
               <th><?= _dt('table.status', 'Status') ?></th>
               <th><?= _dt('table.created_at', 'Created') ?></th>
@@ -411,8 +412,9 @@ function _dt(string $key, string $fallback = ''): string {
           <div class="form-group">
             <label><?= _dt('form.invoice_type', 'Invoice Type') ?> *</label>
             <select class="form-control" id="cinvInvoiceType" name="invoice_type" required>
-              <option value="platform_to_entity"><?= _dt('type.platform_to_entity', 'Platform to Entity') ?></option>
-              <option value="entity_to_platform"><?= _dt('type.entity_to_platform', 'Entity to Platform') ?></option>
+              <option value="monthly"><?= _dt('type.monthly', 'Monthly') ?></option>
+              <option value="quarterly"><?= _dt('type.quarterly', 'Quarterly') ?></option>
+              <option value="custom"><?= _dt('type.custom', 'Custom') ?></option>
             </select>
           </div>
           <div class="form-group">
@@ -534,22 +536,32 @@ function _dt(string $key, string $fallback = ''): string {
         <input type="hidden" id="cnId" value="">
         <div class="form-row">
           <div class="form-group">
-            <label><?= _dt('form.entity_id', 'Entity ID') ?> *</label>
-            <input type="number" class="form-control" id="cnEntityId" name="entity_id" required min="1">
+            <label><?= _dt('form.invoice_id', 'Invoice ID') ?> *</label>
+            <input type="number" class="form-control" id="cnInvoiceId" name="invoice_id" required min="1">
           </div>
           <div class="form-group">
-            <label><?= _dt('form.original_invoice_id', 'Original Invoice ID') ?></label>
-            <input type="number" class="form-control" id="cnInvoiceId" name="commission_invoice_id" min="0">
+            <label><?= _dt('form.transaction_id', 'Transaction ID') ?> *</label>
+            <input type="number" class="form-control" id="cnTransactionId" name="related_transaction_id" required min="1">
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label><?= _dt('form.amount', 'Amount') ?> *</label>
-            <input type="number" class="form-control" id="cnAmount" name="amount" step="0.01" min="0" required>
+            <label><?= _dt('form.credit_amount', 'Credit Amount') ?> *</label>
+            <input type="number" class="form-control" id="cnAmount" name="credit_amount" step="0.01" min="0" required>
           </div>
           <div class="form-group">
-            <label><?= _dt('form.currency_code', 'Currency') ?></label>
-            <input type="text" class="form-control" id="cnCurrency" name="currency_code" value="SAR" maxlength="3">
+            <label><?= _dt('form.credit_commission', 'Credit Commission') ?> *</label>
+            <input type="number" class="form-control" id="cnCreditCommission" name="credit_commission" step="0.01" min="0" required value="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label><?= _dt('form.credit_vat', 'Credit VAT') ?> *</label>
+            <input type="number" class="form-control" id="cnCreditVat" name="credit_vat" step="0.01" min="0" required value="0">
+          </div>
+          <div class="form-group">
+            <label><?= _dt('form.net_credit', 'Net Credit') ?> *</label>
+            <input type="number" class="form-control" id="cnNetCredit" name="net_credit" step="0.01" min="0" required value="0">
           </div>
         </div>
         <div class="form-group">
@@ -557,7 +569,7 @@ function _dt(string $key, string $fallback = ''): string {
           <select class="form-control" id="cnStatus" name="status">
             <option value="draft"><?= _dt('status.draft', 'Draft') ?></option>
             <option value="issued"><?= _dt('status.issued', 'Issued') ?></option>
-            <option value="void"><?= _dt('status.void', 'Void') ?></option>
+            <option value="cancelled"><?= _dt('status.cancelled', 'Cancelled') ?></option>
           </select>
         </div>
         <div class="form-group">

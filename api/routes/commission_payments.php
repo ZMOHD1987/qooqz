@@ -82,6 +82,9 @@ try {
 
         case 'POST':
             $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+            if (empty($data['tenant_id'])) {
+                $data['tenant_id'] = $_SESSION['tenant_id'] ?? 1;
+            }
             $errors = CommissionPaymentsValidator::validateCreate($data);
             if ($errors) { ResponseFormatter::error(implode(', ', $errors), 422); break; }
             $id = $controller->create($data);

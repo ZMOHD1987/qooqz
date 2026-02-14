@@ -317,8 +317,8 @@ function loadInvoices(page) {
                         '<td><strong>' + esc(item.invoice_number || '') + '</strong></td>' +
                         '<td>' + esc(String(item.entity_id || '')) + '</td>' +
                         '<td>' + esc(item.invoice_type || '') + '</td>' +
-                        '<td>' + formatCurrency(item.total_amount, item.currency_code) + '</td>' +
-                        '<td>' + formatCurrency(item.tax_amount, item.currency_code) + '</td>' +
+                        '<td>' + formatCurrency(item.grand_total || item.total_amount, item.currency_code) + '</td>' +
+                        '<td>' + formatCurrency(item.total_vat || item.tax_amount, item.currency_code) + '</td>' +
                         '<td>' + statusBadge(item.status) + '</td>' +
                         '<td>' + formatDate(item.due_date) + '</td>' +
                         '<td>' + formatDate(item.paid_at) + '</td>' +
@@ -340,12 +340,16 @@ function loadInvoices(page) {
 function saveInvoice(e) {
     e.preventDefault();
     var id = document.getElementById('cinvId').value;
+    var totalAmount = parseFloat(document.getElementById('cinvTotalAmount').value) || 0;
+    var taxAmount = parseFloat(document.getElementById('cinvTaxAmount').value) || 0;
     var payload = {
+        tenant_id: parseInt(CFG.tenantId) || 1,
         entity_id: parseInt(document.getElementById('cinvEntityId').value) || 0,
         invoice_number: document.getElementById('cinvInvoiceNumber').value || null,
         invoice_type: document.getElementById('cinvInvoiceType').value,
-        total_amount: parseFloat(document.getElementById('cinvTotalAmount').value) || 0,
-        tax_amount: parseFloat(document.getElementById('cinvTaxAmount').value) || 0,
+        total_commission: totalAmount,
+        total_vat: taxAmount,
+        grand_total: totalAmount + taxAmount,
         currency_code: document.getElementById('cinvCurrency').value || 'SAR',
         due_date: document.getElementById('cinvDueDate').value || null,
         period_start: document.getElementById('cinvPeriodStart').value || null,
@@ -382,9 +386,9 @@ function editInvoice(id) {
                 document.getElementById('cinvId').value = item.id;
                 document.getElementById('cinvEntityId').value = item.entity_id || '';
                 document.getElementById('cinvInvoiceNumber').value = item.invoice_number || '';
-                document.getElementById('cinvInvoiceType').value = item.invoice_type || 'platform_to_entity';
-                document.getElementById('cinvTotalAmount').value = item.total_amount || 0;
-                document.getElementById('cinvTaxAmount').value = item.tax_amount || 0;
+                document.getElementById('cinvInvoiceType').value = item.invoice_type || 'monthly';
+                document.getElementById('cinvTotalAmount').value = item.grand_total || item.total_amount || 0;
+                document.getElementById('cinvTaxAmount').value = item.total_vat || item.tax_amount || 0;
                 document.getElementById('cinvCurrency').value = item.currency_code || 'SAR';
                 document.getElementById('cinvDueDate').value = (item.due_date || '').substring(0, 10);
                 document.getElementById('cinvPeriodStart').value = (item.period_start || '').substring(0, 10);
@@ -446,10 +450,10 @@ function loadPayments(page) {
                         '<td>' + esc(String(item.id)) + '</td>' +
                         '<td>' + esc(String(item.commission_invoice_id || '-')) + '</td>' +
                         '<td>' + esc(String(item.entity_id || '')) + '</td>' +
-                        '<td>' + formatCurrency(item.amount, item.currency_code) + '</td>' +
+                        '<td>' + formatCurrency(item.amount_paid, item.currency_code) + '</td>' +
                         '<td>' + esc(item.payment_method || '-') + '</td>' +
-                        '<td>' + esc(item.payment_reference || '-') + '</td>' +
-                        '<td>' + formatDate(item.payment_date) + '</td>' +
+                        '<td>' + esc(item.payment_number || '-') + '</td>' +
+                        '<td>' + formatDate(item.paid_at) + '</td>' +
                         '<td>' + cancelledBadge + '</td>' +
                         '<td class="actions-cell">' +
                             '<button class="btn btn-sm btn-primary btn-pay-edit" data-id="' + item.id + '">' + t('edit', 'Edit') + '</button> ' +
@@ -469,15 +473,16 @@ function loadPayments(page) {
 function recordPayment(e) {
     e.preventDefault();
     var id = document.getElementById('payId').value;
+    var payDate = document.getElementById('payDate').value;
     var payload = {
+        tenant_id: parseInt(CFG.tenantId) || 1,
         entity_id: parseInt(document.getElementById('payEntityId').value) || 0,
         commission_invoice_id: parseInt(document.getElementById('payInvoiceId').value) || 0,
-        amount: parseFloat(document.getElementById('payAmount').value) || 0,
+        amount_paid: parseFloat(document.getElementById('payAmount').value) || 0,
         currency_code: document.getElementById('payCurrency').value || 'SAR',
         payment_method: document.getElementById('payMethod').value || null,
-        payment_reference: document.getElementById('payReference').value || null,
-        payment_date: document.getElementById('payDate').value || null,
-        notes: document.getElementById('payNotes').value || null
+        payment_number: document.getElementById('payReference').value || ('CPAY-' + Date.now().toString(36).toUpperCase()),
+        paid_at: payDate ? payDate + ' 00:00:00' : new Date().toISOString().substring(0, 19).replace('T', ' ')
     };
     if (id) payload.id = parseInt(id);
 
@@ -507,12 +512,11 @@ function editPayment(id) {
                 document.getElementById('payId').value = item.id;
                 document.getElementById('payEntityId').value = item.entity_id || '';
                 document.getElementById('payInvoiceId').value = item.commission_invoice_id || '';
-                document.getElementById('payAmount').value = item.amount || 0;
+                document.getElementById('payAmount').value = item.amount_paid || item.amount || 0;
                 document.getElementById('payCurrency').value = item.currency_code || 'SAR';
                 document.getElementById('payMethod').value = item.payment_method || '';
-                document.getElementById('payReference').value = item.payment_reference || '';
-                document.getElementById('payDate').value = (item.payment_date || '').substring(0, 10);
-                document.getElementById('payNotes').value = item.notes || '';
+                document.getElementById('payReference').value = item.payment_number || '';
+                document.getElementById('payDate').value = (item.paid_at || '').substring(0, 10);
                 document.getElementById('payModalTitle').textContent = t('modal.edit_payment', 'Edit Payment');
                 openModal('payModal');
             }
@@ -555,9 +559,9 @@ function loadCreditNotes(page) {
                     tr.innerHTML =
                         '<td>' + esc(String(item.id)) + '</td>' +
                         '<td><strong>' + esc(item.credit_note_number || '') + '</strong></td>' +
-                        '<td>' + esc(String(item.commission_invoice_id || '-')) + '</td>' +
-                        '<td>' + esc(String(item.entity_id || '')) + '</td>' +
-                        '<td>' + formatCurrency(item.amount, item.currency_code) + '</td>' +
+                        '<td>' + esc(String(item.invoice_id || '-')) + '</td>' +
+                        '<td>' + esc(String(item.related_transaction_id || '')) + '</td>' +
+                        '<td>' + formatCurrency(item.credit_amount, item.currency_code) + '</td>' +
                         '<td>' + esc((item.reason || '').substring(0, 50)) + '</td>' +
                         '<td>' + statusBadge(item.status) + '</td>' +
                         '<td>' + formatDate(item.created_at) + '</td>' +
@@ -579,11 +583,15 @@ function loadCreditNotes(page) {
 function saveCreditNote(e) {
     e.preventDefault();
     var id = document.getElementById('cnId').value;
+    var creditAmount = parseFloat(document.getElementById('cnAmount').value) || 0;
     var payload = {
-        entity_id: parseInt(document.getElementById('cnEntityId').value) || 0,
-        commission_invoice_id: document.getElementById('cnInvoiceId').value ? parseInt(document.getElementById('cnInvoiceId').value) : null,
-        amount: parseFloat(document.getElementById('cnAmount').value) || 0,
-        currency_code: document.getElementById('cnCurrency').value || 'SAR',
+        tenant_id: parseInt(CFG.tenantId) || 1,
+        invoice_id: parseInt(document.getElementById('cnInvoiceId').value) || 0,
+        related_transaction_id: parseInt(document.getElementById('cnTransactionId').value) || 0,
+        credit_amount: creditAmount,
+        credit_commission: parseFloat(document.getElementById('cnCreditCommission').value) || 0,
+        credit_vat: parseFloat(document.getElementById('cnCreditVat').value) || 0,
+        net_credit: parseFloat(document.getElementById('cnNetCredit').value) || 0,
         status: document.getElementById('cnStatus').value,
         reason: document.getElementById('cnReason').value || null
     };
@@ -613,10 +621,12 @@ function editCreditNote(id) {
             if (d.success && d.data) {
                 var item = d.data;
                 document.getElementById('cnId').value = item.id;
-                document.getElementById('cnEntityId').value = item.entity_id || '';
-                document.getElementById('cnInvoiceId').value = item.commission_invoice_id || '';
-                document.getElementById('cnAmount').value = item.amount || 0;
-                document.getElementById('cnCurrency').value = item.currency_code || 'SAR';
+                document.getElementById('cnInvoiceId').value = item.invoice_id || '';
+                document.getElementById('cnTransactionId').value = item.related_transaction_id || '';
+                document.getElementById('cnAmount').value = item.credit_amount || 0;
+                document.getElementById('cnCreditCommission').value = item.credit_commission || 0;
+                document.getElementById('cnCreditVat').value = item.credit_vat || 0;
+                document.getElementById('cnNetCredit').value = item.net_credit || 0;
                 document.getElementById('cnStatus').value = item.status || 'draft';
                 document.getElementById('cnReason').value = item.reason || '';
                 document.getElementById('cnModalTitle').textContent = t('modal.edit_credit_note', 'Edit Credit Note');
@@ -699,6 +709,9 @@ function resetPayForm() {
 function resetCnForm() {
     document.getElementById('cnId').value = '';
     document.getElementById('cnForm').reset();
+    document.getElementById('cnCreditCommission').value = '0';
+    document.getElementById('cnCreditVat').value = '0';
+    document.getElementById('cnNetCredit').value = '0';
     document.getElementById('cnModalTitle').textContent = t('modal.add_credit_note', 'Add Credit Note');
 }
 
