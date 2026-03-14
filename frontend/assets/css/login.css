@@ -1,0 +1,239 @@
+/* QOOQZ — Login / Register Page Styles
+   Uses --pub-* CSS variables when injected by theme, with safe fallbacks */
+
+:root {
+    --lq-bg:       #0d0d0d;
+    --lq-surface:  #1a1a2e;
+    --lq-card:     #1f1f3a;
+    --lq-primary:  #03874e;
+    --lq-accent:   #F59E0B;
+    --lq-text:     #FFFFFF;
+    --lq-muted:    #9ca3af;
+    --lq-border:   #2d2d4e;
+    --lq-input-bg: #111827;
+    --lq-error:    #EF4444;
+    --lq-success:  #10B981;
+    --lq-font:     'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --lq-font-ar:  'Cairo', 'Inter', system-ui, sans-serif;
+}
+
+*,*::before,*::after { box-sizing: border-box; }
+html,body { height:100%; margin:0; }
+
+body {
+    font-family: var(--lq-font);
+    background: var(--lq-bg, #0d0d0d);
+    color: var(--lq-text, #fff);
+    min-height: 100vh;
+}
+body.rtl { font-family: var(--lq-font-ar); direction: rtl; }
+
+/* Two-column layout */
+.lq-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Brand panel (left / right for RTL) */
+.lq-brand {
+    display: none;
+    flex: 1;
+    background: linear-gradient(135deg, var(--lq-primary, #03874e) 0%, #065f46 100%);
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+@media (min-width: 768px) {
+    .lq-brand { display: flex; }
+}
+.lq-brand-inner { text-align: center; color: #fff; }
+.lq-logo { font-size: 4rem; line-height: 1; margin-bottom: 16px; }
+.lq-brand-name {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 0 0 8px;
+    letter-spacing: -0.5px;
+}
+.lq-brand-tagline {
+    font-size: 1rem;
+    opacity: 0.85;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Form panel */
+.lq-panel {
+    flex: 0 0 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: var(--lq-bg, #0d0d0d);
+}
+@media (min-width: 768px) {
+    .lq-panel { flex: 0 0 440px; }
+}
+
+.lq-box {
+    width: 100%;
+    max-width: 400px;
+    background: var(--lq-card, #1f1f3a);
+    border: 1px solid var(--lq-border, #2d2d4e);
+    border-radius: 16px;
+    padding: 32px 28px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+}
+
+/* Tabs */
+.lq-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--lq-input-bg, #111827);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 24px;
+}
+.lq-tab {
+    flex: 1;
+    padding: 9px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--lq-muted, #9ca3af);
+    transition: background 0.15s, color 0.15s;
+}
+.lq-tab.active {
+    background: var(--lq-primary, #03874e);
+    color: #fff;
+}
+
+/* Form */
+.lq-form { display: block; }
+.lq-hidden { display: none !important; }
+
+.lq-field { margin-bottom: 16px; }
+.lq-field label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--lq-muted, #9ca3af);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.lq-field input[type="text"],
+.lq-field input[type="email"],
+.lq-field input[type="password"],
+.lq-field input[type="tel"],
+.lq-field select {
+    width: 100%;
+    padding: 11px 14px;
+    background: var(--lq-input-bg, #111827);
+    border: 1px solid var(--lq-border, #2d2d4e);
+    border-radius: 8px;
+    color: var(--lq-text, #fff);
+    font-size: 0.95rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.lq-field input:focus,
+.lq-field select:focus {
+    border-color: var(--lq-primary, #03874e);
+    box-shadow: 0 0 0 3px rgba(3,135,78,0.2);
+}
+.lq-field select option { background: #1f1f3a; color: #fff; }
+
+/* Password toggle */
+.lq-password-wrap {
+    position: relative;
+    display: flex;
+}
+.lq-password-wrap input { padding-inline-end: 44px; flex: 1; }
+.lq-toggle-pw {
+    position: absolute;
+    top: 50%;
+    inset-inline-end: 12px;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 4px;
+    color: var(--lq-muted);
+}
+
+/* Submit button */
+.lq-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--lq-primary, #03874e);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: filter 0.15s, transform 0.1s;
+    font-family: inherit;
+}
+.lq-btn:hover  { filter: brightness(1.1); }
+.lq-btn:active { transform: scale(0.98); }
+.lq-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Switch link */
+.lq-switch {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--lq-muted, #9ca3af);
+    margin-top: 16px;
+    margin-bottom: 0;
+}
+.lq-switch a { color: var(--lq-accent, #F59E0B); text-decoration: none; font-weight: 600; }
+.lq-switch a:hover { text-decoration: underline; }
+
+/* Status message */
+.lq-result { margin-top: 14px; min-height: 20px; }
+.lq-ok  { color: var(--lq-success); background: rgba(16,185,129,0.12); padding: 10px 12px; border-radius: 8px; font-size: 0.9rem; }
+.lq-err { color: var(--lq-error);   background: rgba(239,68,68,0.12);   padding: 10px 12px; border-radius: 8px; font-size: 0.9rem; }
+.lq-field-error { color: var(--lq-error); font-size: 0.8rem; margin-top: 5px; }
+
+/* RTL overrides */
+[dir="rtl"] .lq-toggle-pw { inset-inline-end: 12px; }
+
+/* Already-logged-in notice bar */
+.lq-already-notice {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    background: var(--lq-accent, #F59E0B);
+    color: #111;
+    font-size: 0.9rem;
+    font-weight: 500;
+    flex-wrap: wrap;
+}
+.lq-already-notice span { flex: 1; }
+.lq-notice-btn {
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.15);
+    color: #111;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+.lq-notice-btn:hover { background: rgba(0,0,0,0.25); }
+.lq-notice-btn-out { background: rgba(220,38,38,0.2); color: #7f1d1d; }
+.lq-notice-btn-out:hover { background: rgba(220,38,38,0.35); }
+/* Push page content below notice bar */
+body:has(.lq-already-notice) .lq-wrapper { padding-top: 48px; }
