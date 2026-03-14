@@ -1,0 +1,130 @@
+/* admin/assets/css/pages/DeliveryZone.css
+   Delivery Zone admin page — uses admin_framework.css variables for dark/light theme. */
+
+/* ── Page container ─────────────────────────────────────────── */
+.dz-page-container {
+    padding: 0 0 2rem;
+}
+
+/* ── Workspace layout: sidebar + map/form ─────────────────── */
+.dz-workspace {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    min-height: 600px;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+.dz-sidebar {
+    width: 300px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.dz-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* ── List ────────────────────────────────────────────────────── */
+.dz-list {
+    background: var(--background-secondary, #1e293b);
+    border: 1px solid var(--border-color, #334155);
+    border-radius: 12px;
+    overflow: hidden;
+    max-height: 560px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+.dz-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color, #334155);
+    transition: background 0.15s;
+}
+
+.dz-list-item:last-child { border-bottom: none; }
+.dz-list-item:hover { background: var(--background-tertiary, #0f172a); }
+
+.dz-item-main strong {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--text-primary, #fff);
+}
+
+.dz-meta {
+    font-size: 0.78rem;
+    color: var(--text-secondary, #94a3b8);
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.dz-item-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+/* ── Map + form column ──────────────────────────────────────── */
+.dz-map-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+}
+
+/* ── Leaflet fixes for admin dark theme ─────────────────────── */
+.leaflet-container { background: #ddd !important; }
+.leaflet-tile-pane { isolation: isolate; }
+.leaflet-tile,
+.leaflet-tile-container img {
+    filter: none !important;
+    mix-blend-mode: normal !important;
+    opacity: 1;
+}
+.leaflet-control-container .leaflet-top,
+.leaflet-control-container .leaflet-bottom { z-index: 800; }
+.leaflet-control-attribution {
+    background: rgba(255,255,255,0.85) !important;
+    color: #333 !important;
+}
+
+/* ── Form layout helpers ─────────────────────────────────────── */
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.form-group.col-4 { flex: 1 1 calc(33.333% - 1rem); min-width: 180px; }
+.form-group.col-6 { flex: 1 1 calc(50% - 0.5rem); min-width: 180px; }
+.form-group.col-12 { flex: 1 1 100%; }
+
+.form-actions-footer {
+    display: flex;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color, #334155);
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .dz-workspace { flex-direction: column; }
+    .dz-sidebar { width: 100%; }
+    .form-group.col-4,
+    .form-group.col-6 { flex: 1 1 100%; }
+}
+
+[dir="rtl"] .dz-workspace { flex-direction: row-reverse; }
+@media (max-width: 900px) {
+    [dir="rtl"] .dz-workspace { flex-direction: column; }
+}
