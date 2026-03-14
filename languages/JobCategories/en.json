@@ -1,0 +1,154 @@
+{
+  "job_categories": {
+    "title": "Job Categories",
+    "subtitle": "Manage Job Categories",
+    "add_new": "Add Category",
+    "loading": "Loading...",
+    "no_data": "No data",
+    "error": "An error occurred",
+    "retry": "Retry"
+  },
+  "tabs": {
+    "basic": "Basic Information",
+    "translations": "Translations",
+    "media": "Media"
+  },
+  "results": {
+    "count": "Showing {count} results"
+  },
+  "table": {
+    "headers": {
+      "id": "ID",
+      "tenant": "Tenant",
+      "image": "Image",
+      "name": "Name",
+      "slug": "Slug",
+      "parent": "Parent Category",
+      "sort_order": "Sort Order",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirm_delete": "Are you sure you want to delete this category?",
+      "export": "Export Excel"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "empty": {
+      "title": "No Job Categories",
+      "message": "Start by adding job categories",
+      "add_first": "Add First Category"
+    }
+  },
+  "filters": {
+    "search": "Search",
+    "search_placeholder": "Search categories...",
+    "tenant_id": "Tenant ID",
+    "parent": "Parent Category",
+    "parent_id": "Parent Category",
+    "all_parents": "All Categories",
+    "parent_options": {
+      "all": "All Categories"
+    },
+    "status": "Status",
+    "all_statuses": "All Statuses",
+    "active": "Active",
+    "inactive": "Inactive",
+    "status_options": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "apply": "Apply",
+    "reset": "Reset"
+  },
+  "form": {
+    "add_title": "Add Job Category",
+    "edit_title": "Edit Job Category",
+    "tabs": {
+      "basic": "Basic Information",
+      "translations": "Translations",
+      "media": "Media"
+    },
+    "fields": {
+      "tenant_id": {
+        "label": "Tenant",
+        "placeholder": "Select Tenant"
+      },
+      "parent": {
+        "label": "Parent Category",
+        "placeholder": "Select Parent (Optional)",
+        "none": "None (Top Level)",
+        "help": "Select a parent for hierarchical structure"
+      },
+      "parent_id": {
+        "label": "Parent Category",
+        "placeholder": "Select Parent (Optional)"
+      },
+      "slug": {
+        "label": "Slug",
+        "placeholder": "Enter slug",
+        "help": "Leave blank for auto-generation"
+      },
+      "sort_order": {
+        "label": "Sort Order",
+        "placeholder": "0",
+        "help": "Lower numbers appear first"
+      },
+      "is_active": {
+        "label": "Status",
+        "active": "Active",
+        "inactive": "Inactive",
+        "yes": "Yes",
+        "no": "No"
+      }
+    },
+    "translations": {
+      "title": "Translations",
+      "description": "Add translations for different languages",
+      "language": "Language",
+      "add_translation": "Add Translation",
+      "choose_lang": "Choose Language",
+      "name": "Name",
+      "name_placeholder": "Enter category name",
+      "description": "Description",
+      "description_placeholder": "Enter category description",
+      "remove": "Remove",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete"
+    },
+    "buttons": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "saving": "Saving..."
+    }
+  },
+  "messages": {
+    "success": {
+      "created": "Category created successfully",
+      "updated": "Category updated successfully",
+      "deleted": "Category deleted successfully"
+    },
+    "error": {
+      "load_failed": "Failed to load data",
+      "save_failed": "Failed to save data",
+      "delete_failed": "Failed to delete category",
+      "required_fields": "Please fill all required fields"
+    }
+  },
+  "pagination": {
+    "showing": "Showing",
+    "of": "of",
+    "results": "results",
+    "page": "Page"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalid": "Invalid value"
+  }
+}

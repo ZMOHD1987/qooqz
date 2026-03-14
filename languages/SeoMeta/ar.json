@@ -1,0 +1,81 @@
+{
+    "strings": {
+        "title": "إدارة SEO",
+        "subtitle": "إدارة بيانات SEO للمنتجات والتصنيفات والكيانات والصفحات",
+        "add_new": "إضافة سجل SEO",
+        "edit_record": "تعديل سجل SEO",
+        "filter": {
+            "search_placeholder": "بحث بالرابط الأساسي...",
+            "all_entity_types": "جميع أنواع الكيانات",
+            "product": "منتج",
+            "category": "تصنيف",
+            "entity": "كيان",
+            "page": "صفحة",
+            "apply": "تصفية",
+            "clear": "إلغاء الفلاتر"
+        },
+        "entity_type": {
+            "product": "منتج",
+            "category": "تصنيف",
+            "entity": "كيان",
+            "page": "صفحة"
+        },
+        "robots": {
+            "index_follow": "index,follow",
+            "noindex_nofollow": "noindex,nofollow",
+            "index_nofollow": "index,nofollow",
+            "noindex_follow": "noindex,follow"
+        },
+        "table": {
+            "id": "المعرف",
+            "entity_type": "نوع الكيان",
+            "entity_id": "معرف الكيان",
+            "canonical_url": "الرابط الأساسي",
+            "robots": "الروبوتات",
+            "created": "تاريخ الإنشاء",
+            "actions": "الإجراءات",
+            "no_records": "لا توجد سجلات",
+            "edit": "تعديل",
+            "delete": "حذف",
+            "translations": "الترجمات"
+        },
+        "modal": {
+            "add_title": "إضافة سجل SEO",
+            "edit_title": "تعديل سجل SEO"
+        },
+        "form": {
+            "entity_type": "نوع الكيان",
+            "entity_id": "معرف الكيان",
+            "canonical_url": "الرابط الأساسي",
+            "robots": "الروبوتات",
+            "schema_markup": "ترميز المخطط (JSON)",
+            "save": "حفظ",
+            "cancel": "إلغاء"
+        },
+        "translations": {
+            "title": "ترجمات SEO",
+            "language": "اللغة",
+            "meta_title": "عنوان الميتا",
+            "meta_description": "وصف الميتا",
+            "meta_keywords": "كلمات الميتا",
+            "og_title": "عنوان OG",
+            "og_description": "وصف OG",
+            "og_image": "صورة OG",
+            "add": "إضافة ترجمة",
+            "word": "الترجمة"
+        },
+        "saved": "تم الحفظ بنجاح",
+        "deleted": "تم الحذف بنجاح",
+        "unknown_error": "خطأ غير معروف",
+        "delete_failed": "فشل الحذف",
+        "confirm_delete": "هل أنت متأكد من حذف سجل SEO هذا؟",
+        "confirm_delete_translation": "هل أنت متأكد من حذف هذه الترجمة؟",
+        "no_items": "لم يتم العثور على سجلات SEO",
+        "no_translations": "لا توجد ترجمات",
+        "enter_text": "الرجاء إدخال قيمة",
+        "pagination": {
+            "showing": "عرض",
+            "of": "من"
+        }
+    }
+}

@@ -1,0 +1,154 @@
+{
+  "job_categories": {
+    "title": "فئات الوظائف",
+    "subtitle": "إدارة فئات الوظائف",
+    "add_new": "إضافة فئة",
+    "loading": "جارٍ التحميل...",
+    "no_data": "لا توجد بيانات",
+    "error": "حدث خطأ",
+    "retry": "إعادة المحاولة"
+  },
+  "tabs": {
+    "basic": "معلومات أساسية",
+    "translations": "الترجمات",
+    "media": "الوسائط"
+  },
+  "results": {
+    "count": "عرض {count} نتيجة"
+  },
+  "table": {
+    "headers": {
+      "id": "المعرف",
+      "tenant": "المستأجر",
+      "image": "الصورة",
+      "name": "الاسم",
+      "slug": "الرابط",
+      "parent": "الفئة الأب",
+      "sort_order": "الترتيب",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "actions": {
+      "edit": "تعديل",
+      "delete": "حذف",
+      "confirm_delete": "هل أنت متأكد من حذف هذه الفئة؟",
+      "export": "تصدير Excel"
+    },
+    "status": {
+      "active": "نشط",
+      "inactive": "غير نشط"
+    },
+    "empty": {
+      "title": "لا توجد فئات وظائف",
+      "message": "ابدأ بإضافة فئات الوظائف",
+      "add_first": "إضافة الفئة الأولى"
+    }
+  },
+  "filters": {
+    "search": "البحث",
+    "search_placeholder": "البحث في الفئات...",
+    "tenant_id": "معرف المستأجر",
+    "parent": "الفئة الأب",
+    "parent_id": "الفئة الأب",
+    "all_parents": "جميع الفئات",
+    "parent_options": {
+      "all": "جميع الفئات"
+    },
+    "status": "الحالة",
+    "all_statuses": "جميع الحالات",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "status_options": {
+      "all": "الكل",
+      "active": "نشط",
+      "inactive": "غير نشط"
+    },
+    "apply": "تطبيق",
+    "reset": "إعادة تعيين"
+  },
+  "form": {
+    "add_title": "إضافة فئة وظيفة",
+    "edit_title": "تعديل فئة الوظيفة",
+    "tabs": {
+      "basic": "معلومات أساسية",
+      "translations": "الترجمات",
+      "media": "الوسائط"
+    },
+    "fields": {
+      "tenant_id": {
+        "label": "المستأجر",
+        "placeholder": "اختر المستأجر"
+      },
+      "parent": {
+        "label": "الفئة الأب",
+        "placeholder": "اختر الفئة الأب (اختياري)",
+        "none": "بدون (مستوى أعلى)",
+        "help": "اختر فئة أب لبناء هيكل هرمي"
+      },
+      "parent_id": {
+        "label": "الفئة الأب",
+        "placeholder": "اختر الفئة الأب (اختياري)"
+      },
+      "slug": {
+        "label": "الرابط المختصر",
+        "placeholder": "ادخل الرابط المختصر",
+        "help": "اتركه فارغاً للتوليد التلقائي"
+      },
+      "sort_order": {
+        "label": "ترتيب الفرز",
+        "placeholder": "0",
+        "help": "الأرقام الأقل تظهر أولاً"
+      },
+      "is_active": {
+        "label": "الحالة",
+        "active": "نشط",
+        "inactive": "غير نشط",
+        "yes": "نعم",
+        "no": "لا"
+      }
+    },
+    "translations": {
+      "title": "الترجمات",
+      "description": "أضف ترجمات بلغات مختلفة",
+      "language": "اللغة",
+      "add_translation": "إضافة ترجمة",
+      "choose_lang": "اختر اللغة",
+      "name": "الاسم",
+      "name_placeholder": "أدخل اسم الفئة",
+      "description": "الوصف",
+      "description_placeholder": "أدخل وصف الفئة",
+      "remove": "إزالة",
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "delete": "حذف"
+    },
+    "buttons": {
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "saving": "جارٍ الحفظ..."
+    }
+  },
+  "messages": {
+    "success": {
+      "created": "تم إنشاء الفئة بنجاح",
+      "updated": "تم تحديث الفئة بنجاح",
+      "deleted": "تم حذف الفئة بنجاح"
+    },
+    "error": {
+      "load_failed": "فشل تحميل البيانات",
+      "save_failed": "فشل حفظ البيانات",
+      "delete_failed": "فشل حذف الفئة",
+      "required_fields": "الرجاء ملء جميع الحقول المطلوبة"
+    }
+  },
+  "pagination": {
+    "showing": "عرض",
+    "of": "من",
+    "results": "نتيجة",
+    "page": "صفحة"
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "invalid": "قيمة غير صالحة"
+  }
+}

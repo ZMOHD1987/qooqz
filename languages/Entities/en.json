@@ -1,0 +1,176 @@
+{
+    "direction": "ltr",
+    "strings": {
+        "title": "Entities",
+        "subtitle": "Manage your entities and branches",
+        "add_new": "Add Entity",
+        "edit": "Edit",
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "loading": "Loading...",
+        "search": "Search",
+        "search_placeholder": "Search entities...",
+        "filter": "Filter",
+        "reset": "Reset",
+        "apply": "Apply",
+        "all": "All",
+        "status": "Status",
+        "verified": "Verified",
+        "pending": "Pending",
+        "approved": "Approved",
+        "suspended": "Suspended",
+        "rejected": "Rejected",
+        "active": "Active",
+        "inactive": "Inactive",
+        "yes": "Yes",
+        "no": "No",
+        "create": "Create",
+        "update": "Update",
+        "refresh": "Refresh",
+        "actions": "Actions",
+        "save_success": "Entity saved successfully",
+        "update_success": "Entity updated successfully",
+        "delete_confirm": "Are you sure you want to delete this entity?",
+        "delete_success": "Entity deleted successfully",
+        "saving": "Saving...",
+        "server_error": "Error loading data",
+        "save_first": "Please save the entity first",
+        "attribute_exists": "Attribute already added",
+        "translation_exists": "Translation already added",
+        "confirm_delete": "Are you sure?",
+        "no_entities": "No Entities Found",
+        "manage_entities": "Manage your entities and branches",
+        "general": {
+            "general": "General",
+            "basic": "Basic Info",
+            "store_name": "Store Name",
+            "slug": "Slug",
+            "description": "Description",
+            "is_main": "Is Main Entity",
+            "branch_code": "Branch Code",
+            "registration_number": "Registration Number",
+            "tax_number": "Tax Number",
+            "tenant": "Tenant",
+            "tenant_placeholder": "Filter by tenant"
+        },
+        "contact": {
+            "contact": "Contact",
+            "phone": "Phone",
+            "mobile": "Mobile",
+            "email": "Email",
+            "website": "Website",
+            "suspension_reason": "Suspension Reason"
+        },
+        "settings": {
+            "settings": "Settings",
+            "auto_accept_orders": "Auto Accept Orders",
+            "allow_cod": "Allow Cash on Delivery",
+            "min_order_amount": "Min Order Amount",
+            "allow_online_booking": "Allow Online Booking",
+            "booking_window_days": "Booking Window (Days)",
+            "max_bookings_per_slot": "Max Bookings per Slot",
+            "show_reviews": "Show Reviews",
+            "show_contact_info": "Show Contact Info",
+            "featured_in_app": "Featured in App"
+        },
+        "working_hours": {
+            "working_hours": "Working Hours",
+            "day": "Day",
+            "open": "Open",
+            "closed": "Closed",
+            "open_time": "Open Time",
+            "close_time": "Close Time",
+            "all_day": "24 Hours",
+            "closed_all_day": "Closed All Day",
+            "apply_to_all": "Apply to All Days",
+            "reset_hours": "Reset Hours"
+        },
+        "attributes": {
+            "attributes": "Attributes",
+            "add_attribute": "Add Attribute",
+            "select": "Select attribute"
+        },
+        "media": {
+            "media": "Media",
+            "logo": "Logo",
+            "cover": "Cover Image",
+            "license": "License",
+            "select_from_studio": "Select from Studio",
+            "delete": "Delete image",
+            "no_logo": "No logo selected",
+            "no_cover": "No cover image selected",
+            "no_license": "No license document selected",
+            "logo_url": "Logo URL will appear here",
+            "cover_url": "Cover URL will appear here",
+            "license_url": "License URL will appear here"
+        },
+        "address": {
+            "address": "Address"
+        },
+        "translations": {
+            "translations": "Translations",
+            "select_language": "Select Language",
+            "choose_language": "Choose language",
+            "add_translation": "Add Translation",
+            "meta_title": "Meta Title",
+            "meta_description": "Meta Description"
+        },
+        "vendor_type": {
+            "vendor_type": "Vendor Type",
+            "product_seller": "Product Seller",
+            "service_provider": "Service Provider",
+            "both": "Both"
+        },
+        "store_type": {
+            "store_type": "Store Type",
+            "individual": "Individual",
+            "company": "Company",
+            "brand": "Brand"
+        },
+        "validation": {
+            "name_required": "Store name is required"
+        },
+        "messages": {
+            "validation_failed": "Please fill all required fields",
+            "save_entity_first": "Please save the entity first to manage addresses",
+            "confirm_delete_image": "Are you sure you want to delete this image?",
+            "created": "Entity created successfully",
+            "updated": "Entity updated successfully",
+            "deleted": "Entity deleted successfully",
+            "address_saved": "Address saved successfully",
+            "address_deleted": "Address deleted successfully",
+            "image_saved": "Image saved successfully",
+            "image_deleted": "Image deleted successfully",
+            "error": {
+                "load_failed": "Failed to load data",
+                "save_failed": "Failed to save entity",
+                "delete_failed": "Failed to delete",
+                "unknown": "An unknown error occurred"
+            }
+        },
+        "table": {
+            "headers": {
+                "id": "ID",
+                "tenant": "Tenant",
+                "logo": "Logo",
+                "store_name": "Store Name",
+                "branch_code": "Branch Code",
+                "vendor_type": "Vendor Type",
+                "phone": "Phone",
+                "email": "Email",
+                "status": "Status",
+                "verified": "Verified",
+                "actions": "Actions"
+            },
+            "empty": {
+                "title": "No Entities Found",
+                "message": "Start by adding your first entity",
+                "add_first": "Add First Entity"
+            }
+        },
+        "pagination": {
+            "showing": "Showing"
+        }
+    }
+}

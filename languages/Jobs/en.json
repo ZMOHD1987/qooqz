@@ -1,0 +1,448 @@
+{
+  "jobs": {
+    "title": "Jobs",
+    "subtitle": "Manage job postings and applications",
+    "add_new": "Add Job",
+    "loading": "Loading...",
+    "no_data": "No data",
+    "error": "An error occurred",
+    "retry": "Retry"
+  },
+  "workspace": {
+    "tabs": {
+      "jobs": "Jobs",
+      "applications": "Applications",
+      "interviews": "Interviews",
+      "alerts": "Alerts",
+      "questions": "Questions"
+    }
+  },
+  "tabs": {
+    "basic": "Basic Info",
+    "details": "Job Details",
+    "salary": "Salary",
+    "location": "Location",
+    "application": "Application",
+    "skills": "Skills",
+    "translations": "Translations",
+    "details_description": "Job description is managed via the Translations tab"
+  },
+  "table": {
+    "headers": {
+      "id": "ID",
+      "job_title": "Job Title",
+      "category": "Category",
+      "job_type": "Job Type",
+      "experience_level": "Experience Level",
+      "salary": "Salary",
+      "location": "Location",
+      "status": "Status",
+      "positions": "Positions",
+      "applications": "Applications",
+      "deadline": "Deadline",
+      "actions": "Actions"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "view": "View",
+      "publish": "Publish",
+      "close": "Close",
+      "confirm_delete": "Are you sure you want to delete this job?",
+      "export": "Export Excel"
+    },
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "closed": "Closed",
+      "filled": "Filled",
+      "cancelled": "Cancelled"
+    },
+    "job_type": {
+      "full_time": "Full Time",
+      "part_time": "Part Time",
+      "contract": "Contract",
+      "temporary": "Temporary",
+      "internship": "Internship",
+      "freelance": "Freelance",
+      "remote": "Remote"
+    },
+    "experience_level": {
+      "entry": "Entry",
+      "junior": "Junior",
+      "mid": "Mid",
+      "senior": "Senior",
+      "executive": "Executive",
+      "director": "Director"
+    },
+    "empty": {
+      "title": "No Jobs",
+      "message": "Start by adding jobs",
+      "add_first": "Add First Job"
+    }
+  },
+  "filters": {
+    "search": "Search",
+    "search_placeholder": "Search jobs...",
+    "status": "Status",
+    "job_type": "Job Type",
+    "experience_level": "Experience Level",
+    "category": "Category",
+    "entity": "Entity",
+    "apply": "Apply",
+    "reset": "Reset",
+    "status_options": {
+      "all": "All",
+      "draft": "Draft",
+      "published": "Published",
+      "closed": "Closed",
+      "filled": "Filled",
+      "cancelled": "Cancelled"
+    }
+  },
+  "form": {
+    "add_title": "Add Job",
+    "edit_title": "Edit Job",
+    "save": "Save Job",
+    "save_and_publish": "Save & Publish",
+    "cancel": "Cancel",
+    "tabs": {
+      "basic": "Basic Information",
+      "translations": "Translations",
+      "application": "Application",
+      "salary": "Salary",
+      "location": "Location",
+      "skills": "Skills",
+      "status": "Status & Flags"
+    },
+    "fields": {
+      "job_title": {
+        "label": "Job Title",
+        "placeholder": "Enter job title",
+        "required": "Job title is required"
+      },
+      "slug": {
+        "label": "Slug",
+        "placeholder": "Auto-generated"
+      },
+      "job_type": {
+        "label": "Job Type",
+        "placeholder": "Select job type",
+        "select": "Select Job Type",
+        "full_time": "Full-Time",
+        "part_time": "Part-Time",
+        "contract": "Contract",
+        "temporary": "Temporary",
+        "internship": "Internship",
+        "freelance": "Freelance",
+        "remote": "Remote"
+      },
+      "employment_type": {
+        "label": "Employment Type",
+        "placeholder": "Select employment type",
+        "permanent": "Permanent",
+        "temporary": "Temporary",
+        "seasonal": "Seasonal"
+      },
+      "experience_level": {
+        "label": "Experience Level",
+        "placeholder": "Select experience level",
+        "entry": "Entry Level",
+        "junior": "Junior",
+        "mid": "Mid Level",
+        "senior": "Senior",
+        "executive": "Executive",
+        "director": "Director"
+      },
+      "category": {
+        "label": "Category",
+        "placeholder": "Select category"
+      },
+      "department": {
+        "label": "Department",
+        "placeholder": "Enter department"
+      },
+      "positions_available": {
+        "label": "Positions Available",
+        "placeholder": "Number of positions"
+      },
+      "status": {
+        "label": "Status",
+        "draft": "Draft",
+        "published": "Published",
+        "closed": "Closed",
+        "filled": "Filled",
+        "cancelled": "Cancelled"
+      },
+      "start_date": {
+        "label": "Start Date",
+        "placeholder": "Select date"
+      },
+      "application_deadline": {
+        "label": "Application Deadline",
+        "placeholder": "Select date"
+      },
+      "is_featured": {
+        "label": "Featured Job"
+      },
+      "is_urgent": {
+        "label": "Urgent Hiring"
+      },
+      "salary_min": {
+        "label": "Minimum Salary"
+      },
+      "salary_max": {
+        "label": "Maximum Salary"
+      },
+      "salary_currency": {
+        "label": "Currency"
+      },
+      "salary_period": {
+        "label": "Salary Period",
+        "hourly": "Per Hour",
+        "daily": "Per Day",
+        "weekly": "Per Week",
+        "monthly": "Per Month",
+        "yearly": "Per Year"
+      },
+      "salary_negotiable": {
+        "label": "Salary Negotiable"
+      },
+      "country_id": {
+        "label": "Country",
+        "placeholder": "Select Country"
+      },
+      "city_id": {
+        "label": "City",
+        "placeholder": "Select City"
+      },
+      "work_location": {
+        "label": "Work Location",
+        "onsite": "On-site",
+        "remote": "Remote",
+        "hybrid": "Hybrid"
+      },
+      "is_remote": {
+        "label": "Remote Work Available"
+      },
+      "application_form_type": {
+        "label": "Application Form Type",
+        "simple": "Simple Form",
+        "custom": "Custom Form",
+        "external": "External URL"
+      },
+      "external_application_url": {
+        "label": "External Application URL",
+        "placeholder": "https://example.com/apply"
+      }
+    },
+    "translations": {
+      "title": "Translations",
+      "add_translation": "Add Translation",
+      "choose_lang": "Select Language",
+      "job_title": "Job Title",
+      "description": "Description",
+      "requirements": "Requirements",
+      "responsibilities": "Responsibilities",
+      "benefits": "Benefits",
+      "save": "Save Translation",
+      "cancel": "Cancel",
+      "language": "Language"
+    },
+    "skills": {
+      "title": "Skills",
+      "add_skill": "Add Skill",
+      "skill_name": "Skill Name",
+      "proficiency_level": "Proficiency Level",
+      "is_required": "Required",
+      "save": "Save Skill",
+      "cancel": "Cancel",
+      "levels": {
+        "basic": "Basic",
+        "intermediate": "Intermediate",
+        "advanced": "Advanced",
+        "expert": "Expert"
+      }
+    },
+    "buttons": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "publish": "Publish",
+      "close": "Close",
+      "mark_filled": "Mark as Filled"
+    }
+  },
+  "skills": {
+    "title": "Required Skills",
+    "add": "Add Skill",
+    "form": {
+      "skill_name": "Skill Name",
+      "proficiency": "Proficiency Level",
+      "required": "Required",
+      "save": "Save Skill",
+      "cancel": "Cancel"
+    }
+  },
+  "translations": {
+    "title": "Translations",
+    "add": "Add Translation",
+    "form": {
+      "language": "Language",
+      "job_title": "Job Title",
+      "description": "Description",
+      "requirements": "Requirements",
+      "responsibilities": "Responsibilities",
+      "benefits": "Benefits",
+      "save": "Save Translation",
+      "cancel": "Cancel"
+    }
+  },
+  "applications": {
+    "title": "Applications",
+    "add": "Add Application",
+    "status": {
+      "submitted": "Submitted",
+      "under_review": "Under Review",
+      "shortlisted": "Shortlisted",
+      "interviewed": "Interviewed",
+      "offered": "Offered",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "withdrawn": "Withdrawn"
+    },
+    "fields": {
+      "job": "Job",
+      "applicant": "Applicant",
+      "email": "Email",
+      "phone": "Phone",
+      "status": "Status",
+      "rating": "Rating",
+      "notes": "Notes",
+      "resume": "Resume",
+      "cover_letter": "Cover Letter",
+      "applied_at": "Applied Date"
+    },
+    "empty": {
+      "title": "No Applications",
+      "message": "No applications have been received yet"
+    }
+  },
+  "interviews": {
+    "title": "Interviews",
+    "add": "Schedule Interview",
+    "types": {
+      "phone": "Phone",
+      "video": "Video",
+      "in_person": "In Person",
+      "technical": "Technical",
+      "hr": "HR"
+    },
+    "status": {
+      "scheduled": "Scheduled",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "no_show": "No Show"
+    },
+    "fields": {
+      "type": "Interview Type",
+      "date": "Interview Date",
+      "duration": "Duration (minutes)",
+      "status": "Status",
+      "feedback": "Feedback",
+      "score": "Score",
+      "interviewer": "Interviewer",
+      "location": "Location"
+    },
+    "empty": {
+      "title": "No Interviews",
+      "message": "No interviews scheduled yet"
+    }
+  },
+  "alerts": {
+    "title": "Job Alerts",
+    "add": "Add Alert",
+    "frequency": {
+      "immediately": "Immediately",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "fields": {
+      "name": "Alert Name",
+      "keywords": "Keywords",
+      "frequency": "Frequency",
+      "is_active": "Active",
+      "location": "Location",
+      "job_type": "Job Type",
+      "experience_level": "Experience Level",
+      "salary_min": "Min Salary",
+      "salary_max": "Max Salary"
+    },
+    "empty": {
+      "title": "No Alerts",
+      "message": "No job alerts set up yet"
+    }
+  },
+  "questions": {
+    "title": "Application Questions",
+    "add": "Add Question",
+    "types": {
+      "text": "Text",
+      "textarea": "Long Text",
+      "select": "Dropdown",
+      "radio": "Radio",
+      "checkbox": "Checkbox",
+      "file": "File Upload",
+      "date": "Date",
+      "number": "Number",
+      "yes_no": "Yes / No"
+    },
+    "fields": {
+      "job": "Job",
+      "question_text": "Question Text",
+      "question_type": "Question Type",
+      "options": "Options (comma-separated)",
+      "is_required": "Required",
+      "sort_order": "Sort Order"
+    },
+    "empty": {
+      "title": "No Questions",
+      "message": "No application questions added yet"
+    }
+  },
+  "messages": {
+    "success": {
+      "created": "Job created successfully",
+      "updated": "Job updated successfully",
+      "deleted": "Job deleted successfully",
+      "published": "Job published successfully",
+      "closed": "Job closed successfully"
+    },
+    "error": {
+      "load_failed": "Failed to load data",
+      "save_failed": "Failed to save data",
+      "delete_failed": "Failed to delete job",
+      "required_fields": "Please fill all required fields"
+    }
+  },
+  "pagination": {
+    "showing": "Showing",
+    "of": "of",
+    "results": "results",
+    "page": "Page"
+  },
+  "strings": {
+    "save_success": "Saved successfully",
+    "update_success": "Updated successfully",
+    "delete_confirm": "Are you sure you want to delete this item?",
+    "delete_success": "Deleted successfully"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalid": "Invalid value"
+  },
+  "accessibility": {
+    "close": "Close"
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "certificates_products": {
+    "title": "منتجات الشهادات",
+    "subtitle": "إدارة المنتجات المرتبطة بالشهادات",
+    "add_new": "إضافة منتج",
+    "loading": "جارٍ التحميل...",
+    "retry": "إعادة المحاولة"
+  },
+  "table": {
+    "headers": {
+      "id": "الرقم",
+      "tenant": "المستأجر",
+      "entity": "الجهة",
+      "brand": "العلامة التجارية",
+      "name": "الاسم",
+      "code": "الكود",
+      "net_weight": "الوزن الصافي",
+      "unit": "الوحدة",
+      "sample_status": "حالة العينة",
+      "condition": "الحالة",
+      "origin_country": "بلد المنشأ",
+      "actions": "الإجراءات"
+    },
+    "actions": {
+      "edit": "تعديل",
+      "delete": "حذف",
+      "confirm_delete": "هل أنت متأكد من حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء."
+    },
+    "empty": {
+      "title": "لا توجد منتجات",
+      "message": "ابدأ بإضافة منتج جديد",
+      "add_first": "إضافة أول منتج"
+    }
+  },
+  "filters": {
+    "search": "بحث",
+    "search_placeholder": "ابحث...",
+    "tenant_id": "رقم المستأجر",
+    "tenant_placeholder": "تصفية حسب المستأجر",
+    "entity": "الجهة",
+    "brand": "العلامة التجارية",
+    "sample_status": "حالة العينة",
+    "product_condition": "حالة المنتج",
+    "origin_country": "بلد المنشأ",
+    "all_countries": "جميع البلدان",
+    "all_entities": "كل الجهات",
+    "all_brands": "كل العلامات",
+    "all_status": "الكل",
+    "all_conditions": "الكل",
+    "apply": "تطبيق",
+    "reset": "إعادة ضبط",
+    "sample_status": {
+      "normal": "عادي",
+      "tested": "مختبر",
+      "rejected": "مرفوض"
+    },
+    "condition": {
+      "chilled": "مبرد",
+      "frozen": "مجمد",
+      "dry": "جاف"
+    }
+  },
+  "form": {
+    "add_title": "إضافة منتج",
+    "edit_title": "تعديل منتج",
+    "fields": {
+      "tenant_id": { "label": "رقم المستأجر" },
+      "entity": { "label": "الجهة", "select": "اختر الجهة" },
+      "brand": { "label": "العلامة التجارية", "select": "اختر العلامة" },
+      "product_code": { "label": "كود المنتج", "placeholder": "أدخل كود المنتج" },
+      "net_weight": { "label": "الوزن الصافي", "placeholder": "0.000" },
+      "weight_unit": { "label": "وحدة الوزن" },
+      "sample_status": {
+        "label": "حالة العينة",
+        "normal": "طبيعي",
+        "tested": "مختبر",
+        "rejected": "مرفوض"
+      },
+      "product_condition": {
+        "label": "حالة المنتج",
+        "chilled": "مبرد",
+        "frozen": "مجمد",
+        "dry": "جاف"
+      },
+      "origin_country": {
+        "label": "بلد المنشأ",
+        "select": "اختر البلد"
+      },
+      "name": { "label": "الاسم" },
+      "brand_translated": { "label": "العلامة التجارية (مترجم)" }
+    },
+    "translations": {
+      "title": "الترجمات",
+      "select_lang": "اختر اللغة",
+      "choose_lang": "اختر اللغة",
+      "add": "إضافة ترجمة",
+      "remove": "حذف",
+      "name_in_lang": "الاسم بالـ {lang}",
+      "brand_in_lang": "العلامة بالـ {lang}"
+    },
+    "buttons": {
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "saving": "جارٍ الحفظ...",
+      "updating": "جارٍ التحديث..."
+    }
+  },
+  "messages": {
+    "success": {
+      "created": "تم إنشاء المنتج بنجاح",
+      "updated": "تم تحديث المنتج بنجاح",
+      "deleted": "تم حذف المنتج بنجاح"
+    },
+    "error": {
+      "load_failed": "فشل تحميل البيانات",
+      "save_failed": "فشل حفظ المنتج",
+      "delete_failed": "فشل حذف المنتج",
+      "not_found": "المنتج غير موجود"
+    }
+  },
+  "pagination": {
+    "showing": "عرض"
+  },
+  "accessibility": {
+    "close": "إغلاق"
+  }
+}

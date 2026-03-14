@@ -1,0 +1,143 @@
+{
+  "brands": {
+    "title": "Brands",
+    "subtitle": "Manage brands and their translations",
+    "add_new": "Add Brand",
+    "loading": "Loading...",
+    "no_data": "No data available",
+    "error": "An error occurred",
+    "retry": "Retry"
+  },
+  "table": {
+    "headers": {
+      "id": "ID",
+      "tenant": "Tenant",
+      "entity": "Entity ID",
+      "image": "Image",
+      "name": "Name",
+      "slug": "Slug",
+      "website": "Website",
+      "sort_order": "Sort",
+      "status": "Status",
+      "featured": "Featured",
+      "actions": "Actions"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "duplicate": "Duplicate",
+      "confirm_delete": "Are you sure you want to delete this brand? This action cannot be undone."
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "empty": {
+      "title": "No Brands Found",
+      "message": "Start by adding brands",
+      "add_first": "Add First Brand"
+    }
+  },
+  "filters": {
+    "search": "Search",
+    "search_placeholder": "Search...",
+    "tenant_id": "Tenant ID",
+    "tenant_placeholder": "Filter by tenant",
+    "status": "Status",
+    "status_options": {
+      "all": "All Status",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "featured": "Featured",
+    "featured_options": {
+      "all": "All",
+      "yes": "Featured",
+      "no": "Not Featured"
+    },
+    "apply": "Apply",
+    "reset": "Reset"
+  },
+  "form": {
+    "add_title": "Add Brand",
+    "edit_title": "Edit Brand",
+    "fields": {
+      "tenant_id": {
+        "label": "Tenant ID"
+      },
+      "entity_id": {
+        "label": "Entity ID",
+        "placeholder": "Entity ID",
+        "required": "Entity ID is required"
+      },
+      "slug": {
+        "label": "Slug",
+        "placeholder": "Enter slug",
+        "required": "Slug is required"
+      },
+      "website_url": {
+        "label": "Website URL",
+        "placeholder": "https://example.com"
+      },
+      "sort_order": {
+        "label": "Sort Order",
+        "placeholder": "Sort order"
+      },
+      "status": {
+        "label": "Status",
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "featured": {
+        "label": "Featured",
+        "no": "No",
+        "yes": "Yes"
+      },
+      "image": {
+        "label": "Image"
+      }
+    },
+    "translations": {
+      "select_lang": "Select Language",
+      "choose_lang": "Choose language",
+      "name_in_lang": "Name in {lang}",
+      "description_in_lang": "Description in {lang}",
+      "remove": "Remove",
+      "add_translation": "Add Translation"
+    },
+    "buttons": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "updating": "Updating..."
+    }
+  },
+  "messages": {
+    "success": {
+      "created": "Brand created successfully",
+      "updated": "Brand updated successfully",
+      "deleted": "Brand deleted successfully",
+      "duplicated": "Brand duplicated successfully"
+    },
+    "error": {
+      "load_failed": "Failed to load data",
+      "save_failed": "Failed to save data",
+      "delete_failed": "Failed to delete data",
+      "duplicate_failed": "Failed to duplicate data",
+      "not_found": "Item not found"
+    }
+  },
+  "validation": {
+    "required": "Required"
+  },
+  "common": {
+    "select_image": "Select Image",
+    "duplicate": "Duplicate"
+  },
+  "accessibility": {
+    "close": "Close"
+  },
+  "pagination": {
+    "showing": "Showing"
+  }
+}

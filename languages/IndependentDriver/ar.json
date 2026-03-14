@@ -1,0 +1,64 @@
+{
+  "direction": "rtl",
+  "strings": {
+    "page": {
+      "title": "السائقون المستقلون",
+      "create_button": "إنشاء",
+      "edit": "تعديل",
+      "delete": "حذف",
+      "save": "حفظ",
+      "reset": "إعادة تعيين",
+      "remove": "إزالة",
+      "loading": "جاري التحميل...",
+      "load_error": "فشل في جلب البيانات",
+      "no_results": "لا توجد سجلات للسائقين",
+      "saved": "تم الحفظ بنجاح",
+      "save_failed": "فشل الحفظ",
+      "record_load_failed": "فشل تحميل السجل",
+      "delete_failed": "فشل الحذف",
+      "update_failed": "فشل التحديث",
+      "file_too_large": "حجم الملف كبير جداً (الحد الأقصى 5 ميغابايت)",
+      "confirm_delete": "هل أنت متأكد أنك تريد حذف هذا العنصر؟",
+      "search_placeholder": "ابحث بالاسم أو الهاتف أو البريد أو رقم الرخصة",
+      "status_all": "الكل",
+      "vehicle_all": "كل المركبات",
+      "full_name": "الاسم الكامل",
+      "phone": "الهاتف",
+      "email": "البريد الإلكتروني",
+      "vehicle_type": "نوع المركبة",
+      "vehicle_number": "رقم المركبة",
+      "license_number": "رقم الرخصة",
+      "license_photo": "صورة الرخصة",
+      "id_photo": "صورة الهوية",
+      "no_permission_docs": "لا توجد صلاحية لرفع المستندات",
+      "status": "الحالة",
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "busy": "مشغول",
+      "offline": "غير متصل",
+      "actions": "إجراءات",
+      "name": "الاسم",
+      "validation": {
+        "name_required": "الاسم مطلوب",
+        "phone_required": "الهاتف مطلوب",
+        "vehicle_required": "نوع المركبة مطلوب",
+        "license_required": "رقم الرخصة مطلوب"
+      },
+      "saving": "جاري الحفظ...",
+      "saved_successfully": "تم الحفظ بنجاح",
+      "view": "عرض",
+      "uploaded": "تم الرفع",
+      "deleted": "تم الحذف",
+      "confirm": {
+        "remove_photo": "هل تريد إزالة هذه الصورة؟"
+      }
+    },
+    "admin": {
+      "brand": "لوحة الإدارة",
+      "notifications": "الإشعارات",
+      "logout": "تسجيل خروج",
+      "toggle_sidebar": "إظهار/إخفاء الشريط الجانبي",
+      "search_placeholder": "بحث..."
+    }
+  }
+}

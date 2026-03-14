@@ -1,0 +1,80 @@
+{
+  "title": "Stock Movements",
+  "subtitle": "Track product inventory - restock, sales, returns, adjustments",
+  "add_movement": "Add Movement",
+  "scan_barcode": "Scan Barcode",
+  "scan_placeholder": "Enter barcode...",
+  "scan_btn": "Scan",
+  "lookup": {
+    "title": "Product Lookup",
+    "sku": "Search by SKU",
+    "sku_placeholder": "Enter SKU...",
+    "search": "Search",
+    "camera": "Camera Scanner",
+    "open_camera": "Open Camera",
+    "stop_camera": "Stop Camera"
+  },
+  "stats": {
+    "total": "Total Movements",
+    "restocked": "Restocked",
+    "sold": "Sold",
+    "returned": "Returned",
+    "adjusted": "Adjusted"
+  },
+  "table": {
+    "id": "ID",
+    "product": "Product",
+    "variant": "Variant",
+    "type": "Type",
+    "quantity": "Quantity",
+    "reference": "Reference",
+    "notes": "Notes",
+    "date": "Date",
+    "actions": "Actions",
+    "no_records": "No movements found"
+  },
+  "form": {
+    "product_id": "Product ID",
+    "variant_id": "Variant ID (optional)",
+    "type": "Movement Type",
+    "quantity": "Quantity",
+    "reference_id": "Reference ID",
+    "notes": "Notes",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "types": {
+    "restock": "Restock",
+    "sale": "Sale",
+    "return": "Return",
+    "adjustment": "Adjustment"
+  },
+  "filter": {
+    "search": "Search...",
+    "all_types": "All Types",
+    "date_from": "From Date",
+    "date_to": "To Date",
+    "apply": "Filter",
+    "clear": "Clear Filters"
+  },
+  "messages": {
+    "saved": "Movement saved successfully",
+    "deleted": "Movement deleted",
+    "confirm_delete": "Are you sure you want to delete?",
+    "product_found": "Product found",
+    "product_not_found": "Product not found",
+    "barcode_not_found": "Barcode not found",
+    "sku_not_found": "SKU not found",
+    "camera_not_supported": "Camera not supported on this device",
+    "camera_error": "Cannot access camera",
+    "error": "An error occurred"
+  },
+  "pagination": {
+    "showing": "Showing",
+    "of": "of",
+    "prev": "Previous",
+    "next": "Next"
+  }
+}

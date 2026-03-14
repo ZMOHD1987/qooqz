@@ -1,0 +1,278 @@
+{
+    "notifications": {
+        "title": "الإشعارات",
+        "subtitle": "إدارة إشعارات النظام وقنوات التسليم",
+        "loading": "جارٍ التحميل...",
+        "retry": "إعادة المحاولة",
+        "tabs": {
+            "types": "أنواع الإشعارات",
+            "list": "الإشعارات",
+            "channels": "القنوات",
+            "counters": "العدادات",
+            "deliveries": "التسليمات"
+        }
+    },
+    "types": {
+        "title": "أنواع الإشعارات",
+        "add_new": "إضافة نوع",
+        "empty_title": "لا توجد أنواع إشعارات",
+        "empty_message": "ابدأ بإضافة نوع إشعار",
+        "add_first": "إضافة النوع الأول"
+    },
+    "list": {
+        "title": "الإشعارات",
+        "add_new": "إضافة إشعار",
+        "empty_title": "لا توجد إشعارات",
+        "empty_message": "لا توجد إشعارات",
+        "add_first": "إضافة أول إشعار"
+    },
+    "channels": {
+        "title": "القنوات",
+        "add_new": "إضافة قناة",
+        "empty_title": "لا توجد قنوات",
+        "empty_message": "ابدأ بإضافة قناة إشعارات",
+        "add_first": "إضافة أول قناة"
+    },
+    "counters": {
+        "title": "العدادات",
+        "add_new": "إضافة عداد",
+        "empty_title": "لا توجد عدادات",
+        "empty_message": "لا توجد عدادات",
+        "add_first": "إضافة أول عداد"
+    },
+    "deliveries": {
+        "title": "التسليمات",
+        "add_new": "إضافة تسليم",
+        "empty_title": "لا توجد تسليمات",
+        "empty_message": "لا توجد تسليمات إشعارات",
+        "add_first": "إضافة أول تسليم"
+    },
+    "table": {
+        "headers": {
+            "id": "المعرف",
+            "code": "الكود",
+            "name": "الاسم",
+            "description": "الوصف",
+            "status": "الحالة",
+            "actions": "الإجراءات",
+            "tenant": "المشترك",
+            "type": "النوع",
+            "title": "العنوان",
+            "message": "الرسالة",
+            "sender": "المرسل",
+            "entity": "الجهة",
+            "priority": "الأولوية",
+            "sent_at": "وقت الإرسال",
+            "expires_at": "تاريخ الانتهاء",
+            "channel": "القناة",
+            "notification": "الإشعار",
+            "delivery_status": "حالة التسليم",
+            "attempts": "المحاولات",
+            "error": "الخطأ",
+            "created_at": "تاريخ الإنشاء",
+            "recipient_type": "نوع المستلم",
+            "recipient_id": "معرف المستلم",
+            "unread_count": "غير مقروء",
+            "updated_at": "آخر تحديث",
+            "default_template": "القالب الافتراضي"
+        },
+        "actions": {
+            "edit": "تعديل",
+            "delete": "حذف",
+            "confirm_delete": "هل أنت متأكد من حذف هذا السجل؟ لا يمكن التراجع عن هذا الإجراء.",
+            "increment": "زيادة",
+            "reset": "إعادة تعيين"
+        },
+        "status": {
+            "active": "نشط",
+            "inactive": "غير نشط"
+        }
+    },
+    "filters": {
+        "search": "بحث",
+        "search_placeholder": "بحث...",
+        "tenant_id": "معرف المشترك",
+        "tenant_placeholder": "تصفية حسب المشترك",
+        "status": "الحالة",
+        "status_options": {
+            "all": "جميع الحالات",
+            "active": "نشط",
+            "inactive": "غير نشط"
+        },
+        "priority": "الأولوية",
+        "priority_options": {
+            "all": "جميع الأولويات",
+            "low": "منخفضة",
+            "normal": "عادية",
+            "high": "عالية",
+            "urgent": "عاجلة"
+        },
+        "delivery_status": "حالة التسليم",
+        "delivery_status_options": {
+            "all": "جميع الحالات",
+            "pending": "معلق",
+            "sent": "مُرسل",
+            "failed": "فشل"
+        },
+        "recipient_type": "نوع المستلم",
+        "recipient_type_options": {
+            "all": "جميع الأنواع",
+            "user": "مستخدم",
+            "entity": "جهة",
+            "tenant": "مشترك"
+        },
+        "apply": "تطبيق",
+        "reset": "إعادة تعيين"
+    },
+    "form": {
+        "add_title": "إضافة سجل",
+        "edit_title": "تعديل سجل",
+        "fields": {
+            "code": {
+                "label": "الكود",
+                "placeholder": "أدخل الكود (أحرف وأرقام وشرطة سفلية فقط)",
+                "required": "الكود مطلوب"
+            },
+            "name": {
+                "label": "الاسم",
+                "placeholder": "أدخل الاسم",
+                "required": "الاسم مطلوب"
+            },
+            "description": {
+                "label": "الوصف",
+                "placeholder": "أدخل الوصف"
+            },
+            "default_template": {
+                "label": "القالب الافتراضي",
+                "placeholder": "أدخل محتوى القالب الافتراضي"
+            },
+            "is_active": {
+                "label": "الحالة",
+                "active": "نشط",
+                "inactive": "غير نشط"
+            },
+            "tenant_id": {
+                "label": "معرف المشترك"
+            },
+            "sender_entity_id": {
+                "label": "معرف الجهة المرسلة",
+                "placeholder": "اختياري"
+            },
+            "entity_id": {
+                "label": "معرف الجهة",
+                "placeholder": "اختياري"
+            },
+            "title": {
+                "label": "العنوان",
+                "placeholder": "أدخل عنوان الإشعار",
+                "required": "العنوان مطلوب"
+            },
+            "message": {
+                "label": "الرسالة",
+                "placeholder": "أدخل نص الإشعار",
+                "required": "الرسالة مطلوبة"
+            },
+            "data": {
+                "label": "البيانات (JSON)",
+                "placeholder": "بيانات JSON اختيارية"
+            },
+            "notification_type_id": {
+                "label": "نوع الإشعار"
+            },
+            "priority": {
+                "label": "الأولوية",
+                "low": "منخفضة",
+                "normal": "عادية",
+                "high": "عالية",
+                "urgent": "عاجلة"
+            },
+            "expires_at": {
+                "label": "تاريخ الانتهاء",
+                "placeholder": "YYYY-MM-DD HH:MM:SS"
+            },
+            "notification_id": {
+                "label": "معرف الإشعار",
+                "required": "معرف الإشعار مطلوب"
+            },
+            "channel_id": {
+                "label": "القناة",
+                "required": "القناة مطلوبة"
+            },
+            "delivery_status": {
+                "label": "حالة التسليم",
+                "pending": "معلق",
+                "sent": "مُرسل",
+                "failed": "فشل"
+            },
+            "attempts": {
+                "label": "المحاولات",
+                "placeholder": "0"
+            },
+            "sent_at": {
+                "label": "وقت الإرسال",
+                "placeholder": "YYYY-MM-DD HH:MM:SS"
+            },
+            "error_message": {
+                "label": "رسالة الخطأ",
+                "placeholder": "رسالة الخطأ إن وجدت"
+            },
+            "recipient_type": {
+                "label": "نوع المستلم",
+                "required": "نوع المستلم مطلوب",
+                "user": "مستخدم",
+                "entity": "جهة",
+                "tenant": "مشترك"
+            },
+            "recipient_id": {
+                "label": "معرف المستلم",
+                "placeholder": "أدخل معرف المستلم",
+                "required": "معرف المستلم مطلوب"
+            },
+            "unread_count": {
+                "label": "عدد غير المقروء",
+                "placeholder": "0"
+            }
+        },
+        "buttons": {
+            "save": "حفظ",
+            "cancel": "إلغاء",
+            "saving": "جارٍ الحفظ...",
+            "updating": "جارٍ التحديث..."
+        }
+    },
+    "messages": {
+        "success": {
+            "created": "تم إنشاء السجل بنجاح",
+            "updated": "تم تحديث السجل بنجاح",
+            "deleted": "تم حذف السجل بنجاح"
+        },
+        "error": {
+            "load_failed": "فشل في تحميل البيانات",
+            "save_failed": "فشل في حفظ البيانات",
+            "delete_failed": "فشل في حذف السجل",
+            "not_found": "السجل غير موجود"
+        }
+    },
+    "accessibility": {
+        "close": "إغلاق"
+    },
+    "pagination": {
+        "showing": "عرض"
+    },
+    "priority_labels": {
+        "low": "منخفضة",
+        "normal": "عادية",
+        "high": "عالية",
+        "urgent": "عاجلة"
+    },
+    "delivery_status_labels": {
+        "pending": "معلق",
+        "sent": "مُرسل",
+        "failed": "فشل"
+    },
+    "recipient_type_labels": {
+        "user": "مستخدم",
+        "entity": "جهة",
+        "tenant": "مشترك"
+    }
+}

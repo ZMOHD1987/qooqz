@@ -1,0 +1,80 @@
+{
+  "title": "حركة المخزون",
+  "subtitle": "تتبع حركة المنتجات - إعادة تخزين، بيع، إرجاع، تعديل",
+  "add_movement": "إضافة حركة",
+  "scan_barcode": "مسح الباركود",
+  "scan_placeholder": "أدخل رقم الباركود...",
+  "scan_btn": "مسح",
+  "lookup": {
+    "title": "البحث عن منتج",
+    "sku": "بحث برمز SKU",
+    "sku_placeholder": "أدخل رمز SKU...",
+    "search": "بحث",
+    "camera": "ماسح الكاميرا",
+    "open_camera": "فتح الكاميرا",
+    "stop_camera": "إيقاف الكاميرا"
+  },
+  "stats": {
+    "total": "إجمالي الحركات",
+    "restocked": "إعادة تخزين",
+    "sold": "مبيعات",
+    "returned": "مرتجعات",
+    "adjusted": "تعديلات"
+  },
+  "table": {
+    "id": "المعرف",
+    "product": "المنتج",
+    "variant": "النسخة",
+    "type": "النوع",
+    "quantity": "الكمية",
+    "reference": "المرجع",
+    "notes": "ملاحظات",
+    "date": "التاريخ",
+    "actions": "الإجراءات",
+    "no_records": "لا توجد حركات"
+  },
+  "form": {
+    "product_id": "رقم المنتج",
+    "variant_id": "رقم النسخة (اختياري)",
+    "type": "نوع الحركة",
+    "quantity": "الكمية",
+    "reference_id": "رقم المرجع",
+    "notes": "ملاحظات",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "edit": "تعديل",
+    "delete": "حذف"
+  },
+  "types": {
+    "restock": "إعادة تخزين",
+    "sale": "بيع",
+    "return": "إرجاع",
+    "adjustment": "تعديل"
+  },
+  "filter": {
+    "search": "بحث...",
+    "all_types": "جميع الأنواع",
+    "date_from": "من تاريخ",
+    "date_to": "إلى تاريخ",
+    "apply": "تصفية",
+    "clear": "إلغاء الفلاتر"
+  },
+  "messages": {
+    "saved": "تم حفظ الحركة بنجاح",
+    "deleted": "تم حذف الحركة",
+    "confirm_delete": "هل أنت متأكد من الحذف؟",
+    "product_found": "تم العثور على المنتج",
+    "product_not_found": "المنتج غير موجود",
+    "barcode_not_found": "الباركود غير موجود",
+    "sku_not_found": "رمز SKU غير موجود",
+    "camera_not_supported": "الكاميرا غير مدعومة في هذا الجهاز",
+    "camera_error": "لا يمكن الوصول إلى الكاميرا",
+    "error": "حدث خطأ"
+  },
+  "pagination": {
+    "showing": "عرض",
+    "of": "من",
+    "prev": "السابق",
+    "next": "التالي"
+  }
+}

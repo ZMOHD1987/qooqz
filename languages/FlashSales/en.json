@@ -1,0 +1,90 @@
+{
+    "title": "Flash Sales Management",
+    "subtitle": "Manage flash sales, products, and translations",
+    "add_sale": "Add Flash Sale",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "yes": "Yes",
+    "no": "No",
+    "stats": {
+        "total": "Total",
+        "active": "Active",
+        "upcoming": "Upcoming",
+        "ended": "Ended"
+    },
+    "filter": {
+        "search": "Search...",
+        "all_status": "All Status",
+        "active": "Active",
+        "upcoming": "Upcoming",
+        "ended": "Ended",
+        "all_active": "All",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "apply": "Filter",
+        "clear": "Clear"
+    },
+    "table": {
+        "id": "ID",
+        "name": "Name",
+        "discount": "Discount",
+        "start": "Start",
+        "end": "End",
+        "status": "Status",
+        "products": "Products",
+        "sales": "Sales",
+        "actions": "Actions",
+        "loading": "Loading...",
+        "no_records": "No records found"
+    },
+    "modal": {
+        "add_title": "Add Flash Sale",
+        "edit_title": "Edit Flash Sale"
+    },
+    "form": {
+        "sale_name": "Sale Name",
+        "discount_type": "Discount Type",
+        "percentage": "Percentage",
+        "fixed": "Fixed Amount",
+        "discount_value": "Discount Value",
+        "max_discount": "Max Discount Amount",
+        "start_date": "Start Date",
+        "end_date": "End Date",
+        "description": "Description",
+        "banner_image": "Banner Image URL",
+        "is_active": "Active"
+    },
+    "products": {
+        "title": "Products",
+        "add": "Add Product",
+        "product": "Product",
+        "original_price": "Original Price",
+        "sale_price": "Sale Price",
+        "stock": "Stock",
+        "sold": "Sold",
+        "active": "Active",
+        "select_product": "Select Product",
+        "select": "Select...",
+        "max_per_user": "Max Per User"
+    },
+    "translations": {
+        "title": "Translations",
+        "language": "Language",
+        "field": "Field",
+        "value": "Value",
+        "add": "Add Translation"
+    },
+    "messages": {
+        "created": "Created successfully",
+        "updated": "Updated successfully",
+        "deleted": "Deleted successfully",
+        "error": "An error occurred",
+        "confirm_delete": "Are you sure you want to delete this?"
+    },
+    "pagination": {
+        "showing": "Showing",
+        "of": "of"
+    }
+}

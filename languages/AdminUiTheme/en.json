@@ -1,0 +1,279 @@
+{
+    "theme_manager": {
+        "title": "Theme Management",
+        "subtitle": "Manage and customize admin interface themes",
+        "add_new": "Add New Theme",
+        "export": "Export",
+        "loading": "Loading themes...",
+        "retry": "Retry",
+        "form": {
+            "add_title": "Add Theme",
+            "edit_title": "Edit Theme",
+            "buttons": {
+                "save": "Save",
+                "cancel": "Cancel"
+            },
+            "fields": {
+                "name": {
+                    "label": "Theme Name",
+                    "placeholder": "Enter theme name",
+                    "required": "Theme name is required"
+                },
+                "slug": {
+                    "label": "Theme Slug",
+                    "placeholder": "theme-slug",
+                    "required": "Theme slug is required"
+                },
+                "description": {
+                    "label": "Description",
+                    "placeholder": "Enter theme description"
+                },
+                "version": {
+                    "label": "Version",
+                    "placeholder": "1.0.0",
+                    "invalid": "Version must be in format x.x.x"
+                },
+                "author": {
+                    "label": "Author",
+                    "placeholder": "Author name"
+                },
+                "primary_color": {
+                    "label": "Primary Color"
+                },
+                "status": {
+                    "label": "Status",
+                    "active": "Active",
+                    "inactive": "Inactive"
+                },
+                "is_default": "Set as default theme",
+                "thumbnail_url": {
+                    "label": "Thumbnail URL",
+                    "placeholder": "https://..."
+                },
+                "preview_url": {
+                    "label": "Preview URL",
+                    "placeholder": "https://..."
+                }
+            }
+        },
+        "filters": {
+            "search": "Search",
+            "search_placeholder": "Search themes...",
+            "status": "Status",
+            "type": "Type",
+            "apply": "Apply",
+            "reset": "Reset",
+            "status_options": {
+                "all": "All Status",
+                "active": "Active",
+                "inactive": "Inactive"
+            },
+            "type_options": {
+                "all": "All Types",
+                "default": "Default",
+                "custom": "Custom"
+            }
+        },
+        "table": {
+            "id": "ID",
+            "actions_label": "Actions",
+            "empty": {
+                "title": "No Themes Found",
+                "message": "Start by creating your first theme",
+                "add_first": "Add First Theme"
+            },
+            "actions": {
+                "edit": "Edit",
+                "delete": "Delete",
+                "activate": "Activate",
+                "preview": "Preview"
+            }
+        },
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive",
+            "default": "Default"
+        },
+        "preview": {
+            "title": "Theme Preview",
+            "close": "Close",
+            "apply": "Apply Theme"
+        },
+        "messages": {
+            "success": {
+                "save": "Theme saved successfully",
+                "delete": "Theme deleted successfully",
+                "activate": "Theme activated successfully"
+            },
+            "error": {
+                "load_failed": "Failed to load themes",
+                "save_failed": "Failed to save theme",
+                "delete_failed": "Failed to delete theme",
+                "activate_failed": "Failed to activate theme",
+                "preview_failed": "Failed to preview theme"
+            },
+            "confirm": {
+                "delete": "Are you sure you want to delete this theme? This action cannot be undone.",
+                "activate": "Are you sure you want to activate this theme? The current active theme will be deactivated."
+            }
+        }
+    },
+    "accessibility": {
+        "close": "Close"
+    },
+    "tabs": {
+        "info": "Theme Info",
+        "design": "Design",
+        "colors": "Colors",
+        "fonts": "Fonts",
+        "buttons": "Buttons",
+        "cards": "Cards",
+        "homepage": "Homepage",
+        "system": "System Settings"
+    },
+    "theme_manager_settings": {
+        "empty": "No items found",
+        "design":   { "title": "Design Settings",       "add": "Add Setting"       },
+        "colors":   { "title": "Color Settings",        "add": "Add Color"         },
+        "fonts":    { "title": "Font Settings",         "add": "Add Font"          },
+        "buttons":  { "title": "Button Styles",         "add": "Add Button Style"  },
+        "cards":    { "title": "Card Styles",           "add": "Add Card Style"    },
+        "homepage": { "title": "Homepage Sections",     "add": "Add Section"       },
+        "system":   { "title": "System Settings",       "add": "Add Setting"       },
+        "form": {
+            "key":          "Key",
+            "name":         "Name",
+            "value":        "Value",
+            "type":         "Type",
+            "category":     "Category",
+            "active":       "Active",
+            "sort_order":   "Sort Order",
+            "color":        "Color",
+            "font_family":  "Font Family",
+            "size":         "Size",
+            "weight":       "Weight",
+            "line_height":  "Line Height",
+            "slug":         "Slug",
+            "bg_color":     "BG Color",
+            "text_color":   "Text Color",
+            "border_color": "Border Color",
+            "border_width": "Border Width",
+            "border_radius":"Border Radius",
+            "padding":      "Padding",
+            "font_size":    "Font Size",
+            "font_weight":  "Font Weight",
+            "hover_bg":     "Hover BG",
+            "hover_text":   "Hover Text",
+            "hover_border": "Hover Border",
+            "shadow":       "Shadow",
+            "hover_effect": "Hover Effect",
+            "text_align":   "Text Align",
+            "image_ratio":  "Image Ratio",
+            "section_type": "Section Type",
+            "title":        "Title",
+            "subtitle":     "Subtitle",
+            "layout":       "Layout",
+            "items_per_row":"Items / Row",
+            "data_source":  "Data Source",
+            "custom_css":   "Custom CSS",
+            "custom_html":  "Custom HTML",
+            "description":  "Description",
+            "public":       "Public",
+            "editable":     "Editable",
+            "yes":          "Yes",
+            "no":           "No",
+            "save":         "Save",
+            "cancel":       "Cancel"
+        },
+        "types": {
+            "text":     "Text",
+            "number":   "Number",
+            "color":    "Color",
+            "image":    "Image",
+            "boolean":  "Boolean",
+            "select":   "Select",
+            "json":     "JSON",
+            "file":     "File",
+            "email":    "Email"
+        },
+        "categories": {
+            "layout":     "Layout",
+            "header":     "Header",
+            "footer":     "Footer",
+            "sidebar":    "Sidebar",
+            "homepage":   "Homepage",
+            "product":    "Product",
+            "cart":       "Cart",
+            "checkout":   "Checkout",
+            "other":      "Other",
+            "primary":    "Primary",
+            "secondary":  "Secondary",
+            "accent":     "Accent",
+            "background": "Background",
+            "text":       "Text",
+            "border":     "Border",
+            "status":     "Status",
+            "heading":    "Heading",
+            "body":       "Body",
+            "button":     "Button",
+            "navigation": "Navigation"
+        },
+        "button_types": {
+            "primary":   "Primary",
+            "secondary": "Secondary",
+            "success":   "Success",
+            "danger":    "Danger",
+            "warning":   "Warning",
+            "info":      "Info",
+            "outline":   "Outline",
+            "link":      "Link"
+        },
+        "card_types": {
+            "product":      "Product",
+            "category":     "Category",
+            "vendor":       "Vendor",
+            "blog":         "Blog",
+            "feature":      "Feature",
+            "testimonial":  "Testimonial",
+            "auction":      "Auction",
+            "notification": "Notification",
+            "discount":     "Discount",
+            "jobs":         "Jobs",
+            "plan":         "Plan",
+            "other":        "Other"
+        },
+        "hover_effects": {
+            "none":       "None",
+            "lift":       "Lift",
+            "zoom":       "Zoom",
+            "shadow":     "Shadow",
+            "border":     "Border",
+            "brightness": "Brightness"
+        },
+        "text_aligns": {
+            "left":   "Left",
+            "center": "Center",
+            "right":  "Right"
+        },
+        "layouts": {
+            "grid":     "Grid",
+            "slider":   "Slider",
+            "list":     "List",
+            "carousel": "Carousel",
+            "masonry":  "Masonry"
+        },
+        "section_types": {
+            "slider":            "Slider",
+            "categories":        "Categories",
+            "featured_products": "Featured Products",
+            "new_products":      "New Products",
+            "deals":             "Deals",
+            "brands":            "Brands",
+            "vendors":           "Vendors",
+            "banners":           "Banners",
+            "testimonials":      "Testimonials",
+            "custom_html":       "Custom HTML",
+            "other":             "Other"
+        }
+    }
+}

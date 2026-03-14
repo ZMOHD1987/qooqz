@@ -1,0 +1,124 @@
+{
+  "direction": "ltr",
+  "delivery": {
+    "title": "Delivery Management",
+    "subtitle": "Manage zones, providers, orders and tracking",
+    "zone": {
+      "add": "Add Zone",
+      "name": "Zone Name",
+      "type": "Type",
+      "provider": "Provider",
+      "country": "Country",
+      "city": "City",
+      "fee": "Delivery Fee",
+      "est_time": "Est. Time (min)",
+      "center_lat": "Center Lat",
+      "center_lng": "Center Lng",
+      "radius_km": "Radius (km)",
+      "min_order": "Min Order Value",
+      "free_delivery": "Free Delivery Over",
+      "boundary": "Zone Boundary (GeoJSON)",
+      "draw_hint": "draw on map or paste JSON",
+      "empty": "No zones found",
+      "select_country": "Select Country",
+      "select_city": "Select City"
+    },
+    "provider": {
+      "title": "Providers",
+      "details": "Provider Details",
+      "type": "Type",
+      "vehicle": "Vehicle",
+      "license": "License No.",
+      "tenant_user": "Tenant User",
+      "entity": "Entity",
+      "online": "Online",
+      "rating": "Rating",
+      "deliveries": "Deliveries",
+      "status": "Status",
+      "empty": "No providers found",
+      "type_id": "Type provider ID"
+    },
+    "order": {
+      "title": "Delivery Orders",
+      "details": "Order Details",
+      "order_id": "Order ID",
+      "provider": "Provider",
+      "zone": "Zone",
+      "pickup": "Pickup Address",
+      "dropoff": "Dropoff Address",
+      "fee": "Delivery Fee",
+      "payout": "Provider Payout",
+      "status": "Status",
+      "cancel_reason": "Cancel Reason",
+      "cancelled_by": "Cancelled By",
+      "calc_fee": "Calculate Fee",
+      "empty": "No orders found"
+    },
+    "location": {
+      "title": "Driver Locations",
+      "update": "Update Location",
+      "provider": "Provider",
+      "lat": "Latitude",
+      "lng": "Longitude",
+      "pick_map": "Pick on map",
+      "use_gps": "Use my location",
+      "empty": "No locations found"
+    },
+    "tracking": {
+      "title": "Tracking Logs",
+      "log": "Tracking Log",
+      "order": "Delivery Order",
+      "provider": "Provider",
+      "lat": "Latitude",
+      "lng": "Longitude",
+      "note": "Status Note",
+      "empty": "No tracking logs found"
+    },
+    "pzone": {
+      "title": "Provider Zones",
+      "assign": "Assign Provider to Zone",
+      "provider": "Provider",
+      "zone": "Zone",
+      "assigned_at": "Assigned At",
+      "empty": "No provider zone assignments found"
+    },
+    "map": {
+      "pick_coords": "Pick Location on Map",
+      "confirm": "Confirm Location",
+      "search_place": "Search place…",
+      "click_to_select": "Click on the map to select a location"
+    }
+  },
+  "workspace": {
+    "tabs": {
+      "zones": "Zones",
+      "providers": "Providers",
+      "orders": "Orders",
+      "locations": "Locations",
+      "tracking": "Tracking",
+      "provider_zones": "Provider Zones"
+    }
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "add": "Add",
+    "edit": "Edit",
+    "delete": "Delete",
+    "search": "Search",
+    "apply": "Apply",
+    "reset": "Reset",
+    "active": "Active",
+    "inactive": "Inactive",
+    "all": "All",
+    "all_types": "All Types",
+    "select": "Select",
+    "actions": "Actions",
+    "status": "Status",
+    "loading": "Loading…",
+    "none": "None",
+    "created": "Created",
+    "updated": "Updated",
+    "time": "Time"
+  }
+}

@@ -1,0 +1,162 @@
+{
+  "banners": {
+    "title": "البانرات",
+    "subtitle": "إدارة البانرات وترجماتها",
+    "add_new": "إضافة بانر",
+    "loading": "جارٍ التحميل...",
+    "no_data": "لا توجد بيانات",
+    "error": "حدث خطأ",
+    "retry": "إعادة المحاولة"
+  },
+  "table": {
+    "headers": {
+      "id": "الرقم",
+      "image": "الصورة",
+      "title": "العنوان",
+      "position": "الموضع",
+      "sort_order": "الترتيب",
+      "status": "الحالة",
+      "dates": "التواريخ",
+      "actions": "الإجراءات"
+    },
+    "actions": {
+      "edit": "تعديل",
+      "delete": "حذف",
+      "confirm_delete": "هل أنت متأكد من حذف هذا البانر؟ لا يمكن التراجع عن هذا الإجراء."
+    },
+    "status": {
+      "active": "نشط",
+      "inactive": "غير نشط"
+    },
+    "empty": {
+      "title": "لا توجد بانرات",
+      "message": "ابدأ بإضافة بانرات",
+      "add_first": "إضافة أول بانر"
+    }
+  },
+  "filters": {
+    "search": "بحث",
+    "search_placeholder": "البحث في البانرات...",
+    "position": "الموضع",
+    "position_all": "جميع المواضع",
+    "status": "الحالة",
+    "status_options": {
+      "all": "جميع الحالات",
+      "active": "نشط",
+      "inactive": "غير نشط"
+    },
+    "apply": "تطبيق",
+    "reset": "إعادة تعيين"
+  },
+  "form": {
+    "add_title": "إضافة بانر",
+    "edit_title": "تعديل البانر",
+    "fields": {
+      "title": {
+        "label": "العنوان",
+        "placeholder": "أدخل عنوان البانر",
+        "required": "العنوان مطلوب"
+      },
+      "subtitle": {
+        "label": "العنوان الفرعي",
+        "placeholder": "أدخل العنوان الفرعي (اختياري)"
+      },
+      "link_url": {
+        "label": "رابط الهدف",
+        "placeholder": "https://example.com"
+      },
+      "link_text": {
+        "label": "نص الزر",
+        "placeholder": "مثال: تسوق الآن"
+      },
+      "position": {
+        "label": "الموضع",
+        "options": {
+          "homepage_main": "الصفحة الرئيسية – رئيسي",
+          "homepage_secondary": "الصفحة الرئيسية – ثانوي",
+          "category_top": "أعلى الفئة",
+          "product_sidebar": "الشريط الجانبي للمنتج",
+          "footer": "التذييل",
+          "popup": "نافذة منبثقة",
+          "other": "أخرى"
+        }
+      },
+      "background_color": {
+        "label": "لون الخلفية"
+      },
+      "text_color": {
+        "label": "لون النص"
+      },
+      "button_style": {
+        "label": "نمط الزر",
+        "placeholder": "فئة CSS أو نمط"
+      },
+      "sort_order": {
+        "label": "ترتيب العرض",
+        "placeholder": "0"
+      },
+      "status": {
+        "label": "الحالة",
+        "active": "نشط",
+        "inactive": "غير نشط"
+      },
+      "start_date": {
+        "label": "تاريخ البدء"
+      },
+      "end_date": {
+        "label": "تاريخ الانتهاء"
+      },
+      "image": {
+        "label": "صورة البانر"
+      }
+    },
+    "translations": {
+      "section_title": "الترجمات",
+      "section_desc": "الإنجليزية مطلوبة. أضف لغات أخرى حسب الحاجة.",
+      "select_lang": "اختر اللغة",
+      "choose_lang": "اختر اللغة",
+      "title_in_lang": "العنوان بالـ{lang}",
+      "subtitle_in_lang": "العنوان الفرعي بالـ{lang}",
+      "link_text_in_lang": "نص الزر بالـ{lang}",
+      "remove": "إزالة",
+      "add_translation": "إضافة ترجمة",
+      "lang_en": "الإنجليزية",
+      "lang_ar": "العربية"
+    },
+    "buttons": {
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "saving": "جارٍ الحفظ...",
+      "updating": "جارٍ التحديث..."
+    }
+  },
+  "messages": {
+    "success": {
+      "created": "تم إنشاء البانر بنجاح",
+      "updated": "تم تحديث البانر بنجاح",
+      "deleted": "تم حذف البانر بنجاح"
+    },
+    "error": {
+      "load_failed": "فشل تحميل البيانات",
+      "save_failed": "فشل حفظ البيانات",
+      "delete_failed": "فشل حذف البيانات",
+      "not_found": "العنصر غير موجود",
+      "en_required": "العنوان الإنجليزي مطلوب"
+    }
+  },
+  "validation": {
+    "required": "مطلوب",
+    "title_required": "العنوان مطلوب",
+    "en_title_required": "العنوان الإنجليزي مطلوب"
+  },
+  "common": {
+    "select_image": "اختر صورة",
+    "remove_image": "إزالة الصورة"
+  },
+  "accessibility": {
+    "close": "إغلاق"
+  },
+  "pagination": {
+    "showing": "عرض"
+  }
+}

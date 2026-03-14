@@ -1,0 +1,191 @@
+{
+  "certificates_requests": {
+    "title": "طلبات الشهادات",
+    "subtitle": "إدارة طلبات الشهادات",
+    "add_new": "إضافة طلب",
+    "loading": "جارٍ التحميل...",
+    "retry": "إعادة المحاولة"
+  },
+  "table": {
+    "headers": {
+      "id": "المعرف",
+      "tenant": "المستأجر",
+      "entity": "المنشأة",
+      "certificate": "الشهادة",
+      "edition": "الإصدار",
+      "importer": "المستورد",
+      "country": "الدولة",
+      "gcc": "النوع",
+      "operation": "العملية",
+      "shipment": "الشحنة",
+      "transport": "وسيلة النقل",
+      "status": "الحالة",
+      "payment": "الدفع",
+      "issue_date": "تاريخ الإصدار",
+      "created": "تاريخ الإنشاء",
+      "actions": "الإجراءات"
+    },
+    "actions": {
+      "edit": "تعديل",
+      "delete": "حذف",
+      "copy": "نسخ",
+      "confirm_delete": "هل أنت متأكد من حذف هذا الطلب؟",
+      "confirm_copy": "نسخ هذا الطلب مع جميع بنوده؟"
+    },
+    "empty": {
+      "title": "لا توجد طلبات",
+      "message": "ابدأ بإضافة طلب شهادة جديد",
+      "add_first": "إضافة أول طلب"
+    }
+  },
+  "filters": {
+    "search": "بحث",
+    "search_placeholder": "اسم المستورد، الملاحظات...",
+    "all_entities": "كل المنشآت",
+    "all_certificates": "كل الشهادات",
+    "all": "الكل",
+    "apply": "تطبيق",
+    "reset": "إعادة تعيين",
+    "tenant_id": "معرف المستأجر",
+    "entity": "المنشأة",
+    "certificate": "الشهادة",
+    "gcc_type": "نوع GCC",
+    "status": "الحالة",
+    "payment_status": "حالة الدفع",
+    "transport": "وسيلة النقل"
+  },
+  "form": {
+    "add_title": "إضافة طلب جديد",
+    "edit_title": "تعديل الطلب",
+    "copy_title": "نسخة من الطلب",
+    "sections": {
+      "ownership": "ملكية الطلب",
+      "certificate": "تعريف الشهادة",
+      "importer": "المستورد",
+      "shipment": "الشحنة",
+      "status": "الحالة والمراجعة",
+      "details": "التفاصيل",
+      "translations": "الترجمات",
+      "items": "بنود الطلب (المنتجات)"
+    },
+    "fields": {
+      "tenant_id": { "label": "معرف المستأجر" },
+      "entity": { "label": "المنشأة", "select": "اختر المنشأة" },
+      "certificate": { "label": "الشهادة", "select": "اختر الشهادة" },
+      "edition": { "label": "إصدار الشهادة", "select": "اختر الإصدار" },
+      "certificate_type": {
+        "label": "نطاق GCC",
+        "gcc": "دول مجلس التعاون الخليجي",
+        "non_gcc": "خارج دول المجلس"
+      },
+      "operation_type": {
+        "label": "نوع العملية",
+        "export": "تصدير",
+        "re_export": "إعادة تصدير"
+      },
+      "importer_name": { "label": "اسم المستورد" },
+      "importer_country": { "label": "دولة المستورد", "select": "اختر الدولة" },
+      "importer_address": { "label": "عنوان المستورد" },
+      "transport_method": {
+        "label": "وسيلة النقل",
+        "sea": "بحري",
+        "land": "بري",
+        "air": "جوي"
+      },
+      "shipment_condition": {
+        "label": "حالة الشحنة",
+        "chilled": "مبردة",
+        "dry": "جافة",
+        "frozen": "مجمدة"
+      },
+      "issue_date": { "label": "تاريخ الإصدار" },
+      "status": {
+        "label": "حالة الطلب",
+        "draft": "مسودة",
+        "under_review": "قيد المراجعة",
+        "payment_pending": "بانتظار الدفع",
+        "approved": "معتمد",
+        "rejected": "مرفوض",
+        "issued": "صادر"
+      },
+      "payment_status": {
+        "label": "حالة الدفع",
+        "none": "— بدون دفع —",
+        "unpaid": "غير مدفوع",
+        "waiting": "بانتظار التحقق",
+        "paid": "مدفوع",
+        "rejected": "مرفوض"
+      },
+      "auditor": { "label": "المدقق", "none": "بدون مدقق" },
+      "description": { "label": "الوصف" },
+      "notes": { "label": "ملاحظات" }
+    },
+    "translations": {
+      "title": "ترجمات الطلب",
+      "choose_lang": "اختر اللغة",
+      "add": "إضافة ترجمة",
+      "remove": "حذف",
+      "importer_name": "اسم المستورد",
+      "importer_address": "عنوان المستورد",
+      "description": "الوصف",
+      "notes": "ملاحظات"
+    },
+    "items": {
+      "title": "بنود الطلب",
+      "select_product": "اختر منتجاً للإضافة...",
+      "add_item": "إضافة للجدول",
+      "empty": "لا توجد بنود — اختر منتجاً من الأعلى وانقر «إضافة للجدول»",
+      "product": "المنتج",
+      "brand": "العلامة التجارية",
+      "origin_country": "بلد المنشأ",
+      "quantity": "الكمية",
+      "net_weight": "الوزن الصافي",
+      "weight_unit": "الوحدة",
+      "production_date": "تاريخ الإنتاج",
+      "expiry_date": "تاريخ الانتهاء",
+      "notes": "ملاحظات",
+      "actions": "إجراءات",
+      "remove": "حذف"
+    },
+    "audit_info": {
+      "title": "معلومات التدقيق",
+      "status": "حالة التدقيق",
+      "date": "تاريخ التدقيق",
+      "notes": "ملاحظات التدقيق"
+    },
+    "issued_info": {
+      "title": "معلومات الشهادة الصادرة",
+      "cert_number": "رقم الشهادة",
+      "issued_at": "تاريخ الإصدار",
+      "printable_until": "صالحة للطباعة حتى"
+    },
+    "buttons": {
+      "save": "حفظ الطلب",
+      "cancel": "إلغاء",
+      "saving": "جارٍ الحفظ...",
+      "updating": "جارٍ التحديث..."
+    }
+  },
+  "messages": {
+    "success": {
+      "created": "تم إنشاء الطلب بنجاح",
+      "updated": "تم تحديث الطلب بنجاح",
+      "deleted": "تم حذف الطلب بنجاح",
+      "copied": "تم نسخ الطلب بنجاح"
+    },
+    "error": {
+      "load_failed": "فشل تحميل البيانات",
+      "save_failed": "فشل حفظ البيانات",
+      "delete_failed": "فشل حذف البيانات",
+      "not_found": "السجل غير موجود",
+      "select_product": "يرجى اختيار منتج أولاً"
+    },
+    "confirm": {
+      "delete": "هل أنت متأكد من حذف هذا الطلب وجميع بنوده؟",
+      "copy": "نسخ هذا الطلب مع جميع بنوده وترجماته؟"
+    }
+  },
+  "pagination": {
+    "showing": "عرض"
+  }
+}

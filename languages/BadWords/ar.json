@@ -1,0 +1,76 @@
+{
+    "strings": {
+        "title": "إدارة الكلمات المحظورة",
+        "subtitle": "إدارة فلتر الكلمات المسيئة والمحظورة",
+        "add_word": "إضافة كلمة",
+        "edit_word": "تعديل كلمة",
+        "filter": {
+            "search_placeholder": "بحث عن كلمات...",
+            "all_severities": "جميع مستويات الخطورة",
+            "all_statuses": "جميع الحالات",
+            "active": "نشط",
+            "inactive": "غير نشط",
+            "apply": "تصفية",
+            "clear": "إلغاء الفلاتر"
+        },
+        "severity": {
+            "low": "منخفضة",
+            "medium": "متوسطة",
+            "high": "عالية"
+        },
+        "table": {
+            "id": "المعرف",
+            "word": "الكلمة",
+            "severity": "الخطورة",
+            "regex": "تعبير نمطي",
+            "active": "نشط",
+            "created": "تاريخ الإنشاء",
+            "actions": "الإجراءات",
+            "no_records": "لا توجد سجلات",
+            "yes": "نعم",
+            "no": "لا",
+            "edit": "تعديل",
+            "delete": "حذف",
+            "translations": "الترجمات"
+        },
+        "modal": {
+            "add_title": "إضافة كلمة محظورة",
+            "edit_title": "تعديل كلمة محظورة"
+        },
+        "form": {
+            "word": "الكلمة",
+            "severity": "الخطورة",
+            "is_regex": "تعبير نمطي",
+            "is_active": "نشط",
+            "save": "حفظ",
+            "cancel": "إلغاء"
+        },
+        "translations": {
+            "title": "ترجمات الكلمة",
+            "language": "اللغة",
+            "translated_word": "الكلمة المترجمة",
+            "add": "إضافة ترجمة",
+            "word": "الكلمة"
+        },
+        "text_check": {
+            "title": "فحص النص",
+            "input_label": "النص المراد فحصه",
+            "check": "فحص"
+        },
+        "saved": "تم الحفظ بنجاح",
+        "deleted": "تم الحذف بنجاح",
+        "unknown_error": "خطأ غير معروف",
+        "delete_failed": "فشل الحذف",
+        "confirm_delete": "هل أنت متأكد من حذف هذه الكلمة؟",
+        "confirm_delete_translation": "هل أنت متأكد من حذف هذه الترجمة؟",
+        "no_items": "لم يتم العثور على كلمات محظورة",
+        "no_translations": "لا توجد ترجمات",
+        "enter_text": "الرجاء إدخال نص",
+        "no_bad_words_found": "لم يتم العثور على كلمات محظورة في النص.",
+        "check_failed": "فشل الفحص",
+        "pagination": {
+            "showing": "عرض",
+            "of": "من"
+        }
+    }
+}

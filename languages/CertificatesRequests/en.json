@@ -1,0 +1,191 @@
+{
+  "certificates_requests": {
+    "title": "Certificates Requests",
+    "subtitle": "Manage certificate requests",
+    "add_new": "Add Request",
+    "loading": "Loading...",
+    "retry": "Retry"
+  },
+  "table": {
+    "headers": {
+      "id": "ID",
+      "tenant": "Tenant",
+      "entity": "Entity",
+      "certificate": "Certificate",
+      "edition": "Edition",
+      "importer": "Importer",
+      "country": "Country",
+      "gcc": "GCC",
+      "operation": "Operation",
+      "shipment": "Shipment",
+      "transport": "Transport",
+      "status": "Status",
+      "payment": "Payment",
+      "issue_date": "Issue Date",
+      "created": "Created",
+      "actions": "Actions"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "copy": "Copy",
+      "confirm_delete": "Are you sure you want to delete this request?",
+      "confirm_copy": "Copy this request with all its items?"
+    },
+    "empty": {
+      "title": "No Requests Found",
+      "message": "Start by adding a certificate request",
+      "add_first": "Add First Request"
+    }
+  },
+  "filters": {
+    "search": "Search",
+    "search_placeholder": "Importer name, notes...",
+    "all_entities": "All Entities",
+    "all_certificates": "All Certificates",
+    "all": "All",
+    "apply": "Apply",
+    "reset": "Reset",
+    "tenant_id": "Tenant ID",
+    "entity": "Entity",
+    "certificate": "Certificate",
+    "gcc_type": "GCC Type",
+    "status": "Status",
+    "payment_status": "Payment Status",
+    "transport": "Transport"
+  },
+  "form": {
+    "add_title": "Add New Request",
+    "edit_title": "Edit Request",
+    "copy_title": "Copy of Request",
+    "sections": {
+      "ownership": "Ownership",
+      "certificate": "Certificate Definition",
+      "importer": "Importer",
+      "shipment": "Shipment",
+      "status": "Status & Audit",
+      "details": "Details",
+      "translations": "Translations",
+      "items": "Request Items (Products)"
+    },
+    "fields": {
+      "tenant_id": { "label": "Tenant ID" },
+      "entity": { "label": "Entity", "select": "Select Entity" },
+      "certificate": { "label": "Certificate", "select": "Select Certificate" },
+      "edition": { "label": "Certificate Edition", "select": "Select Edition" },
+      "certificate_type": {
+        "label": "GCC Scope",
+        "gcc": "GCC",
+        "non_gcc": "Non-GCC"
+      },
+      "operation_type": {
+        "label": "Operation Type",
+        "export": "Export",
+        "re_export": "Re-export"
+      },
+      "importer_name": { "label": "Importer Name" },
+      "importer_country": { "label": "Importer Country", "select": "Select Country" },
+      "importer_address": { "label": "Importer Address" },
+      "transport_method": {
+        "label": "Transport Method",
+        "sea": "Sea",
+        "land": "Land",
+        "air": "Air"
+      },
+      "shipment_condition": {
+        "label": "Shipment Condition",
+        "chilled": "Chilled",
+        "dry": "Dry",
+        "frozen": "Frozen"
+      },
+      "issue_date": { "label": "Issue Date" },
+      "status": {
+        "label": "Request Status",
+        "draft": "Draft",
+        "under_review": "Under Review",
+        "payment_pending": "Payment Pending",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "issued": "Issued"
+      },
+      "payment_status": {
+        "label": "Payment Status",
+        "none": "— No Payment —",
+        "unpaid": "Unpaid",
+        "waiting": "Waiting Verification",
+        "paid": "Paid",
+        "rejected": "Rejected"
+      },
+      "auditor": { "label": "Assigned Auditor", "none": "No Auditor" },
+      "description": { "label": "Description" },
+      "notes": { "label": "Notes" }
+    },
+    "translations": {
+      "title": "Request Translations",
+      "choose_lang": "Choose Language",
+      "add": "Add Translation",
+      "remove": "Remove",
+      "importer_name": "Importer Name",
+      "importer_address": "Importer Address",
+      "description": "Description",
+      "notes": "Notes"
+    },
+    "items": {
+      "title": "Request Items",
+      "select_product": "Select product to add...",
+      "add_item": "Add to Table",
+      "empty": "No items — select a product above and click «Add to Table»",
+      "product": "Product",
+      "brand": "Brand",
+      "origin_country": "Origin Country",
+      "quantity": "Quantity",
+      "net_weight": "Net Weight",
+      "weight_unit": "Unit",
+      "production_date": "Prod. Date",
+      "expiry_date": "Exp. Date",
+      "notes": "Notes",
+      "actions": "Actions",
+      "remove": "Remove"
+    },
+    "audit_info": {
+      "title": "Audit Information",
+      "status": "Audit Status",
+      "date": "Audit Date",
+      "notes": "Audit Notes"
+    },
+    "issued_info": {
+      "title": "Issued Certificate Info",
+      "cert_number": "Certificate Number",
+      "issued_at": "Issued At",
+      "printable_until": "Printable Until"
+    },
+    "buttons": {
+      "save": "Save Request",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "updating": "Updating..."
+    }
+  },
+  "messages": {
+    "success": {
+      "created": "Request created successfully",
+      "updated": "Request updated successfully",
+      "deleted": "Request deleted successfully",
+      "copied": "Request copied successfully"
+    },
+    "error": {
+      "load_failed": "Failed to load data",
+      "save_failed": "Failed to save data",
+      "delete_failed": "Failed to delete",
+      "not_found": "Record not found",
+      "select_product": "Please select a product first"
+    },
+    "confirm": {
+      "delete": "Are you sure you want to delete this request and all its items?",
+      "copy": "Copy this request with all its items and translations?"
+    }
+  },
+  "pagination": {
+    "showing": "Showing"
+  }
+}

@@ -1,0 +1,279 @@
+{
+    "theme_manager": {
+        "title": "إدارة النسق",
+        "subtitle": "إدارة وتخصيص مظهر لوحة الإدارة",
+        "add_new": "إضافة نسق جديد",
+        "export": "تصدير",
+        "loading": "جاري تحميل النسق...",
+        "retry": "إعادة المحاولة",
+        "form": {
+            "add_title": "إضافة نسق",
+            "edit_title": "تعديل النسق",
+            "buttons": {
+                "save": "حفظ",
+                "cancel": "إلغاء"
+            },
+            "fields": {
+                "name": {
+                    "label": "اسم النسق",
+                    "placeholder": "أدخل اسم النسق",
+                    "required": "اسم النسق مطلوب"
+                },
+                "slug": {
+                    "label": "المعرف",
+                    "placeholder": "معرف النسق",
+                    "required": "معرف النسق مطلوب"
+                },
+                "description": {
+                    "label": "الوصف",
+                    "placeholder": "أدخل وصف النسق"
+                },
+                "version": {
+                    "label": "الإصدار",
+                    "placeholder": "1.0.0",
+                    "invalid": "يجب أن يكون الإصدار بالشكل x.x.x"
+                },
+                "author": {
+                    "label": "المؤلف",
+                    "placeholder": "اسم المؤلف"
+                },
+                "primary_color": {
+                    "label": "اللون الأساسي"
+                },
+                "status": {
+                    "label": "الحالة",
+                    "active": "نشط",
+                    "inactive": "غير نشط"
+                },
+                "is_default": "تعيين كنسق افتراضي",
+                "thumbnail_url": {
+                    "label": "رابط الصورة المصغرة",
+                    "placeholder": "https://..."
+                },
+                "preview_url": {
+                    "label": "رابط المعاينة",
+                    "placeholder": "https://..."
+                }
+            }
+        },
+        "filters": {
+            "search": "بحث",
+            "search_placeholder": "بحث في النسق...",
+            "status": "الحالة",
+            "type": "النوع",
+            "apply": "تطبيق",
+            "reset": "إعادة تعيين",
+            "status_options": {
+                "all": "جميع الحالات",
+                "active": "نشط",
+                "inactive": "غير نشط"
+            },
+            "type_options": {
+                "all": "جميع الأنواع",
+                "default": "افتراضي",
+                "custom": "مخصص"
+            }
+        },
+        "table": {
+            "id": "المعرّف",
+            "actions_label": "الإجراءات",
+            "empty": {
+                "title": "لا توجد نسق",
+                "message": "ابدأ بإنشاء أول نسق لك",
+                "add_first": "إضافة أول نسق"
+            },
+            "actions": {
+                "edit": "تعديل",
+                "delete": "حذف",
+                "activate": "تفعيل",
+                "preview": "معاينة"
+            }
+        },
+        "status": {
+            "active": "نشط",
+            "inactive": "غير نشط",
+            "default": "افتراضي"
+        },
+        "preview": {
+            "title": "معاينة النسق",
+            "close": "إغلاق",
+            "apply": "تطبيق النسق"
+        },
+        "messages": {
+            "success": {
+                "save": "تم حفظ النسق بنجاح",
+                "delete": "تم حذف النسق بنجاح",
+                "activate": "تم تفعيل النسق بنجاح"
+            },
+            "error": {
+                "load_failed": "فشل في تحميل النسق",
+                "save_failed": "فشل في حفظ النسق",
+                "delete_failed": "فشل في حذف النسق",
+                "activate_failed": "فشل في تفعيل النسق",
+                "preview_failed": "فشل في معاينة النسق"
+            },
+            "confirm": {
+                "delete": "هل أنت متأكد من حذف هذا النسق؟ لا يمكن التراجع عن هذا الإجراء.",
+                "activate": "هل أنت متأكد من تفعيل هذا النسق؟ سيتم إلغاء تفعيل النسق الحالي."
+            }
+        }
+    },
+    "accessibility": {
+        "close": "إغلاق"
+    },
+    "tabs": {
+        "info":     "معلومات النسق",
+        "design":   "التصميم",
+        "colors":   "الألوان",
+        "fonts":    "الخطوط",
+        "buttons":  "الأزرار",
+        "cards":    "البطاقات",
+        "homepage": "الصفحة الرئيسية",
+        "system":   "إعدادات النظام"
+    },
+    "theme_manager_settings": {
+        "empty": "لا توجد عناصر",
+        "design":   { "title": "إعدادات التصميم",          "add": "إضافة إعداد"        },
+        "colors":   { "title": "إعدادات الألوان",           "add": "إضافة لون"           },
+        "fonts":    { "title": "إعدادات الخطوط",            "add": "إضافة خط"            },
+        "buttons":  { "title": "أنماط الأزرار",             "add": "إضافة نمط زر"        },
+        "cards":    { "title": "أنماط البطاقات",             "add": "إضافة نمط بطاقة"     },
+        "homepage": { "title": "أقسام الصفحة الرئيسية",    "add": "إضافة قسم"           },
+        "system":   { "title": "إعدادات النظام",            "add": "إضافة إعداد"         },
+        "form": {
+            "key":           "المفتاح",
+            "name":          "الاسم",
+            "value":         "القيمة",
+            "type":          "النوع",
+            "category":      "الفئة",
+            "active":        "نشط",
+            "sort_order":    "ترتيب الفرز",
+            "color":         "اللون",
+            "font_family":   "عائلة الخط",
+            "size":          "الحجم",
+            "weight":        "الوزن",
+            "line_height":   "ارتفاع السطر",
+            "slug":          "المعرّف",
+            "bg_color":      "لون الخلفية",
+            "text_color":    "لون النص",
+            "border_color":  "لون الحدود",
+            "border_width":  "عرض الحدود",
+            "border_radius": "انحناء الحدود",
+            "padding":       "المسافة الداخلية",
+            "font_size":     "حجم الخط",
+            "font_weight":   "وزن الخط",
+            "hover_bg":      "خلفية التحويم",
+            "hover_text":    "نص التحويم",
+            "hover_border":  "حدود التحويم",
+            "shadow":        "الظل",
+            "hover_effect":  "تأثير التحويم",
+            "text_align":    "محاذاة النص",
+            "image_ratio":   "نسبة الصورة",
+            "section_type":  "نوع القسم",
+            "title":         "العنوان",
+            "subtitle":      "العنوان الفرعي",
+            "layout":        "التخطيط",
+            "items_per_row": "عناصر في الصف",
+            "data_source":   "مصدر البيانات",
+            "custom_css":    "CSS مخصص",
+            "custom_html":   "HTML مخصص",
+            "description":   "الوصف",
+            "public":        "عام",
+            "editable":      "قابل للتعديل",
+            "yes":           "نعم",
+            "no":            "لا",
+            "save":          "حفظ",
+            "cancel":        "إلغاء"
+        },
+        "types": {
+            "text":    "نص",
+            "number":  "رقم",
+            "color":   "لون",
+            "image":   "صورة",
+            "boolean": "منطقي",
+            "select":  "قائمة",
+            "json":    "JSON",
+            "file":    "ملف",
+            "email":   "بريد إلكتروني"
+        },
+        "categories": {
+            "layout":     "التخطيط",
+            "header":     "الرأس",
+            "footer":     "التذييل",
+            "sidebar":    "الشريط الجانبي",
+            "homepage":   "الصفحة الرئيسية",
+            "product":    "المنتج",
+            "cart":       "السلة",
+            "checkout":   "الدفع",
+            "other":      "أخرى",
+            "primary":    "أساسي",
+            "secondary":  "ثانوي",
+            "accent":     "مميز",
+            "background": "الخلفية",
+            "text":       "النص",
+            "border":     "الحدود",
+            "status":     "الحالة",
+            "heading":    "العنوان",
+            "body":       "المحتوى",
+            "button":     "الزر",
+            "navigation": "التنقل"
+        },
+        "button_types": {
+            "primary":   "أساسي",
+            "secondary": "ثانوي",
+            "success":   "نجاح",
+            "danger":    "خطر",
+            "warning":   "تحذير",
+            "info":      "معلومات",
+            "outline":   "محيط",
+            "link":      "رابط"
+        },
+        "card_types": {
+            "product":      "منتج",
+            "category":     "فئة",
+            "vendor":       "بائع",
+            "blog":         "مدونة",
+            "feature":      "ميزة",
+            "testimonial":  "شهادة",
+            "auction":      "مزاد",
+            "notification": "إشعار",
+            "discount":     "خصم",
+            "jobs":         "وظائف",
+            "plan":         "خطة",
+            "other":        "أخرى"
+        },
+        "hover_effects": {
+            "none":       "بلا",
+            "lift":       "رفع",
+            "zoom":       "تكبير",
+            "shadow":     "ظل",
+            "border":     "حدود",
+            "brightness": "سطوع"
+        },
+        "text_aligns": {
+            "left":   "يسار",
+            "center": "وسط",
+            "right":  "يمين"
+        },
+        "layouts": {
+            "grid":     "شبكة",
+            "slider":   "شريط",
+            "list":     "قائمة",
+            "carousel": "دوّار",
+            "masonry":  "مبعثر"
+        },
+        "section_types": {
+            "slider":            "شريط",
+            "categories":        "الفئات",
+            "featured_products": "منتجات مميزة",
+            "new_products":      "منتجات جديدة",
+            "deals":             "العروض",
+            "brands":            "الماركات",
+            "vendors":           "الباعة",
+            "banners":           "البانرات",
+            "testimonials":      "الشهادات",
+            "custom_html":       "HTML مخصص",
+            "other":             "أخرى"
+        }
+    }
+}

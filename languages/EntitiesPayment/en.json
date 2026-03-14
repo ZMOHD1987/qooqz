@@ -1,0 +1,67 @@
+{
+    "direction": "ltr",
+    "strings": {
+        "title": "Entity Payment Methods",
+        "subtitle": "Manage payment gateways and bank accounts",
+        "select_entity": "Select Entity...",
+        "load": "Load",
+        "add_payment": "Add Payment",
+        "add_bank": "Add Bank",
+        "select_entity_first": "Please select an entity first.",
+        "saved": "Saved successfully",
+        "deleted": "Deleted successfully",
+        "delete_failed": "Delete failed",
+        "unknown_error": "Unknown error",
+        "confirm_delete_payment": "Are you sure you want to delete this payment method?",
+        "confirm_delete_bank": "Are you sure you want to delete this bank account?",
+        "payment_methods": {
+            "title": "Payment Methods",
+            "add": "Add Payment Method",
+            "edit": "Edit Payment Method",
+            "gateway": "Gateway",
+            "account_email": "Account Email",
+            "account_id": "Account ID",
+            "active": "Active",
+            "select_gateway": "Select"
+        },
+        "bank_accounts": {
+            "title": "Bank Accounts",
+            "add": "Add Bank Account",
+            "edit": "Edit Bank Account",
+            "bank_name": "Bank Name",
+            "account_holder": "Account Holder",
+            "account_number": "Account Number",
+            "iban": "IBAN",
+            "swift_code": "SWIFT Code",
+            "primary": "Primary",
+            "verified": "Verified"
+        },
+        "table": {
+            "id": "ID",
+            "actions": "Actions",
+            "edit": "Edit",
+            "delete": "Delete",
+            "yes": "Yes",
+            "no": "No"
+        },
+        "form": {
+            "save": "Save",
+            "cancel": "Cancel",
+            "required": "Required"
+        },
+        "filter": {
+            "search": "Search",
+            "search_payments": "Email, Account ID...",
+            "search_banks": "Bank name, account, IBAN...",
+            "payment_method": "Payment Method",
+            "status": "Status",
+            "all": "All",
+            "active": "Active",
+            "inactive": "Inactive",
+            "date_from": "From",
+            "date_to": "To",
+            "apply": "Filter",
+            "clear": "Clear Filters"
+        }
+    }
+}

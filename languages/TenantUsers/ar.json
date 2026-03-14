@@ -1,0 +1,372 @@
+{
+  "tenant_users": {
+    "title": "إدارة مستخدمي الـ Tenants",
+    "subtitle": "إدارة المستخدمين المعينين للـ Tenants",
+    "add_new": "إضافة مستخدم جديد",
+    "loading": "جاري التحميل...",
+    "no_data": "لا توجد بيانات",
+    "error": "حدث خطأ",
+    "retry": "إعادة المحاولة",
+    "search": "البحث",
+    "search_placeholder": "البحث...",
+    "filter_by_tenant": "تصفية حسب الـ tenant",
+    "filter_by_user": "تصفية حسب المستخدم",
+    "all_status": "جميع الحالات",
+    "apply_filters": "تطبيق الفلاتر",
+    "reset_filters": "إعادة تعيين الفلاتر"
+  },
+  "table": {
+    "headers": {
+      "id": "المعرف",
+      "username": "اسم المستخدم",
+      "email": "البريد الإلكتروني",
+      "tenant": "الـ Tenant",
+      "entity": "الكيان",
+      "role": "الدور",
+      "joined_at": "تاريخ الانضمام",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "actions": {
+      "edit": "تعديل",
+      "delete": "حذف",
+      "confirm_delete": "هل أنت متأكد من حذف هذا المستخدم؟ هذا الإجراء لا يمكن التراجع عنه.",
+      "view": "عرض",
+      "activate": "تفعيل",
+      "suspend": "تعليق",
+      "export": "تصدير Excel"
+    },
+    "status": {
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "pending": "في الانتظار",
+      "suspended": "معلق"
+    },
+    "empty": {
+      "title": "لا يوجد مستخدمو Tenants",
+      "message": "ابدأ بإضافة مستخدمين للـ Tenants",
+      "add_first": "إضافة أول مستخدم",
+      "no_entity": "غير محدد"
+    },
+    "loading": "جاري تحميل البيانات...",
+    "error": "فشل في تحميل البيانات"
+  },
+  "filters": {
+    "title": "الفلاتر",
+    "search": "البحث",
+    "search_placeholder": "البحث في الأسماء والبريد الإلكتروني...",
+    "tenant_id": "معرف الـ Tenant",
+    "tenant_placeholder": "أدخل معرف الـ tenant",
+    "user_id": "معرف المستخدم",
+    "user_placeholder": "أدخل معرف المستخدم",
+    "entity_id": "معرف الكيان",
+    "entity_placeholder": "أدخل معرف الكيان",
+    "status": "الحالة",
+    "status_options": {
+      "all": "جميع الحالات",
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "pending": "في الانتظار",
+      "suspended": "معلق"
+    },
+    "date_range": "نطاق التاريخ",
+    "from_date": "من تاريخ",
+    "to_date": "إلى تاريخ",
+    "apply": "تطبيق",
+    "reset": "إعادة تعيين",
+    "clear": "مسح الكل",
+    "advanced": "فلاتر متقدمة",
+    "basic": "فلاتر أساسية"
+  },
+  "form": {
+    "add_title": "إضافة مستخدم جديد",
+    "edit_title": "تعديل مستخدم الـ Tenant",
+    "view_title": "عرض مستخدم الـ Tenant",
+    "close": "إغلاق",
+    "fields": {
+      "tenant_id": {
+        "label": "معرف الـ Tenant",
+        "placeholder": "أدخل معرف الـ Tenant",
+        "help": "يجب أن يكون رقماً صحيحاً",
+        "required": "معرف الـ Tenant مطلوب",
+        "invalid": "معرف الـ Tenant يجب أن يكون رقماً صحيحاً",
+        "not_found": "الـ Tenant غير موجود",
+        "loading": "جاري التحقق..."
+      },
+      "user_id": {
+        "label": "معرف المستخدم",
+        "placeholder": "أدخل معرف المستخدم",
+        "help": "يجب أن يكون رقماً صحيحاً",
+        "required": "معرف المستخدم مطلوب",
+        "invalid": "معرف المستخدم يجب أن يكون رقماً صحيحاً",
+        "not_found": "المستخدم غير موجود",
+        "loading": "جاري التحقق..."
+      },
+      "role_id": {
+        "label": "الدور",
+        "placeholder": "اختر الدور",
+        "help": "اختر الدور المناسب للمستخدم",
+        "required": "الدور مطلوب",
+        "loading": "جاري تحميل الأدوار...",
+        "no_roles": "لا توجد أدوار متاحة لهذا الـ tenant",
+        "enter_tenant_first": "أدخل معرف الـ tenant أولاً لتحميل الأدوار",
+        "tenant_not_found": "الـ tenant غير موجود",
+        "select_role": "اختر دوراً"
+      },
+      "entity_id": {
+        "label": "الكيان (اختياري)",
+        "placeholder": "اختر الكيان (اختياري)",
+        "help": "يمكنك اختيارياً تعيين المستخدم لكيان محدد",
+        "enter_tenant_first": "أدخل معرف الـ tenant أولاً",
+        "not_found": "الكيان غير موجود",
+        "no_entities": "لا توجد كيانات متاحة"
+      },
+      "status": {
+        "label": "الحالة",
+        "help": "حدد حالة المستخدم",
+        "active": "نشط",
+        "inactive": "غير نشط"
+      },
+      "notes": {
+        "label": "ملاحظات",
+        "placeholder": "أدخل أي ملاحظات إضافية...",
+        "help": "اختياري"
+      }
+    },
+    "tenant_info": {
+      "title": "معلومات الـ Tenant",
+      "name": "الاسم:",
+      "domain": "النطاق:",
+      "status": "الحالة:",
+      "owner": "المالك:",
+      "created": "تاريخ الإنشاء:",
+      "loading": "جاري تحميل معلومات الـ tenant..."
+    },
+    "user_info": {
+      "title": "معلومات المستخدم",
+      "name": "الاسم:",
+      "email": "البريد الإلكتروني:",
+      "status": "الحالة:",
+      "role": "الدور الحالي:",
+      "joined": "تاريخ الانضمام:",
+      "last_login": "آخر دخول:",
+      "loading": "جاري تحميل معلومات المستخدم..."
+    },
+    "entity_info": {
+      "title": "معلومات الكيان",
+      "name": "المتجر:",
+      "slug": "الرابط:",
+      "status": "الحالة:",
+      "loading": "جاري تحميل معلومات الكيان..."
+    },
+    "validation": {
+      "required": "هذا الحقل مطلوب",
+      "invalid_format": "تنسيق غير صحيح",
+      "already_exists": "موجود مسبقاً",
+      "permission_denied": "ليس لديك صلاحية"
+    },
+    "buttons": {
+      "save": "حفظ",
+      "update": "تحديث",
+      "create": "إنشاء",
+      "cancel": "إلغاء",
+      "close": "إغلاق",
+      "saving": "جاري الحفظ...",
+      "updating": "جاري التحديث...",
+      "loading": "جاري التحميل..."
+    },
+    "messages": {
+      "save_success": "تم حفظ البيانات بنجاح",
+      "update_success": "تم تحديث البيانات بنجاح",
+      "save_error": "فشل في حفظ البيانات",
+      "load_error": "فشل في تحميل البيانات",
+      "validation_error": "يرجى تصحيح الأخطاء أدناه"
+    }
+  },
+  "messages": {
+    "success": {
+      "created": "تم إنشاء المستخدم بنجاح",
+      "updated": "تم تحديث المستخدم بنجاح",
+      "deleted": "تم حذف المستخدم بنجاح",
+      "activated": "تم تفعيل المستخدم بنجاح",
+      "suspended": "تم تعليق المستخدم بنجاح",
+      "bulk_updated": "تم تحديث المستخدمين المحددين بنجاح",
+      "restored": "تم استعادة المستخدم بنجاح"
+    },
+    "error": {
+      "load_failed": "فشل في تحميل البيانات",
+      "save_failed": "فشل في حفظ البيانات",
+      "delete_failed": "فشل في حذف البيانات",
+      "update_failed": "فشل في تحديث البيانات",
+      "validation_failed": "فشل في التحقق من البيانات",
+      "network_error": "خطأ في الشبكة",
+      "server_error": "خطأ في الخادم",
+      "permission_denied": "ليس لديك صلاحية لتنفيذ هذا الإجراء",
+      "not_found": "العنصر غير موجود",
+      "already_exists": "العنصر موجود مسبقاً",
+      "invalid_data": "البيانات غير صحيحة",
+      "unknown_error": "خطأ غير معروف"
+    },
+    "warnings": {
+      "no_permissions": "ليس لديك صلاحيات لتنفيذ هذا الإجراء",
+      "confirm_action": "هل أنت متأكد من تنفيذ هذا الإجراء؟",
+      "confirm_delete": "هل أنت متأكد من الحذف؟ هذا الإجراء لا يمكن التراجع عنه.",
+      "confirm_bulk": "هل أنت متأكد من تطبيق هذا الإجراء على جميع العناصر المحددة؟",
+      "unsaved_changes": "لديك تغييرات غير محفوظة. هل تريد المتابعة؟",
+      "session_expired": "انتهت صلاحية الجلسة، يرجى تسجيل الدخول مرة أخرى",
+      "no_selection": "يرجى تحديد عنصر واحد على الأقل"
+    },
+    "info": {
+      "loading": "جاري تحميل البيانات...",
+      "saving": "جاري حفظ البيانات...",
+      "processing": "جاري معالجة الطلب...",
+      "no_data": "لا توجد بيانات لعرضها",
+      "no_results": "لا توجد نتائج تطابق معايير البحث"
+    }
+  },
+  "pagination": {
+    "showing": "عرض",
+    "to": "إلى",
+    "of": "من",
+    "entries": "مدخلات",
+    "total": "الإجمالي",
+    "pages": "صفحات",
+    "previous": "السابق",
+    "next": "التالي",
+    "first": "الأول",
+    "last": "الأخير",
+    "page": "صفحة",
+    "per_page": "لكل صفحة",
+    "items_per_page": "عنصر في الصفحة"
+  },
+  "bulk_actions": {
+    "title": "الإجراءات المجمعة",
+    "selected": "محدد",
+    "select_all": "تحديد الكل",
+    "deselect_all": "إلغاء تحديد الكل",
+    "activate": "تفعيل",
+    "suspend": "تعليق",
+    "delete": "حذف",
+    "export": "تصدير",
+    "apply": "تطبيق",
+    "confirm_bulk_delete": "هل أنت متأكد من حذف جميع العناصر المحددة؟",
+    "confirm_bulk_activate": "هل أنت متأكد من تفعيل جميع العناصر المحددة؟",
+    "confirm_bulk_suspend": "هل أنت متأكد من تعليق جميع العناصر المحددة؟"
+  },
+  "modals": {
+    "confirm": {
+      "title": "تأكيد الإجراء",
+      "delete_title": "تأكيد الحذف",
+      "activate_title": "تأكيد التفعيل",
+      "suspend_title": "تأكيد التعليق",
+      "yes": "نعم",
+      "no": "لا",
+      "cancel": "إلغاء",
+      "confirm": "تأكيد"
+    },
+    "alert": {
+      "title": "تنبيه",
+      "error_title": "خطأ",
+      "success_title": "نجح",
+      "info_title": "معلومات",
+      "warning_title": "تحذير",
+      "ok": "موافق",
+      "close": "إغلاق"
+    }
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "required_field": "حقل '{field}' مطلوب",
+    "min_length": "يجب أن يكون الطول أكثر من {min} أحرف",
+    "max_length": "يجب أن يكون الطول أقل من {max} حرف",
+    "exact_length": "يجب أن يكون الطول {exact} أحرف بالضبط",
+    "invalid_email": "البريد الإلكتروني غير صحيح",
+    "invalid_url": "الرابط غير صحيح",
+    "invalid_number": "يجب أن يكون رقماً",
+    "invalid_integer": "يجب أن يكون رقماً صحيحاً",
+    "invalid_decimal": "يجب أن يكون رقماً عشرياً",
+    "invalid_date": "التاريخ غير صحيح",
+    "invalid_datetime": "التاريخ والوقت غير صحيحين",
+    "invalid_time": "الوقت غير صحيح",
+    "invalid_phone": "رقم الهاتف غير صحيح",
+    "invalid_postal": "الرمز البريدي غير صحيح",
+    "invalid_regex": "التنسيق غير صحيح",
+    "not_unique": "هذه القيمة موجودة مسبقاً",
+    "matches": "لا يتطابق مع الحقل الآخر",
+    "min_value": "يجب أن تكون القيمة أكبر من أو تساوي {min}",
+    "max_value": "يجب أن تكون القيمة أصغر من أو تساوي {max}",
+    "range": "يجب أن تكون القيمة بين {min} و {max}",
+    "invalid_selection": "اختيار غير صحيح",
+    "file_too_large": "حجم الملف كبير جداً (الحد الأقصى: {max} ميجابايت)",
+    "invalid_file_type": "نوع الملف غير مسموح",
+    "upload_failed": "فشل في رفع الملف"
+  },
+  "accessibility": {
+    "loading": "جاري التحميل",
+    "error": "خطأ",
+    "success": "نجح",
+    "warning": "تحذير",
+    "info": "معلومات",
+    "close": "إغلاق",
+    "open": "فتح",
+    "expand": "توسيع",
+    "collapse": "طي",
+    "select": "اختيار",
+    "deselect": "إلغاء الاختيار",
+    "navigate": "تصفح",
+    "search": "بحث",
+    "filter": "تصفية",
+    "sort": "ترتيب",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "save": "حفظ",
+    "cancel": "إلغاء"
+  },
+  "datetime": {
+    "today": "اليوم",
+    "yesterday": "أمس",
+    "tomorrow": "غداً",
+    "now": "الآن",
+    "just_now": "الآن فقط",
+    "minute_ago": "منذ دقيقة",
+    "minutes_ago": "منذ {count} دقائق",
+    "hour_ago": "منذ ساعة",
+    "hours_ago": "منذ {count} ساعات",
+    "day_ago": "منذ يوم",
+    "days_ago": "منذ {count} أيام",
+    "week_ago": "منذ أسبوع",
+    "weeks_ago": "منذ {count} أسابيع",
+    "month_ago": "منذ شهر",
+    "months_ago": "منذ {count} أشهر",
+    "year_ago": "منذ سنة",
+    "years_ago": "منذ {count} سنوات",
+    "date_format": "DD/MM/YYYY",
+    "time_format": "HH:mm:ss",
+    "datetime_format": "DD/MM/YYYY HH:mm:ss"
+  },
+  "export": {
+    "title": "تصدير البيانات",
+    "format": "تنسيق الملف",
+    "csv": "CSV",
+    "excel": "Excel",
+    "pdf": "PDF",
+    "json": "JSON",
+    "xml": "XML",
+    "columns": "الأعمدة",
+    "select_columns": "اختر الأعمدة للتصدير",
+    "all_columns": "جميع الأعمدة",
+    "export": "تصدير",
+    "exporting": "جاري التصدير...",
+    "export_success": "تم التصدير بنجاح",
+    "export_error": "فشل في التصدير",
+    "download": "تحميل"
+  },
+  "help": {
+    "title": "المساعدة",
+    "general": "معلومات عامة",
+    "shortcuts": "اختصارات لوحة المفاتيح",
+    "faq": "الأسئلة الشائعة",
+    "contact": "اتصل بنا",
+    "documentation": "الوثائق"
+  }
+}

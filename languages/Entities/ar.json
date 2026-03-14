@@ -1,0 +1,176 @@
+{
+    "direction": "rtl",
+    "strings": {
+        "title": "الكيانات",
+        "subtitle": "إدارة الكيانات والفروع",
+        "add_new": "إضافة كيان",
+        "edit": "تعديل",
+        "save": "حفظ",
+        "cancel": "إلغاء",
+        "delete": "حذف",
+        "loading": "جاري التحميل...",
+        "search": "بحث",
+        "search_placeholder": "بحث في الكيانات...",
+        "filter": "تصفية",
+        "reset": "إعادة تعيين",
+        "apply": "تطبيق",
+        "all": "الكل",
+        "status": "الحالة",
+        "verified": "مفعل",
+        "pending": "معلق",
+        "approved": "مقبول",
+        "suspended": "موقوف",
+        "rejected": "مرفوض",
+        "active": "نشط",
+        "inactive": "غير نشط",
+        "yes": "نعم",
+        "no": "لا",
+        "create": "إنشاء",
+        "update": "تحديث",
+        "refresh": "تحديث",
+        "actions": "إجراءات",
+        "save_success": "تم حفظ الكيان بنجاح",
+        "update_success": "تم تحديث الكيان بنجاح",
+        "delete_confirm": "هل أنت متأكد من حذف هذا الكيان؟",
+        "delete_success": "تم حذف الكيان بنجاح",
+        "saving": "جاري الحفظ...",
+        "server_error": "خطأ في تحميل البيانات",
+        "save_first": "يرجى حفظ الكيان أولاً",
+        "attribute_exists": "السمة مضافة مسبقاً",
+        "translation_exists": "الترجمة مضافة مسبقاً",
+        "confirm_delete": "هل أنت متأكد؟",
+        "no_entities": "لا توجد كيانات",
+        "manage_entities": "إدارة الكيانات والفروع",
+        "general": {
+            "general": "عام",
+            "basic": "معلومات أساسية",
+            "store_name": "اسم المتجر",
+            "slug": "الرابط",
+            "description": "الوصف",
+            "is_main": "كيان رئيسي",
+            "branch_code": "رمز الفرع",
+            "registration_number": "رقم التسجيل",
+            "tax_number": "رقم الضريبة",
+            "tenant": "المستأجر",
+            "tenant_placeholder": "تصفية حسب المستأجر"
+        },
+        "contact": {
+            "contact": "اتصال",
+            "phone": "الهاتف",
+            "mobile": "الجوال",
+            "email": "البريد الإلكتروني",
+            "website": "الموقع الإلكتروني",
+            "suspension_reason": "سبب الإيقاف"
+        },
+        "settings": {
+            "settings": "إعدادات",
+            "auto_accept_orders": "قبول الطلبات تلقائياً",
+            "allow_cod": "السماح بالدفع عند الاستلام",
+            "min_order_amount": "الحد الأدنى للطلب",
+            "allow_online_booking": "السماح بالحجز عبر الإنترنت",
+            "booking_window_days": "فترة الحجز (أيام)",
+            "max_bookings_per_slot": "الحد الأقصى للحجوزات لكل فتره",
+            "show_reviews": "عرض التقييمات",
+            "show_contact_info": "عرض معلومات الاتصال",
+            "featured_in_app": "مميز في التطبيق"
+        },
+        "working_hours": {
+            "working_hours": "ساعات العمل",
+            "day": "اليوم",
+            "open": "مفتوح",
+            "closed": "مغلق",
+            "open_time": "وقت الافتتاح",
+            "close_time": "وقت الإغلاق",
+            "all_day": "24 ساعة",
+            "closed_all_day": "مغلق طوال اليوم",
+            "apply_to_all": "تطبيق على جميع الأيام",
+            "reset_hours": "إعادة تعيين الساعات"
+        },
+        "attributes": {
+            "attributes": "سمات",
+            "add_attribute": "إضافة سمة",
+            "select": "اختر سمة"
+        },
+        "media": {
+            "media": "وسائط",
+            "logo": "الشعار",
+            "cover": "صورة الغلاف",
+            "license": "الرخصة",
+            "select_from_studio": "اختر من الاستوديو",
+            "delete": "حذف الصورة",
+            "no_logo": "لم يتم اختيار شعار",
+            "no_cover": "لم يتم اختيار صورة غلاف",
+            "no_license": "لم يتم اختيار رخصة",
+            "logo_url": "رابط الشعار سيظهر هنا",
+            "cover_url": "رابط صورة الغلاف سيظهر هنا",
+            "license_url": "رابط الرخصة سيظهر هنا"
+        },
+        "address": {
+            "address": "العنوان"
+        },
+        "translations": {
+            "translations": "ترجمات",
+            "select_language": "اختر اللغة",
+            "choose_language": "اختر لغة",
+            "add_translation": "إضافة ترجمة",
+            "meta_title": "عنوان Meta",
+            "meta_description": "وصف Meta"
+        },
+        "vendor_type": {
+            "vendor_type": "نوع البائع",
+            "product_seller": "بائع منتجات",
+            "service_provider": "مقدم خدمات",
+            "both": "الاثنان معاً"
+        },
+        "store_type": {
+            "store_type": "نوع المتجر",
+            "individual": "فردي",
+            "company": "شركة",
+            "brand": "ماركة"
+        },
+        "validation": {
+            "name_required": "اسم المتجر مطلوب"
+        },
+        "messages": {
+            "validation_failed": "يرجى ملء جميع الحقول المطلوبة",
+            "save_entity_first": "يرجى حفظ الكيان أولاً لإدارة العناوين",
+            "confirm_delete_image": "هل أنت متأكد من حذف هذه الصورة؟",
+            "created": "تم إنشاء الكيان بنجاح",
+            "updated": "تم تحديث الكيان بنجاح",
+            "deleted": "تم حذف الكيان بنجاح",
+            "address_saved": "تم حفظ العنوان بنجاح",
+            "address_deleted": "تم حذف العنوان بنجاح",
+            "image_saved": "تم حفظ الصورة بنجاح",
+            "image_deleted": "تم حذف الصورة بنجاح",
+            "error": {
+                "load_failed": "فشل تحميل البيانات",
+                "save_failed": "فشل حفظ الكيان",
+                "delete_failed": "فشل الحذف",
+                "unknown": "حدث خطأ غير معروف"
+            }
+        },
+        "table": {
+            "headers": {
+                "id": "المعرف",
+                "tenant": "المستأجر",
+                "logo": "الشعار",
+                "store_name": "اسم المتجر",
+                "branch_code": "رمز الفرع",
+                "vendor_type": "نوع البائع",
+                "phone": "الهاتف",
+                "email": "البريد الإلكتروني",
+                "status": "الحالة",
+                "verified": "مفعل",
+                "actions": "إجراءات"
+            },
+            "empty": {
+                "title": "لا توجد كيانات",
+                "message": "ابدأ بإضافة أول كيان",
+                "add_first": "إضافة أول كيان"
+            }
+        },
+        "pagination": {
+            "showing": "عرض"
+        }
+    }
+}

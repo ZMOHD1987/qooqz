@@ -1,0 +1,143 @@
+{
+  "brands": {
+    "title": "العلامات التجارية",
+    "subtitle": "إدارة العلامات التجارية وترجماتها",
+    "add_new": "إضافة علامة تجارية",
+    "loading": "جاري التحميل...",
+    "no_data": "لا توجد بيانات",
+    "error": "حدث خطأ",
+    "retry": "إعادة المحاولة"
+  },
+  "table": {
+    "headers": {
+      "id": "المعرف",
+      "tenant": "المستأجر",
+      "entity": "معرف الكيان",
+      "image": "الصورة",
+      "name": "الاسم",
+      "slug": "الرابط المختصر",
+      "website": "الموقع",
+      "sort_order": "الترتيب",
+      "status": "الحالة",
+      "featured": "مميز",
+      "actions": "الإجراءات"
+    },
+    "actions": {
+      "edit": "تعديل",
+      "delete": "حذف",
+      "duplicate": "نسخ",
+      "confirm_delete": "هل أنت متأكد من حذف هذه العلامة التجارية؟ لا يمكن التراجع عن هذا الإجراء."
+    },
+    "status": {
+      "active": "نشط",
+      "inactive": "غير نشط"
+    },
+    "empty": {
+      "title": "لا توجد علامات تجارية",
+      "message": "ابدأ بإضافة علامة تجارية",
+      "add_first": "إضافة أول علامة تجارية"
+    }
+  },
+  "filters": {
+    "search": "بحث",
+    "search_placeholder": "بحث...",
+    "tenant_id": "معرف المستأجر",
+    "tenant_placeholder": "تصفية حسب المستأجر",
+    "status": "الحالة",
+    "status_options": {
+      "all": "جميع الحالات",
+      "active": "نشط",
+      "inactive": "غير نشط"
+    },
+    "featured": "مميز",
+    "featured_options": {
+      "all": "الكل",
+      "yes": "مميز",
+      "no": "غير مميز"
+    },
+    "apply": "تطبيق",
+    "reset": "إعادة ضبط"
+  },
+  "form": {
+    "add_title": "إضافة علامة تجارية",
+    "edit_title": "تعديل العلامة التجارية",
+    "fields": {
+      "tenant_id": {
+        "label": "معرف المستأجر"
+      },
+      "entity_id": {
+        "label": "معرف الكيان",
+        "placeholder": "معرف الكيان",
+        "required": "معرف الكيان مطلوب"
+      },
+      "slug": {
+        "label": "الرابط المختصر",
+        "placeholder": "أدخل الرابط المختصر",
+        "required": "الرابط المختصر مطلوب"
+      },
+      "website_url": {
+        "label": "رابط الموقع",
+        "placeholder": "https://example.com"
+      },
+      "sort_order": {
+        "label": "ترتيب الفرز",
+        "placeholder": "ترتيب الفرز"
+      },
+      "status": {
+        "label": "الحالة",
+        "active": "نشط",
+        "inactive": "غير نشط"
+      },
+      "featured": {
+        "label": "مميز",
+        "no": "لا",
+        "yes": "نعم"
+      },
+      "image": {
+        "label": "الصورة"
+      }
+    },
+    "translations": {
+      "select_lang": "اختر اللغة",
+      "choose_lang": "اختر لغة",
+      "name_in_lang": "الاسم بـ {lang}",
+      "description_in_lang": "الوصف بـ {lang}",
+      "remove": "إزالة",
+      "add_translation": "إضافة ترجمة"
+    },
+    "buttons": {
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "saving": "جاري الحفظ...",
+      "updating": "جاري التحديث..."
+    }
+  },
+  "messages": {
+    "success": {
+      "created": "تم إنشاء العلامة التجارية بنجاح",
+      "updated": "تم تحديث العلامة التجارية بنجاح",
+      "deleted": "تم حذف العلامة التجارية بنجاح",
+      "duplicated": "تم نسخ العلامة التجارية بنجاح"
+    },
+    "error": {
+      "load_failed": "فشل تحميل البيانات",
+      "save_failed": "فشل حفظ البيانات",
+      "delete_failed": "فشل حذف البيانات",
+      "duplicate_failed": "فشل نسخ البيانات",
+      "not_found": "العنصر غير موجود"
+    }
+  },
+  "validation": {
+    "required": "مطلوب"
+  },
+  "common": {
+    "select_image": "اختر صورة",
+    "duplicate": "نسخ"
+  },
+  "accessibility": {
+    "close": "إغلاق"
+  },
+  "pagination": {
+    "showing": "عرض"
+  }
+}

@@ -1,0 +1,215 @@
+{
+  "name": "المزادات",
+  "direction": "rtl",
+  "strings": {
+    "auctions": {
+      "title": "المزادات",
+      "subtitle": "إدارة قوائم المزادات",
+      "add_new": "إضافة مزاد",
+      "loading": "جاري تحميل المزادات...",
+      "found": "مزاد تم العثور عليه",
+      "retry": "إعادة المحاولة"
+    },
+    "tabs": {
+      "general": "عام",
+      "pricing": "التسعير",
+      "schedule": "الجدول الزمني",
+      "bids": "العروض",
+      "translations": "الترجمات"
+    },
+    "form": {
+      "add_title": "إضافة مزاد",
+      "edit_title": "تعديل المزاد",
+      "fields": {
+        "title": {
+          "label": "عنوان المزاد",
+          "placeholder": "أدخل عنوان المزاد",
+          "required": "العنوان مطلوب"
+        },
+        "slug": {
+          "label": "الرابط المختصر",
+          "placeholder": "يُنشأ تلقائياً إن تُرك فارغاً"
+        },
+        "product_id": {
+          "label": "المنتج",
+          "select": "اختر منتجاً (اختياري)"
+        },
+        "auction_type": {
+          "label": "نوع المزاد",
+          "normal": "عادي",
+          "reserve": "بسعر احتياطي",
+          "buy_now": "اشتر الآن",
+          "dutch": "هولندي",
+          "sealed_bid": "عطاء مغلق"
+        },
+        "status": {
+          "label": "الحالة",
+          "draft": "مسودة",
+          "scheduled": "مجدول",
+          "active": "نشط",
+          "paused": "متوقف مؤقتاً",
+          "ended": "منتهي",
+          "cancelled": "ملغى",
+          "sold": "مباع"
+        },
+        "condition_type": {
+          "label": "حالة السلعة",
+          "new": "جديد",
+          "like_new": "شبه جديد",
+          "very_good": "جيد جداً",
+          "good": "جيد",
+          "acceptable": "مقبول",
+          "for_parts": "للقطع"
+        },
+        "quantity": {
+          "label": "الكمية"
+        },
+        "is_featured": {
+          "label": "مميز",
+          "yes": "نعم",
+          "no": "لا"
+        },
+        "auto_bid_enabled": {
+          "label": "المزايدة التلقائية",
+          "enabled": "مفعّلة",
+          "disabled": "معطّلة"
+        },
+        "notes": {
+          "label": "ملاحظات",
+          "placeholder": "ملاحظات داخلية..."
+        },
+        "starting_price": {
+          "label": "سعر البداية",
+          "required": "سعر البداية مطلوب"
+        },
+        "reserve_price": {
+          "label": "السعر الاحتياطي"
+        },
+        "buy_now_price": {
+          "label": "سعر الشراء الفوري"
+        },
+        "bid_increment": {
+          "label": "زيادة العرض"
+        },
+        "currency_code": {
+          "label": "العملة",
+          "select": "اختر العملة"
+        },
+        "shipping_cost": {
+          "label": "تكلفة الشحن"
+        },
+        "payment_deadline_hours": {
+          "label": "مهلة الدفع (بالساعات)"
+        },
+        "start_date": {
+          "label": "تاريخ ووقت البدء",
+          "required": "تاريخ البدء مطلوب"
+        },
+        "end_date": {
+          "label": "تاريخ ووقت الانتهاء",
+          "required": "تاريخ الانتهاء مطلوب"
+        },
+        "auto_extend": {
+          "label": "التمديد التلقائي",
+          "enabled": "مفعّل",
+          "disabled": "معطّل"
+        },
+        "extend_minutes": {
+          "label": "مدة التمديد (بالدقائق)"
+        },
+        "min_extend_bid_time": {
+          "label": "الحد الأدنى للوقت قبل التمديد (بالدقائق)"
+        }
+      },
+      "buttons": {
+        "save": "حفظ",
+        "cancel": "إلغاء",
+        "delete": "حذف",
+        "saving": "جاري الحفظ..."
+      }
+    },
+    "filters": {
+      "search": "بحث",
+      "search_placeholder": "ابحث في المزادات...",
+      "tenant_id": "معرّف المستأجر",
+      "tenant_placeholder": "تصفية حسب المستأجر",
+      "status": "الحالة",
+      "auction_type": "النوع",
+      "is_featured": "مميز",
+      "apply": "تطبيق",
+      "reset": "إعادة ضبط"
+    },
+    "table": {
+      "headers": {
+        "id": "المعرّف",
+        "tenant": "المستأجر",
+        "title": "العنوان",
+        "type": "النوع",
+        "status": "الحالة",
+        "current_price": "السعر الحالي",
+        "bids": "العروض",
+        "end_date": "تاريخ الانتهاء",
+        "actions": "الإجراءات"
+      },
+      "status": {
+        "active": "نشط",
+        "inactive": "غير نشط"
+      },
+      "empty": {
+        "title": "لا توجد مزادات",
+        "message": "ابدأ بإضافة أول مزاد",
+        "add_first": "إضافة أول مزاد"
+      },
+      "actions": {
+        "edit": "تعديل",
+        "delete": "حذف"
+      }
+    },
+    "bids": {
+      "title": "سجل العروض",
+      "refresh": "تحديث",
+      "total_bids": "إجمالي العروض",
+      "total_bidders": "عدد المزايدين",
+      "current_price": "السعر الحالي",
+      "winning_amount": "المبلغ الفائز",
+      "user": "المستخدم",
+      "amount": "المبلغ",
+      "type": "النوع",
+      "status": "الحالة",
+      "time": "الوقت",
+      "empty": "لا توجد عروض بعد"
+    },
+    "translations": {
+      "title": "الترجمات",
+      "select_lang": "إضافة لغة",
+      "choose": "اختر لغة",
+      "add": "إضافة ترجمة",
+      "fields": {
+        "title": "العنوان",
+        "description": "الوصف",
+        "terms_conditions": "الشروط والأحكام"
+      }
+    },
+    "messages": {
+      "created": "تم إنشاء المزاد بنجاح",
+      "updated": "تم تحديث المزاد بنجاح",
+      "deleted": "تم حذف المزاد بنجاح",
+      "confirm_delete": "هل أنت متأكد من حذف هذا المزاد؟",
+      "validation_failed": "يرجى ملء جميع الحقول المطلوبة",
+      "translation_exists": "تمت إضافة هذه الترجمة مسبقاً",
+      "save_failed": "فشل حفظ المزاد",
+      "delete_failed": "فشل حذف المزاد",
+      "error": {
+        "load_failed": "خطأ في تحميل البيانات",
+        "save_failed": "فشل حفظ المزاد",
+        "delete_failed": "فشل حذف المزاد"
+      }
+    },
+    "pagination": {
+      "showing": "عرض"
+    },
+    "accessibility": {
+      "close": "إغلاق"
+    }
+  }
+}

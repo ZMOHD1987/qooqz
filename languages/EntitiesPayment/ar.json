@@ -1,0 +1,67 @@
+{
+    "direction": "rtl",
+    "strings": {
+        "title": "طرق الدفع للكيان",
+        "subtitle": "إدارة بوابات الدفع والحسابات البنكية",
+        "select_entity": "اختر الكيان...",
+        "load": "تحميل",
+        "add_payment": "إضافة دفع",
+        "add_bank": "إضافة بنك",
+        "select_entity_first": "يرجى اختيار كيان أولاً.",
+        "saved": "تم الحفظ بنجاح",
+        "deleted": "تم الحذف بنجاح",
+        "delete_failed": "فشل الحذف",
+        "unknown_error": "خطأ غير معروف",
+        "confirm_delete_payment": "هل أنت متأكد من حذف طريقة الدفع هذه؟",
+        "confirm_delete_bank": "هل أنت متأكد من حذف هذا الحساب البنكي؟",
+        "payment_methods": {
+            "title": "طرق الدفع",
+            "add": "إضافة طريقة دفع",
+            "edit": "تعديل طريقة دفع",
+            "gateway": "البوابة",
+            "account_email": "البريد الإلكتروني للحساب",
+            "account_id": "معرف الحساب",
+            "active": "نشط",
+            "select_gateway": "اختر"
+        },
+        "bank_accounts": {
+            "title": "الحسابات البنكية",
+            "add": "إضافة حساب بنكي",
+            "edit": "تعديل حساب بنكي",
+            "bank_name": "اسم البنك",
+            "account_holder": "صاحب الحساب",
+            "account_number": "رقم الحساب",
+            "iban": "رقم الآيبان",
+            "swift_code": "رمز السويفت",
+            "primary": "أساسي",
+            "verified": "موثق"
+        },
+        "table": {
+            "id": "المعرف",
+            "actions": "إجراءات",
+            "edit": "تعديل",
+            "delete": "حذف",
+            "yes": "نعم",
+            "no": "لا"
+        },
+        "form": {
+            "save": "حفظ",
+            "cancel": "إلغاء",
+            "required": "مطلوب"
+        },
+        "filter": {
+            "search": "بحث",
+            "search_payments": "بريد إلكتروني، معرف الحساب...",
+            "search_banks": "اسم البنك، رقم الحساب، IBAN...",
+            "payment_method": "طريقة الدفع",
+            "status": "الحالة",
+            "all": "الكل",
+            "active": "نشط",
+            "inactive": "غير نشط",
+            "date_from": "من",
+            "date_to": "إلى",
+            "apply": "تصفية",
+            "clear": "مسح الفلاتر"
+        }
+    }
+}

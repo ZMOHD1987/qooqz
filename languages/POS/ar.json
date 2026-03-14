@@ -1,0 +1,153 @@
+{
+  "direction": "rtl",
+  "pos": {
+    "title": "نظام الكاشير",
+    "subtitle": "إدارة المبيعات وعمليات الصندوق",
+    "select_entity": "اختر الفرع",
+    "subtotal": "المجموع الجزئي",
+    "tax": "الضريبة",
+    "discount": "خصم",
+    "total": "الإجمالي",
+    "grand_total": "الإجمالي الكلي",
+    "paid": "المدفوع",
+    "change": "الباقي",
+    "remaining": "المتبقي",
+    "new_sale": "بيع جديد",
+    "clear_confirm": "هل تريد تفريغ السلة؟",
+    "session": {
+      "open": "جلسة مفتوحة",
+      "closed": "لا توجد جلسة",
+      "open_title": "فتح جلسة صندوق",
+      "open_subtitle": "ابدأ يوم العمل بفتح جلسة جديدة",
+      "open_btn": "فتح الجلسة",
+      "close": "إغلاق الجلسة",
+      "close_confirm": "هل أنت متأكد من إغلاق الجلسة الحالية؟",
+      "opening_balance": "رصيد الافتتاح",
+      "closing_balance": "رصيد الإغلاق النقدي",
+      "cashier": "الكاشير",
+      "cash": "نقداً",
+      "card": "بطاقة",
+      "opened_msg": "تم فتح الجلسة بنجاح",
+      "closed_msg": "تم إغلاق الجلسة بنجاح",
+      "entity_label": "الفرع / المنفذ"
+    },
+    "products": {
+      "title": "المنتجات",
+      "all": "الكل",
+      "search": "بحث عن منتج...",
+      "empty": "لا توجد منتجات",
+      "out_of_stock": "نفد المخزون"
+    },
+    "stock": {
+      "available": "متاح",
+      "out": "نفد المخزون",
+      "low": "مخزون منخفض",
+      "qty": "الكمية"
+    },
+    "barcode": {
+      "toggle": "قارئ الباركود",
+      "hardware_mode": "وضع قارئ الباركود – امسح الآن",
+      "camera": "الكاميرا",
+      "use_camera": "استخدام الكاميرا",
+      "camera_title": "مسح الباركود بالكاميرا",
+      "camera_hint": "وجّه الكاميرا نحو الباركود",
+      "stop_camera": "إيقاف الكاميرا",
+      "camera_unavailable": "الكاميرا غير متاحة",
+      "camera_error": "خطأ في الكاميرا",
+      "manual_scan": "BarcodeDetector غير مدعوم – استخدم قارئاً خارجياً أو أدخل يدوياً",
+      "found": "تم العثور عليه",
+      "added": "تمت الإضافة",
+      "not_found": "المنتج غير موجود"
+    },
+    "cart": {
+      "title": "السلة",
+      "empty": "السلة فارغة",
+      "empty_hint": "انقر على منتج لإضافته",
+      "clear": "تفريغ السلة",
+      "checkout": "إتمام البيع",
+      "discount_placeholder": "مبلغ الخصم",
+      "edit_price": "تعديل السعر",
+      "unit_price": "سعر الوحدة"
+    },
+    "coupon": {
+      "label": "كوبون",
+      "placeholder": "أدخل رمز الكوبون",
+      "apply": "تطبيق",
+      "applied": "تم تطبيق الكوبون",
+      "invalid": "رمز الكوبون غير صالح أو منتهي الصلاحية",
+      "enter_code": "الرجاء إدخال رمز الكوبون",
+      "discount_type_percent": "خصم بنسبة مئوية",
+      "discount_type_fixed": "خصم بمبلغ ثابت",
+      "discount_type_bogo": "اشتري وأحصل على هدية"
+    },
+    "payment": {
+      "title": "طريقة الدفع",
+      "cash": "نقداً",
+      "card": "بطاقة",
+      "amount_paid": "المبلغ المدفوع",
+      "transfer": "تحويل بنكي",
+      "online": "دفع إلكتروني"
+    },
+    "receipt": {
+      "title": "فاتورة المبيعات",
+      "print": "طباعة",
+      "thank_you": "شكراً لتسوقك معنا"
+    },
+    "tab": {
+      "pos": "نقطة البيع",
+      "history": "سجل المبيعات",
+      "reports": "التقارير"
+    },
+    "history": {
+      "empty": "لا توجد مبيعات في هذه الجلسة",
+      "total_orders": "إجمالي الطلبات",
+      "total_sales": "إجمالي المبيعات",
+      "order_number": "رقم الطلب",
+      "amount": "المبلغ",
+      "status": "الحالة",
+      "time": "الوقت",
+      "customer": "العميل"
+    },
+    "reports": {
+      "orders": "الطلبات",
+      "total_sales": "إجمالي المبيعات",
+      "avg_order": "متوسط الطلب",
+      "cash": "إجمالي النقد",
+      "card": "إجمالي البطاقة",
+      "opening_balance": "رصيد الافتتاح",
+      "orders_breakdown": "تفصيل الطلبات",
+      "export_csv": "تصدير CSV",
+      "export_done": "تم تصدير الملف بنجاح",
+      "no_data": "لا توجد بيانات للتصدير",
+      "session_date": "تاريخ الجلسة",
+      "payment_method": "طريقة الدفع",
+      "export_excel": "تصدير Excel",
+      "date_from": "من تاريخ",
+      "date_to": "إلى تاريخ",
+      "filter_btn": "تصفية",
+      "reset_filter": "إعادة تعيين",
+      "all_payments": "جميع طرق الدفع",
+      "payment_filter": "طريقة الدفع"
+    },
+    "error": {
+      "entity_required": "الرجاء اختيار الفرع",
+      "insufficient_payment": "المبلغ المدفوع أقل من الإجمالي",
+      "invalid_price": "سعر غير صالح"
+    },
+    "search_entity": "بحث عن فرع...",
+    "offers": {
+      "active": "العروض النشطة",
+      "bogo": "اشتري وأحصل على",
+      "none": "لا توجد عروض نشطة"
+    }
+  },
+  "common": {
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "close": "إغلاق",
+    "confirm": "تأكيد",
+    "loading": "جارٍ التحميل...",
+    "apply": "تطبيق",
+    "refresh": "تحديث"
+  }
+}

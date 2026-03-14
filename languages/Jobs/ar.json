@@ -1,0 +1,448 @@
+{
+  "jobs": {
+    "title": "الوظائف",
+    "subtitle": "إدارة الوظائف والطلبات",
+    "add_new": "إضافة وظيفة",
+    "loading": "جارٍ التحميل...",
+    "no_data": "لا توجد بيانات",
+    "error": "حدث خطأ",
+    "retry": "إعادة المحاولة"
+  },
+  "workspace": {
+    "tabs": {
+      "jobs": "الوظائف",
+      "applications": "الطلبات",
+      "interviews": "المقابلات",
+      "alerts": "التنبيهات",
+      "questions": "الأسئلة"
+    }
+  },
+  "tabs": {
+    "basic": "معلومات أساسية",
+    "details": "تفاصيل الوظيفة",
+    "salary": "الراتب",
+    "location": "الموقع",
+    "application": "التقديم",
+    "skills": "المهارات",
+    "translations": "الترجمات",
+    "details_description": "يتم إدارة وصف الوظيفة عبر تبويب الترجمات"
+  },
+  "table": {
+    "headers": {
+      "id": "المعرف",
+      "job_title": "عنوان الوظيفة",
+      "category": "الفئة",
+      "job_type": "نوع الوظيفة",
+      "experience_level": "مستوى الخبرة",
+      "salary": "الراتب",
+      "location": "الموقع",
+      "status": "الحالة",
+      "positions": "المناصب",
+      "applications": "الطلبات",
+      "deadline": "الموعد النهائي",
+      "actions": "الإجراءات"
+    },
+    "actions": {
+      "edit": "تعديل",
+      "delete": "حذف",
+      "view": "عرض",
+      "publish": "نشر",
+      "close": "إغلاق",
+      "confirm_delete": "هل أنت متأكد من حذف هذه الوظيفة؟",
+      "export": "تصدير Excel"
+    },
+    "status": {
+      "draft": "مسودة",
+      "published": "منشورة",
+      "closed": "مغلقة",
+      "filled": "مملوءة",
+      "cancelled": "ملغية"
+    },
+    "job_type": {
+      "full_time": "دوام كامل",
+      "part_time": "دوام جزئي",
+      "contract": "عقد",
+      "temporary": "مؤقت",
+      "internship": "تدريب",
+      "freelance": "عمل حر",
+      "remote": "عن بعد"
+    },
+    "experience_level": {
+      "entry": "مبتدئ",
+      "junior": "مستوى مبتدئ",
+      "mid": "متوسط",
+      "senior": "أول",
+      "executive": "تنفيذي",
+      "director": "مدير"
+    },
+    "empty": {
+      "title": "لا توجد وظائف",
+      "message": "ابدأ بإضافة الوظائف",
+      "add_first": "إضافة الوظيفة الأولى"
+    }
+  },
+  "filters": {
+    "search": "البحث",
+    "search_placeholder": "البحث في الوظائف...",
+    "status": "الحالة",
+    "job_type": "نوع الوظيفة",
+    "experience_level": "مستوى الخبرة",
+    "category": "الفئة",
+    "entity": "الكيان",
+    "apply": "تطبيق",
+    "reset": "إعادة تعيين",
+    "status_options": {
+      "all": "الكل",
+      "draft": "مسودة",
+      "published": "منشورة",
+      "closed": "مغلقة",
+      "filled": "مملوءة",
+      "cancelled": "ملغية"
+    }
+  },
+  "form": {
+    "add_title": "إضافة وظيفة",
+    "edit_title": "تعديل الوظيفة",
+    "save": "حفظ الوظيفة",
+    "save_and_publish": "حفظ ونشر",
+    "cancel": "إلغاء",
+    "tabs": {
+      "basic": "معلومات أساسية",
+      "translations": "الترجمات",
+      "application": "التقديم",
+      "salary": "الراتب",
+      "location": "الموقع",
+      "skills": "المهارات",
+      "status": "الحالة والعلامات"
+    },
+    "fields": {
+      "job_title": {
+        "label": "عنوان الوظيفة",
+        "placeholder": "أدخل عنوان الوظيفة",
+        "required": "عنوان الوظيفة مطلوب"
+      },
+      "slug": {
+        "label": "الرابط المختصر",
+        "placeholder": "سيتم إنشاؤه تلقائيًا"
+      },
+      "job_type": {
+        "label": "نوع الوظيفة",
+        "placeholder": "اختر نوع الوظيفة",
+        "select": "اختر نوع الوظيفة",
+        "full_time": "دوام كامل",
+        "part_time": "دوام جزئي",
+        "contract": "عقد",
+        "temporary": "مؤقت",
+        "internship": "تدريب",
+        "freelance": "عمل حر",
+        "remote": "عن بعد"
+      },
+      "employment_type": {
+        "label": "نوع التوظيف",
+        "placeholder": "اختر نوع التوظيف",
+        "permanent": "دائم",
+        "temporary": "مؤقت",
+        "seasonal": "موسمي"
+      },
+      "experience_level": {
+        "label": "مستوى الخبرة",
+        "placeholder": "اختر مستوى الخبرة",
+        "entry": "مبتدئ",
+        "junior": "مستوى مبتدئ",
+        "mid": "متوسط",
+        "senior": "أول",
+        "executive": "تنفيذي",
+        "director": "مدير"
+      },
+      "category": {
+        "label": "الفئة",
+        "placeholder": "اختر الفئة"
+      },
+      "department": {
+        "label": "القسم",
+        "placeholder": "أدخل القسم"
+      },
+      "positions_available": {
+        "label": "المناصب المتاحة",
+        "placeholder": "عدد المناصب"
+      },
+      "status": {
+        "label": "الحالة",
+        "draft": "مسودة",
+        "published": "منشورة",
+        "closed": "مغلقة",
+        "filled": "مملوءة",
+        "cancelled": "ملغية"
+      },
+      "start_date": {
+        "label": "تاريخ البدء",
+        "placeholder": "اختر التاريخ"
+      },
+      "application_deadline": {
+        "label": "الموعد النهائي للتقديم",
+        "placeholder": "اختر التاريخ"
+      },
+      "is_featured": {
+        "label": "وظيفة مميزة"
+      },
+      "is_urgent": {
+        "label": "توظيف عاجل"
+      },
+      "salary_min": {
+        "label": "الحد الأدنى للراتب"
+      },
+      "salary_max": {
+        "label": "الحد الأقصى للراتب"
+      },
+      "salary_currency": {
+        "label": "العملة"
+      },
+      "salary_period": {
+        "label": "فترة الراتب",
+        "hourly": "بالساعة",
+        "daily": "يوميًا",
+        "weekly": "أسبوعيًا",
+        "monthly": "شهريًا",
+        "yearly": "سنويًا"
+      },
+      "salary_negotiable": {
+        "label": "الراتب قابل للتفاوض"
+      },
+      "country_id": {
+        "label": "الدولة",
+        "placeholder": "اختر الدولة"
+      },
+      "city_id": {
+        "label": "المدينة",
+        "placeholder": "اختر المدينة"
+      },
+      "work_location": {
+        "label": "موقع العمل",
+        "onsite": "في المكتب",
+        "remote": "عن بعد",
+        "hybrid": "هجين"
+      },
+      "is_remote": {
+        "label": "العمل عن بعد متاح"
+      },
+      "application_form_type": {
+        "label": "نوع نموذج التقديم",
+        "simple": "نموذج بسيط",
+        "custom": "نموذج مخصص",
+        "external": "رابط خارجي"
+      },
+      "external_application_url": {
+        "label": "رابط التقديم الخارجي",
+        "placeholder": "https://example.com/apply"
+      }
+    },
+    "translations": {
+      "title": "الترجمات",
+      "add_translation": "إضافة ترجمة",
+      "choose_lang": "اختر اللغة",
+      "job_title": "عنوان الوظيفة",
+      "description": "الوصف",
+      "requirements": "المتطلبات",
+      "responsibilities": "المسؤوليات",
+      "benefits": "المزايا",
+      "save": "حفظ الترجمة",
+      "cancel": "إلغاء",
+      "language": "اللغة"
+    },
+    "skills": {
+      "title": "المهارات",
+      "add_skill": "إضافة مهارة",
+      "skill_name": "اسم المهارة",
+      "proficiency_level": "مستوى الكفاءة",
+      "is_required": "مطلوبة",
+      "save": "حفظ المهارة",
+      "cancel": "إلغاء",
+      "levels": {
+        "basic": "أساسي",
+        "intermediate": "متوسط",
+        "advanced": "متقدم",
+        "expert": "خبير"
+      }
+    },
+    "buttons": {
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "saving": "جارٍ الحفظ...",
+      "publish": "نشر",
+      "close": "إغلاق",
+      "mark_filled": "تحديد كمملوءة"
+    }
+  },
+  "skills": {
+    "title": "المهارات المطلوبة",
+    "add": "إضافة مهارة",
+    "form": {
+      "skill_name": "اسم المهارة",
+      "proficiency": "مستوى الكفاءة",
+      "required": "مطلوبة",
+      "save": "حفظ المهارة",
+      "cancel": "إلغاء"
+    }
+  },
+  "translations": {
+    "title": "الترجمات",
+    "add": "إضافة ترجمة",
+    "form": {
+      "language": "اللغة",
+      "job_title": "عنوان الوظيفة",
+      "description": "الوصف",
+      "requirements": "المتطلبات",
+      "responsibilities": "المسؤوليات",
+      "benefits": "المزايا",
+      "save": "حفظ الترجمة",
+      "cancel": "إلغاء"
+    }
+  },
+  "applications": {
+    "title": "الطلبات",
+    "add": "إضافة طلب",
+    "status": {
+      "submitted": "مُقدَّم",
+      "under_review": "قيد المراجعة",
+      "shortlisted": "في القائمة المختصرة",
+      "interviewed": "تمت المقابلة",
+      "offered": "تم تقديم عرض",
+      "accepted": "مقبول",
+      "rejected": "مرفوض",
+      "withdrawn": "منسحب"
+    },
+    "fields": {
+      "job": "الوظيفة",
+      "applicant": "المتقدم",
+      "email": "البريد الإلكتروني",
+      "phone": "الهاتف",
+      "status": "الحالة",
+      "rating": "التقييم",
+      "notes": "ملاحظات",
+      "resume": "السيرة الذاتية",
+      "cover_letter": "خطاب التقديم",
+      "applied_at": "تاريخ التقديم"
+    },
+    "empty": {
+      "title": "لا توجد طلبات",
+      "message": "لم يتم استلام أي طلبات حتى الآن"
+    }
+  },
+  "interviews": {
+    "title": "المقابلات",
+    "add": "جدولة مقابلة",
+    "types": {
+      "phone": "هاتفية",
+      "video": "فيديو",
+      "in_person": "حضورية",
+      "technical": "تقنية",
+      "hr": "موارد بشرية"
+    },
+    "status": {
+      "scheduled": "مجدولة",
+      "completed": "مكتملة",
+      "cancelled": "ملغية",
+      "no_show": "لم يحضر"
+    },
+    "fields": {
+      "type": "نوع المقابلة",
+      "date": "تاريخ المقابلة",
+      "duration": "المدة (دقيقة)",
+      "status": "الحالة",
+      "feedback": "التغذية الراجعة",
+      "score": "الدرجة",
+      "interviewer": "المحاور",
+      "location": "الموقع"
+    },
+    "empty": {
+      "title": "لا توجد مقابلات",
+      "message": "لم يتم جدولة أي مقابلات بعد"
+    }
+  },
+  "alerts": {
+    "title": "تنبيهات الوظائف",
+    "add": "إضافة تنبيه",
+    "frequency": {
+      "immediately": "فوري",
+      "daily": "يومي",
+      "weekly": "أسبوعي",
+      "monthly": "شهري"
+    },
+    "fields": {
+      "name": "اسم التنبيه",
+      "keywords": "الكلمات المفتاحية",
+      "frequency": "التكرار",
+      "is_active": "نشط",
+      "location": "الموقع",
+      "job_type": "نوع الوظيفة",
+      "experience_level": "مستوى الخبرة",
+      "salary_min": "الحد الأدنى للراتب",
+      "salary_max": "الحد الأقصى للراتب"
+    },
+    "empty": {
+      "title": "لا توجد تنبيهات",
+      "message": "لم يتم إنشاء تنبيهات وظائف بعد"
+    }
+  },
+  "questions": {
+    "title": "أسئلة الطلبات",
+    "add": "إضافة سؤال",
+    "types": {
+      "text": "نص قصير",
+      "textarea": "نص طويل",
+      "select": "قائمة منسدلة",
+      "radio": "اختيار واحد",
+      "checkbox": "مربع اختيار",
+      "file": "رفع ملف",
+      "date": "تاريخ",
+      "number": "رقم",
+      "yes_no": "نعم / لا"
+    },
+    "fields": {
+      "job": "الوظيفة",
+      "question_text": "نص السؤال",
+      "question_type": "نوع السؤال",
+      "options": "الخيارات (مفصولة بفاصلة)",
+      "is_required": "مطلوب",
+      "sort_order": "ترتيب العرض"
+    },
+    "empty": {
+      "title": "لا توجد أسئلة",
+      "message": "لم تتم إضافة أسئلة للطلبات بعد"
+    }
+  },
+  "messages": {
+    "success": {
+      "created": "تم إنشاء الوظيفة بنجاح",
+      "updated": "تم تحديث الوظيفة بنجاح",
+      "deleted": "تم حذف الوظيفة بنجاح",
+      "published": "تم نشر الوظيفة بنجاح",
+      "closed": "تم إغلاق الوظيفة بنجاح"
+    },
+    "error": {
+      "load_failed": "فشل تحميل البيانات",
+      "save_failed": "فشل حفظ البيانات",
+      "delete_failed": "فشل حذف الوظيفة",
+      "required_fields": "الرجاء ملء جميع الحقول المطلوبة"
+    }
+  },
+  "pagination": {
+    "showing": "عرض",
+    "of": "من",
+    "results": "نتيجة",
+    "page": "صفحة"
+  },
+  "strings": {
+    "save_success": "تم الحفظ بنجاح",
+    "update_success": "تم التحديث بنجاح",
+    "delete_confirm": "هل أنت متأكد من حذف هذا العنصر؟",
+    "delete_success": "تم الحذف بنجاح"
+  },
+  "validation": {
+    "required": "هذا الحقل مطلوب",
+    "invalid": "قيمة غير صالحة"
+  },
+  "accessibility": {
+    "close": "إغلاق"
+  }
+}

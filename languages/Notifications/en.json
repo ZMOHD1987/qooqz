@@ -1,0 +1,232 @@
+{
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Manage system notifications and delivery channels",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "tabs": {
+      "types": "Notification Types",
+      "list": "Notifications",
+      "channels": "Channels",
+      "counters": "Counters",
+      "deliveries": "Deliveries"
+    }
+  },
+  "types": {
+    "title": "Notification Types",
+    "add_new": "Add Type",
+    "empty_title": "No Notification Types",
+    "empty_message": "Start by adding a notification type",
+    "add_first": "Add First Type"
+  },
+  "list": {
+    "title": "Notifications",
+    "add_new": "Add Notification",
+    "empty_title": "No Notifications",
+    "empty_message": "No notifications found",
+    "add_first": "Add First Notification"
+  },
+  "channels": {
+    "title": "Channels",
+    "add_new": "Add Channel",
+    "empty_title": "No Channels",
+    "empty_message": "Start by adding a notification channel",
+    "add_first": "Add First Channel"
+  },
+  "counters": {
+    "title": "Counters",
+    "add_new": "Add Counter",
+    "empty_title": "No Counters",
+    "empty_message": "No counters found",
+    "add_first": "Add First Counter"
+  },
+  "deliveries": {
+    "title": "Deliveries",
+    "add_new": "Add Delivery",
+    "empty_title": "No Deliveries",
+    "empty_message": "No notification deliveries found",
+    "add_first": "Add First Delivery"
+  },
+  "table": {
+    "headers": {
+      "id": "ID",
+      "code": "Code",
+      "name": "Name",
+      "description": "Description",
+      "status": "Status",
+      "actions": "Actions",
+      "tenant": "Tenant",
+      "type": "Type",
+      "title": "Title",
+      "message": "Message",
+      "sender": "Sender Entity",
+      "entity": "Entity",
+      "priority": "Priority",
+      "sent_at": "Sent At",
+      "expires_at": "Expires At",
+      "channel": "Channel",
+      "notification": "Notification",
+      "delivery_status": "Delivery Status",
+      "attempts": "Attempts",
+      "error": "Error",
+      "created_at": "Created At",
+      "recipient_type": "Recipient Type",
+      "recipient_id": "Recipient ID",
+      "unread_count": "Unread Count",
+      "updated_at": "Updated At",
+      "default_template": "Default Template"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirm_delete": "Are you sure you want to delete this record? This action cannot be undone.",
+      "increment": "Increment",
+      "reset": "Reset"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    }
+  },
+  "filters": {
+    "search": "Search",
+    "search_placeholder": "Search...",
+    "tenant_id": "Tenant ID",
+    "tenant_placeholder": "Filter by tenant",
+    "status": "Status",
+    "status_options": {
+      "all": "All Status",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "priority": "Priority",
+    "priority_options": {
+      "all": "All Priorities",
+      "low": "Low",
+      "normal": "Normal",
+      "high": "High",
+      "urgent": "Urgent"
+    },
+    "delivery_status": "Delivery Status",
+    "delivery_status_options": {
+      "all": "All Statuses",
+      "pending": "Pending",
+      "sent": "Sent",
+      "failed": "Failed"
+    },
+    "recipient_type": "Recipient Type",
+    "recipient_type_options": {
+      "all": "All Types",
+      "user": "User",
+      "entity": "Entity",
+      "tenant": "Tenant"
+    },
+    "apply": "Apply",
+    "reset": "Reset"
+  },
+  "form": {
+    "add_title": "Add Record",
+    "edit_title": "Edit Record",
+    "fields": {
+      "code": {
+        "label": "Code",
+        "placeholder": "Enter code (letters, numbers, underscores)",
+        "required": "Code is required"
+      },
+      "name": {
+        "label": "Name",
+        "placeholder": "Enter name",
+        "required": "Name is required"
+      },
+      "description": {
+        "label": "Description",
+        "placeholder": "Enter description"
+      },
+      "default_template": {
+        "label": "Default Template",
+        "placeholder": "Enter default template content"
+      },
+      "is_active": {
+        "label": "Status",
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "tenant_id": { "label": "Tenant ID" },
+      "sender_entity_id": { "label": "Sender Entity ID", "placeholder": "Optional sender entity ID" },
+      "entity_id": { "label": "Entity ID", "placeholder": "Optional entity ID" },
+      "title": { "label": "Title", "placeholder": "Enter notification title", "required": "Title is required" },
+      "message": { "label": "Message", "placeholder": "Enter notification message", "required": "Message is required" },
+      "data": { "label": "Data (JSON)", "placeholder": "Optional JSON payload" },
+      "notification_type_id": { "label": "Notification Type" },
+      "priority": {
+        "label": "Priority",
+        "low": "Low",
+        "normal": "Normal",
+        "high": "High",
+        "urgent": "Urgent"
+      },
+      "expires_at": { "label": "Expires At", "placeholder": "YYYY-MM-DD HH:MM:SS" },
+      "notification_id": { "label": "Notification ID", "required": "Notification ID is required" },
+      "channel_id": { "label": "Channel", "required": "Channel is required" },
+      "delivery_status": {
+        "label": "Delivery Status",
+        "pending": "Pending",
+        "sent": "Sent",
+        "failed": "Failed"
+      },
+      "attempts": { "label": "Attempts", "placeholder": "0" },
+      "sent_at": { "label": "Sent At", "placeholder": "YYYY-MM-DD HH:MM:SS" },
+      "error_message": { "label": "Error Message", "placeholder": "Error message if any" },
+      "recipient_type": {
+        "label": "Recipient Type",
+        "required": "Recipient type is required",
+        "user": "User",
+        "entity": "Entity",
+        "tenant": "Tenant"
+      },
+      "recipient_id": { "label": "Recipient ID", "placeholder": "Enter recipient ID", "required": "Recipient ID is required" },
+      "unread_count": { "label": "Unread Count", "placeholder": "0" }
+    },
+    "buttons": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "updating": "Updating..."
+    }
+  },
+  "messages": {
+    "success": {
+      "created": "Record created successfully",
+      "updated": "Record updated successfully",
+      "deleted": "Record deleted successfully"
+    },
+    "error": {
+      "load_failed": "Failed to load data",
+      "save_failed": "Failed to save data",
+      "delete_failed": "Failed to delete record",
+      "not_found": "Record not found"
+    }
+  },
+  "accessibility": {
+    "close": "Close"
+  },
+  "pagination": {
+    "showing": "Showing"
+  },
+  "priority_labels": {
+    "low": "Low",
+    "normal": "Normal",
+    "high": "High",
+    "urgent": "Urgent"
+  },
+  "delivery_status_labels": {
+    "pending": "Pending",
+    "sent": "Sent",
+    "failed": "Failed"
+  },
+  "recipient_type_labels": {
+    "user": "User",
+    "entity": "Entity",
+    "tenant": "Tenant"
+  }
+}

@@ -1,0 +1,79 @@
+{
+    "strings": {
+        "title": "إدارة قوائم الانتظار",
+        "subtitle": "مراقبة وإدارة المهام الخلفية",
+        "add_job": "إضافة مهمة",
+        "filter": {
+            "search_placeholder": "بحث في البيانات أو الأخطاء...",
+            "all_queues": "جميع القوائم",
+            "all_statuses": "جميع الحالات",
+            "apply": "تصفية",
+            "clear": "إلغاء الفلاتر"
+        },
+        "status": {
+            "pending": "قيد الانتظار",
+            "working": "قيد التنفيذ",
+            "done": "مكتمل",
+            "failed": "فشل",
+            "unknown": "غير معروف"
+        },
+        "table": {
+            "id": "المعرف",
+            "queue": "القائمة",
+            "payload": "البيانات",
+            "status": "الحالة",
+            "attempts": "المحاولات",
+            "error": "الخطأ",
+            "created_at": "تاريخ الإنشاء",
+            "updated_at": "تاريخ التحديث",
+            "actions": "الإجراءات",
+            "no_records": "لا توجد مهام"
+        },
+        "actions": {
+            "retry": "إعادة المحاولة",
+            "delete": "حذف",
+            "view": "عرض التفاصيل",
+            "archive": "أرشفة المكتملة",
+            "purge": "تنظيف القديم",
+            "refresh": "تحديث"
+        },
+        "stats": {
+            "title": "إحصائيات القوائم",
+            "total": "إجمالي المهام",
+            "pending": "قيد الانتظار",
+            "working": "قيد التنفيذ",
+            "done": "مكتملة",
+            "failed": "فاشلة",
+            "queues": "أسماء القوائم"
+        },
+        "modal": {
+            "view_title": "تفاصيل المهمة",
+            "purge_title": "تنظيف المهام القديمة",
+            "purge_status": "الحالة المراد تنظيفها",
+            "purge_days": "أقدم من (أيام)",
+            "purge_confirm": "هل أنت متأكد؟ لا يمكن التراجع عن هذا."
+        },
+        "messages": {
+            "retry_success": "تمت إعادة المهمة للانتظار",
+            "retry_failed": "فشل في إعادة المحاولة",
+            "delete_success": "تم حذف المهمة",
+            "delete_failed": "فشل في حذف المهمة",
+            "archive_success": "تمت أرشفة المهام المكتملة",
+            "archive_failed": "فشل في أرشفة المهام",
+            "purge_success": "تم تنظيف المهام القديمة",
+            "purge_failed": "فشل في تنظيف المهام",
+            "confirm_delete": "هل أنت متأكد من حذف هذه المهمة؟",
+            "confirm_archive": "أرشفة جميع المهام المكتملة؟"
+        },
+        "form": {
+            "save": "حفظ",
+            "cancel": "إلغاء",
+            "close": "إغلاق",
+            "confirm": "تأكيد"
+        },
+        "pagination": {
+            "showing": "عرض",
+            "of": "من"
+        }
+    }
+}

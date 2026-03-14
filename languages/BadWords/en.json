@@ -1,0 +1,76 @@
+{
+    "strings": {
+        "title": "Bad Words Management",
+        "subtitle": "Manage blocked words and phrases",
+        "add_word": "Add Word",
+        "edit_word": "Edit Word",
+        "filter": {
+            "search_placeholder": "Search words...",
+            "all_severities": "All Severities",
+            "all_statuses": "All Statuses",
+            "active": "Active",
+            "inactive": "Inactive",
+            "apply": "Filter",
+            "clear": "Clear Filters"
+        },
+        "severity": {
+            "low": "Low",
+            "medium": "Medium",
+            "high": "High"
+        },
+        "table": {
+            "id": "ID",
+            "word": "Word",
+            "severity": "Severity",
+            "regex": "Regex",
+            "active": "Active",
+            "created": "Created",
+            "actions": "Actions",
+            "no_records": "No records found",
+            "yes": "Yes",
+            "no": "No",
+            "edit": "Edit",
+            "delete": "Delete",
+            "translations": "Translations"
+        },
+        "modal": {
+            "add_title": "Add Bad Word",
+            "edit_title": "Edit Bad Word"
+        },
+        "form": {
+            "word": "Word",
+            "severity": "Severity",
+            "is_regex": "Is Regex",
+            "is_active": "Is Active",
+            "save": "Save",
+            "cancel": "Cancel"
+        },
+        "translations": {
+            "title": "Word Translations",
+            "language": "Language",
+            "translated_word": "Translated Word",
+            "add": "Add Translation",
+            "word": "Word"
+        },
+        "text_check": {
+            "title": "Check Text",
+            "input_label": "Text to check",
+            "check": "Check"
+        },
+        "saved": "Saved successfully",
+        "deleted": "Deleted successfully",
+        "unknown_error": "Unknown error",
+        "delete_failed": "Delete failed",
+        "confirm_delete": "Are you sure you want to delete this word?",
+        "confirm_delete_translation": "Are you sure you want to delete this translation?",
+        "no_items": "No bad words found",
+        "no_translations": "No translations found",
+        "enter_text": "Please enter text",
+        "no_bad_words_found": "No bad words found in the text.",
+        "check_failed": "Check failed",
+        "pagination": {
+            "showing": "Showing",
+            "of": "of"
+        }
+    }
+}

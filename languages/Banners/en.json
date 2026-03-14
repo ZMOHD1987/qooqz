@@ -1,0 +1,162 @@
+{
+  "banners": {
+    "title": "Banners",
+    "subtitle": "Manage banners and their translations",
+    "add_new": "Add Banner",
+    "loading": "Loading...",
+    "no_data": "No data available",
+    "error": "An error occurred",
+    "retry": "Retry"
+  },
+  "table": {
+    "headers": {
+      "id": "ID",
+      "image": "Image",
+      "title": "Title",
+      "position": "Position",
+      "sort_order": "Sort",
+      "status": "Status",
+      "dates": "Dates",
+      "actions": "Actions"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirm_delete": "Are you sure you want to delete this banner? This action cannot be undone."
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "empty": {
+      "title": "No Banners Found",
+      "message": "Start by adding banners",
+      "add_first": "Add First Banner"
+    }
+  },
+  "filters": {
+    "search": "Search",
+    "search_placeholder": "Search banners...",
+    "position": "Position",
+    "position_all": "All Positions",
+    "status": "Status",
+    "status_options": {
+      "all": "All Status",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "apply": "Apply",
+    "reset": "Reset"
+  },
+  "form": {
+    "add_title": "Add Banner",
+    "edit_title": "Edit Banner",
+    "fields": {
+      "title": {
+        "label": "Title",
+        "placeholder": "Enter banner title",
+        "required": "Title is required"
+      },
+      "subtitle": {
+        "label": "Subtitle",
+        "placeholder": "Enter subtitle (optional)"
+      },
+      "link_url": {
+        "label": "Link URL",
+        "placeholder": "https://example.com"
+      },
+      "link_text": {
+        "label": "Button Text",
+        "placeholder": "e.g. Shop Now"
+      },
+      "position": {
+        "label": "Position",
+        "options": {
+          "homepage_main": "Homepage – Main",
+          "homepage_secondary": "Homepage – Secondary",
+          "category_top": "Category Top",
+          "product_sidebar": "Product Sidebar",
+          "footer": "Footer",
+          "popup": "Popup",
+          "other": "Other"
+        }
+      },
+      "background_color": {
+        "label": "Background Color"
+      },
+      "text_color": {
+        "label": "Text Color"
+      },
+      "button_style": {
+        "label": "Button Style",
+        "placeholder": "CSS class or style"
+      },
+      "sort_order": {
+        "label": "Sort Order",
+        "placeholder": "0"
+      },
+      "status": {
+        "label": "Status",
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "start_date": {
+        "label": "Start Date"
+      },
+      "end_date": {
+        "label": "End Date"
+      },
+      "image": {
+        "label": "Banner Image"
+      }
+    },
+    "translations": {
+      "section_title": "Translations",
+      "section_desc": "English is required. Add other languages as needed.",
+      "select_lang": "Select Language",
+      "choose_lang": "Choose language",
+      "title_in_lang": "Title in {lang}",
+      "subtitle_in_lang": "Subtitle in {lang}",
+      "link_text_in_lang": "Button Text in {lang}",
+      "remove": "Remove",
+      "add_translation": "Add Translation",
+      "lang_en": "English",
+      "lang_ar": "Arabic"
+    },
+    "buttons": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "updating": "Updating..."
+    }
+  },
+  "messages": {
+    "success": {
+      "created": "Banner created successfully",
+      "updated": "Banner updated successfully",
+      "deleted": "Banner deleted successfully"
+    },
+    "error": {
+      "load_failed": "Failed to load data",
+      "save_failed": "Failed to save data",
+      "delete_failed": "Failed to delete data",
+      "not_found": "Item not found",
+      "en_required": "English title is required"
+    }
+  },
+  "validation": {
+    "required": "Required",
+    "title_required": "Title is required",
+    "en_title_required": "English title is required"
+  },
+  "common": {
+    "select_image": "Select Image",
+    "remove_image": "Remove Image"
+  },
+  "accessibility": {
+    "close": "Close"
+  },
+  "pagination": {
+    "showing": "Showing"
+  }
+}

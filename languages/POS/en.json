@@ -1,0 +1,153 @@
+{
+  "direction": "ltr",
+  "pos": {
+    "title": "POS Cashier",
+    "subtitle": "Manage sales and cashier operations",
+    "select_entity": "Select Entity/Branch",
+    "subtotal": "Subtotal",
+    "tax": "Tax",
+    "discount": "Discount",
+    "total": "Total",
+    "grand_total": "Grand Total",
+    "paid": "Paid",
+    "change": "Change",
+    "remaining": "Remaining",
+    "new_sale": "New Sale",
+    "clear_confirm": "Clear the cart?",
+    "session": {
+      "open": "Session Open",
+      "closed": "No Active Session",
+      "open_title": "Open Cashier Session",
+      "open_subtitle": "Start the workday by opening a new session",
+      "open_btn": "Open Session",
+      "close": "Close Session",
+      "close_confirm": "Are you sure you want to close the current session?",
+      "opening_balance": "Opening Balance",
+      "closing_balance": "Closing Cash Balance",
+      "cashier": "Cashier",
+      "cash": "Cash",
+      "card": "Card",
+      "opened_msg": "Session opened successfully",
+      "closed_msg": "Session closed",
+      "entity_label": "Branch / Entity"
+    },
+    "products": {
+      "title": "Products",
+      "all": "All",
+      "search": "Search products...",
+      "empty": "No products found",
+      "out_of_stock": "Out of stock"
+    },
+    "stock": {
+      "available": "Available",
+      "out": "Out of stock",
+      "low": "Low stock",
+      "qty": "Qty"
+    },
+    "barcode": {
+      "toggle": "Barcode Scanner",
+      "hardware_mode": "Barcode Reader Mode – scan now",
+      "camera": "Camera",
+      "use_camera": "Use Camera",
+      "camera_title": "Camera Barcode Scanner",
+      "camera_hint": "Point camera at barcode",
+      "stop_camera": "Stop Camera",
+      "camera_unavailable": "Camera not available",
+      "camera_error": "Camera error",
+      "manual_scan": "BarcodeDetector not supported – use hardware scanner or type manually",
+      "found": "Found",
+      "added": "Added",
+      "not_found": "Product not found"
+    },
+    "cart": {
+      "title": "Cart",
+      "empty": "Cart is empty",
+      "empty_hint": "Click a product to add it",
+      "clear": "Clear Cart",
+      "checkout": "Checkout",
+      "discount_placeholder": "Discount amount",
+      "edit_price": "Edit Price",
+      "unit_price": "Unit Price"
+    },
+    "coupon": {
+      "label": "Coupon",
+      "placeholder": "Enter coupon code",
+      "apply": "Apply",
+      "applied": "Coupon applied",
+      "invalid": "Invalid or expired coupon code",
+      "enter_code": "Please enter a coupon code",
+      "discount_type_percent": "Percentage Discount",
+      "discount_type_fixed": "Fixed Discount",
+      "discount_type_bogo": "Buy & Get Free"
+    },
+    "payment": {
+      "title": "Payment Method",
+      "cash": "Cash",
+      "card": "Card",
+      "amount_paid": "Amount Paid",
+      "transfer": "Bank Transfer",
+      "online": "Online Payment"
+    },
+    "receipt": {
+      "title": "Sales Receipt",
+      "print": "Print",
+      "thank_you": "Thank you for your purchase!"
+    },
+    "tab": {
+      "pos": "Point of Sale",
+      "history": "Sales History",
+      "reports": "Reports"
+    },
+    "history": {
+      "empty": "No sales in this session yet",
+      "total_orders": "Total Orders",
+      "total_sales": "Total Sales",
+      "order_number": "Order #",
+      "amount": "Amount",
+      "status": "Status",
+      "time": "Time",
+      "customer": "Customer"
+    },
+    "reports": {
+      "orders": "Orders",
+      "total_sales": "Total Sales",
+      "avg_order": "Avg. Order",
+      "cash": "Cash Total",
+      "card": "Card Total",
+      "opening_balance": "Opening Balance",
+      "orders_breakdown": "Orders Breakdown",
+      "export_csv": "Export CSV",
+      "export_done": "File exported successfully",
+      "no_data": "No data to export",
+      "session_date": "Session Date",
+      "payment_method": "Payment Method",
+      "export_excel": "Export Excel",
+      "date_from": "From Date",
+      "date_to": "To Date",
+      "filter_btn": "Filter",
+      "reset_filter": "Reset",
+      "all_payments": "All Payments",
+      "payment_filter": "Payment Method"
+    },
+    "error": {
+      "entity_required": "Please select an entity/branch",
+      "insufficient_payment": "Amount paid is less than the total",
+      "invalid_price": "Invalid price"
+    },
+    "search_entity": "Search entity…",
+    "offers": {
+      "active": "Active Offers",
+      "bogo": "Buy & Get",
+      "none": "No active offers"
+    }
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "confirm": "Confirm",
+    "loading": "Loading...",
+    "apply": "Apply",
+    "refresh": "Refresh"
+  }
+}
