@@ -1,0 +1,22 @@
+{
+  "name": "Admin Panel",
+  "short_name": "Admin",
+  "description": "Admin management panel",
+  "start_url": "/admin/dashboard.php",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0A0A0A",
+  "theme_color": "#1e2533",
+  "scope": "/admin/",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/admin/assets/img/default-image.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "prefer_related_applications": false
+}
