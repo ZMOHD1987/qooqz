@@ -162,16 +162,30 @@ foreach ($theme['design_settings'] ?? [] as $d) {
 
     <title data-i18n="brand">Admin Panel</title>
 
+    <!-- Preconnect hints for external resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+
+    <?php
+    // Use filemtime() for cache-busting so browsers re-download only when files change,
+    // instead of time() which forces a fresh download on every single page load.
+    function assetVer(string $path): string {
+        $full = $_SERVER['DOCUMENT_ROOT'] . $path;
+        return file_exists($full) ? (string)filemtime($full) : '1';
+    }
+    ?>
+
     <!-- Stylesheets -->
-    <link rel="stylesheet" href="/admin/assets/css/admin.css?v=<?= time() ?>">
-    <link rel="stylesheet" href="/admin/assets/css/admin-overrides.css?v=<?= time() ?>">
-    <link rel="stylesheet" href="/admin/assets/css/modal.css?v=<?= time() ?>">
-    <link rel="stylesheet" href="/admin/assets/css/color-slider.css?v=<?= time() ?>">
-    <link rel="stylesheet" href="/admin/assets/css/mobile-responsive.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="/admin/assets/css/admin.css?v=<?= assetVer('/admin/assets/css/admin.css') ?>">
+    <link rel="stylesheet" href="/admin/assets/css/admin-overrides.css?v=<?= assetVer('/admin/assets/css/admin-overrides.css') ?>">
+    <link rel="stylesheet" href="/admin/assets/css/modal.css?v=<?= assetVer('/admin/assets/css/modal.css') ?>">
+    <link rel="stylesheet" href="/admin/assets/css/color-slider.css?v=<?= assetVer('/admin/assets/css/color-slider.css') ?>">
+    <link rel="stylesheet" href="/admin/assets/css/mobile-responsive.css?v=<?= assetVer('/admin/assets/css/mobile-responsive.css') ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 <!-- Admin Framework -->
-    <script src="/admin/assets/js/admin_framework.js?v=<?= time() ?>"></script>
-    <link rel="stylesheet" href="/admin/assets/css/admin_framework.css?v=<?= time() ?>">
+    <script src="/admin/assets/js/admin_framework.js?v=<?= assetVer('/admin/assets/js/admin_framework.js') ?>"></script>
+    <link rel="stylesheet" href="/admin/assets/css/admin_framework.css?v=<?= assetVer('/admin/assets/css/admin_framework.css') ?>">
     <!-- Dynamic Theme CSS -->
     <?php if (!empty($theme['generated_css'])): ?>
     <style id="dynamic-theme-db">
@@ -281,9 +295,11 @@ body {
         $loadedFonts[] = $primaryFont;
     ?>
     <?php if (!empty($f['font_url'])): ?>
-    <link rel="stylesheet" href="<?= htmlspecialchars($f['font_url']) ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars($f['font_url']) ?>" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="<?= htmlspecialchars($f['font_url']) ?>"></noscript>
     <?php else: ?>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=<?= urlencode($primaryFont) ?>&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=<?= urlencode($primaryFont) ?>&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=<?= urlencode($primaryFont) ?>&display=swap"></noscript>
     <?php endif; ?>
     <?php endforeach; ?>
 
@@ -314,9 +330,9 @@ body {
     </script>
 
     <!-- Core JS -->
-    <script src="/admin/assets/js/admin_core.js" defer></script>
-    <script src="/admin/assets/js/sidebar-toggle.js" defer></script>
-    <script src="/admin/assets/js/modal.js" defer></script>
+    <script src="/admin/assets/js/admin_core.js?v=<?= assetVer('/admin/assets/js/admin_core.js') ?>" defer></script>
+    <script src="/admin/assets/js/sidebar-toggle.js?v=<?= assetVer('/admin/assets/js/sidebar-toggle.js') ?>" defer></script>
+    <script src="/admin/assets/js/modal.js?v=<?= assetVer('/admin/assets/js/modal.js') ?>" defer></script>
 </head>
 <body class="admin">
 
