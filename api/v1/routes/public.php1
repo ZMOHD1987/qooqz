@@ -1,0 +1,2353 @@
+<?php
+declare(strict_types=1);
+/**
+ * routes/public.php
+ *
+ * Public API routes under /api/public/*
+ * Handles: home, ui, products, vendors, jobs, entities, tenants
+ *
+ * Dispatcher provides:
+ *  - $_GET['segments'] (array)
+ *  - $_GET['splat']    (string)
+ *  - $GLOBALS['ADMIN_DB'] (PDO|null)
+ */
+
+// Derive sub-route segments from the request URI.
+// The Kernel loads this file for all /api/public/* requests but does NOT
+// inject $_GET['segments'], so we parse the URI path here.
+$pubUri  = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+$pubRel  = (string)preg_replace('#^/api/public/?#i', '', (string)$pubUri);
+$segments = array_values(array_filter(explode('/', trim($pubRel, '/'))));
+$first    = strtolower($segments[0] ?? '');
+
+/** @var PDO|null $pdo */
+$pdo = $GLOBALS['ADMIN_DB'] ?? null;
+
+// Fallback: on LiteSpeed/cPanel shared hosting ADMIN_DB may be null because
+// the Kernel bootstraps DB lazily or the global is not preserved across requests.
+// Try to build a fresh PDO connection from db.php when ADMIN_DB is missing.
+if (!$pdo instanceof PDO) {
+    $__paths = [
+        ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/api/shared/config/db.php',
+        dirname(__DIR__, 2) . '/shared/config/db.php',
+    ];
+    foreach ($__paths as $__f) {
+        if ($__f && is_readable($__f)) {
+            $__cfg = require $__f;
+            if (is_array($__cfg) && isset($__cfg['host'], $__cfg['name'], $__cfg['user'])) {
+                try {
+                    $pdo = new PDO(
+                        sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s',
+                            $__cfg['host'],
+                            (int)($__cfg['port'] ?? 3306),
+                            $__cfg['name'],
+                            $__cfg['charset'] ?? 'utf8mb4'
+                        ),
+                        $__cfg['user'],
+                        $__cfg['pass'] ?? '',
+                        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                         PDO::ATTR_TIMEOUT => 5]
+                    );
+                    $GLOBALS['ADMIN_DB'] = $pdo; // cache for subsequent requires
+                } catch (Throwable $__e) { $pdo = null; }
+                break;
+            }
+        }
+    }
+    unset($__paths, $__f, $__cfg, $__e);
+}
+
+$lang     = $_GET['lang'] ?? 'ar';
+$page     = max(1, (int)($_GET['page'] ?? 1));
+$per      = min(100, max(1, (int)($_GET['per'] ?? $_GET['limit'] ?? 25)));
+$offset   = ($page - 1) * $per;
+$tenantId = isset($_GET['tenant_id']) && is_numeric($_GET['tenant_id']) ? (int)$_GET['tenant_id'] : null;
+
+/* -------------------------------------------------------
+ * Helper: safe PDO list query
+ * ----------------------------------------------------- */
+$pdoList = function (string $sql, array $params = []) use ($pdo): array {
+    if (!$pdo instanceof PDO) return [];
+    try {
+        $st = $pdo->prepare($sql);
+        $st->execute($params);
+        return $st->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        return [];
+    }
+};
+
+$pdoOne = function (string $sql, array $params = []) use ($pdo): ?array {
+    if (!$pdo instanceof PDO) return null;
+    try {
+        $st = $pdo->prepare($sql);
+        $st->execute($params);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    } catch (Throwable $e) {
+        error_log('[public.php pdoOne] ' . $e->getMessage() . ' | SQL: ' . substr($sql, 0, 200));
+        return null;
+    }
+};
+
+$pdoCount = function (string $sql, array $params = []) use ($pdo): int {
+    if (!$pdo instanceof PDO) return 0;
+    try {
+        $st = $pdo->prepare($sql);
+        $st->execute($params);
+        return (int)$st->fetchColumn();
+    } catch (Throwable $e) {
+        return 0;
+    }
+};
+
+/* -------------------------------------------------------
+ * Route: Home / health
+ * ----------------------------------------------------- */
+if ($first === '' || $first === 'home') {
+    ResponseFormatter::success(['ok' => true, 'service' => 'QOOQZ Public API', 'time' => date('c')]);
+    exit;
+}
+
+/* -------------------------------------------------------
+ * Route: Current user (for JS-based auth display)
+ * GET /api/public/me
+ * Returns logged-in user info from session, or null.
+ * Used by public.js to update header login button without
+ * relying on PHP session detection in public_context.php.
+ * ----------------------------------------------------- */
+if ($first === 'me') {
+    $sessUser = $_SESSION['user'] ?? null;
+    $sessUserId = isset($sessUser['id']) ? (int)$sessUser['id'] : 0;
+    if ($sessUser && $sessUserId > 0) {
+        ResponseFormatter::success([
+            'user' => [
+                'id'    => $sessUserId,
+                'name'  => $sessUser['name'] ?? $sessUser['username'] ?? '',
+                'email' => $sessUser['email'] ?? '',
+            ],
+        ]);
+    } else {
+        ResponseFormatter::success(['user' => null]);
+    }
+    exit;
+}
+
+/* -------------------------------------------------------
+ * Route: UI (theme / color / font / design / button / card settings)
+ * GET /api/public/ui?tenant_id=X
+ * All settings needed by the frontend to render dynamic theme.
+ * color_settings columns: setting_key, color_value (NOT key/value)
+ * ----------------------------------------------------- */
+if ($first === 'ui') {
+    $tid = $tenantId ?? 1;
+
+    // Look up active theme_id for this tenant (mirrors AdminUiThemeLoader::getActiveThemeId)
+    $uiThemeRow = $pdoOne('SELECT id FROM themes WHERE tenant_id = ? AND is_active = 1 LIMIT 1', [$tid]);
+    if (!$uiThemeRow) {
+        $uiThemeRow = $pdoOne('SELECT id FROM themes WHERE tenant_id = ? AND is_default = 1 LIMIT 1', [$tid]);
+    }
+    $uiThemeId  = $uiThemeRow ? (int)$uiThemeRow['id'] : null;
+    $uiTidCond  = $uiThemeId ? ' AND (theme_id = ? OR theme_id IS NULL)' : '';
+    $uiP = static function(array $base) use ($uiThemeId): array {
+        return $uiThemeId ? array_merge($base, [$uiThemeId]) : $base;
+    };
+
+    $colors  = $pdoList(
+        'SELECT setting_key AS `key`, color_value AS value, category FROM color_settings WHERE tenant_id = ? AND is_active = 1' . $uiTidCond . ' ORDER BY sort_order, id',
+        $uiP([$tid])
+    );
+    $fonts   = $pdoList(
+        'SELECT setting_key, font_family, font_size, font_weight, line_height, category FROM font_settings WHERE tenant_id = ? AND is_active = 1' . $uiTidCond . ' ORDER BY sort_order',
+        $uiP([$tid])
+    );
+    $designs = $pdoList(
+        'SELECT setting_key, setting_value, setting_type, category FROM design_settings WHERE tenant_id = ? AND is_active = 1' . $uiTidCond . ' ORDER BY sort_order',
+        $uiP([$tid])
+    );
+    $buttons = $pdoList(
+        'SELECT slug, button_type, background_color, text_color, border_color, border_width, border_radius, padding, font_size, font_weight, hover_background_color, hover_text_color FROM button_styles WHERE tenant_id = ? AND is_active = 1' . $uiTidCond . ' ORDER BY button_type',
+        $uiP([$tid])
+    );
+    $cards = $pdoList(
+        'SELECT slug, card_type, background_color, border_color, border_width, border_radius, shadow_style, padding FROM card_styles WHERE tenant_id = ? AND is_active = 1' . $uiTidCond . ' ORDER BY card_type',
+        $uiP([$tid])
+    );
+
+    // Generate CSS string from all settings (mirrors AdminUiThemeLoader::generateCss)
+    // Values are escaped to prevent CSS injection (</style> breakout protection)
+    $esc = function(string $v): string { return str_replace('</style', '<\\/style', htmlspecialchars($v, ENT_QUOTES, 'UTF-8')); };
+    $css = ":root {\n";
+    foreach ($colors as $c) {
+        if (!empty($c['key']) && !empty($c['value'])) {
+            $css .= '  --' . preg_replace('/[^a-z0-9_\-]/', '-', strtolower((string)$c['key'])) . ': ' . $esc((string)$c['value']) . ";\n";
+        }
+    }
+    // CSS variable aliases: map DB setting_key names (underscore) to --pub-* / --color-*
+    // so public.css and variables.css receive the correct DB values directly.
+    $uiAliases = [
+        'primary_color'        => ['color-primary',  'pub-primary'],
+        'secondary_color'      => ['color-secondary', 'pub-secondary'],
+        'accent_color'         => ['color-accent',    'pub-accent'],
+        'background_main'      => ['pub-bg'],
+        'background_secondary' => ['pub-surface'],
+        'text_primary'         => ['pub-text'],
+        'text_secondary'       => ['pub-muted'],
+        'border_color'         => ['pub-border'],
+    ];
+    $colorKeyVal = [];
+    foreach ($colors as $c) {
+        if (!empty($c['key'])) {
+            $colorKeyVal[$c['key']] = $c['value'] ?? '';
+        }
+    }
+    foreach ($uiAliases as $srcKey => $aliases) {
+        if (empty($colorKeyVal[$srcKey])) continue;
+        $val = $esc($colorKeyVal[$srcKey]);
+        foreach ($aliases as $alias) {
+            $css .= '  --' . $alias . ': ' . $val . ";\n";
+        }
+    }
+    foreach ($fonts as $f) {
+        if (!empty($f['setting_key'])) {
+            $sk = preg_replace('/[^a-z0-9_\-]/', '-', strtolower((string)$f['setting_key']));
+            if (!empty($f['font_family'])) $css .= '  --' . $sk . '-family: ' . $esc((string)$f['font_family']) . ";\n";
+            if (!empty($f['font_size']))   $css .= '  --' . $sk . '-size: '   . $esc((string)$f['font_size'])   . ";\n";
+            if (!empty($f['font_weight'])) $css .= '  --' . $sk . '-weight: ' . $esc((string)$f['font_weight']) . ";\n";
+        }
+    }
+    foreach ($designs as $d) {
+        if (!empty($d['setting_key']) && !empty($d['setting_value'])) {
+            $css .= '  --' . preg_replace('/[^a-z0-9_\-]/', '-', strtolower((string)$d['setting_key'])) . ': ' . $esc((string)$d['setting_value']) . ";\n";
+        }
+    }
+    $css .= "}\n";
+    foreach ($buttons as $b) {
+        if (empty($b['slug'])) continue;
+        $css .= '.btn-' . preg_replace('/[^a-z0-9_\-]/', '-', (string)$b['slug']) . " {\n";
+        if (!empty($b['background_color'])) $css .= '  background-color: ' . $esc((string)$b['background_color']) . ";\n";
+        if (!empty($b['text_color']))       $css .= '  color: '            . $esc((string)$b['text_color'])       . ";\n";
+        if (!empty($b['border_color']))     $css .= '  border: '           . (int)$b['border_width'] . 'px solid ' . $esc((string)$b['border_color']) . ";\n";
+        if (isset($b['border_radius']))     $css .= '  border-radius: '    . (int)$b['border_radius'] . "px;\n";
+        if (!empty($b['padding']))          $css .= '  padding: '          . $esc((string)$b['padding'])          . ";\n";
+        if (!empty($b['font_size']))        $css .= '  font-size: '        . $esc((string)$b['font_size'])        . ";\n";
+        if (!empty($b['font_weight']))      $css .= '  font-weight: '      . $esc((string)$b['font_weight'])      . ";\n";
+        $css .= "}\n";
+    }
+    foreach ($cards as $c) {
+        if (empty($c['slug'])) continue;
+        $css .= '.card-' . preg_replace('/[^a-z0-9_\-]/', '-', (string)$c['slug']) . " {\n";
+        if (!empty($c['background_color'])) $css .= '  background-color: ' . $esc((string)$c['background_color']) . ";\n";
+        if (!empty($c['border_color']))     $css .= '  border: '           . (int)$c['border_width'] . 'px solid ' . $esc((string)$c['border_color']) . ";\n";
+        if (isset($c['border_radius']))     $css .= '  border-radius: '    . (int)$c['border_radius'] . "px;\n";
+        if (!empty($c['shadow_style']))     $css .= '  box-shadow: '       . $esc((string)$c['shadow_style'])      . ";\n";
+        if (!empty($c['padding']))          $css .= '  padding: '          . $esc((string)$c['padding'])           . ";\n";
+        $css .= "}\n";
+    }
+
+    ResponseFormatter::success([
+        'ok'           => true,
+        'ui'           => $GLOBALS['PUBLIC_UI'] ?? [],
+        'colors'       => $colors,
+        'fonts'        => $fonts,
+        'design'       => $designs,
+        'buttons'      => $buttons,
+        'cards'        => $cards,
+        'generated_css'=> $css,
+    ]);
+    exit;
+}
+
+/* -------------------------------------------------------
+ * Route: Products
+ * GET /api/public/products[/{id}]
+ * ----------------------------------------------------- */
+if ($first === 'products') {
+    // ── POST /api/public/products/{id}/reviews|questions must be caught HERE
+    // before the $id-based product detail path (which also matches and calls exit).
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        $subPid    = isset($segments[1]) && ctype_digit((string)$segments[1]) ? (int)$segments[1] : 0;
+        $subAction = strtolower($segments[2] ?? '');
+        if ($subPid && in_array($subAction, ['reviews', 'questions'], true)) {
+            $subUserId = $_SESSION['user_id'] ?? ($_SESSION['user']['id'] ?? null);
+            if (!$subUserId) { ResponseFormatter::error('Login required', 401); exit; }
+            if (!$pdo) { ResponseFormatter::error('DB unavailable', 503); exit; }
+            if ($subAction === 'reviews') {
+                $rating  = (int)($_POST['rating'] ?? 0);
+                $title   = trim($_POST['title'] ?? '');
+                $comment = trim($_POST['comment'] ?? '');
+                if ($rating < 1 || $rating > 5) { ResponseFormatter::error('Rating must be 1-5', 422); exit; }
+                try {
+                    $st = $pdo->prepare(
+                        'INSERT INTO product_reviews (product_id, user_id, rating, title, comment, is_approved, created_at, updated_at)
+                         VALUES (?, ?, ?, ?, ?, 0, NOW(), NOW())'
+                    );
+                    $st->execute([$subPid, $subUserId, $rating, $title ?: null, $comment ?: null]);
+                    ResponseFormatter::success(['ok' => true, 'id' => (int)$pdo->lastInsertId()], 'Review submitted pending approval', 201);
+                } catch (Throwable $ex) { ResponseFormatter::error('Failed: ' . $ex->getMessage(), 500); }
+            } else {
+                $question = trim($_POST['question'] ?? '');
+                if (strlen($question) < 5) { ResponseFormatter::error('Question too short', 422); exit; }
+                try {
+                    $st = $pdo->prepare(
+                        'INSERT INTO product_questions (product_id, user_id, question, is_approved, created_at, updated_at)
+                         VALUES (?, ?, ?, 0, NOW(), NOW())'
+                    );
+                    $st->execute([$subPid, $subUserId, $question]);
+                    ResponseFormatter::success(['ok' => true, 'id' => (int)$pdo->lastInsertId()], 'Question submitted pending review', 201);
+                } catch (Throwable $ex) { ResponseFormatter::error('Failed: ' . $ex->getMessage(), 500); }
+            }
+            exit;
+        }
+    }
+
+    $id = $_GET['id'] ?? (isset($segments[1]) && ctype_digit((string)$segments[1]) ? (int)$segments[1] : null);
+    if (!$id && !empty($_GET['slug'])) {
+        $slugParams = [$_GET['slug']];
+        $slugCond = ' AND is_active = 1';
+        if ($tenantId) { $slugCond .= ' AND tenant_id = ?'; $slugParams[] = $tenantId; }
+        $slugRow = $pdoOne('SELECT id FROM products WHERE slug = ?' . $slugCond . ' LIMIT 1', $slugParams);
+        if ($slugRow) $id = (int)$slugRow['id'];
+    }
+
+    if ($id) {
+        // Full product detail — scalar subqueries for pricing and images to avoid
+        // multi-row JOIN issues and dependency on pp.is_active in product_pricing.
+        $qParams = [$lang, (int)$id];
+        $tidCond = '';
+        if ($tenantId) { $tidCond = ' AND p.tenant_id = ?'; $qParams[] = $tenantId; }
+        $row = $pdoOne(
+            "SELECT p.id, p.sku, p.slug, p.barcode, p.brand_id,
+                    p.is_active, p.is_featured, p.is_new, p.is_bestseller,
+                    p.stock_quantity, p.stock_status, p.rating_average, p.rating_count,
+                    p.views_count, p.tenant_id,
+                    COALESCE(pt.name, p.slug) AS name,
+                    pt.short_description, pt.description, pt.specifications, pt.meta_title,
+                    (SELECT pp.price FROM product_pricing pp
+                       WHERE pp.product_id = p.id ORDER BY pp.id ASC LIMIT 1) AS price,
+                    NULL AS compare_at_price,
+                    (SELECT pp.currency_code FROM product_pricing pp
+                       WHERE pp.product_id = p.id ORDER BY pp.id ASC LIMIT 1) AS currency_code,
+                    NULL AS brand_name,
+                    (SELECT i.url FROM images i WHERE i.owner_id = p.id
+                       ORDER BY i.id ASC LIMIT 1) AS image_url,
+                    NULL AS image_thumb_url
+               FROM products p
+          LEFT JOIN product_translations pt ON pt.product_id = p.id AND pt.language_code = ?
+              WHERE p.id = ?" . $tidCond,
+            $qParams
+        );
+        if (!$row) { ResponseFormatter::notFound('Product not found'); exit; }
+
+        // All product images (gallery) — select only id and url (safe columns that always exist)
+        $productImages = $pdoList(
+            "SELECT i.id, i.url
+               FROM images i
+              WHERE i.owner_id = ?
+              ORDER BY i.id ASC LIMIT 10",
+            [(int)$id]
+        );
+
+        // Categories
+        $productCategories = $pdoList(
+            "SELECT c.id, COALESCE(ct.name, c.slug) AS name, c.slug
+               FROM categories c
+         INNER JOIN product_categories pc ON pc.category_id = c.id AND pc.product_id = ?
+          LEFT JOIN category_translations ct ON ct.category_id = c.id AND ct.language_code = ?
+              LIMIT 5",
+            [(int)$id, $lang]
+        );
+
+        // Related products (same first category)
+        $related = [];
+        if (!empty($productCategories[0]['id'])) {
+            $related = $pdoList(
+                "SELECT p2.id, COALESCE(pt2.name, p2.slug) AS name, p2.slug,
+                        (SELECT pp2.price FROM product_pricing pp2
+                           WHERE pp2.product_id = p2.id ORDER BY pp2.id ASC LIMIT 1) AS price,
+                        (SELECT pp2.currency_code FROM product_pricing pp2
+                           WHERE pp2.product_id = p2.id ORDER BY pp2.id ASC LIMIT 1) AS currency_code,
+                        (SELECT i2.url FROM images i2 WHERE i2.owner_id = p2.id
+                         ORDER BY i2.id ASC LIMIT 1) AS image_url
+                   FROM products p2
+             INNER JOIN product_categories pc2 ON pc2.product_id = p2.id AND pc2.category_id = ?
+              LEFT JOIN product_translations pt2 ON pt2.product_id = p2.id AND pt2.language_code = ?
+                  WHERE p2.is_active = 1 AND p2.id != ?
+                  ORDER BY p2.is_featured DESC, p2.id DESC LIMIT 8",
+                [(int)$productCategories[0]['id'], $lang, (int)$id]
+            );
+        }
+
+        ResponseFormatter::success([
+            'ok'         => true,
+            'product'    => $row,
+            'images'     => $productImages,
+            'categories' => $productCategories,
+            'related'    => $related,
+        ]);
+        exit;
+    }
+
+    // $whereParams: params for WHERE clause only (no lang — lang is for the translation JOIN)
+    $where       = 'WHERE p.is_active = 1';
+    $whereParams = [];
+    if ($tenantId) { $where .= ' AND p.tenant_id = ?'; $whereParams[] = $tenantId; }
+    if (!empty($_GET['brand_id']) && is_numeric($_GET['brand_id'])) {
+        $where .= ' AND p.brand_id = ?'; $whereParams[] = (int)$_GET['brand_id'];
+    }
+    if (!empty($_GET['is_featured'])) {
+        $where .= ' AND p.is_featured = ?'; $whereParams[] = (int)$_GET['is_featured'];
+    }
+    if (!empty($_GET['category_id']) && is_numeric($_GET['category_id'])) {
+        $where .= ' AND p.id IN (SELECT product_id FROM product_categories WHERE category_id = ?)';
+        $whereParams[] = (int)$_GET['category_id'];
+    }
+    if (!empty($_GET['search'])) {
+        // Escape LIKE wildcards in the search term to prevent unintended broad matches
+        $kw = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], trim($_GET['search'])) . '%';
+        $where .= ' AND (p.slug LIKE ? OR p.id IN (SELECT product_id FROM product_translations WHERE name LIKE ? AND language_code = ?))';
+        $whereParams[] = $kw;
+        $whereParams[] = $kw;
+        $whereParams[] = $lang;
+    }
+
+    $total = $pdoCount("SELECT COUNT(*) FROM products p $where", $whereParams);
+    $rows  = $pdoList(
+        "SELECT p.id, COALESCE(pt.name, p.slug) AS name, p.sku, p.slug, p.is_featured, p.tenant_id,
+                p.stock_quantity, p.stock_status, p.rating_average, p.rating_count,
+                (SELECT pp.price FROM product_pricing pp WHERE pp.product_id = p.id ORDER BY pp.id ASC LIMIT 1) AS price,
+                (SELECT pp.currency_code FROM product_pricing pp WHERE pp.product_id = p.id ORDER BY pp.id ASC LIMIT 1) AS currency_code,
+                (SELECT i.url FROM images i WHERE i.owner_id = p.id ORDER BY i.id ASC LIMIT 1) AS image_url,
+                NULL AS image_thumb_url
+           FROM products p
+      LEFT JOIN product_translations pt ON pt.product_id = p.id AND pt.language_code = ?
+         $where ORDER BY p.id DESC LIMIT ? OFFSET ?",
+        array_merge([$lang], $whereParams, [$per, $offset])
+    );
+
+    ResponseFormatter::success([
+        'ok'   => true,
+        'data' => $rows,
+        'meta' => [
+            'total'       => $total,
+            'page'        => $page,
+            'per_page'    => $per,
+            'total_pages' => $per > 0 ? (int)ceil($total / $per) : 1,
+        ]
+    ]);
+    exit;
+}
+
+/* -------------------------------------------------------
+ * Route: Categories (public listing with images)
+ * GET /api/public/categories[/{id}]
+ * image_type: category (600×600 webp)
+ * ----------------------------------------------------- */
+if ($first === 'categories') {
+    $id = $_GET['id'] ?? (isset($segments[1]) && ctype_digit((string)$segments[1]) ? (int)$segments[1] : null);
+
+    if ($id) {
+        $row = $pdoOne(
+            "SELECT c.id, COALESCE(ct.name, c.slug) AS name, c.slug, c.description,
+                    (SELECT i.url FROM images i WHERE i.owner_id = c.id ORDER BY i.id ASC LIMIT 1) AS image_url,
+                    c.is_featured, c.is_active, c.parent_id, c.sort_order, c.tenant_id
+               FROM categories c
+          LEFT JOIN category_translations ct ON ct.category_id = c.id AND ct.language_code = ?
+              WHERE c.id = ? AND c.is_active = 1 LIMIT 1",
+            [$lang, (int)$id]
+        );
+        if ($row) ResponseFormatter::success(['ok' => true, 'category' => $row]);
+        else      ResponseFormatter::notFound('Category not found');
+        exit;
+    }
+
+    // $whereParams: params for WHERE only (no lang — lang is for the translation JOIN)
+    $where       = 'WHERE c.is_active = 1';
+    $whereParams = [];
+    if ($tenantId) { $where .= ' AND c.tenant_id = ?'; $whereParams[] = $tenantId; }
+    if (isset($_GET['parent_id'])) {
+        if ($_GET['parent_id'] === '0' || $_GET['parent_id'] === '') {
+            $where .= ' AND (c.parent_id IS NULL OR c.parent_id = 0)';
+        } elseif (is_numeric($_GET['parent_id'])) {
+            $where .= ' AND c.parent_id = ?'; $whereParams[] = (int)$_GET['parent_id'];
+        }
+    }
+    if (!empty($_GET['featured'])) { $where .= ' AND c.is_featured = ?'; $whereParams[] = 1; }
+
+    $total = $pdoCount("SELECT COUNT(*) FROM categories c $where", $whereParams);
+    $rows  = $pdoList(
+        "SELECT c.id, COALESCE(ct.name, c.slug) AS name, c.slug,
+                (SELECT i.url FROM images i WHERE i.owner_id = c.id ORDER BY i.id ASC LIMIT 1) AS image_url,
+                c.is_featured, c.is_active, c.parent_id, c.sort_order, c.tenant_id,
+                (SELECT COUNT(*) FROM products p
+                  INNER JOIN product_categories pc ON pc.product_id = p.id AND pc.category_id = c.id
+                  WHERE p.is_active = 1) AS product_count
+           FROM categories c
+      LEFT JOIN category_translations ct ON ct.category_id = c.id AND ct.language_code = ?
+          $where ORDER BY c.is_featured DESC, c.sort_order ASC, c.id ASC LIMIT ? OFFSET ?",
+        array_merge([$lang], $whereParams, [$per, $offset])
+    );
+
+    ResponseFormatter::success([
+        'ok'   => true,
+        'data' => $rows,
+        'meta' => [
+            'total'       => $total,
+            'page'        => $page,
+            'per_page'    => $per,
+            'total_pages' => $per > 0 ? (int)ceil($total / $per) : 1,
+        ]
+    ]);
+    exit;
+}
+
+/* -------------------------------------------------------
+ * Route: Jobs (public listing — no auth required)
+ * GET /api/public/jobs[/{id}]
+ * ----------------------------------------------------- */
+if ($first === 'jobs') {
+    $id = $_GET['id'] ?? (isset($segments[1]) && ctype_digit((string)$segments[1]) ? (int)$segments[1] : null);
+
+    if ($id) {
+        // Full job detail with translated title/description via job_translations
+        $row = $pdoOne(
+            "SELECT j.*, COALESCE(jt.job_title, j.slug) AS title,
+                    jt.description, jt.requirements, jt.benefits
+               FROM jobs j
+          LEFT JOIN job_translations jt ON jt.job_id = j.id AND jt.language_code = ?
+              WHERE j.id = ? AND j.status NOT IN ('cancelled','filled','closed') LIMIT 1",
+            [$lang, $id]
+        );
+        if ($row) ResponseFormatter::success(['ok' => true, 'job' => $row]);
+        else      ResponseFormatter::notFound('Job not found');
+        exit;
+    }
+
+    // $whereParams: params for WHERE only (no $lang — $lang is for the JOIN)
+    $where       = "WHERE j.status NOT IN ('cancelled', 'filled', 'closed')";
+    $whereParams = [];
+    if (!empty($_GET['is_featured']))    { $where .= ' AND j.is_featured = ?'; $whereParams[] = 1; }
+    if (!empty($_GET['is_urgent']))      { $where .= ' AND j.is_urgent = ?';   $whereParams[] = 1; }
+    if (!empty($_GET['is_remote']))      { $where .= ' AND j.is_remote = ?';   $whereParams[] = 1; }
+    if (!empty($_GET['employment_type'])) {
+        // Frontend sends full_time/part_time/etc., stored in j.job_type (not j.employment_type)
+        $where .= ' AND j.job_type = ?'; $whereParams[] = $_GET['employment_type'];
+    }
+    if (!empty($_GET['search'])) {
+        // Escape LIKE wildcards so user-typed % or _ match literally; SQL injection prevented by PDO params.
+        $kw = '%' . str_replace(['\\','%','_'], ['\\\\','\\%','\\_'], trim($_GET['search'])) . '%';
+        $where .= ' AND (j.slug LIKE ? OR j.id IN (SELECT job_id FROM job_translations WHERE job_title LIKE ? AND language_code = ?))';
+        $whereParams[] = $kw;
+        $whereParams[] = $kw;
+        $whereParams[] = $lang;
+    }
+
+    $total = $pdoCount("SELECT COUNT(*) FROM jobs j $where", $whereParams);
+    $rows  = $pdoList(
+        "SELECT j.id, COALESCE(jt.job_title, j.slug) AS title,
+                j.job_type AS employment_type,
+                j.is_remote, j.is_featured, j.is_urgent,
+                j.application_deadline AS deadline,
+                j.salary_min, j.salary_max, j.salary_currency,
+                j.city_id, j.entity_id, j.created_at
+           FROM jobs j
+      LEFT JOIN job_translations jt ON jt.job_id = j.id AND jt.language_code = ?
+         $where ORDER BY j.is_featured DESC, j.created_at DESC LIMIT ? OFFSET ?",
+        array_merge([$lang], $whereParams, [$per, $offset])
+    );
+
+    ResponseFormatter::success([
+        'ok'   => true,
+        'data' => $rows,
+        'meta' => ['total' => $total, 'page' => $page, 'per_page' => $per,
+                   'total_pages' => $per > 0 ? (int)ceil($total / $per) : 1],
+    ]);
+    exit;
+}
+
+/* -------------------------------------------------------
+ * Route: Entity detail — full vendor profile
+ * GET /api/public/entity/{id}           — full entity profile
+ * GET /api/public/entity/{id}/products  — entity products
+ * GET /api/public/entity/{id}/categories — entity categories
+ * GET /api/public/entity/{id}/discounts  — entity discounts
+ * ----------------------------------------------------- */
+if ($first === 'entity') {
+    $entityId = isset($segments[1]) && ctype_digit((string)$segments[1]) ? (int)$segments[1] : (int)($_GET['id'] ?? 0);
+    $sub      = strtolower($segments[2] ?? '');
+
+    if (!$entityId) {
+        ResponseFormatter::notFound('Entity ID required');
+        exit;
+    }
+
+    // Sub-route: entity categories — categories with products in this entity's tenant
+    if ($sub === 'categories') {
+        $entityRow = $pdoOne('SELECT tenant_id FROM entities WHERE id = ? LIMIT 1', [$entityId]);
+        if (!$entityRow) { ResponseFormatter::notFound('Entity not found'); exit; }
+        $eTenId = (int)$entityRow['tenant_id'];
+        $rows   = $pdoList(
+            "SELECT DISTINCT c.id, COALESCE(ct.name, c.name) AS name, c.slug
+               FROM product_categories pc
+               JOIN categories c ON c.id = pc.category_id AND c.is_active = 1
+          LEFT JOIN category_translations ct ON ct.category_id = c.id AND ct.language_code = ?
+               JOIN products p ON p.id = pc.product_id AND p.tenant_id = ? AND p.is_active = 1
+              ORDER BY c.sort_order ASC, c.id ASC LIMIT 50",
+            [$lang, $eTenId]
+        );
+        ResponseFormatter::success(['ok' => true, 'data' => $rows]);
+        exit;
+    }
+
+    // Sub-route: entity discounts — active discounts for this entity
+    if ($sub === 'discounts') {
+        $rows = $pdoList(
+            "SELECT d.id, d.code, d.type, d.auto_apply, d.currency_code, d.status,
+                    d.starts_at, d.ends_at, d.max_redemptions, d.current_redemptions,
+                    COALESCE(dt.name, d.code) AS title,
+                    dt.description, dt.marketing_badge, dt.terms_conditions
+               FROM discounts d
+          LEFT JOIN discount_translations dt ON dt.discount_id = d.id AND dt.language_code = ?
+              WHERE d.entity_id = ?
+                AND d.status NOT IN ('cancelled','deleted')
+              ORDER BY d.status ASC, d.priority DESC, d.id DESC LIMIT 30",
+            [$lang, $entityId]
+        );
+        ResponseFormatter::success(['ok' => true, 'data' => $rows]);
+        exit;
+    }
+
+    // Sub-route: entity ratings — GET list or POST submit
+    if ($sub === 'ratings') {
+        $isPost = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
+        if ($isPost) {
+            // Submit a rating
+            $rateUserId = (int)($_SESSION['user_id'] ?? ($_SESSION['user']['id'] ?? 0));
+            if (!$rateUserId) { ResponseFormatter::error('Login required', 401); exit; }
+            $ratingVal  = (float)($_POST['rating'] ?? 0);
+            $reviewText = trim($_POST['review'] ?? '');
+            if ($ratingVal < 1 || $ratingVal > 5) { ResponseFormatter::error('Rating must be between 1 and 5'); exit; }
+            try {
+                // Upsert: one rating per user per entity (INSERT or UPDATE if exists)
+                $existing = $pdoOne('SELECT id FROM entity_ratings WHERE entity_id = ? AND user_id = ? LIMIT 1', [$entityId, $rateUserId]);
+                if ($existing) {
+                    $pdo->prepare('UPDATE entity_ratings SET rating = ?, review = ?, is_active = 1, updated_at = NOW() WHERE id = ?')
+                        ->execute([$ratingVal, $reviewText ?: null, (int)$existing['id']]);
+                    $msg = 'Rating updated';
+                } else {
+                    $pdo->prepare('INSERT INTO entity_ratings (entity_id, user_id, rating, review, is_active, created_at) VALUES (?, ?, ?, ?, 1, NOW())')
+                        ->execute([$entityId, $rateUserId, $ratingVal, $reviewText ?: null]);
+                    $msg = 'Rating submitted';
+                }
+                ResponseFormatter::success(['ok' => true, 'message' => $msg]);
+            } catch (Throwable $ex) {
+                ResponseFormatter::error('Failed to save rating: ' . $ex->getMessage());
+            }
+            exit;
+        }
+        // GET: last 5 active ratings
+        $rows = $pdoList(
+            "SELECT er.id, er.rating, er.review, er.created_at,
+                    COALESCE(u.username, 'Anonymous') AS reviewer_name
+               FROM entity_ratings er
+          LEFT JOIN users u ON u.id = er.user_id
+              WHERE er.entity_id = ? AND er.is_active = 1
+              ORDER BY er.created_at DESC LIMIT 5",
+            [$entityId]
+        );
+        $avg = $pdoOne('SELECT ROUND(AVG(rating),2) AS avg_rating, COUNT(*) AS total FROM entity_ratings WHERE entity_id = ? AND is_active = 1', [$entityId]);
+        ResponseFormatter::success(['ok' => true, 'ratings' => $rows, 'average' => $avg['avg_rating'] ?? null, 'total' => (int)($avg['total'] ?? 0)]);
+        exit;
+    }
+
+    // Sub-route: entity products
+    // Products have no entity_id column; use entity's tenant_id to scope products
+    if ($sub === 'products') {
+        $entityRow = $pdoOne('SELECT tenant_id FROM entities WHERE id = ? LIMIT 1', [$entityId]);
+        if (!$entityRow) { ResponseFormatter::notFound('Entity not found'); exit; }
+        $entityTenantId = (int)$entityRow['tenant_id'];
+        $where  = 'WHERE p.is_active = 1 AND p.tenant_id = ?';
+        $params = [$entityTenantId];
+        if (!empty($_GET['category_id']) && is_numeric($_GET['category_id'])) {
+            $where .= ' AND EXISTS (SELECT 1 FROM product_categories pc2 WHERE pc2.product_id = p.id AND pc2.category_id = ?)';
+            $params[] = (int)$_GET['category_id'];
+        }
+        $total = $pdoCount("SELECT COUNT(*) FROM products p $where", $params);
+        $rows  = $pdoList(
+            "SELECT p.id, COALESCE(pt.name, p.slug) AS name, p.sku, p.slug,
+                    p.is_featured, p.stock_quantity, p.stock_status, p.rating_average, p.rating_count,
+                    (SELECT pp.price FROM product_pricing pp WHERE pp.product_id = p.id ORDER BY pp.id ASC LIMIT 1) AS price,
+                    (SELECT pp.currency_code FROM product_pricing pp WHERE pp.product_id = p.id ORDER BY pp.id ASC LIMIT 1) AS currency_code,
+                    (SELECT i.url FROM images i WHERE i.owner_id = p.id ORDER BY i.id ASC LIMIT 1) AS image_url,
+                    NULL AS image_thumb_url
+               FROM products p
+          LEFT JOIN product_translations pt ON pt.product_id = p.id AND pt.language_code = ?
+              $where ORDER BY p.is_featured DESC, p.id DESC LIMIT ? OFFSET ?",
+            array_merge([$lang], $params, [$per, $offset])
+        );
+        ResponseFormatter::success(['ok'=>true,'data'=>$rows,'meta'=>[
+            'total'=>$total,'page'=>$page,'per_page'=>$per,
+            'total_pages'=>$per > 0 ? (int)ceil($total/$per) : 1
+        ]]);
+        exit;
+    }
+
+    // Full entity profile — images fetched from images table (entity_logo / entity_cover)
+    // entities table has vendor_type (varchar code), not entity_type_id — join entity_types by code
+    $entity = $pdoOne(
+        "SELECT e.id, e.store_name, e.slug, e.vendor_type, e.store_type,
+                e.is_verified, e.phone, e.mobile, e.email, e.website_url AS website,
+                e.status, e.tenant_id, e.created_at,
+                et.name AS type_name,
+                (SELECT i.url FROM images i WHERE i.owner_id = e.id ORDER BY i.id ASC LIMIT 1) AS logo_url,
+                NULL AS logo_thumb_url,
+                (SELECT i2.url FROM images i2 WHERE i2.owner_id = e.id ORDER BY i2.id ASC LIMIT 1 OFFSET 1) AS cover_url
+           FROM entities e
+      LEFT JOIN entity_types et ON et.code = e.vendor_type
+          WHERE e.id = ? AND e.status NOT IN ('suspended','rejected') LIMIT 1",
+        [$entityId]
+    );
+
+    if (!$entity) {
+        ResponseFormatter::notFound('Entity not found');
+        exit;
+    }
+
+    // Translation override (store_name / description)
+    $translation = $pdoOne(
+        "SELECT store_name, description FROM entity_translations
+          WHERE entity_id = ? AND language_code = ? LIMIT 1",
+        [$entityId, $lang]
+    );
+    if ($translation) {
+        if (!empty($translation['store_name'])) $entity['store_name'] = $translation['store_name'];
+        if (!empty($translation['description'])) $entity['description'] = $translation['description'];
+    }
+
+    // Working hours — table has is_open (tinyint), not is_closed; day_of_week is tinyint 0-6
+    $workingHours = $pdoList(
+        "SELECT day_of_week, open_time, close_time, is_open
+           FROM entities_working_hours
+          WHERE entity_id = ? ORDER BY day_of_week ASC",
+        [$entityId]
+    );
+
+    // Addresses (with coordinates) — addresses table has no label column
+    $addresses = $pdoList(
+        "SELECT id, address_line1, address_line2, city_id, country_id,
+                postal_code, latitude, longitude, is_primary
+           FROM addresses
+          WHERE owner_type = 'entity' AND owner_id = ? ORDER BY is_primary DESC, id ASC LIMIT 5",
+        [$entityId]
+    );
+
+    // Payment methods — payment_methods columns: method_name, method_key, icon_url
+    $paymentMethods = $pdoList(
+        "SELECT pm.id, pm.method_name AS name, pm.method_key AS code, pm.icon_url AS icon, epm.is_active
+           FROM entity_payment_methods epm
+      LEFT JOIN payment_methods pm ON pm.id = epm.payment_method_id
+          WHERE epm.entity_id = ? AND epm.is_active = 1",
+        [$entityId]
+    );
+
+    // Attributes — entities_attributes has NO entity_type_id column; start from values table
+    $attributes = $pdoList(
+        "SELECT COALESCE(eat.name, ea.slug) AS attribute_name, eav.value
+           FROM entities_attribute_values eav
+      LEFT JOIN entities_attributes ea  ON ea.id = eav.attribute_id
+      LEFT JOIN entities_attribute_translations eat
+             ON eat.attribute_id = ea.id AND eat.language_code = ?
+          WHERE eav.entity_id = ? AND eav.value IS NOT NULL AND eav.value != ''
+          LIMIT 20",
+        [$lang, $entityId]
+    );
+
+    // Entity settings — expose all business-logic fields for the frontend
+    $entitySettings = $pdoOne(
+        "SELECT auto_accept_orders, allow_cod, min_order_amount, preparation_time_minutes,
+                allow_online_booking, booking_window_days, max_bookings_per_slot,
+                booking_cancellation_allowed, allow_preorders, max_daily_orders,
+                is_visible, maintenance_mode, show_reviews, show_contact_info,
+                featured_in_app, default_payment_method, allow_multiple_payment_methods,
+                delivery_radius_km, free_delivery_min_order,
+                notification_preferences, additional_settings
+           FROM entity_settings
+          WHERE entity_id = ? LIMIT 1",
+        [$entityId]
+    );
+
+    ResponseFormatter::success([
+        'ok'      => true,
+        'data'    => array_merge($entity, [
+            'working_hours'   => $workingHours,
+            'addresses'       => $addresses,
+            'payment_methods' => $paymentMethods,
+            'attributes'      => $attributes,
+            'settings'        => $entitySettings ?: [],
+        ]),
+    ]);
+    exit;
+}
+
+/* -------------------------------------------------------
+ * Route: Entities (public listing)
+ * GET /api/public/entities[/{id}]
+ * ----------------------------------------------------- */
+if ($first === 'entities') {
+    $id = $_GET['id'] ?? (isset($segments[1]) && ctype_digit((string)$segments[1]) ? (int)$segments[1] : null);
+
+    if ($id) {
+        $row = $pdoOne("SELECT * FROM entities WHERE id = ? AND status = 'approved' LIMIT 1", [$id]);
+        if ($row) ResponseFormatter::success(['ok' => true, 'entity' => $row]);
+        else      ResponseFormatter::notFound('Entity not found');
+        exit;
+    }
+
+    $where  = "WHERE e.status NOT IN ('suspended','rejected')";
+    $params = [];
+    if ($tenantId)                          { $where .= ' AND e.tenant_id = ?';    $params[] = $tenantId; }
+    if (!empty($_GET['vendor_type']))        { $where .= ' AND e.vendor_type = ?'; $params[] = $_GET['vendor_type']; }
+    if (!empty($_GET['is_verified']))        { $where .= ' AND e.is_verified = ?'; $params[] = 1; }
+    if (!empty($_GET['q'])) {
+        $like = '%' . str_replace(['%','_','\\'], ['\\%','\\_','\\\\'], $_GET['q']) . '%';
+        $where .= ' AND (e.store_name LIKE ? OR e.email LIKE ?)';
+        $params[] = $like;
+        $params[] = $like;
+    }
+
+    $total = $pdoCount("SELECT COUNT(*) FROM entities e $where", $params);
+    $rows  = $pdoList(
+        "SELECT e.id, e.store_name, e.slug, e.vendor_type, e.is_verified, e.tenant_id,
+                (SELECT i.url FROM images i WHERE i.owner_id = e.id ORDER BY i.id ASC LIMIT 1) AS logo_url,
+                NULL AS logo_thumb_url,
+                es.additional_settings
+           FROM entities e
+           LEFT JOIN entity_settings es ON es.entity_id = e.id
+          $where ORDER BY e.is_verified DESC, e.id DESC LIMIT ? OFFSET ?",
+        array_merge($params, [$per, $offset])
+    );
+
+    ResponseFormatter::success([
+        'ok'   => true,
+        'data' => $rows,
+        'meta' => ['total' => $total, 'page' => $page, 'per_page' => $per,
+                   'total_pages' => $per > 0 ? (int)ceil($total / $per) : 1],
+    ]);
+    exit;
+}
+
+/* -------------------------------------------------------
+ * Route: Tenants (public listing)
+ * GET /api/public/tenants[/{id}]
+ * ----------------------------------------------------- */
+if ($first === 'tenants') {
+    $id  = $_GET['id'] ?? (isset($segments[1]) && ctype_digit((string)$segments[1]) ? (int)$segments[1] : null);
+    $sub = strtolower($segments[2] ?? '');
+
+    // GET /api/public/tenants/{id}/entities
+    if ($id && $sub === 'entities') {
+        $total = $pdoCount(
+            "SELECT COUNT(*) FROM entities e WHERE e.tenant_id = ? AND e.status = 'approved'",
+            [(int)$id]
+        );
+        $rows  = $pdoList(
+            "SELECT e.id, e.store_name, e.slug, e.vendor_type, e.is_verified, e.phone,
+                    (SELECT i.url FROM images i WHERE i.owner_id = e.id ORDER BY i.id ASC LIMIT 1) AS logo_url,
+                    es.additional_settings
+               FROM entities e
+               LEFT JOIN entity_settings es ON es.entity_id = e.id
+              WHERE e.tenant_id = ? AND e.status = 'approved'
+              ORDER BY e.id ASC LIMIT ? OFFSET ?",
+            [(int)$id, $per, $offset]
+        );
+        ResponseFormatter::success(['ok' => true, 'data' => $rows,
+            'meta' => ['total' => $total, 'page' => $page, 'per_page' => $per,
+                       'total_pages' => $per > 0 ? (int)ceil($total / $per) : 1]]);
+        exit;
+    }
+
+    if ($id) {
+        $row = $pdoOne("SELECT id, name, domain, status FROM tenants WHERE id = ? AND status = 'active' LIMIT 1", [$id]);
+        if ($row) ResponseFormatter::success(['ok' => true, 'tenant' => $row]);
+        else      ResponseFormatter::notFound('Tenant not found');
+        exit;
+    }
+
+    $where  = "WHERE t.status = 'active'";
+    $params = [];
+    if (!empty($_GET['search'])) {
+        $where .= ' AND (t.name LIKE ? OR t.domain LIKE ?)';
+        $kw     = '%' . $_GET['search'] . '%';
+        $params = [$kw, $kw];
+    }
+
+    $total = $pdoCount("SELECT COUNT(*) FROM tenants t $where", $params);
+    $rows  = $pdoList(
+        "SELECT t.id, t.name, t.domain, t.status,
+                sp.plan_name
+           FROM tenants t
+      LEFT JOIN subscription_plans sp ON sp.id = (
+              SELECT plan_id FROM subscriptions s
+               WHERE s.tenant_id = t.id AND s.status IN ('active','trial')
+               ORDER BY s.id DESC LIMIT 1
+          )
+          $where ORDER BY t.id DESC LIMIT ? OFFSET ?",
+        array_merge($params, [$per, $offset])
+    );
+
+    ResponseFormatter::success([
+        'ok'   => true,
+        'data' => $rows,
+        'meta' => ['total' => $total, 'page' => $page, 'per_page' => $per,
+                   'total_pages' => $per > 0 ? (int)ceil($total / $per) : 1],
+    ]);
+    exit;
+}
+
+/* -------------------------------------------------------
+ * Legacy: Vendors (kept for backwards compatibility)
+ * ----------------------------------------------------- */
+if ($first === 'vendors') {
+    $id = $_GET['id'] ?? (isset($segments[1]) && ctype_digit((string)$segments[1]) ? (int)$segments[1] : null);
+    if ($id) {
+        $row = $pdoOne('SELECT id, store_name AS name, is_active FROM entities WHERE id = ? LIMIT 1', [$id]);
+        if ($row) ResponseFormatter::success(['ok' => true, 'vendor' => $row]);
+        else      ResponseFormatter::notFound('Vendor not found');
+    } else {
+        $rows = $pdoList('SELECT id, store_name AS name, is_active FROM entities LIMIT ? OFFSET ?', [$per, $offset]);
+        ResponseFormatter::success(['ok' => true, 'data' => $rows]);
+    }
+    exit;
+}
+
+/* -------------------------------------------------------
+ * Route: Entity Types (public list — used for filter dropdown)
+ * GET /api/public/entity_types
+ * ----------------------------------------------------- */
+if ($first === 'entity_types') {
+    $rows = $pdoList("SELECT id, code, name, description FROM entity_types ORDER BY id ASC");
+    ResponseFormatter::success(['ok' => true, 'data' => $rows]);
+    exit;
+}
+
+/* -------------------------------------------------------
+ * Route: Homepage Sections
+ * GET /api/public/homepage_sections?tenant_id=X&lang=Y
+ * Returns active sections with translated title/subtitle
+ * ----------------------------------------------------- */
+if ($first === 'homepage_sections') {
+    if (!$tenantId) { ResponseFormatter::success(['ok' => true, 'data' => []]); exit; }
+    $rows = $pdoList(
+        "SELECT hs.id, hs.section_type, hs.component, hs.layout_type, hs.layout_config,
+                hs.items_per_row, hs.background_color, hs.text_color, hs.padding,
+                hs.custom_css, hs.data_source, hs.sort_order, hs.is_active,
+                COALESCE(hst.title, hs.title)       AS title,
+                COALESCE(hst.subtitle, hs.subtitle) AS subtitle
+           FROM homepage_sections hs
+      LEFT JOIN homepage_section_translations hst
+             ON hst.section_id = hs.id AND hst.language_code = ?
+          WHERE hs.tenant_id = ? AND hs.is_active = 1
+          ORDER BY hs.sort_order ASC, hs.id ASC",
+        [$lang, $tenantId]
+    );
+    ResponseFormatter::success(['ok' => true, 'data' => $rows]);
+    exit;
+}
+
+/* -------------------------------------------------------
+ * Route: Banners (public listing — active, date-ranged)
+ * GET /api/public/banners?tenant_id=X[&position=X]
+ * ----------------------------------------------------- */
+if ($first === 'banners') {
+    if (!$tenantId) { ResponseFormatter::success(['ok' => true, 'data' => []]); exit; }
+    $banWhere  = 'WHERE b.tenant_id = ? AND b.is_active = 1
+                    AND (b.start_date IS NULL OR b.start_date <= NOW())
+                    AND (b.end_date   IS NULL OR b.end_date   >= NOW())';
+    $banParams = [$tenantId];
+    if (!empty($_GET['position'])) { $banWhere .= ' AND b.position = ?'; $banParams[] = $_GET['position']; }
+    $rows = $pdoList(
+        "SELECT b.id, b.title, b.subtitle, b.image_url, b.mobile_image_url,
+                b.link_url, b.link_text, b.background_color, b.text_color, b.sort_order, b.position
+           FROM banners b $banWhere ORDER BY b.sort_order ASC, b.id ASC LIMIT 20",
+        $banParams
+    );
+    ResponseFormatter::success(['ok' => true, 'data' => $rows]);
+    exit;
+}
+
+/* -------------------------------------------------------
+ * Route: Discounts (public active discounts for tenant)
+ * GET /api/public/discounts?tenant_id=X&lang=Y
+ * ----------------------------------------------------- */
+if ($first === 'discounts') {
+    if (!$tenantId) { ResponseFormatter::success(['ok' => true, 'data' => []]); exit; }
+    $rows = $pdoList(
+        "SELECT d.id, d.code, d.type, d.auto_apply, d.currency_code, d.status,
+                d.starts_at, d.ends_at, d.max_redemptions, d.current_redemptions,
+                COALESCE(dt.name, d.code) AS title,
+                dt.description, dt.terms_conditions, dt.marketing_badge
+           FROM discounts d
+      LEFT JOIN discount_translations dt ON dt.discount_id = d.id AND dt.language_code = ?
+          WHERE d.entity_id IN (SELECT id FROM entities WHERE tenant_id = ?)
+            AND d.status NOT IN ('cancelled','deleted')
+          ORDER BY d.status ASC, d.id DESC LIMIT 50",
+        [$lang, $tenantId]
+    );
+    ResponseFormatter::success(['ok' => true, 'data' => $rows]);
+    exit;
+}
+
+/* -------------------------------------------------------
+ * Route: Brands (public listing)
+ * GET /api/public/brands?tenant_id=X&lang=Y[&is_featured=1][&per=N][&page=N]
+ * ----------------------------------------------------- */
+if ($first === 'brands') {
+    if (!$tenantId) {
+        ResponseFormatter::success(['data' => [], 'meta' => ['total' => 0, 'page' => 1, 'per_page' => $per, 'total_pages' => 0]]);
+        exit;
+    }
+    $bWhere  = 'WHERE b.tenant_id = ? AND b.is_active = 1';
+    $bParams = [$tenantId];
+    if (!empty($_GET['is_featured'])) { $bWhere .= ' AND b.is_featured = 1'; }
+
+    $bCount = $pdoCount("SELECT COUNT(*) FROM brands b $bWhere", $bParams);
+    $rows   = $pdoList(
+        "SELECT b.id, b.slug, b.logo_url, b.website_url, b.is_featured,
+                COALESCE(bt.name, b.slug) AS name,
+                COALESCE(bt.description, '') AS description
+           FROM brands b
+      LEFT JOIN brand_translations bt ON bt.brand_id = b.id AND bt.language_code = ?
+         $bWhere
+         ORDER BY b.is_featured DESC, b.sort_order ASC, b.id ASC
+         LIMIT $per OFFSET $offset",
+        array_merge([$lang], $bParams)
+    );
+    ResponseFormatter::success([
+        'data' => $rows,
+        'meta' => [
+            'total'       => $bCount,
+            'page'        => $page,
+            'per_page'    => $per,
+            'total_pages' => (int)ceil($bCount / $per),
+        ],
+    ]);
+    exit;
+}
+
+/* -------------------------------------------------------
+ * /api/public/notifications — Public notifications for tenant
+ * Delegated to a dedicated route file for maintainability.
+ * Sub-paths: (none)=list, types=type-list, mark-seen=POST
+ * ----------------------------------------------------- */
+if ($first === 'notifications') {
+    require __DIR__ . '/public_notifications.php';
+    exit;
+}
+
+/* -------------------------------------------------------
+ * /api/public/cart — DB-backed user cart
+ * Requires authenticated session.
+ * Sub-paths: (none)=GET, add=POST, update=POST, remove=POST, clear=POST
+ * ----------------------------------------------------- */
+if ($first === 'cart') {
+    $cartMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+    $subPath    = strtolower($segments[1] ?? '');
+
+    // Require authenticated user (uses top-level session, same as admin)
+    $cartUserId = (int)($_SESSION['user_id'] ?? ($_SESSION['user']['id'] ?? 0));
+    if (!$cartUserId) {
+        ResponseFormatter::error('Login required', 401);
+        exit;
+    }
+    if (!$pdo instanceof PDO) {
+        ResponseFormatter::error('Database unavailable', 503);
+        exit;
+    }
+
+    $cartTenantId = $tenantId ?? 1;
+
+    // Helper: get or create the user's active cart
+    $getOrCreateCart = function () use ($pdo, $cartUserId, $cartTenantId): int {
+        $st = $pdo->prepare("SELECT id FROM carts WHERE user_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
+        $st->execute([$cartUserId]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        if ($row) return (int)$row['id'];
+        $ins = $pdo->prepare(
+            "INSERT INTO carts (entity_id, user_id, session_id, status, ip_address)
+             VALUES (1, ?, ?, 'active', ?)"
+        );
+        $ins->execute([$cartUserId, session_id() ?: null, $_SERVER['REMOTE_ADDR'] ?? null]);
+        return (int)$pdo->lastInsertId();
+    };
+
+    // Helper: refresh cart totals after any item change
+    $refreshCartTotals = function (int $cid) use ($pdo): void {
+        $st = $pdo->prepare("SELECT SUM(quantity) AS ti, SUM(total) AS tot FROM cart_items WHERE cart_id = ?");
+        $st->execute([$cid]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        $pdo->prepare("UPDATE carts SET total_items = ?, subtotal = ?, total_amount = ?, last_activity_at = NOW() WHERE id = ?")
+            ->execute([(int)($row['ti'] ?? 0), (float)($row['tot'] ?? 0), (float)($row['tot'] ?? 0), $cid]);
+    };
+
+    // ── GET /api/public/cart ─────────────────────────────
+    if ($cartMethod === 'GET' && $subPath === '') {
+        $cartRow = $pdoOne(
+            "SELECT id, total_items, subtotal, total_amount, currency_code, status
+               FROM carts WHERE user_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1",
+            [$cartUserId]
+        );
+        if (!$cartRow) {
+            ResponseFormatter::success(['cart' => null, 'items' => []]);
+            exit;
+        }
+        $cartItems = $pdoList(
+            "SELECT id, product_id, entity_id, product_name, sku, quantity,
+                    unit_price, sale_price, subtotal, total, currency_code
+               FROM cart_items WHERE cart_id = ? ORDER BY added_at ASC",
+            [(int)$cartRow['id']]
+        );
+        ResponseFormatter::success(['cart' => $cartRow, 'items' => $cartItems]);
+        exit;
+    }
+
+    // ── POST /api/public/cart/add ────────────────────────
+    if ($subPath === 'add' && $cartMethod === 'POST') {
+        $raw  = file_get_contents('php://input');
+        $body = ($raw && str_starts_with(trim((string)($_SERVER['CONTENT_TYPE'] ?? '')), 'application/json'))
+              ? (json_decode($raw, true) ?? []) : $_POST;
+
+        $pId   = (int)($body['product_id'] ?? 0);
+        $pName = trim((string)($body['product_name'] ?? ''));
+        $pSku  = trim((string)($body['sku'] ?? ''));
+        $price = (float)($body['unit_price'] ?? $body['price'] ?? 0);
+        $qty   = max(1, (int)($body['qty'] ?? 1));
+        $eid   = max(1, (int)($body['entity_id'] ?? 1));
+
+        if (!$pId || !$pName) {
+            ResponseFormatter::error('product_id and product_name are required', 422);
+            exit;
+        }
+        try {
+            $cid      = $getOrCreateCart();
+            $existing = $pdoOne(
+                "SELECT id, quantity FROM cart_items WHERE cart_id = ? AND product_id = ? LIMIT 1",
+                [$cid, $pId]
+            );
+            if ($existing) {
+                $newQty = (int)$existing['quantity'] + $qty;
+                $sub    = round($price * $newQty, 2);
+                $pdo->prepare("UPDATE cart_items SET quantity = ?, subtotal = ?, total = ?, updated_at = NOW() WHERE id = ?")
+                    ->execute([$newQty, $sub, $sub, (int)$existing['id']]);
+            } else {
+                $sub = round($price * $qty, 2);
+                $pdo->prepare(
+                    "INSERT INTO cart_items
+                       (cart_id, product_id, entity_id, product_name, sku, quantity,
+                        unit_price, subtotal, total, currency_code)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'SAR')"
+                )->execute([$cid, $pId, $eid, $pName, $pSku, $qty, $price, $sub, $sub]);
+            }
+            $refreshCartTotals($cid);
+            ResponseFormatter::success(['ok' => true, 'cart_id' => $cid], 'Item added', 201);
+        } catch (Throwable $ex) {
+            ResponseFormatter::error('Failed to add item: ' . $ex->getMessage(), 500);
+        }
+        exit;
+    }
+
+    // ── POST /api/public/cart/update ─────────────────────
+    if ($subPath === 'update' && $cartMethod === 'POST') {
+        $raw  = file_get_contents('php://input');
+        $body = ($raw && str_starts_with(trim((string)($_SERVER['CONTENT_TYPE'] ?? '')), 'application/json'))
+              ? (json_decode($raw, true) ?? []) : $_POST;
+        $itemId = (int)($body['item_id'] ?? 0);
+        $qty    = max(1, (int)($body['qty'] ?? 1));
+        if (!$itemId) { ResponseFormatter::error('item_id required', 422); exit; }
+        try {
+            $item = $pdoOne(
+                "SELECT ci.id, ci.unit_price, ci.cart_id FROM cart_items ci
+                   INNER JOIN carts c ON c.id = ci.cart_id
+                   WHERE ci.id = ? AND c.user_id = ? LIMIT 1",
+                [$itemId, $cartUserId]
+            );
+            if (!$item) { ResponseFormatter::notFound('Item not found'); exit; }
+            $sub = round((float)$item['unit_price'] * $qty, 2);
+            $pdo->prepare("UPDATE cart_items SET quantity = ?, subtotal = ?, total = ?, updated_at = NOW() WHERE id = ?")
+                ->execute([$qty, $sub, $sub, $itemId]);
+            $refreshCartTotals((int)$item['cart_id']);
+            ResponseFormatter::success(['ok' => true]);
+        } catch (Throwable $ex) {
+            ResponseFormatter::error('Failed to update item', 500);
+        }
+        exit;
+    }
+
+    // ── POST/DELETE /api/public/cart/remove ──────────────
+    if ($subPath === 'remove' && in_array($cartMethod, ['POST', 'DELETE'], true)) {
+        $raw  = file_get_contents('php://input');
+        $body = ($raw && str_starts_with(trim((string)($_SERVER['CONTENT_TYPE'] ?? '')), 'application/json'))
+              ? (json_decode($raw, true) ?? []) : $_POST;
+        $itemId = (int)($body['item_id'] ?? $_GET['item_id'] ?? 0);
+        if (!$itemId) { ResponseFormatter::error('item_id required', 422); exit; }
+        try {
+            $item = $pdoOne(
+                "SELECT ci.id, ci.cart_id FROM cart_items ci
+                   INNER JOIN carts c ON c.id = ci.cart_id
+                   WHERE ci.id = ? AND c.user_id = ? LIMIT 1",
+                [$itemId, $cartUserId]
+            );
+            if (!$item) { ResponseFormatter::notFound('Item not found'); exit; }
+            $pdo->prepare("DELETE FROM cart_items WHERE id = ?")->execute([$itemId]);
+            $refreshCartTotals((int)$item['cart_id']);
+            ResponseFormatter::success(['ok' => true]);
+        } catch (Throwable $ex) {
+            ResponseFormatter::error('Failed to remove item', 500);
+        }
+        exit;
+    }
+
+    // ── POST /api/public/cart/clear ──────────────────────
+    if ($subPath === 'clear' && $cartMethod === 'POST') {
+        try {
+            $cRow = $pdoOne(
+                "SELECT id FROM carts WHERE user_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1",
+                [$cartUserId]
+            );
+            if ($cRow) {
+                $pdo->prepare("DELETE FROM cart_items WHERE cart_id = ?")->execute([(int)$cRow['id']]);
+                $pdo->prepare("UPDATE carts SET total_items = 0, subtotal = 0, total_amount = 0, last_activity_at = NOW() WHERE id = ?")
+                    ->execute([(int)$cRow['id']]);
+            }
+            ResponseFormatter::success(['ok' => true]);
+        } catch (Throwable $ex) {
+            ResponseFormatter::error('Failed to clear cart', 500);
+        }
+        exit;
+    }
+
+    ResponseFormatter::error('Unknown cart action', 404);
+    exit;
+}
+
+/* -------------------------------------------------------
+ * POST /api/public/orders — order creation
+ * Accepts: entity_id, payment_method, items (JSON), customer_name, customer_phone,
+ *          delivery_address, notes, tenant_id
+ * ----------------------------------------------------- */
+if ($first === 'orders') {
+    $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+    if ($method !== 'POST') {
+        ResponseFormatter::error('Method not allowed', 405);
+        exit;
+    }
+    if (!$pdo instanceof PDO) {
+        ResponseFormatter::error('Database unavailable', 503);
+        exit;
+    }
+
+    // Parse input (supports both JSON body and form POST)
+    $raw  = file_get_contents('php://input');
+    $body = ($raw && str_starts_with(trim((string)($_SERVER['CONTENT_TYPE'] ?? '')), 'application/json'))
+          ? (json_decode($raw, true) ?? [])
+          : $_POST;
+
+    $entityId   = isset($body['entity_id'])  && is_numeric($body['entity_id'])  ? (int)$body['entity_id']  : 0;
+    $pmCode     = trim((string)($body['payment_method'] ?? ''));
+    $custName   = trim((string)($body['customer_name']  ?? ''));
+    $custPhone  = trim((string)($body['customer_phone'] ?? ''));
+    $address    = trim((string)($body['delivery_address'] ?? ''));
+    $notes      = trim((string)($body['notes'] ?? ''));
+
+    // Cart items — JSON array from body or hidden form field
+    $rawItems = $body['items'] ?? $body['cart_items_json'] ?? '[]';
+    if (is_string($rawItems)) $rawItems = json_decode($rawItems, true);
+    $items = is_array($rawItems) ? $rawItems : [];
+
+    // Require authenticated user (check both session formats)
+    $sessUserId = (int)($_SESSION['user_id'] ?? ($_SESSION['user']['id'] ?? 0));
+    if (!$sessUserId) {
+        ResponseFormatter::error('Login required to place an order', 401);
+        exit;
+    }
+
+    // If entity_id not provided, resolve to first active entity for the tenant
+    if (!$entityId && $tenantId) {
+        $eRow = $pdoOne(
+            "SELECT id FROM entities WHERE tenant_id = ? AND status = 'approved' ORDER BY id ASC LIMIT 1",
+            [$tenantId]
+        );
+        $entityId = $eRow ? (int)$eRow['id'] : 1;
+    } elseif (!$entityId) {
+        $entityId = 1; // global fallback
+    }
+
+    // Validate
+    if (!$custName || !$custPhone || empty($items)) {
+        ResponseFormatter::error('customer_name, customer_phone, and items are required', 422);
+        exit;
+    }
+    if (!$tenantId) {
+        ResponseFormatter::error('tenant_id is required', 422);
+        exit;
+    }
+
+    // Calculate totals
+    $subtotal = 0.0;
+    foreach ($items as $it) {
+        $price = (float)($it['price'] ?? 0);
+        $qty   = max(1, (int)($it['qty'] ?? 1));
+        $subtotal += $price * $qty;
+    }
+    $subtotal     = round($subtotal, 2);
+    $taxAmount    = 0.0;
+    $grandTotal   = $subtotal;
+    $currencyCode = trim((string)($body['currency_code'] ?? 'SAR'));
+
+    // Generate order number: ORD-{tenantId}-{timestamp}-{rand}
+    $orderNumber = 'ORD-' . $tenantId . '-' . time() . '-' . rand(100, 999);
+
+    // Verify order number uniqueness
+    $checkSt = $pdo->prepare('SELECT id FROM orders WHERE order_number = ? LIMIT 1');
+    $checkSt->execute([$orderNumber]);
+    if ($checkSt->fetch()) {
+        $orderNumber .= '-' . rand(10, 99); // collision resolution
+    }
+
+    try {
+        $pdo->beginTransaction();
+
+        // Insert order
+        $oSt = $pdo->prepare(
+            "INSERT INTO orders
+               (tenant_id, entity_id, order_number, user_id, status, payment_status,
+                subtotal, tax_amount, shipping_cost, discount_amount, total_amount, grand_total,
+                currency_code, customer_notes, ip_address)
+             VALUES (?, ?, ?, ?, 'pending', 'pending',
+                     ?, 0, 0, 0, ?, ?,
+                     ?, ?, ?)"
+        );
+        $oSt->execute([
+            $tenantId, $entityId, $orderNumber, $sessUserId,
+            $subtotal, $grandTotal, $grandTotal,
+            $currencyCode, $notes,
+            $_SERVER['REMOTE_ADDR'] ?? null,
+        ]);
+        $orderId = (int)$pdo->lastInsertId();
+
+        // Insert order items
+        $iSt = $pdo->prepare(
+            "INSERT INTO order_items
+               (tenant_id, order_id, entity_id, product_id, product_name, sku,
+                quantity, unit_price, subtotal, total)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        );
+        foreach ($items as $it) {
+            $pId    = (int)($it['id'] ?? 0);
+            $pName  = (string)($it['name'] ?? '');
+            $pSku   = (string)($it['sku']  ?? '');
+            $qty    = max(1, (int)($it['qty'] ?? 1));
+            $price  = (float)($it['price'] ?? 0);
+            $itSub  = round($price * $qty, 2);
+            if (!$pId || !$pName) continue;
+            $iSt->execute([$tenantId, $orderId, $entityId, $pId, $pName, $pSku, $qty, $price, $itSub, $itSub]);
+        }
+
+        // Mark user's active cart as converted
+        $userCart = $pdoOne(
+            "SELECT id FROM carts WHERE user_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1",
+            [$sessUserId]
+        );
+        if ($userCart) {
+            $pdo->prepare(
+                "UPDATE carts SET status = 'converted', converted_to_order_id = ?, updated_at = NOW()
+                   WHERE id = ?"
+            )->execute([$orderId, (int)$userCart['id']]);
+        }
+
+        $pdo->commit();
+
+        ResponseFormatter::success([
+            'ok'           => true,
+            'id'           => $orderId,
+            'order_number' => $orderNumber,
+        ], 'Order created', 201);
+    } catch (Throwable $ex) {
+        try { $pdo->rollBack(); } catch (Throwable $rb) {}
+        ResponseFormatter::error('Order creation failed', 500);
+    }
+    exit;
+}
+
+/* -------------------------------------------------------
+ * POST /api/public/job_applications — guest job application
+ * Accepts: job_id, full_name, email, phone, cover_letter,
+ *          cv_file_url, portfolio_url, linkedin_url
+ * ----------------------------------------------------- */
+if ($first === 'job_applications') {
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        ResponseFormatter::error('Method not allowed', 405);
+        exit;
+    }
+    if (!$pdo instanceof PDO) { ResponseFormatter::error('Database unavailable', 503); exit; }
+
+    $raw  = file_get_contents('php://input');
+    $body = ($raw && str_starts_with(trim((string)($_SERVER['CONTENT_TYPE'] ?? '')), 'application/json'))
+          ? (json_decode($raw, true) ?? []) : $_POST;
+
+    $jobId        = isset($body['job_id'])  && is_numeric($body['job_id'])  ? (int)$body['job_id']  : 0;
+    $fullName     = trim((string)($body['full_name']     ?? $body['name']    ?? ''));
+    $email        = trim((string)($body['email']         ?? ''));
+    $phone        = trim((string)($body['phone']         ?? ''));
+    $coverLetter  = trim((string)($body['cover_letter']  ?? ''));
+    $cvFileUrl    = trim((string)($body['cv_file_url']   ?? ''));
+    $portfolioUrl = trim((string)($body['portfolio_url'] ?? ''));
+    $linkedinUrl  = trim((string)($body['linkedin_url']  ?? ''));
+
+    // Require authenticated user (check both session formats)
+    $jobSessUserId = (int)($_SESSION['user_id'] ?? ($_SESSION['user']['id'] ?? 0));
+    if (!$jobSessUserId) {
+        ResponseFormatter::error('Login required to apply for a job', 401);
+        exit;
+    }
+
+    if (!$jobId || !$fullName || !$email) {
+        ResponseFormatter::error('job_id, full_name and email are required', 422);
+        exit;
+    }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        ResponseFormatter::error('Invalid email address', 422);
+        exit;
+    }
+
+    // Verify job exists and is open
+    $jobRow = $pdoOne(
+        "SELECT id FROM jobs WHERE id = ? AND status NOT IN ('cancelled','filled','closed') LIMIT 1",
+        [$jobId]
+    );
+    if (!$jobRow) { ResponseFormatter::notFound('Job not found or no longer accepting applications'); exit; }
+
+    try {
+        $st = $pdo->prepare(
+            "INSERT INTO job_applications
+               (job_id, user_id, full_name, email, phone,
+                cover_letter, portfolio_url, linkedin_url, cv_file_url,
+                status, ip_address)
+             VALUES (?, ?, ?, ?, ?,
+                     ?, ?, ?, ?,
+                     'submitted', ?)"
+        );
+        $st->execute([
+            $jobId, $jobSessUserId,
+            $fullName, $email, $phone,
+            $coverLetter, $portfolioUrl, $linkedinUrl, $cvFileUrl,
+            $_SERVER['REMOTE_ADDR'] ?? null,
+        ]);
+        $appId = (int)$pdo->lastInsertId();
+        ResponseFormatter::success(['ok' => true, 'id' => $appId], 'Application submitted', 201);
+    } catch (Throwable $ex) {
+        ResponseFormatter::error('Application submission failed', 500);
+    }
+    exit;
+}
+
+/* -------------------------------------------------------
+ * Route: User Addresses (requires login)
+ * GET  /api/public/addresses           — list user's addresses
+ * POST /api/public/addresses           — add new address
+ * DELETE /api/public/addresses/{id}    — delete address
+ * ----------------------------------------------------- */
+if ($first === 'addresses') {
+    $addrSessUser   = $_SESSION['user'] ?? null;
+    $addrSessUserId = isset($addrSessUser['id']) ? (int)$addrSessUser['id'] : 0;
+    // Also accept user_id from session (scalar form)
+    if (!$addrSessUserId && !empty($_SESSION['user_id'])) {
+        $addrSessUserId = (int)$_SESSION['user_id'];
+    }
+    if (!$addrSessUserId) {
+        ResponseFormatter::error('Login required', 401); exit;
+    }
+
+    $addrId = isset($segments[1]) && ctype_digit((string)$segments[1]) ? (int)$segments[1] : 0;
+
+    if ($_SERVER['REQUEST_METHOD'] === 'DELETE' || ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['_method'] ?? '') === 'DELETE')) {
+        if (!$addrId) { ResponseFormatter::error('Address ID required', 422); exit; }
+        $addrRow = $pdoOne('SELECT id FROM addresses WHERE id = ? AND owner_id = ? AND owner_type = "user" LIMIT 1', [$addrId, $addrSessUserId]);
+        if (!$addrRow) { ResponseFormatter::notFound('Address not found'); exit; }
+        try {
+            $pdo->prepare('DELETE FROM addresses WHERE id = ?')->execute([$addrId]);
+            ResponseFormatter::success(['ok' => true]);
+        } catch (Throwable $_) { ResponseFormatter::error('Delete failed', 500); }
+        exit;
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $addrLine1  = trim($_POST['address_line1'] ?? '');
+        $addrLine2  = trim($_POST['address_line2'] ?? '');
+        $cityId     = (int)($_POST['city_id']     ?? 0);
+        $countryId  = (int)($_POST['country_id']  ?? 0);
+        $postalCode = trim($_POST['postal_code']  ?? '');
+        $isPrimary  = !empty($_POST['is_primary']) ? 1 : 0;
+        if (!$addrLine1) { ResponseFormatter::error('address_line1 is required', 422); exit; }
+
+        try {
+            if ($isPrimary) {
+                // Clear existing primary for this user
+                $pdo->prepare('UPDATE addresses SET is_primary = 0 WHERE owner_id = ? AND owner_type = "user"')->execute([$addrSessUserId]);
+            }
+            $st = $pdo->prepare(
+                'INSERT INTO addresses (owner_type, owner_id, address_line1, address_line2, city_id, country_id, postal_code, is_primary)
+                 VALUES ("user", ?, ?, ?, ?, ?, ?, ?)'
+            );
+            $st->execute([$addrSessUserId, $addrLine1, $addrLine2 ?: null, $cityId ?: null, $countryId ?: null, $postalCode ?: null, $isPrimary]);
+            ResponseFormatter::success(['ok' => true, 'id' => (int)$pdo->lastInsertId()], 'Address added', 201);
+        } catch (Throwable $_) { ResponseFormatter::error('Failed to save address', 500); }
+        exit;
+    }
+
+    // GET — list addresses for logged-in user
+    $addrRows = $pdoList(
+        "SELECT a.id, a.address_line1, a.address_line2, a.postal_code, a.is_primary,
+                c.name AS city_name, co.name AS country_name
+           FROM addresses a
+      LEFT JOIN cities c ON c.id = a.city_id
+      LEFT JOIN countries co ON co.id = a.country_id
+          WHERE a.owner_id = ? AND a.owner_type = 'user'
+          ORDER BY a.is_primary DESC, a.id DESC",
+        [$addrSessUserId]
+    );
+    ResponseFormatter::success($addrRows);
+    exit;
+}
+
+
+/* -------------------------------------------------------
+ * Route: Register as Entity (Vendor)
+ * POST /api/public/register/entity — requires login
+ * ----------------------------------------------------- */
+if ($first === 'register') {
+    $regSub     = strtolower($segments[1] ?? '');
+    $regUser    = $_SESSION['user'] ?? null;
+    $regUserId  = isset($regUser['id']) ? (int)$regUser['id'] : (int)($_SESSION['user_id'] ?? 0);
+
+    if (!$regUserId) {
+        ResponseFormatter::error('Login required', 401); exit;
+    }
+
+    if ($regSub === 'entity' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $storeName   = trim($_POST['store_name']   ?? '');
+        $slug        = trim($_POST['slug']         ?? '');
+        $phone       = trim($_POST['phone']        ?? '');
+        $email       = trim($_POST['email']        ?? '');
+        $vendorType  = trim($_POST['vendor_type']  ?? 'product_seller');
+        $storeType   = trim($_POST['store_type']   ?? 'individual');
+        $websiteUrl  = trim($_POST['website_url']  ?? '');
+
+        if (!$storeName || !$phone || !$email) {
+            ResponseFormatter::error('store_name, phone and email are required', 422); exit;
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            ResponseFormatter::error('Invalid email address', 422); exit;
+        }
+        // Normalise slug: lowercase, replace spaces with hyphens, strip non-alnum
+        if (!$slug) {
+            $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $storeName));
+        }
+        $slug = preg_replace('/[^a-z0-9\-]/', '', strtolower($slug));
+        $slug = trim($slug, '-');
+
+        // Validate vendor_type and store_type enums
+        $allowedVendorTypes = ['product_seller', 'service_provider', 'both'];
+        $allowedStoreTypes  = ['individual', 'company', 'brand'];
+        if (!in_array($vendorType, $allowedVendorTypes, true)) $vendorType = 'product_seller';
+        if (!in_array($storeType, $allowedStoreTypes, true)) $storeType = 'individual';
+
+        if (!$pdo) { ResponseFormatter::error('Database unavailable', 503); exit; }
+        try {
+            // Check slug uniqueness
+            $existing = $pdoOne('SELECT id FROM entities WHERE slug = ? LIMIT 1', [$slug]);
+            if ($existing) {
+                $slug = $slug . '-' . substr(md5(uniqid()), 0, 6);
+            }
+            $regTenantId = (int)($_POST['tenant_id'] ?? 0)
+                ?: ($tenantId ?? (int)($_SESSION['pub_tenant_id'] ?? $_SESSION['tenant_id'] ?? 1));
+            $st = $pdo->prepare(
+                'INSERT INTO entities
+                    (parent_id, tenant_id, user_id, store_name, slug, vendor_type, store_type,
+                     phone, email, website_url, status, is_verified, joined_at, created_at, updated_at)
+                 VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, "pending", 0, NOW(), NOW(), NOW())'
+            );
+            $st->execute([
+                $regTenantId, $regUserId, $storeName, $slug,
+                $vendorType, $storeType, $phone, $email,
+                $websiteUrl ?: null,
+            ]);
+            $newEntityId = (int)$pdo->lastInsertId();
+            ResponseFormatter::success(['ok' => true, 'id' => $newEntityId, 'slug' => $slug, 'status' => 'pending'],
+                'Application submitted — pending review', 201);
+        } catch (Throwable $ex) {
+            ResponseFormatter::error('Registration failed: ' . $ex->getMessage(), 500);
+        }
+        exit;
+    }
+
+    if ($regSub === 'tenant' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $tName   = trim($_POST['name']   ?? '');
+        $tDomain = trim($_POST['domain'] ?? '') ?: null;
+
+        if (!$tName) { ResponseFormatter::error('name is required', 422); exit; }
+        if (!$pdo) { ResponseFormatter::error('Database unavailable', 503); exit; }
+        try {
+            if ($tDomain) {
+                $existing = $pdoOne('SELECT id FROM tenants WHERE domain = ? LIMIT 1', [$tDomain]);
+                if ($existing) { ResponseFormatter::error('Domain already in use', 409); exit; }
+            }
+            $st = $pdo->prepare(
+                'INSERT INTO tenants (name, domain, owner_user_id, status, created_at)
+                 VALUES (?, ?, ?, "suspended", NOW())'
+            );
+            $st->execute([$tName, $tDomain, $regUserId]);
+            $newTenantId = (int)$pdo->lastInsertId();
+            // Link the user as owner in tenant_users
+            try {
+                $pdo->prepare(
+                    'INSERT INTO tenant_users (tenant_id, user_id, role_id, is_active, joined_at)
+                     VALUES (?, ?, 1, 1, NOW())'
+                )->execute([$newTenantId, $regUserId]);
+            } catch (Throwable $_) { /* tenant_users is optional */ }
+            ResponseFormatter::success(['ok' => true, 'id' => $newTenantId], 'Tenant created', 201);
+        } catch (Throwable $ex) {
+            ResponseFormatter::error('Tenant creation failed: ' . $ex->getMessage(), 500);
+        }
+        exit;
+    }
+
+    ResponseFormatter::notFound('Unknown register endpoint');
+    exit;
+}
+
+// ── Wishlist ─────────────────────────────────────────────────────────────────
+if ($first === 'wishlist') {
+    $wishUserId = (int)($_SESSION['user_id'] ?? $_SESSION['user']['id'] ?? 0);
+    if (!$wishUserId) { ResponseFormatter::error('Login required', 401); exit; }
+    if (!$pdo) { ResponseFormatter::error('Database unavailable', 503); exit; }
+
+    $wishSub = $segments[1] ?? '';
+
+    /** Helper: get or create default wishlist for user */
+    $getDefaultWishlist = function() use ($pdo, $wishUserId, $tenantId) {
+        // tenant_id from GET may be null for POST requests; fall back to session value
+        $wlTenantId = $tenantId ?? (int)($_SESSION['tenant_id'] ?? $_SESSION['pub_tenant_id'] ?? 1);
+        $row = $pdo->prepare(
+            'SELECT id FROM wishlists WHERE user_id = ? AND is_default = 1 LIMIT 1'
+        );
+        $row->execute([$wishUserId]);
+        $wl = $row->fetch(PDO::FETCH_ASSOC);
+        if ($wl) return (int)$wl['id'];
+        // Create default wishlist
+        $ins = $pdo->prepare(
+            'INSERT INTO wishlists (user_id, tenant_id, entity_id, wishlist_name, is_default, total_items, created_at, updated_at)
+             VALUES (?, ?, 1, ?, 1, 0, NOW(), NOW())'
+        );
+        $wlName = ($_GET['lang'] ?? $_SESSION['user']['preferred_language'] ?? 'en') === 'ar' ? 'قائمة مفضلتي' : 'My Wishlist';
+        $ins->execute([$wishUserId, $wlTenantId, $wlName]);
+        return (int)$pdo->lastInsertId();
+    };
+
+    /** Helper: refresh total_items count */
+    $refreshWishlistCount = function(int $wlId) use ($pdo) {
+        try {
+            $cnt = $pdo->prepare(
+                'SELECT COUNT(*) FROM wishlist_items WHERE wishlist_id = ? AND removed_at IS NULL'
+            );
+            $cnt->execute([$wlId]);
+            $pdo->prepare('UPDATE wishlists SET total_items = ?, updated_at = NOW() WHERE id = ?')
+                ->execute([$cnt->fetchColumn(), $wlId]);
+        } catch (Throwable $__) { /* cached count is optional */ }
+    };
+
+    // GET /api/public/wishlist — list items in default wishlist
+    if ($wishSub === '' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+        try {
+            $wlId = $getDefaultWishlist();
+            $lang = $_GET['lang'] ?? $lang;
+            $st = $pdo->prepare(
+                "SELECT wi.id, wi.product_id, wi.priority, wi.notes, wi.created_at,
+                        COALESCE(pt.name, p.slug) AS product_name,
+                        (SELECT i2.url FROM images i2 WHERE i2.owner_id = p.id AND i2.owner_type = 'product' ORDER BY i2.id ASC LIMIT 1) AS image_url,
+                        (SELECT pp2.price FROM product_pricing pp2 WHERE pp2.product_id = p.id LIMIT 1) AS price,
+                        (SELECT pp2.currency_code FROM product_pricing pp2 WHERE pp2.product_id = p.id LIMIT 1) AS currency_code
+                 FROM wishlist_items wi
+                 JOIN products p ON p.id = wi.product_id
+                 LEFT JOIN product_translations pt ON pt.product_id = p.id AND pt.language_code = ?
+                 WHERE wi.wishlist_id = ? AND wi.removed_at IS NULL
+                 ORDER BY wi.priority DESC, wi.created_at DESC"
+            );
+            $st->execute([$lang, $wlId]);
+            $items = $st->fetchAll(PDO::FETCH_ASSOC);
+            ResponseFormatter::success(['wishlist_id' => $wlId, 'items' => $items, 'total' => count($items)]);
+        } catch (Throwable $ex) {
+            ResponseFormatter::error('Failed to load wishlist: ' . $ex->getMessage(), 500);
+        }
+        exit;
+    }
+
+    // GET /api/public/wishlist/ids — just product IDs (for heart button state on page load)
+    if ($wishSub === 'ids' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+        try {
+            $wlId = $getDefaultWishlist();
+            $st = $pdo->prepare(
+                'SELECT product_id FROM wishlist_items WHERE wishlist_id = ? AND removed_at IS NULL'
+            );
+            $st->execute([$wlId]);
+            $ids = array_column($st->fetchAll(PDO::FETCH_ASSOC), 'product_id');
+            ResponseFormatter::success(['ids' => $ids]);
+        } catch (Throwable $ex) {
+            ResponseFormatter::success(['ids' => []]);
+        }
+        exit;
+    }
+
+    // POST /api/public/wishlist/add
+    if ($wishSub === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $productId = (int)($_POST['product_id'] ?? 0);
+        $entityId  = (int)($_POST['entity_id']  ?? 1);
+        if (!$productId) { ResponseFormatter::error('product_id required', 422); exit; }
+        try {
+            // Auto-resolve tenant_id from product's tenant if not provided
+            $wlItemTenantId = $tenantId;
+            if (!$wlItemTenantId) {
+                $ptRow = $pdo->prepare('SELECT tenant_id FROM products WHERE id = ? LIMIT 1');
+                $ptRow->execute([$productId]);
+                $ptFetch = $ptRow->fetch(PDO::FETCH_ASSOC);
+                $wlItemTenantId = $ptFetch ? (int)$ptFetch['tenant_id'] : 0;
+            }
+            if (!$wlItemTenantId) {
+                $wlItemTenantId = (int)($_SESSION['tenant_id'] ?? $_SESSION['pub_tenant_id'] ?? 1);
+            }
+            $wlId = $getDefaultWishlist();
+            // Check if already in wishlist (including soft-deleted → restore)
+            $exist = $pdo->prepare('SELECT id, removed_at FROM wishlist_items WHERE wishlist_id = ? AND product_id = ? LIMIT 1');
+            $exist->execute([$wlId, $productId]);
+            $row = $exist->fetch(PDO::FETCH_ASSOC);
+            if ($row) {
+                if ($row['removed_at'] !== null) {
+                    // Restore soft-deleted item
+                    $pdo->prepare('UPDATE wishlist_items SET removed_at = NULL, updated_at = NOW() WHERE id = ?')
+                        ->execute([$row['id']]);
+                }
+                // else already active — no-op
+            } else {
+                $pdo->prepare(
+                    'INSERT INTO wishlist_items (wishlist_id, product_id, entity_id, tenant_id, product_variant_id, priority, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, 0, 0, NOW(), NOW())'
+                )->execute([$wlId, $productId, $entityId, $wlItemTenantId]);
+            }
+            $refreshWishlistCount($wlId);
+            ResponseFormatter::success(['ok' => true, 'wishlist_id' => $wlId], 'Added to wishlist', 201);
+        } catch (Throwable $ex) {
+            ResponseFormatter::error('Failed to add to wishlist: ' . $ex->getMessage(), 500);
+        }
+        exit;
+    }
+
+    // POST /api/public/wishlist/remove
+    if ($wishSub === 'remove' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $productId = (int)($_POST['product_id'] ?? 0);
+        if (!$productId) { ResponseFormatter::error('product_id required', 422); exit; }
+        try {
+            $wlId = $getDefaultWishlist();
+            // Soft delete
+            $pdo->prepare(
+                'UPDATE wishlist_items SET removed_at = NOW(), updated_at = NOW() WHERE wishlist_id = ? AND product_id = ? AND removed_at IS NULL'
+            )->execute([$wlId, $productId]);
+            $refreshWishlistCount($wlId);
+            ResponseFormatter::success(['ok' => true]);
+        } catch (Throwable $ex) {
+            ResponseFormatter::error('Failed to remove: ' . $ex->getMessage(), 500);
+        }
+        exit;
+    }
+
+    // POST /api/public/wishlist/clear
+    if ($wishSub === 'clear' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        try {
+            $wlId = $getDefaultWishlist();
+            $pdo->prepare('UPDATE wishlist_items SET removed_at = NOW(), updated_at = NOW() WHERE wishlist_id = ? AND removed_at IS NULL')
+                ->execute([$wlId]);
+            $refreshWishlistCount($wlId);
+            ResponseFormatter::success(['ok' => true]);
+        } catch (Throwable $ex) {
+            ResponseFormatter::error('Failed to clear: ' . $ex->getMessage(), 500);
+        }
+        exit;
+    }
+
+    ResponseFormatter::notFound('Unknown wishlist endpoint');
+    exit;
+}
+
+/* -------------------------------------------------------
+ * Route: Recently Viewed Products
+ * GET  /api/public/recent          — list (last 20, newest first)
+ * POST /api/public/recent/add      — record a view
+ * ----------------------------------------------------- */
+if ($first === 'recent') {
+    $sub = $segments[1] ?? '';
+
+    if ($sub === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $recentPid = (int)($_POST['product_id'] ?? 0);
+        if (!$recentPid) { ResponseFormatter::error('product_id required', 422); exit; }
+        $recentUid = $userId ?? null;
+        $recentSid = session_id() ?: null;
+        try {
+            // upsert: update viewed_at if already exists, otherwise insert
+            $pdo->prepare(
+                'INSERT INTO recently_viewed_products (user_id, session_id, product_id, viewed_at)
+                 VALUES (?, ?, ?, NOW())
+                 ON DUPLICATE KEY UPDATE viewed_at = NOW()'
+            )->execute([$recentUid, $recentSid, $recentPid]);
+        } catch (Throwable $_) {
+            // table may not have unique constraint — try insert ignore
+            try {
+                $pdo->prepare(
+                    'INSERT IGNORE INTO recently_viewed_products (user_id, session_id, product_id, viewed_at)
+                     VALUES (?, ?, ?, NOW())'
+                )->execute([$recentUid, $recentSid, $recentPid]);
+            } catch (Throwable $__) { /* non-fatal */ }
+        }
+        ResponseFormatter::success(['ok' => true]);
+        exit;
+    }
+
+    // GET /api/public/recent — list recently viewed for current user/session
+    $recentUid = $userId ?? null;
+    $recentSid = session_id() ?: null;
+    $recentCond = $recentUid ? 'rvp.user_id = ?' : 'rvp.session_id = ?';
+    $recentParam = $recentUid ?? $recentSid;
+    try {
+        $rows = $pdoList(
+            "SELECT p.id, COALESCE(pt.name, p.slug) AS name, p.slug,
+                    p.stock_status, p.stock_quantity,
+                    (SELECT pp.price FROM product_pricing pp WHERE pp.product_id = p.id ORDER BY pp.id ASC LIMIT 1) AS price,
+                    (SELECT pp.currency_code FROM product_pricing pp WHERE pp.product_id = p.id ORDER BY pp.id ASC LIMIT 1) AS currency_code,
+                    (SELECT i.url FROM images i WHERE i.owner_id = p.id ORDER BY i.id ASC LIMIT 1) AS image_url,
+                    rvp.viewed_at
+               FROM recently_viewed_products rvp
+               JOIN products p ON p.id = rvp.product_id
+          LEFT JOIN product_translations pt ON pt.product_id = p.id AND pt.language_code = ?
+              WHERE $recentCond
+              ORDER BY rvp.viewed_at DESC LIMIT 20",
+            [$lang, $recentParam]
+        );
+        ResponseFormatter::success(['ok' => true, 'data' => $rows]);
+    } catch (Throwable $ex) {
+        ResponseFormatter::error('Failed: ' . $ex->getMessage(), 500);
+    }
+    exit;
+}
+
+/* -------------------------------------------------------
+ * Route: Product Comparisons
+ * GET  /api/public/compare         — list current comparison
+ * POST /api/public/compare/add     — add product
+ * POST /api/public/compare/remove  — remove product
+ * POST /api/public/compare/clear   — clear all
+ * ----------------------------------------------------- */
+if ($first === 'compare') {
+    $cmpUserId = (int)($_SESSION['user_id'] ?? ($_SESSION['user']['id'] ?? 0));
+    if (!$cmpUserId) { ResponseFormatter::error('Login required', 401); exit; }
+    $cmpSub = $segments[1] ?? '';
+
+    // Helper: get or create the user's active comparison row
+    $getCmpId = function () use ($pdo, $pdoOne, $cmpUserId): int {
+        $row = $pdoOne('SELECT id FROM product_comparisons WHERE user_id = ? ORDER BY created_at DESC LIMIT 1', [$cmpUserId]);
+        if ($row) return (int)$row['id'];
+        $pdo->prepare('INSERT INTO product_comparisons (user_id, created_at) VALUES (?, NOW())')->execute([$cmpUserId]);
+        return (int)$pdo->lastInsertId();
+    };
+
+    if ($cmpSub === 'add' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $cmpPid = (int)($_POST['product_id'] ?? 0);
+        if (!$cmpPid) { ResponseFormatter::error('product_id required', 422); exit; }
+        try {
+            $cmpId = $getCmpId();
+            // Max 4 products in comparison
+            $cmpCount = (int)($pdoOne('SELECT COUNT(*) AS c FROM product_comparison_items WHERE comparison_id = ?', [$cmpId])['c'] ?? 0);
+            if ($cmpCount >= 4) { ResponseFormatter::error('Max 4 products in comparison', 400); exit; }
+            $pdo->prepare('INSERT IGNORE INTO product_comparison_items (comparison_id, product_id, added_at) VALUES (?, ?, NOW())')
+                ->execute([$cmpId, $cmpPid]);
+            ResponseFormatter::success(['ok' => true, 'comparison_id' => $cmpId]);
+        } catch (Throwable $ex) { ResponseFormatter::error($ex->getMessage(), 500); }
+        exit;
+    }
+
+    if ($cmpSub === 'remove' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $cmpPid = (int)($_POST['product_id'] ?? 0);
+        try {
+            $row = $pdoOne('SELECT id FROM product_comparisons WHERE user_id = ? ORDER BY created_at DESC LIMIT 1', [$cmpUserId]);
+            if ($row) {
+                $pdo->prepare('DELETE FROM product_comparison_items WHERE comparison_id = ? AND product_id = ?')
+                    ->execute([(int)$row['id'], $cmpPid]);
+            }
+            ResponseFormatter::success(['ok' => true]);
+        } catch (Throwable $ex) { ResponseFormatter::error($ex->getMessage(), 500); }
+        exit;
+    }
+
+    if ($cmpSub === 'clear' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        try {
+            $row = $pdoOne('SELECT id FROM product_comparisons WHERE user_id = ? ORDER BY created_at DESC LIMIT 1', [$cmpUserId]);
+            if ($row) {
+                $pdo->prepare('DELETE FROM product_comparison_items WHERE comparison_id = ?')->execute([(int)$row['id']]);
+            }
+            ResponseFormatter::success(['ok' => true]);
+        } catch (Throwable $ex) { ResponseFormatter::error($ex->getMessage(), 500); }
+        exit;
+    }
+
+    // GET — list products in comparison with full details
+    try {
+        $cmpRow = $pdoOne('SELECT id FROM product_comparisons WHERE user_id = ? ORDER BY created_at DESC LIMIT 1', [$cmpUserId]);
+        $rows = [];
+        if ($cmpRow) {
+            $rows = $pdoList(
+                "SELECT p.id, COALESCE(pt.name, p.slug) AS name, p.slug, p.sku,
+                        p.stock_status, p.stock_quantity, p.rating_average, p.rating_count,
+                        p.is_featured, p.is_new, p.is_bestseller,
+                        pt.description, pt.specifications,
+                        NULL AS brand_name,
+                        (SELECT pp.price FROM product_pricing pp WHERE pp.product_id = p.id ORDER BY pp.id ASC LIMIT 1) AS price,
+                        (SELECT pp.currency_code FROM product_pricing pp WHERE pp.product_id = p.id ORDER BY pp.id ASC LIMIT 1) AS currency_code,
+                        (SELECT i.url FROM images i WHERE i.owner_id = p.id ORDER BY i.id ASC LIMIT 1) AS image_url,
+                        pci.added_at
+                   FROM product_comparison_items pci
+                   JOIN products p ON p.id = pci.product_id
+              LEFT JOIN product_translations pt ON pt.product_id = p.id AND pt.language_code = ?
+                  WHERE pci.comparison_id = ?
+                  ORDER BY pci.added_at ASC",
+                [$lang, (int)$cmpRow['id']]
+            );
+        }
+        ResponseFormatter::success(['ok' => true, 'products' => $rows]);
+    } catch (Throwable $ex) { ResponseFormatter::error($ex->getMessage(), 500); }
+    exit;
+}
+
+/* -------------------------------------------------------
+ * Route: Product Bundles
+ * GET /api/public/bundles          — list bundles (entity_id filter optional)
+ * GET /api/public/bundles/{id}     — single bundle with items
+ * ----------------------------------------------------- */
+if ($first === 'bundles') {
+    $bundleId = isset($segments[1]) && ctype_digit((string)$segments[1]) ? (int)$segments[1] : null;
+
+    if ($bundleId) {
+        try {
+            $bundle = $pdoOne(
+                "SELECT b.id, b.entity_id, b.bundle_name, b.bundle_name_ar,
+                        b.description, b.description_ar,
+                        b.bundle_image, b.original_total_price, b.bundle_price,
+                        b.discount_amount, b.discount_percentage, b.stock_quantity,
+                        b.is_active, b.start_date, b.end_date, b.sold_count
+                   FROM product_bundles b
+                  WHERE b.id = ? AND b.is_active = 1",
+                [$bundleId]
+            );
+            if (!$bundle) { ResponseFormatter::notFound('Bundle not found'); exit; }
+            $items = $pdoList(
+                "SELECT bi.id, bi.product_id, bi.quantity, bi.product_price,
+                        COALESCE(pt.name, p.slug) AS product_name,
+                        (SELECT i.url FROM images i WHERE i.owner_id = p.id ORDER BY i.id ASC LIMIT 1) AS image_url
+                   FROM product_bundle_items bi
+                   JOIN products p ON p.id = bi.product_id
+              LEFT JOIN product_translations pt ON pt.product_id = p.id AND pt.language_code = ?
+                  WHERE bi.bundle_id = ?",
+                [$lang, $bundleId]
+            );
+            $bundle['name'] = $lang === 'ar' ? ($bundle['bundle_name_ar'] ?? $bundle['bundle_name']) : $bundle['bundle_name'];
+            $bundle['description_text'] = $lang === 'ar' ? ($bundle['description_ar'] ?? $bundle['description']) : $bundle['description'];
+            $bundle['items'] = $items;
+            ResponseFormatter::success(['ok' => true, 'bundle' => $bundle]);
+        } catch (Throwable $ex) { ResponseFormatter::error($ex->getMessage(), 500); }
+        exit;
+    }
+
+    // List bundles
+    $bundleWhere = 'WHERE b.is_active = 1';
+    $bundleParams = [];
+    if ($tenantId) {
+        $bundleWhere .= ' AND EXISTS (SELECT 1 FROM entities e WHERE e.id = b.entity_id AND e.tenant_id = ?)';
+        $bundleParams[] = $tenantId;
+    }
+    if (!empty($_GET['entity_id'])) {
+        $bundleWhere .= ' AND b.entity_id = ?';
+        $bundleParams[] = (int)$_GET['entity_id'];
+    }
+    try {
+        $rows = $pdoList(
+            "SELECT b.id, b.entity_id,
+                    CASE WHEN ? = 'ar' THEN COALESCE(b.bundle_name_ar, b.bundle_name) ELSE b.bundle_name END AS name,
+                    b.bundle_image, b.original_total_price, b.bundle_price,
+                    b.discount_amount, b.discount_percentage, b.stock_quantity,
+                    b.start_date, b.end_date, b.sold_count
+               FROM product_bundles b
+               $bundleWhere
+              ORDER BY b.discount_percentage DESC, b.id DESC LIMIT ? OFFSET ?",
+            array_merge([$lang], $bundleParams, [$per, $offset])
+        );
+        ResponseFormatter::success(['ok' => true, 'data' => $rows]);
+    } catch (Throwable $ex) { ResponseFormatter::error($ex->getMessage(), 500); }
+    exit;
+}
+
+// ==============================================================
+// POST /api/public/products/{id}/reviews — submit product review
+// POST /api/public/products/{id}/questions — submit question
+// ==============================================================
+if ($first === 'products' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    $reviewPid = (int)($segments[1] ?? 0);
+    $reviewAction = $segments[2] ?? '';
+
+    if ($reviewPid && $reviewAction === 'reviews') {
+        $revUserId = $_SESSION['user_id'] ?? $_SESSION['user']['id'] ?? null;
+        if (!$revUserId) { ResponseFormatter::error('Login required', 401); exit; }
+        $rating  = (int)($_POST['rating'] ?? 0);
+        $title   = trim($_POST['title'] ?? '');
+        $comment = trim($_POST['comment'] ?? '');
+        if ($rating < 1 || $rating > 5) { ResponseFormatter::error('Rating must be 1-5', 422); exit; }
+        if (!$pdo) { ResponseFormatter::error('DB unavailable', 503); exit; }
+        try {
+            $st = $pdo->prepare(
+                'INSERT INTO product_reviews (product_id, user_id, rating, title, comment, is_approved, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, 0, NOW(), NOW())'
+            );
+            $st->execute([$reviewPid, $revUserId, $rating, $title ?: null, $comment ?: null]);
+            ResponseFormatter::success(['ok' => true, 'id' => (int)$pdo->lastInsertId()], 'Review submitted pending approval', 201);
+        } catch (Throwable $ex) { ResponseFormatter::error('Failed: ' . $ex->getMessage(), 500); }
+        exit;
+    }
+
+    if ($reviewPid && $reviewAction === 'questions') {
+        $qaUserId = $_SESSION['user_id'] ?? $_SESSION['user']['id'] ?? null;
+        if (!$qaUserId) { ResponseFormatter::error('Login required', 401); exit; }
+        $question = trim($_POST['question'] ?? '');
+        if (strlen($question) < 5) { ResponseFormatter::error('Question too short', 422); exit; }
+        if (!$pdo) { ResponseFormatter::error('DB unavailable', 503); exit; }
+        try {
+            $st = $pdo->prepare(
+                'INSERT INTO product_questions (product_id, user_id, question, is_approved, created_at, updated_at)
+                 VALUES (?, ?, ?, 0, NOW(), NOW())'
+            );
+            $st->execute([$reviewPid, $qaUserId, $question]);
+            ResponseFormatter::success(['ok' => true, 'id' => (int)$pdo->lastInsertId()], 'Question submitted pending review', 201);
+        } catch (Throwable $ex) { ResponseFormatter::error('Failed: ' . $ex->getMessage(), 500); }
+        exit;
+    }
+}
+
+// ==============================================================
+// AUCTIONS MODULE
+// GET  /api/public/auctions              — listing
+// GET  /api/public/auctions/{id}         — detail + bid history
+// GET  /api/public/auctions/{id}/status  — live poll (price, bids, countdown)
+// POST /api/public/auctions/{id}/bid     — place manual bid
+// POST /api/public/auctions/{id}/auto-bid — set/update auto-bid max
+// POST /api/public/auctions/{id}/watch   — watch toggle
+// POST /api/public/auctions/{id}/buy-now — buy now
+// ==============================================================
+if ($first === 'auctions') {
+    $auctionId = (isset($segments[1]) && ctype_digit((string)$segments[1])) ? (int)$segments[1] : 0;
+    $auctionSub = strtolower($segments[2] ?? '');
+    $auctionMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+    $auctionUserId = (int)($_SESSION['user_id'] ?? ($_SESSION['user']['id'] ?? 0));
+    $auctionLang = $lang ?: 'ar';
+
+    // Helper: get auction translation
+    $getAuctionName = function(int $aid, string $lng) use ($pdo, $pdoOne): string {
+        $r = $pdoOne('SELECT title FROM auction_translations WHERE auction_id=? AND language_code=? LIMIT 1', [$aid, $lng]);
+        if (!$r) $r = $pdoOne('SELECT title FROM auction_translations WHERE auction_id=? LIMIT 1', [$aid]);
+        return $r['title'] ?? '';
+    };
+
+    // ---- GET listing ----
+    if (!$auctionId && $auctionMethod === 'GET') {
+        $aSt = in_array($_GET['status'] ?? '', ['active','scheduled','ended','all'], true) ? $_GET['status'] : 'active';
+        $aType = in_array($_GET['type'] ?? '', ['normal','reserve','buy_now','dutch','sealed_bid'], true) ? $_GET['type'] : '';
+        $aFeat = isset($_GET['featured']) ? 1 : null;
+        $aWhere = '1=1';
+        $aParams = [];
+        if ($aSt !== 'all') { $aWhere .= ' AND a.status = ?'; $aParams[] = $aSt; }
+        if ($aType)         { $aWhere .= ' AND a.auction_type = ?'; $aParams[] = $aType; }
+        if ($aFeat !== null){ $aWhere .= ' AND a.is_featured = 1'; }
+        if ($tenantId)      { $aWhere .= ' AND a.tenant_id = ?'; $aParams[] = $tenantId; }
+        $aRows = $pdoList(
+            "SELECT a.id, a.slug, a.auction_type, a.status, a.starting_price, a.current_price,
+                    a.buy_now_price, a.bid_increment, a.total_bids, a.total_bidders,
+                    a.start_date, a.end_date, a.is_featured, a.condition_type, a.quantity,
+                    (SELECT c.code FROM currencies c WHERE c.id = a.currency_id LIMIT 1) AS currency_code,
+                    a.entity_id,
+                    (SELECT i.url FROM images i WHERE i.owner_id = a.product_id ORDER BY i.id ASC LIMIT 1) AS image_url,
+                    (SELECT at2.title FROM auction_translations at2 WHERE at2.auction_id = a.id AND at2.language_code = ? LIMIT 1) AS title
+             FROM auctions a
+             WHERE $aWhere
+             ORDER BY a.is_featured DESC, a.end_date ASC
+             LIMIT ? OFFSET ?",
+            array_merge([$auctionLang], $aParams, [$per, $offset])
+        );
+        ResponseFormatter::success(['ok' => true, 'auctions' => $aRows, 'page' => $page, 'per' => $per]);
+        exit;
+    }
+
+    // ---- GET detail ----
+    if ($auctionId && $auctionMethod === 'GET' && $auctionSub === '') {
+        $aRow = $pdoOne(
+            "SELECT a.*, 
+                    (SELECT at2.title FROM auction_translations at2 WHERE at2.auction_id=a.id AND at2.language_code=? LIMIT 1) AS title,
+                    (SELECT at2.description FROM auction_translations at2 WHERE at2.auction_id=a.id AND at2.language_code=? LIMIT 1) AS description,
+                    (SELECT at2.terms_conditions FROM auction_translations at2 WHERE at2.auction_id=a.id AND at2.language_code=? LIMIT 1) AS terms_conditions,
+                    (SELECT i.url FROM images i WHERE i.owner_id = a.product_id ORDER BY i.id ASC LIMIT 1) AS image_url
+             FROM auctions a WHERE a.id=?",
+            [$auctionLang, $auctionLang, $auctionLang, $auctionId]
+        );
+        if (!$aRow) { ResponseFormatter::notFound('Auction not found'); exit; }
+        // Bid history (last 20)
+        $aBids = $pdoList(
+            "SELECT ab.id, ab.bid_amount, ab.bid_type, ab.is_winning, ab.created_at,
+                    COALESCE(u.username, CONCAT('User#', ab.user_id)) AS bidder
+             FROM auction_bids ab LEFT JOIN users u ON u.id = ab.user_id
+             WHERE ab.auction_id=? ORDER BY ab.bid_amount DESC, ab.created_at DESC LIMIT 20",
+            [$auctionId]
+        );
+        // Is user watching?
+        $aIsWatching = false;
+        if ($auctionUserId) {
+            $aIsWatching = (bool)$pdoOne('SELECT id FROM auction_watchers WHERE auction_id=? AND user_id=? LIMIT 1', [$auctionId, $auctionUserId]);
+        }
+        // User's current max auto-bid
+        $aAutoBid = null;
+        if ($auctionUserId) {
+            $aAutoBid = $pdoOne('SELECT max_bid_amount, is_active FROM auto_bid_settings WHERE auction_id=? AND user_id=? AND is_active=1 LIMIT 1', [$auctionId, $auctionUserId]);
+        }
+        ResponseFormatter::success(['ok' => true, 'auction' => $aRow, 'bids' => $aBids, 'is_watching' => $aIsWatching, 'auto_bid' => $aAutoBid]);
+        exit;
+    }
+
+    // ---- GET status (live poll) ----
+    if ($auctionId && $auctionMethod === 'GET' && $auctionSub === 'status') {
+        $aSt = $pdoOne(
+            'SELECT current_price, total_bids, total_bidders, status, end_date,
+                    (SELECT ab.bid_amount FROM auction_bids ab WHERE ab.auction_id=a.id AND ab.is_winning=1 ORDER BY ab.bid_amount DESC LIMIT 1) AS top_bid
+             FROM auctions a WHERE a.id=?',
+            [$auctionId]
+        );
+        if (!$aSt) { ResponseFormatter::notFound('Auction not found'); exit; }
+        $aSt['server_time'] = date('c');
+        ResponseFormatter::success(['ok' => true, 'status' => $aSt]);
+        exit;
+    }
+
+    // ---- POST bid ----
+    if ($auctionId && $auctionMethod === 'POST' && $auctionSub === 'bid') {
+        if (!$auctionUserId) { ResponseFormatter::error('Login required', 401); exit; }
+        $bidAmount = (float)($_POST['bid_amount'] ?? 0);
+        if ($bidAmount <= 0) { ResponseFormatter::error('Invalid bid amount', 422); exit; }
+        if (!$pdo) { ResponseFormatter::error('DB unavailable', 503); exit; }
+        try {
+            $aRow = $pdoOne('SELECT current_price, bid_increment, status, end_date, created_by FROM auctions WHERE id=?', [$auctionId]);
+            if (!$aRow) { ResponseFormatter::notFound('Auction not found'); exit; }
+            if ((int)($aRow['created_by'] ?? 0) === $auctionUserId) { ResponseFormatter::error('You cannot bid on your own auction', 403); exit; }
+            if ($aRow['status'] !== 'active') { ResponseFormatter::error('Auction is not active', 422); exit; }
+            if (strtotime($aRow['end_date']) < time()) { ResponseFormatter::error('Auction has ended', 422); exit; }
+            $minBid = (float)$aRow['current_price'] + (float)$aRow['bid_increment'];
+            if ($bidAmount < $minBid) { ResponseFormatter::error("Minimum bid is $minBid", 422); exit; }
+            $pdo->beginTransaction();
+            // Use FOR UPDATE to prevent race conditions on concurrent bids
+            $pdo->prepare('SELECT id FROM auctions WHERE id=? FOR UPDATE')->execute([$auctionId]);
+            // Re-read current price under lock
+            $aLocked = $pdoOne('SELECT current_price, bid_increment, status, end_date FROM auctions WHERE id=?', [$auctionId]);
+            if (!$aLocked || $aLocked['status'] !== 'active') {
+                $pdo->rollBack();
+                ResponseFormatter::error('Auction is no longer available', 422); exit;
+            }
+            $minBidLocked = (float)$aLocked['current_price'] + (float)$aLocked['bid_increment'];
+            if ($bidAmount < $minBidLocked) {
+                $pdo->rollBack();
+                ResponseFormatter::error("Minimum bid is $minBidLocked", 422); exit;
+            }
+            // Mark only the previous winning bid as not winning (targeted update)
+            $pdo->prepare('UPDATE auction_bids SET is_winning=0 WHERE auction_id=? AND is_winning=1')->execute([$auctionId]);
+            // Insert new bid
+            $stB = $pdo->prepare('INSERT INTO auction_bids (auction_id, user_id, bid_amount, bid_type, is_winning, ip_address, created_at) VALUES (?,?,?,?,1,?,NOW())');
+            $stB->execute([$auctionId, $auctionUserId, $bidAmount, 'manual', $_SERVER['REMOTE_ADDR'] ?? null]);
+            $newBidId = (int)$pdo->lastInsertId();
+            // Update auction: current price, bid count, unique bidder count, winner
+            $pdo->prepare(
+                'UPDATE auctions SET current_price=?, total_bids=total_bids+1,
+                 total_bidders=(SELECT COUNT(DISTINCT user_id) FROM auction_bids WHERE auction_id=?),
+                 winner_user_id=?, winner_bid_id=? WHERE id=?'
+            )->execute([$bidAmount, $auctionId, $auctionUserId, $newBidId, $auctionId]);
+            $pdo->commit();
+            ResponseFormatter::success(['ok' => true, 'bid_id' => $newBidId, 'new_price' => $bidAmount], 'Bid placed', 201);
+        } catch (Throwable $ex) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            ResponseFormatter::error('Failed: ' . $ex->getMessage(), 500);
+        }
+        exit;
+    }
+
+    // ---- POST auto-bid ----
+    if ($auctionId && $auctionMethod === 'POST' && $auctionSub === 'auto-bid') {
+        if (!$auctionUserId) { ResponseFormatter::error('Login required', 401); exit; }
+        $maxBid = (float)($_POST['max_bid_amount'] ?? 0);
+        if ($maxBid <= 0) { ResponseFormatter::error('Invalid max bid', 422); exit; }
+        if (!$pdo) { ResponseFormatter::error('DB unavailable', 503); exit; }
+        try {
+            // Validate max_bid >= current minimum bid
+            $aAbRow = $pdoOne('SELECT current_price, bid_increment FROM auctions WHERE id=? AND status="active" LIMIT 1', [$auctionId]);
+            if (!$aAbRow) { ResponseFormatter::error('Auction not found or not active', 422); exit; }
+            $abMinBid = (float)$aAbRow['current_price'] + (float)$aAbRow['bid_increment'];
+            if ($maxBid < $abMinBid) { ResponseFormatter::error("Max bid must be at least $abMinBid", 422); exit; }
+            $stAB = $pdo->prepare('INSERT INTO auto_bid_settings (auction_id, user_id, max_bid_amount, is_active, created_at, updated_at) VALUES (?,?,?,1,NOW(),NOW()) ON DUPLICATE KEY UPDATE max_bid_amount=VALUES(max_bid_amount), is_active=1, updated_at=NOW()');
+            $stAB->execute([$auctionId, $auctionUserId, $maxBid]);
+            ResponseFormatter::success(['ok' => true, 'max_bid' => $maxBid], 'Auto-bid set');
+        } catch (Throwable $ex) { ResponseFormatter::error('Failed: ' . $ex->getMessage(), 500); }
+        exit;
+    }
+
+    // ---- POST watch / DELETE watch ----
+    if ($auctionId && in_array($auctionSub, ['watch'], true)) {
+        if (!$auctionUserId) { ResponseFormatter::error('Login required', 401); exit; }
+        if (!$pdo) { ResponseFormatter::error('DB unavailable', 503); exit; }
+        try {
+            $exists = $pdoOne('SELECT id FROM auction_watchers WHERE auction_id=? AND user_id=? LIMIT 1', [$auctionId, $auctionUserId]);
+            if ($exists) {
+                $pdo->prepare('DELETE FROM auction_watchers WHERE auction_id=? AND user_id=?')->execute([$auctionId, $auctionUserId]);
+                ResponseFormatter::success(['ok' => true, 'watching' => false], 'Unwatched');
+            } else {
+                $pdo->prepare('INSERT INTO auction_watchers (auction_id, user_id, created_at) VALUES (?,?,NOW())')->execute([$auctionId, $auctionUserId]);
+                ResponseFormatter::success(['ok' => true, 'watching' => true], 'Watching', 201);
+            }
+        } catch (Throwable $ex) { ResponseFormatter::error('Failed: ' . $ex->getMessage(), 500); }
+        exit;
+    }
+
+    // ---- POST buy-now ----
+    if ($auctionId && $auctionMethod === 'POST' && $auctionSub === 'buy-now') {
+        if (!$auctionUserId) { ResponseFormatter::error('Login required', 401); exit; }
+        if (!$pdo) { ResponseFormatter::error('DB unavailable', 503); exit; }
+        try {
+            $aRow = $pdoOne('SELECT buy_now_price, status, end_date, tenant_id, entity_id, product_id FROM auctions WHERE id=?', [$auctionId]);
+            if (!$aRow) { ResponseFormatter::notFound('Auction not found'); exit; }
+            if ($aRow['status'] !== 'active') { ResponseFormatter::error('Auction not active', 422); exit; }
+            if (!$aRow['buy_now_price']) { ResponseFormatter::error('No buy-now price', 422); exit; }
+            $aTenantId  = (int)$aRow['tenant_id'];
+            $aEntityId  = (int)$aRow['entity_id'];
+            $aProductId = (int)($aRow['product_id'] ?? 0);
+            $aBuyPrice  = (float)$aRow['buy_now_price'];
+            $pdo->beginTransaction();
+            $pdo->prepare('UPDATE auction_bids SET is_winning=0 WHERE auction_id=?')->execute([$auctionId]);
+            $stBN = $pdo->prepare('INSERT INTO auction_bids (auction_id, user_id, bid_amount, bid_type, is_winning, created_at) VALUES (?,?,?,?,1,NOW())');
+            $stBN->execute([$auctionId, $auctionUserId, $aBuyPrice, 'buy_now']);
+            $bnId = (int)$pdo->lastInsertId();
+            $pdo->prepare("UPDATE auctions SET status='sold', current_price=?, winner_user_id=?, winner_bid_id=?, winning_amount=?, ended_at=NOW() WHERE id=?")
+                ->execute([$aBuyPrice, $auctionUserId, $bnId, $aBuyPrice, $auctionId]);
+
+            // Create order (auction_id set, cart_id NULL)
+            $bnOrderNum = 'AUC-' . $aTenantId . '-' . $auctionId . '-' . time();
+            $prdName = 'Auction Item'; $prdSku = 'AUC-' . $auctionId;
+            if ($aProductId) {
+                $prdRow = $pdoOne(
+                    'SELECT p.sku, (SELECT pt2.name FROM product_translations pt2 WHERE pt2.product_id=p.id ORDER BY pt2.id ASC LIMIT 1) AS pname FROM products p WHERE p.id=? LIMIT 1',
+                    [$aProductId]
+                );
+                if ($prdRow) {
+                    $prdName = $prdRow['pname'] ?: $prdName;
+                    $prdSku  = $prdRow['sku']   ?: $prdSku;
+                }
+            }
+            $pdo->prepare(
+                "INSERT INTO orders (tenant_id, entity_id, order_number, user_id, cart_id, auction_id,
+                    order_type, status, payment_status, subtotal, total_amount, grand_total,
+                    currency_code, ip_address)
+                 VALUES (?,?,?,?,NULL,?,'online','pending','pending',?,?,?,'SAR',?)"
+            )->execute([
+                $aTenantId, $aEntityId, $bnOrderNum, $auctionUserId, $auctionId,
+                $aBuyPrice, $aBuyPrice, $aBuyPrice,
+                $_SERVER['REMOTE_ADDR'] ?? null,
+            ]);
+            $bnOrderId = (int)$pdo->lastInsertId();
+            if ($aProductId && $bnOrderId) {
+                try {
+                    $pdo->prepare(
+                        "INSERT INTO order_items (tenant_id, order_id, entity_id, product_id, product_name, sku, quantity, unit_price, subtotal, total)
+                         VALUES (?,?,?,?,?,?,1,?,?,?)"
+                    )->execute([$aTenantId, $bnOrderId, $aEntityId, $aProductId, $prdName, $prdSku, $aBuyPrice, $aBuyPrice, $aBuyPrice]);
+                } catch (Throwable) {}
+            }
+            $pdo->commit();
+            // Insert payment record (non-fatal)
+            try {
+                $bnPmNum = 'PAY-AUC-' . $auctionId . '-' . time();
+                $pdo->prepare(
+                    "INSERT INTO payments (entity_id, payment_number, order_id, user_id, payment_method,
+                        amount, currency_code, status, payment_type, ip_address, created_at, updated_at)
+                     VALUES (?,?,?,?,'buy_now',?,'SAR','pending','order',?,NOW(),NOW())"
+                )->execute([$aEntityId, $bnPmNum, $bnOrderId, $auctionUserId, $aBuyPrice, $_SERVER['REMOTE_ADDR'] ?? null]);
+            } catch (Throwable) {}
+            ResponseFormatter::success(['ok' => true, 'bid_id' => $bnId, 'amount' => $aBuyPrice, 'order_id' => $bnOrderId, 'order_number' => $bnOrderNum], 'Purchased!');
+        } catch (Throwable $ex) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            ResponseFormatter::error('Failed: ' . $ex->getMessage(), 500);
+        }
+        exit;
+    }
+    // ---- POST expire (payment deadline fallback — transfer to 2nd bidder) ----
+    if ($auctionId && $auctionMethod === 'POST' && $auctionSub === 'expire') {
+        if (!$auctionUserId) { ResponseFormatter::error('Login required', 401); exit; }
+        if (!$pdo) { ResponseFormatter::error('DB unavailable', 503); exit; }
+        try {
+            $aExp = $pdoOne('SELECT id, status, winner_user_id, winning_amount, payment_deadline_hours, tenant_id, entity_id FROM auctions WHERE id=? LIMIT 1', [$auctionId]);
+            if (!$aExp) { ResponseFormatter::notFound('Auction not found'); exit; }
+            if (!in_array($aExp['status'], ['sold','ended'])) { ResponseFormatter::error('Auction not in sold/ended state', 422); exit; }
+            $winnerUserId = (int)($aExp['winner_user_id'] ?? 0);
+            // Find winner's order and check payment status
+            $winnerOrder = $pdoOne('SELECT id, payment_status, created_at FROM orders WHERE auction_id=? AND user_id=? ORDER BY id DESC LIMIT 1', [$auctionId, $winnerUserId]);
+            if (!$winnerOrder) { ResponseFormatter::error('No winner order found', 404); exit; }
+            if ($winnerOrder['payment_status'] === 'paid') { ResponseFormatter::error('Winner has already paid', 409); exit; }
+            $deadlineHours = max(1, (int)($aExp['payment_deadline_hours'] ?? 48));
+            $orderCreated = strtotime($winnerOrder['created_at'] ?? 'now');
+            if ((time() - $orderCreated) < $deadlineHours * 3600) {
+                ResponseFormatter::error('Payment deadline has not passed yet', 409); exit;
+            }
+            // Find 2nd highest bidder (different from current winner)
+            $secondBid = $pdoOne(
+                'SELECT user_id, bid_amount FROM auction_bids WHERE auction_id=? AND user_id != ? AND bid_type != "buy_now" ORDER BY bid_amount DESC, created_at DESC LIMIT 1',
+                [$auctionId, $winnerUserId]
+            );
+            $pdo->beginTransaction();
+            // Cancel winner's order
+            $pdo->prepare("UPDATE orders SET status='cancelled', cancellation_reason='Payment deadline expired', cancelled_at=NOW() WHERE id=?")->execute([$winnerOrder['id']]);
+            if ($secondBid) {
+                $newWinnerId = (int)$secondBid['user_id'];
+                $newAmount   = (float)$secondBid['bid_amount'];
+                $expOrderNum = 'AUC-EXP-' . $auctionId . '-' . time();
+                $pdo->prepare("UPDATE auctions SET winner_user_id=?, winning_amount=? WHERE id=?")->execute([$newWinnerId, $newAmount, $auctionId]);
+                $pdo->prepare("INSERT INTO orders (tenant_id, entity_id, order_number, user_id, auction_id, order_type, status, payment_status, subtotal, total_amount, grand_total, currency_code, ip_address) VALUES (?,?,?,?,NULL,'online','pending','pending',?,?,?,'SAR',?)")
+                    ->execute([(int)$aExp['tenant_id'], (int)$aExp['entity_id'], $expOrderNum, $newWinnerId, $newAmount, $newAmount, $newAmount, $_SERVER['REMOTE_ADDR'] ?? null]);
+                $pdo->commit();
+                ResponseFormatter::success(['ok' => true, 'transferred_to' => $newWinnerId, 'order_number' => $expOrderNum], 'Transferred to second bidder');
+            } else {
+                $pdo->prepare("UPDATE auctions SET winner_user_id=NULL, winning_amount=NULL, status='ended' WHERE id=?")->execute([$auctionId]);
+                $pdo->commit();
+                ResponseFormatter::success(['ok' => true, 'transferred_to' => null], 'No second bidder — auction marked as ended without winner');
+            }
+        } catch (Throwable $ex) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            ResponseFormatter::error('Failed: ' . $ex->getMessage(), 500);
+        }
+        exit;
+    }
+}
+
+ResponseFormatter::notFound('Public route not found: /' . ($first ?: ''));
