@@ -1,38 +1,23 @@
 <?php
 declare(strict_types=1);
 
-$validPages = [
-    'dashboard' => 'fragments/dashboard.php',
-    'users' => 'fragments/users.php',
-    'tenant' => 'fragments/tenant.php',
-    'permissions' => 'fragments/permissions.php',
-    // ... other pages
-];
-
 require_once __DIR__ . '/includes/header.php';
 
 // ════════════════════════════════════════════════════════════
 // EXTRACT DATA
 // ════════════════════════════════════════════════════════════
 $payload = $GLOBALS['ADMIN_UI'] ?? [];
-$theme = $payload['theme'] ?? [];
 $user = $payload['user'] ?? [];
 $lang = $payload['lang'] ?? 'en';
-
-// Extract colors from DB/theme
-$colors = [];
-foreach ($theme['color_settings'] ?? [] as $c) {
-    if (!empty($c['color_value'])) {
-        $colors[] = [
-            'setting_name' => $c['setting_name'] ?? $c['setting_key'] ?? 'Color',
-            'color_value' => $c['color_value']
-        ];
-    }
-}
 
 // Check permissions
 $canViewDrivers = in_array('view_drivers', $user['permissions'] ?? [], true) 
                || in_array('super_admin', $user['roles'] ?? [], true);
+$canViewSettings = in_array('view_settings', $user['permissions'] ?? [], true)
+                || in_array('super_admin', $user['roles'] ?? [], true)
+                || in_array('admin', $user['roles'] ?? [], true);
+$canViewUsers = in_array('view_users', $user['permissions'] ?? [], true)
+             || in_array('super_admin', $user['roles'] ?? [], true);
 ?>
 
 <!-- Page meta for i18n -->
@@ -47,185 +32,164 @@ $canViewDrivers = in_array('view_drivers', $user['permissions'] ?? [], true)
     padding: 0;
 }
 .dash-card {
-    background: var(--background-secondary, #1e293b);
-    border: 1px solid var(--border-color, #334155);
+    background: var(--background-secondary, var(--background_secondary, #1e293b));
+    border: 1px solid var(--border-color, var(--border_color, #334155));
     border-radius: 12px;
-    padding: 2rem;
-    margin-bottom: 2rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
 }
-.dash-title { font-size: 2rem; font-weight: 700; color: var(--text-primary,#fff); margin-bottom:0.5rem; }
-.dash-subtitle { color: var(--text-secondary,#94a3b8); font-size:0.9375rem; margin-bottom:0; }
+.dash-title { font-size: 1.75rem; font-weight: 700; color: var(--text-primary, var(--text_primary, #f1f5f9)); margin-bottom:0.25rem; }
+.dash-subtitle { color: var(--text-secondary, var(--text_secondary, #94a3b8)); font-size:0.9375rem; margin-bottom:0; }
 .welcome-section { display:flex; align-items:center; gap:1rem; }
-.welcome-icon { font-size:2.5rem; }
-.welcome-content h3 { margin:0 0 0.25rem 0; font-size:1.25rem; }
-.welcome-content p { margin:0; color:var(--text-secondary,#94a3b8); }
-.quick-actions-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1.25rem; margin-top:1.5rem; }
+.welcome-icon { font-size:1.75rem; color: var(--primary-color, var(--primary_color, #3b82f6)); flex-shrink:0; }
+.welcome-content h3 { margin:0 0 0.25rem 0; font-size:1.125rem; }
+.welcome-content p { margin:0; color:var(--text-secondary, var(--text_secondary, #94a3b8)); }
+
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
 .action-card {
-    background: var(--background-secondary,#1e293b);
-    border:1px solid var(--border-color,#334155);
-    border-radius:10px;
-    padding:1.25rem;
-    text-decoration:none;
-    color:inherit;
-    transition:all 0.2s ease;
-    display:flex;
-    align-items:flex-start;
-    gap:1rem;
+    background: var(--background-secondary, var(--background_secondary, #1e293b));
+    border: 1px solid var(--border-color, var(--border_color, #334155));
+    border-radius: 10px;
+    padding: 1.125rem 1.25rem;
+    text-decoration: none;
+    color: var(--text-primary, var(--text_primary, #f1f5f9));
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
-.action-card:hover {
-    background: var(--primary-color,#3B82F6);
-    color:#fff;
-    transform:translateY(-2px);
-    box-shadow:0 8px 16px rgba(0,0,0,0.2);
+.action-card:hover, .action-card:focus {
+    background: var(--primary-color, var(--primary_color, #3b82f6));
+    border-color: var(--primary-color, var(--primary_color, #3b82f6));
+    color: #fff;
+    transform: translateY(-2px);
+    outline: none;
 }
-.action-icon { font-size:2rem; flex-shrink:0; }
-.action-content h3 { margin:0 0 0.25rem 0; font-size:1.125rem; font-weight:600; }
-.action-content p { margin:0; font-size:0.875rem; opacity:0.85; }
-
-.colors-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:1.5rem; margin-top:1.5rem; }
-.color-card {
-    background: var(--background-secondary,#1e293b);
-    border:2px solid var(--border-color,#334155);
-    border-radius:10px;
-    padding:1rem;
-    cursor:pointer;
-    transition:all 0.2s ease;
+.action-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: rgba(59, 130, 246, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.25rem;
+    color: var(--primary-color, var(--primary_color, #3b82f6));
+    transition: background 0.2s, color 0.2s;
 }
-.color-card:hover { border-color: var(--primary-color,#6366f1); transform:translateY(-4px); box-shadow:0 8px 20px rgba(0,0,0,0.3); }
-.color-card.copied { border-color:#10b981; animation: copyPulse 0.5s ease; }
-@keyframes copyPulse { 50% { transform: scale(1.05); } }
-
-.color-preview { width:100%; height:80px; border-radius:8px; margin-bottom:0.75rem; border:1px solid rgba(0,0,0,0.2); }
-.color-name { font-weight:600; color:var(--text-primary,#fff); margin-bottom:0.5rem; font-size:0.95rem; }
-.color-code { font-family:'Courier New', monospace; font-size:0.85rem; color:var(--text-secondary,#94a3b8); background:rgba(0,0,0,0.2); padding:0.25rem 0.5rem; border-radius:4px; }
-
-.copy-feedback {
-    position:fixed;
-    bottom:2rem; right:2rem;
-    background:linear-gradient(135deg,#10b981 0%,#059669 100%);
-    color:white; padding:1rem 1.5rem; border-radius:8px;
-    box-shadow:0 4px 20px rgba(16,185,129,0.4);
-    opacity:0; transform:translateY(20px); transition:all 0.3s ease; pointer-events:none; z-index:10000; font-weight:500;
+.action-card:hover .action-icon,
+.action-card:focus .action-icon {
+    background: rgba(255,255,255,0.2);
+    color: #fff;
 }
-.copy-feedback.show { opacity:1; transform:translateY(0); }
+.action-content h3 { margin:0 0 0.2rem 0; font-size:1rem; font-weight:600; }
+.action-content p { margin:0; font-size:0.8125rem; opacity:0.8; }
 
-.empty-state { text-align:center; padding:3rem; color:var(--text-secondary,#94a3b8); }
-.empty-state p { margin:0; }
+/* RTL: icon appears on the right side of the card */
+[dir="rtl"] .action-card { flex-direction: row-reverse; }
 
 @media (max-width:768px){
-    .dash-card { padding:1.5rem; }
-    .colors-grid { grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:1rem; }
-    .quick-actions-grid { grid-template-columns:1fr; }
-    .copy-feedback { bottom:1rem; right:1rem; left:1rem; }
+    .dash-card { padding:1.125rem; }
+    .quick-actions-grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:0.75rem; }
+    .action-card { padding:1rem; gap:0.75rem; }
+    .action-icon { width:38px; height:38px; font-size:1.1rem; }
+}
+@media (max-width:480px){
+    .dash-card { padding:0.875rem; border-radius:8px; }
+    .quick-actions-grid { grid-template-columns: 1fr 1fr; gap:0.625rem; }
+    .dash-title { font-size:1.375rem; }
+    .action-content p { display:none; }
 }
 </style>
 
 <div class="dashboard-wrapper">
 
-    <!-- Welcome Card -->
-    <div class="dash-card">
-        <h1 class="dash-title" data-i18n="dashboard_title">Dashboard</h1>
-        <p class="dash-subtitle" data-i18n="dashboard_subtitle">Welcome back, <?= htmlspecialchars($user['username'] ?? 'Guest') ?></p>
-    </div>
-
-    <!-- Welcome Section -->
+    <!-- Welcome Banner -->
     <div class="dash-card">
         <div class="welcome-section">
-            <div class="welcome-icon">👋</div>
+            <div class="welcome-icon"><i class="fas fa-tachometer-alt"></i></div>
             <div class="welcome-content">
-                <h3 data-i18n="welcome_title">Welcome Back</h3>
-                <p data-i18n="welcome_message">Manage your platform from here</p>
+                <h1 class="dash-title" data-i18n="dashboard_title">Dashboard</h1>
+                <p class="dash-subtitle"><?= htmlspecialchars($user['username'] ?? 'Admin') ?> &mdash; <span data-i18n="welcome_message">Manage your platform from here</span></p>
             </div>
         </div>
     </div>
 
     <!-- Quick Actions -->
     <div class="dash-card">
-        <h2 style="font-size:1.5rem; margin-bottom:0.5rem; color:var(--text-primary);" data-i18n="quick_actions_title">Quick Actions</h2>
+        <h2 style="font-size:1.125rem; font-weight:600; margin-bottom:0.25rem; color:var(--text-primary);" data-i18n="quick_actions_title">Quick Actions</h2>
+        <p class="dash-subtitle" style="margin-bottom:0;" data-i18n="quick_actions_subtitle">Jump to any section</p>
         <div class="quick-actions-grid">
-            <a href="/admin/products.php" class="action-card"><div class="action-icon">📦</div><div class="action-content"><h3 data-i18n="nav.products">Products</h3><p data-i18n="manage_products">Manage products & inventory</p></div></a>
-            <a href="/admin/categories.php" class="action-card"><div class="action-icon">🏷️</div><div class="action-content"><h3 data-i18n="nav.categories">Categories</h3><p data-i18n="manage_categories">Organize product categories</p></div></a>
-            <a href="/admin/users.php" class="action-card"><div class="action-icon">👥</div><div class="action-content"><h3 data-i18n="nav.users">Users</h3><p data-i18n="manage_users">Manage user accounts</p></div></a>
-            <?php if ($canViewDrivers): ?>
-            <a href="/admin/drivers.php" class="action-card"><div class="action-icon">🚚</div><div class="action-content"><h3 data-i18n="nav.drivers">Drivers</h3><p data-i18n="manage_drivers">Manage delivery drivers</p></div></a>
+            <a href="/admin/fragments/products.php" class="action-card">
+                <div class="action-icon"><i class="fas fa-box"></i></div>
+                <div class="action-content"><h3 data-i18n="nav.products">Products</h3><p data-i18n="manage_products">Manage products &amp; inventory</p></div>
+            </a>
+            <a href="/admin/fragments/categories.php" class="action-card">
+                <div class="action-icon"><i class="fas fa-tags"></i></div>
+                <div class="action-content"><h3 data-i18n="nav.categories">Categories</h3><p data-i18n="manage_categories">Organize product categories</p></div>
+            </a>
+            <?php if ($canViewUsers): ?>
+            <a href="/admin/fragments/users.php" class="action-card">
+                <div class="action-icon"><i class="fas fa-users"></i></div>
+                <div class="action-content"><h3 data-i18n="nav.users">Users</h3><p data-i18n="manage_users">Manage user accounts</p></div>
+            </a>
             <?php endif; ?>
-            <a href="/admin/orders.php" class="action-card"><div class="action-icon">🛒</div><div class="action-content"><h3 data-i18n="nav.orders">Orders</h3><p data-i18n="manage_orders">Track and process orders</p></div></a>
-            <a href="/admin/settings.php" class="action-card"><div class="action-icon">⚙️</div><div class="action-content"><h3 data-i18n="nav.settings">Settings</h3><p>Configure system settings</p></div></a>
+            <a href="/admin/fragments/tenant_users.php" class="action-card">
+                <div class="action-icon"><i class="fas fa-user-shield"></i></div>
+                <div class="action-content"><h3 data-i18n="nav.tenant_users">Staff</h3><p data-i18n="manage_tenant_users">Manage staff accounts</p></div>
+            </a>
+            <a href="/admin/fragments/vendors.php" class="action-card">
+                <div class="action-icon"><i class="fas fa-store-alt"></i></div>
+                <div class="action-content"><h3 data-i18n="menu.vendors">Vendors</h3><p data-i18n="manage_vendors">Manage vendor accounts</p></div>
+            </a>
+            <?php if ($canViewDrivers): ?>
+            <a href="/admin/fragments/IndependentDriver.php" class="action-card">
+                <div class="action-icon"><i class="fas fa-truck"></i></div>
+                <div class="action-content"><h3 data-i18n="nav.drivers">Drivers</h3><p data-i18n="manage_drivers">Manage delivery drivers</p></div>
+            </a>
+            <?php endif; ?>
+            <a href="/admin/fragments/entities.php" class="action-card">
+                <div class="action-icon"><i class="fas fa-store"></i></div>
+                <div class="action-content"><h3 data-i18n="menu.entities">Branches</h3><p data-i18n="manage_entities">Manage branches &amp; outlets</p></div>
+            </a>
+            <a href="/admin/fragments/pos.php" class="action-card">
+                <div class="action-icon"><i class="fas fa-cash-register"></i></div>
+                <div class="action-content"><h3 data-i18n="nav.pos">POS</h3><p data-i18n="manage_pos">Point of sale system</p></div>
+            </a>
+            <a href="/admin/fragments/discounts.php" class="action-card">
+                <div class="action-icon"><i class="fas fa-percent"></i></div>
+                <div class="action-content"><h3 data-i18n="discounts">Discounts</h3><p data-i18n="manage_discounts">Manage offers &amp; discounts</p></div>
+            </a>
+            <a href="/admin/fragments/flash_sales.php" class="action-card">
+                <div class="action-icon"><i class="fas fa-bolt"></i></div>
+                <div class="action-content"><h3 data-i18n="menu.flash_sales">Flash Sales</h3><p data-i18n="manage_flash_sales">Manage limited time deals</p></div>
+            </a>
+            <a href="/admin/fragments/banners.php" class="action-card">
+                <div class="action-icon"><i class="fas fa-images"></i></div>
+                <div class="action-content"><h3 data-i18n="menu.banners">Banners</h3><p data-i18n="manage_banners">Manage promotional banners</p></div>
+            </a>
+            <?php if ($canViewSettings): ?>
+            <a href="/admin/fragments/themes.php" class="action-card">
+                <div class="action-icon"><i class="fas fa-paint-brush"></i></div>
+                <div class="action-content"><h3 data-i18n="nav.settings">Settings &amp; Theme</h3><p data-i18n="manage_settings">Configure system &amp; appearance</p></div>
+            </a>
+            <?php endif; ?>
         </div>
-    </div>
-
-    <!-- Theme Colors -->
-    <div class="dash-card">
-        <h2 style="font-size:1.5rem; margin-bottom:0.5rem; color:var(--text-primary);" data-i18n="theme_preview_title">Active Theme Colors</h2>
-        <p class="dash-subtitle" data-i18n="theme_preview_subtitle">Click any color to copy to clipboard</p>
-
-        <?php if (empty($colors)): ?>
-            <div class="empty-state"><p>No colors available</p><small>Configure theme colors in Settings</small></div>
-        <?php else: ?>
-            <div class="colors-grid">
-                <?php foreach ($colors as $color): ?>
-                    <div class="color-card" onclick="copyColor('<?= htmlspecialchars($color['color_value'], ENT_QUOTES) ?>', this)">
-                        <div class="color-preview" style="background: <?= htmlspecialchars($color['color_value']) ?>;"></div>
-                        <div class="color-name"><?= htmlspecialchars($color['setting_name']) ?></div>
-                        <div class="color-code"><?= htmlspecialchars($color['color_value']) ?></div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
     </div>
 
 </div>
 
-<div class="copy-feedback" id="copyFeedback">Copied!</div>
-
 <script>
 (function(){
 'use strict';
-
-console.log('Dashboard Loaded');
-console.log('Language: <?= $lang ?>');
-console.log('User: <?= $user['username'] ?? 'Guest' ?>');
-
-// 🔹 مزامنة ألوان PHP إلى JS
-window.ADMIN_UI = window.ADMIN_UI || {};
-window.ADMIN_UI.theme = window.ADMIN_UI.theme || {};
-window.ADMIN_UI.theme.colors = <?= json_encode($colors, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
-
-// Copy color function
-window.copyColor = async function(value, el){
-    try {
-        await navigator.clipboard.writeText(value);
-        el.classList.add('copied');
-        setTimeout(()=>el.classList.remove('copied'),1000);
-
-        var fb = document.getElementById('copyFeedback');
-        fb.textContent = 'Copied: ' + value;
-        fb.classList.add('show');
-        setTimeout(()=>fb.classList.remove('show'),2500);
-
-        // تحديث اللون مباشرة على Dashboard
-        const card = el.closest('.color-card');
-        if(card){
-            card.querySelector('.color-preview').style.backgroundColor = value;
-            card.querySelector('.color-code').textContent = value;
-        }
-
-        // تحديث ADMIN_UI.theme.colors
-        const colorName = el.querySelector('.color-name')?.textContent;
-        if(colorName && window.ADMIN_UI?.theme?.colors){
-            const themeColor = window.ADMIN_UI.theme.colors.find(c=>c.setting_name===colorName);
-            if(themeColor) themeColor.color_value = value;
-        }
-
-    }catch(e){
-        console.error(e);
-        var textarea=document.createElement('textarea');
-        textarea.value=value; textarea.style.position='fixed'; textarea.style.opacity='0';
-        document.body.appendChild(textarea); textarea.select();
-        try{ document.execCommand('copy'); alert('Copied: '+value);}catch(err){console.error(err);}
-        document.body.removeChild(textarea);
-    }
-};
 
 // Apply translations
 function applyTranslations(){
@@ -239,22 +203,6 @@ if(document.readyState==='loading'){
     document.addEventListener('DOMContentLoaded', applyTranslations);
 }else{ setTimeout(applyTranslations,100); }
 
-// مزامنة الألوان عند تحميل الصفحة
-document.addEventListener('DOMContentLoaded', function(){
-    if(window.ADMIN_UI?.theme?.colors){
-        document.querySelectorAll('.color-card').forEach(card=>{
-            const name = card.querySelector('.color-name')?.textContent;
-            const color = window.ADMIN_UI.theme.colors.find(c=>c.setting_name===name);
-            if(color){
-                const val = color.color_value;
-                card.querySelector('.color-preview').style.backgroundColor = val;
-                card.querySelector('.color-code').textContent = val;
-            }
-        });
-    }
-});
-
-console.log('Dashboard initialized');
 })();
 </script>
 
