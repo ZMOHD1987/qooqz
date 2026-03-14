@@ -1,0 +1,372 @@
+<?php
+declare(strict_types=1);
+
+// api/shared/security/PermissionService.php
+
+final class PermissionService
+{
+    /**
+     * Get all permissions for a user based on their role and tenant.
+     */
+    public static function getUserPermissions(PDO $db, int $userId, int $tenantId): array
+    {
+        $sql = "
+            SELECT DISTINCT p.key_name
+            FROM users u
+            JOIN roles r ON r.id = u.role_id AND (r.tenant_id = :tenantId OR r.tenant_id IS NULL)
+            JOIN role_permissions rp ON rp.role_id = r.id AND rp.tenant_id = :tenantId
+            JOIN permissions p ON p.id = rp.permission_id AND p.tenant_id = :tenantId
+            WHERE u.id = :userId AND (u.tenant_id = :tenantId OR u.tenant_id IS NULL) AND u.is_active = 1
+        ";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute([':userId' => $userId, ':tenantId' => $tenantId]);
+
+        return $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    }
+
+    /**
+     * Get all roles for a tenant.
+     */
+    public static function getRoles(PDO $db, int $tenantId): array
+    {
+        $sql = "
+            SELECT id, key_name, display_name, created_at
+            FROM roles
+            WHERE tenant_id = :tenantId OR tenant_id IS NULL
+            ORDER BY display_name ASC
+        ";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute([':tenantId' => $tenantId]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /**
+     * Get all permissions for a tenant.
+     */
+    public static function getPermissions(PDO $db, int $tenantId): array
+    {
+        $sql = "
+            SELECT id, key_name, display_name, description, created_at
+            FROM permissions
+            WHERE tenant_id = :tenantId
+            ORDER BY display_name ASC
+        ";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute([':tenantId' => $tenantId]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /**
+     * Get permissions for a specific role.
+     */
+    public static function getRolePermissions(PDO $db, int $roleId, int $tenantId): array
+    {
+        $sql = "
+            SELECT p.id, p.key_name, p.display_name, p.description
+            FROM role_permissions rp
+            JOIN permissions p ON p.id = rp.permission_id
+            WHERE rp.role_id = :roleId AND rp.tenant_id = :tenantId AND p.tenant_id = :tenantId
+            ORDER BY p.display_name ASC
+        ";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute([':roleId' => $roleId, ':tenantId' => $tenantId]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /**
+     * Check if a user has a specific permission.
+     */
+    public static function hasPermission(PDO $db, int $userId, int $tenantId, string $permissionKey): bool
+    {
+        $permissions = self::getUserPermissions($db, $userId, $tenantId);
+        return in_array($permissionKey, $permissions);
+    }
+
+    /**
+     * Get user role information.
+     */
+    public static function getUserRole(PDO $db, int $userId, int $tenantId): ?array
+    {
+        $sql = "
+            SELECT r.id, r.key_name, r.display_name, r.tenant_id as role_tenant_id
+            FROM users u
+            JOIN roles r ON r.id = u.role_id
+            WHERE u.id = :userId AND (u.tenant_id = :tenantId OR u.tenant_id IS NULL) AND u.is_active = 1
+            LIMIT 1
+        ";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute([':userId' => $userId, ':tenantId' => $tenantId]);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    /**
+     * Assign permissions to a role.
+     */
+    public static function assignPermissionsToRole(PDO $db, int $roleId, int $tenantId, array $permissionIds): bool
+    {
+        // First, remove existing permissions for the role
+        $sqlDelete = "
+            DELETE FROM role_permissions
+            WHERE role_id = :roleId AND tenant_id = :tenantId
+        ";
+
+        $stmtDelete = $db->prepare($sqlDelete);
+        $stmtDelete->execute([':roleId' => $roleId, ':tenantId' => $tenantId]);
+
+        // Then, insert new permissions
+        if (!empty($permissionIds)) {
+            $sqlInsert = "
+                INSERT INTO role_permissions (tenant_id, role_id, permission_id, created_at)
+                VALUES (:tenantId, :roleId, :permissionId, NOW())
+            ";
+
+            $stmtInsert = $db->prepare($sqlInsert);
+            foreach ($permissionIds as $permissionId) {
+                $stmtInsert->execute([
+                    ':tenantId'     => $tenantId,
+                    ':roleId'       => $roleId,
+                    ':permissionId' => (int)$permissionId
+                ]);
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Get permissions not assigned to a role.
+     */
+    public static function getUnassignedPermissions(PDO $db, int $roleId, int $tenantId): array
+    {
+        $sql = "
+            SELECT p.id, p.key_name, p.display_name
+            FROM permissions p
+            WHERE p.tenant_id = :tenantId
+              AND p.id NOT IN (
+                  SELECT rp.permission_id
+                  FROM role_permissions rp
+                  WHERE rp.role_id = :roleId AND rp.tenant_id = :tenantId
+              )
+            ORDER BY p.display_name ASC
+        ";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute([':roleId' => $roleId, ':tenantId' => $tenantId]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /**
+     * Check if user can access based on tenant and role.
+     */
+        public static function canAccess(PDO $db, int $userId, int $tenantId): bool
+    {
+        $sql = "
+            SELECT COUNT(*) as count
+            FROM users u
+            LEFT JOIN tenants t ON t.id = u.tenant_id AND t.status = 'active'
+            WHERE u.id = :userId AND u.is_active = 1
+              AND (u.tenant_id = :tenantId OR u.tenant_id IS NULL OR t.id IS NOT NULL)
+        ";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute([':userId' => $userId, ':tenantId' => $tenantId]);
+
+        return (int)$stmt->fetch(PDO::FETCH_ASSOC)['count'] > 0;
+    }
+
+    /**
+     * Get all permissions with their assignment status for a role.
+     */
+    public static function getPermissionsWithStatus(PDO $db, int $roleId, int $tenantId): array
+    {
+        $sql = "
+            SELECT p.id, p.key_name, p.display_name, p.description,
+                   CASE WHEN rp.id IS NOT NULL THEN 1 ELSE 0 END as is_assigned
+            FROM permissions p
+            LEFT JOIN role_permissions rp ON rp.permission_id = p.id AND rp.role_id = :roleId AND rp.tenant_id = :tenantId
+            WHERE p.tenant_id = :tenantId
+            ORDER BY p.display_name ASC
+        ";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute([':roleId' => $roleId, ':tenantId' => $tenantId]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /**
+     * Get current user's permissions from session (for frontend use).
+     */
+    public static function getCurrentUserPermissions(PDO $db): array
+    {
+        $userId = self::getCurrentUserId();
+        $tenantId = self::getCurrentTenantId();
+
+        if (!$userId || !$tenantId) {
+            return [];
+        }
+
+        return self::getUserPermissions($db, $userId, $tenantId);
+    }
+
+    /**
+     * Get current user's role from session.
+     */
+    public static function getCurrentUserRole(PDO $db): ?array
+    {
+        $userId = self::getCurrentUserId();
+        $tenantId = self::getCurrentTenantId();
+
+        if (!$userId || !$tenantId) {
+            return null;
+        }
+
+        return self::getUserRole($db, $userId, $tenantId);
+    }
+
+    /**
+     * Check if current user has permission from session.
+     */
+    public static function currentUserHasPermission(PDO $db, string $permissionKey): bool
+    {
+        $permissions = self::getCurrentUserPermissions($db);
+        return in_array($permissionKey, $permissions);
+    }
+
+    /**
+     * Get all roles and permissions for frontend (e.g., for admin panel).
+     */
+    public static function getRolesAndPermissionsForFrontend(PDO $db, int $tenantId): array
+    {
+        return [
+            'roles'       => self::getRoles($db, $tenantId),
+            'permissions' => self::getPermissions($db, $tenantId),
+        ];
+    }
+
+    /**
+     * Get user session data for frontend.
+     */
+    public static function getUserSessionData(PDO $db): array
+    {
+        $userId = self::getCurrentUserId();
+        $tenantId = self::getCurrentTenantId();
+
+        if (!$userId || !$tenantId) {
+            return ['error' => 'User not logged in'];
+        }
+
+        $user = self::getUserDetails($db, $userId);
+        $permissions = self::getUserPermissions($db, $userId, $tenantId);
+        $role = self::getUserRole($db, $userId, $tenantId);
+
+        return [
+            'user_id'          => $userId,
+            'tenant_id'        => $tenantId,
+            'user'             => $user,
+            'permissions'      => $permissions,
+            'roles'            => $role ? [$role['key_name']] : [],
+            'permissions_count' => count($permissions),
+            'roles_count'      => $role ? 1 : 0,
+            'is_logged_in'     => true,
+        ];
+    }
+
+    /**
+     * Get full user details.
+     */
+    public static function getUserDetails(PDO $db, int $userId): ?array
+    {
+        $sql = "
+            SELECT u.id, u.username, u.email, u.preferred_language, u.country_id, u.city_id, u.phone, u.role_id, u.tenant_id, u.timezone, u.is_active, u.created_at, u.updated_at,
+                   r.key_name as role_key_name, r.display_name as role_display_name
+            FROM users u
+            LEFT JOIN roles r ON r.id = u.role_id
+            WHERE u.id = :userId
+            LIMIT 1
+        ";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute([':userId' => $userId]);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    /**
+     * Get current user ID from session.
+     */
+    private static function getCurrentUserId(): ?int
+    {
+        return isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+    }
+
+    /**
+     * Get current tenant ID from session.
+     */
+    private static function getCurrentTenantId(): ?int
+    {
+        return isset($_SESSION['tenant_id']) ? (int)$_SESSION['tenant_id'] : null;
+    }
+
+    /**
+     * Get session information.
+     */
+    public static function getSessionInfo(): array
+    {
+        return [
+            'session_id'       => session_id(),
+            'session_name'     => session_name(),
+            'session_status'   => session_status(),
+            'session_save_path' => session_save_path(),
+            'user_id'          => self::getCurrentUserId(),
+            'tenant_id'        => self::getCurrentTenantId(),
+        ];
+    }
+
+    /**
+     * Validate user session.
+     */
+    public static function validateSession(PDO $db): array
+    {
+        $userId = self::getCurrentUserId();
+        $tenantId = self::getCurrentTenantId();
+
+        if (!$userId || !$tenantId) {
+            return ['valid' => false, 'message' => 'Session invalid'];
+        }
+
+        $canAccess = self::canAccess($db, $userId, $tenantId);
+
+        return [
+            'valid'    => $canAccess,
+            'user_id'  => $userId,
+            'tenant_id' => $tenantId,
+            'message'  => $canAccess ? 'Session valid' : 'Access denied',
+        ];
+    }
+
+    /**
+     * Get complete user profile for frontend.
+     */
+    public static function getCompleteUserProfile(PDO $db): array
+    {
+        $sessionData = self::getUserSessionData($db);
+        $sessionInfo = self::getSessionInfo();
+        $validation = self::validateSession($db);
+
+        return array_merge($sessionData, [
+            'session_info' => $sessionInfo,
+            'validation'   => $validation,
+        ]);
+    }
+}

@@ -1,0 +1,63 @@
+<?php
+declare(strict_types=1);
+
+class DatabaseConnection {
+    private static ?PDO $pdo = null;
+
+    public static function getConnection(): PDO {
+        if (self::$pdo !== null) {
+            return self::$pdo;
+        }
+
+        // تحميل إعدادات DB من ConfigLoader
+        try {
+            $config = ConfigLoader::getAll('db'); // db.php أو env
+        } catch (Throwable $e) {
+            throw new Exception("DB config load failed: " . $e->getMessage());
+        }
+
+        $host    = $config['host'] ?? getenv('DB_HOST') ?: 'localhost';
+        $user    = $config['user'] ?? getenv('DB_USER') ?: 'root';
+        $pass    = $config['pass'] ?? getenv('DB_PASS') ?: '';
+        $name    = $config['name'] ?? getenv('DB_NAME') ?: 'database';
+        $charset = $config['charset'] ?? getenv('DB_CHARSET') ?: 'utf8mb4';
+        $port    = $config['port'] ?? getenv('DB_PORT') ?: 3306;
+
+        try {
+            $dsn = "mysql:host={$host};dbname={$name};charset={$charset};port={$port}";
+            self::$pdo = new PDO($dsn, $user, $pass, [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+            ]);
+            return self::$pdo;
+        } catch (PDOException $e) {
+            throw new Exception("DB connection failed: " . $e->getMessage());
+        }
+    }
+
+    public static function closeConnection(): void {
+        self::$pdo = null;
+    }
+
+    public static function isConnected(): bool {
+        return self::$pdo !== null;
+    }
+
+    public static function testConnection(): array {
+        try {
+            $pdo = self::getConnection();
+            $stmt = $pdo->query('SELECT NOW() as server_time');
+            $time = $stmt->fetchColumn();
+            return [
+                'success' => true,
+                'server_time' => $time,
+            ];
+        } catch (Throwable $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+}

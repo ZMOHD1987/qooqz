@@ -1,0 +1,11 @@
+{
+    "_note": "Stamp and signature images are stored in a private directory not accessible from the web. Replace the placeholder files with real images. File names are intentionally obfuscated.",
+    "signature": {
+        "path": "storage/certificates/assets/f3a9e1b7d2c8.png",
+        "description": "Authorized signature image (PNG, transparent background, ~200x80px)"
+    },
+    "stamp": {
+        "path": "storage/certificates/assets/b8c2f5a1e4d7.png",
+        "description": "Official municipality stamp image (PNG, transparent background, ~200x200px)"
+    }
+}
