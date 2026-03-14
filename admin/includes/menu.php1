@@ -1,0 +1,215 @@
+<?php
+// htdocs/admin/includes/menu.php
+// Sidebar menu renderer with robust i18n support.
+//
+// Changes / fixes:
+// - t() now resolves translations from several possible shapes:
+//   - nested arrays with dot-notation (e.g. $strings['nav']['dashboard'])
+//   - flat keys (e.g. $strings['nav.dashboard'])
+//   - wrapped under $strings['strings'] (some JSON files use that)
+//   - fallback to $GLOBALS['ADMIN_UI'] top-level if needed
+// - default direction is 'ltr' (was 'rtl' previously)
+// - safe HTML escaping via h()
+// - preserves existing permission and active-item logic
+// - defensive checks if $ADMIN_UI payload is missing
+
+if (!function_exists('h')) {
+    function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
+}
+
+// -----------------------
+// Obtain payload & strings
+// -----------------------
+$ui_payload = $GLOBALS['ADMIN_UI'] ?? ($ADMIN_UI_PAYLOAD ?? []);
+$strings = is_array($ui_payload['strings'] ?? null) ? $ui_payload['strings'] : ([]);
+
+// direction default should be ltr
+$dir = $ui_payload['direction'] ?? 'ltr';
+$GLOBALS['ADMIN_UI_LANG_DIR'] = $dir;
+$GLOBALS['ADMIN_UI_LANG_CODE'] = $ui_payload['lang'] ?? ($GLOBALS['ADMIN_UI_LANG_CODE'] ?? 'en');
+
+// -----------------------
+// Permission helper
+// -----------------------
+function _can_view($perm) {
+    if (!$perm) return true;
+    if (function_exists('user_can')) return user_can($perm);
+    if (!empty($_SESSION['permissions']) && is_array($_SESSION['permissions'])) {
+        return in_array($perm, $_SESSION['permissions'], true);
+    }
+    return true;
+}
+
+// -----------------------
+// Active detection
+// -----------------------
+function _is_active_item($item) {
+    $uri = $_SERVER['REQUEST_URI'] ?? '';
+    $u = $item['url'] ?? ($item['load'] ?? '');
+    if (!$u) return false;
+    $uri_path = parse_url($uri, PHP_URL_PATH) ?: $uri;
+    $u_path = parse_url($u, PHP_URL_PATH) ?: $u;
+    if ($uri_path === $u_path) return true;
+    if ($u_path !== '' && strpos($uri_path, $u_path) === 0) return true;
+    return false;
+}
+
+// -----------------------
+// Translation helpers
+// -----------------------
+/**
+ * Resolve dotted key from array (e.g. 'nav.dashboard' => $arr['nav']['dashboard'])
+ */
+function resolve_dot_key(array $arr, string $key) {
+    if ($key === '') return null;
+    // direct key exists (supports flat keys like 'nav.dashboard' stored as key)
+    if (array_key_exists($key, $arr)) return $arr[$key];
+
+    $parts = explode('.', $key);
+    $cur = $arr;
+    foreach ($parts as $p) {
+        if (!is_array($cur) || !array_key_exists($p, $cur)) {
+            return null;
+        }
+        $cur = $cur[$p];
+    }
+    return $cur;
+}
+
+/**
+ * t() — robust translation getter
+ * tries multiple locations/shapes and returns string or fallback.
+ */
+function t(string $key, $fallback = '') {
+    global $strings, $ui_payload;
+
+    if (!$key) return $fallback;
+
+    // 1) direct in $strings using dot resolution
+    $val = resolve_dot_key($strings, $key);
+    if (is_string($val) || is_numeric($val)) return (string)$val;
+
+    // 2) maybe translations are wrapped under 'strings' key inside $strings
+    if (isset($strings['strings']) && is_array($strings['strings'])) {
+        $val = resolve_dot_key($strings['strings'], $key);
+        if (is_string($val) || is_numeric($val)) return (string)$val;
+    }
+
+    // 3) maybe top-level ADMIN_UI has the keys
+    if (!empty($ui_payload) && is_array($ui_payload)) {
+        $val = resolve_dot_key($ui_payload, $key);
+        if (is_string($val) || is_numeric($val)) return (string)$val;
+
+        if (isset($ui_payload['strings']) && is_array($ui_payload['strings'])) {
+            $val = resolve_dot_key($ui_payload['strings'], $key);
+            if (is_string($val) || is_numeric($val)) return (string)$val;
+            if (isset($ui_payload['strings']['strings']) && is_array($ui_payload['strings']['strings'])) {
+                $val = resolve_dot_key($ui_payload['strings']['strings'], $key);
+                if (is_string($val) || is_numeric($val)) return (string)$val;
+            }
+        }
+    }
+
+    // 4) as a last attempt, try replacing '.' with '_' or '-' (some JSONs flatten with different separators)
+    $altKey = str_replace('.', '_', $key);
+    $val = $strings[$altKey] ?? null;
+    if (is_string($val) || is_numeric($val)) return (string)$val;
+
+    // 5) fallback to provided fallback or empty string
+    return $fallback;
+}
+
+// -----------------------
+// Render menu recursively
+// -----------------------
+function render_menu_items($items, $level = 0) {
+    if (!is_array($items) || empty($items)) return '';
+    $out = '<ul class="sidebar-list sidebar-level-' . (int)$level . '" role="' . ($level === 0 ? 'menu' : 'group') . '">';
+    foreach ($items as $item) {
+        $perm = $item['permission'] ?? null;
+        if (!_can_view($perm)) continue;
+
+        $hasChildren = !empty($item['children']) && is_array($item['children']);
+        $active = _is_active_item($item);
+        $childActive = false;
+        if ($hasChildren) {
+            foreach ($item['children'] as $c) {
+                if (_is_active_item($c)) { $childActive = true; break; }
+            }
+        }
+
+        $liClasses = [];
+        if ($active) $liClasses[] = 'active';
+        if ($childActive) $liClasses[] = 'open';
+        if ($hasChildren) $liClasses[] = 'has-children';
+
+        $liClassAttr = $liClasses ? ' class="' . h(implode(' ', $liClasses)) . '"' : '';
+        $idAttr = isset($item['id']) ? ' data-menu-id="' . h($item['id']) . '"' : '';
+
+        // i18n key priority: explicit i18n → nav.id → menu.id → fallback title
+        $i18nKey = $item['i18n'] ?? (isset($item['id']) ? 'nav.' . $item['id'] : '');
+        $titleFallback = $item['title'] ?? (isset($item['id']) ? ucwords(str_replace(['_', '-'], ' ', $item['id'])) : '');
+        $titleText = t($i18nKey, $titleFallback);
+
+        $iconHtml = $item['icon'] ?? '';
+        if ($iconHtml) {
+            // allow simple emoji/icons raw (they are safe) but escape if HTML-like
+            $iconHtml = '<span class="sidebar-icon" aria-hidden="true">' . h($iconHtml) . '</span>';
+        }
+
+        $url = $item['url'] ?? '#';
+        $load = $item['load'] ?? $url;
+        $loadAttr = ' data-load-url="' . h($load) . '"';
+        $ariaHasPopup = $hasChildren ? ' aria-haspopup="true"' : '';
+
+        $out .= "<li{$liClassAttr}{$idAttr} role=\"none\">";
+        $out .= '<a href="' . h($url) . '" role="menuitem" class="sidebar-link"' . $loadAttr . $ariaHasPopup . '>';
+        $out .= $iconHtml;
+        $out .= '<span class="sidebar-title" data-i18n="' . h($i18nKey) . '">' . h($titleText) . '</span>';
+        $out .= '</a>';
+
+        if ($hasChildren) {
+            $out .= render_menu_items($item['children'], $level + 1);
+        }
+        $out .= '</li>';
+    }
+    $out .= '</ul>';
+    return $out;
+}
+
+// -----------------------
+// Menu items (original structure)
+// -----------------------
+$ADMIN_MENU = [
+    ['id'=>'dashboard','i18n'=>'nav.dashboard','icon'=>'🏠','url'=>'/admin/dashboard.php','load'=>'/admin/dashboard.php'],
+    ['id'=>'platform','i18n'=>'menu.platform','icon'=>'📁','children'=>[
+        ['id'=>'pages','i18n'=>'menu.pages','icon'=>'📄','url'=>'/admin/fragments/vendor_attributes_values.php','load'=>'/admin/fragments/vendor_attributes_values.php'],
+        ['id'=>'media','i18n'=>'menu.media','icon'=>'🖼️','url'=>'/admin/fragments/vendor_working_hours.php','load'=>'/admin/fragments/vendor_working_hours.php'],
+        ['id'=>'banners','i18n'=>'menu.banners','icon'=>'🖼️','url'=>'/admin/fragments/banners.php','load'=>'/admin/fragments/banners.php'],
+    ]],
+    ['id'=>'menus','i18n'=>'nav.menus','icon'=>'📋','url'=>'/admin/fragments/menus_list.php','load'=>'/admin/fragments/menus_list.php'],
+    ['id'=>'roles','i18n'=>'nav.roles','icon'=>'🛡️','url'=>'/admin/fragments/roles.php','load'=>'/admin/fragments/roles.php'],
+    ['id'=>'permissions','i18n'=>'nav.permissions','icon'=>'🔐','url'=>'/admin/fragments/permissions.php','load'=>'/admin/fragments/permissions.php'],
+    ['id'=>'categories','i18n'=>'nav.categories','icon'=>'📂','url'=>'/admin/menus_list.php','load'=>'/admin/menus_list.php'],
+    ['id'=>'products','i18n'=>'nav.products','icon'=>'📦','url'=>'/admin/fragments/products.php','load'=>'/admin/fragments/products.php'],
+    ['id'=>'vendors','i18n'=>'menu.vendors','icon'=>'🏪','url'=>'/admin/fragments/vendors.php','load'=>'/admin/fragments/vendors.php'],
+    ['id'=>'delivery_companies','i18n'=>'menu.delivery_companies','icon'=>'🚚','url'=>'/admin/fragments/IndependentDriver.php','load'=>'/admin/fragments/IndependentDriver.php'],
+    ['id'=>'orders','i18n'=>'nav.orders','icon'=>'🧾','url'=>'/admin/orders.php','load'=>'/admin/orders.php'],
+    ['id'=>'payments','i18n'=>'menu.payments','icon'=>'💳','url'=>'/admin/payments.php','load'=>'/admin/payments.php'],
+    ['id'=>'shipping','i18n'=>'menu.shipping','icon'=>'🚛','url'=>'/admin/shipping.php','load'=>'/admin/shipping.php'],
+    ['id'=>'users','i18n'=>'nav.users','icon'=>'👥','url'=>'/admin/fragments/users.php','load'=>'/admin/fragments/users.php'],
+    ['id'=>'reviews','i18n'=>'menu.reviews','icon'=>'⭐','url'=>'/admin/reviews.php','load'=>'/admin/reviews.php'],
+    ['id'=>'auctions','i18n'=>'menu.auctions','icon'=>'🔨','url'=>'/admin/auctions.php','load'=>'/admin/auctions.php'],
+    ['id'=>'jobs','i18n'=>'menu.jobs','icon'=>'💼','url'=>'/admin/jobs.php','load'=>'/admin/jobs.php'],
+    ['id'=>'coupons','i18n'=>'menu.coupons','icon'=>'🏷️','url'=>'/admin/coupons.php','load'=>'/admin/coupons.php'],
+    ['id'=>'notifications','i18n'=>'menu.notifications','icon'=>'🔔','url'=>'/admin/notifications.php','load'=>'/admin/notifications.php'],
+    ['id'=>'reports','i18n'=>'nav.reports','icon'=>'📈','url'=>'/admin/reports.php','load'=>'/admin/reports.php'],
+    ['id'=>'support','i18n'=>'menu.support','icon'=>'🛠️','url'=>'/admin/support.php','load'=>'/admin/support.php'],
+    ['id'=>'wallet','i18n'=>'menu.wallet','icon'=>'👛','url'=>'/admin/wallet.php','load'=>'/admin/wallet.php'],
+    ['id'=>'settings','i18n'=>'nav.settings','icon'=>'⚙️','url'=>'/admin/settings.php','load'=>'/admin/settings.php'],
+];
+
+// -----------------------
+// Output
+// -----------------------
+echo render_menu_items($ADMIN_MENU, 0);
