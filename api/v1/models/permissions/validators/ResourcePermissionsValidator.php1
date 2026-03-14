@@ -1,0 +1,82 @@
+<?php
+declare(strict_types=1);
+
+final class ResourcePermissionsValidator
+{
+    /**
+     * Validate for update
+     */
+    public function validate(array $data): array
+    {
+        $errors = [];
+
+        if (empty($data['id'])) {
+            $errors['id'] = 'required';
+        }
+
+        // Validate boolean fields
+        $boolFields = [
+            'can_view_all',
+            'can_view_own',
+            'can_view_tenant',
+            'can_create',
+            'can_edit_all',
+            'can_edit_own',
+            'can_delete_all',
+            'can_delete_own'
+        ];
+
+        foreach ($boolFields as $field) {
+            if (isset($data[$field]) && !in_array($data[$field], [0, 1, '0', '1', true, false], true)) {
+                $errors[$field] = 'must be boolean';
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Validate for create
+     */
+    public function validateCreate(array $data): array
+    {
+        $errors = [];
+
+        if (empty($data['permission_id'])) {
+            $errors['permission_id'] = 'required';
+        }
+
+        if (empty($data['resource_type'])) {
+            $errors['resource_type'] = 'required';
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Validate bulk update
+     */
+    public function validateBulk(array $updates): array
+    {
+        $errors = [];
+
+        if (!is_array($updates)) {
+            $errors['updates'] = 'must be an array';
+            return $errors;
+        }
+
+        if (empty($updates)) {
+            $errors['updates'] = 'cannot be empty';
+            return $errors;
+        }
+
+        foreach ($updates as $index => $update) {
+            $updateErrors = $this->validate($update);
+            if (!empty($updateErrors)) {
+                $errors["updates[$index]"] = $updateErrors;
+            }
+        }
+
+        return $errors;
+    }
+}

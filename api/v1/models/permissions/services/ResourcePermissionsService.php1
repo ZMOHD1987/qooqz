@@ -1,0 +1,122 @@
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/../repositories/PdoResourcePermissionsRepository.php';
+require_once __DIR__ . '/../validators/ResourcePermissionsValidator.php';
+
+final class ResourcePermissionsService
+{
+    private PdoResourcePermissionsRepository $repo;
+    private ResourcePermissionsValidator $validator;
+
+    public function __construct(
+        PdoResourcePermissionsRepository $repo,
+        ResourcePermissionsValidator $validator
+    ) {
+        $this->repo = $repo;
+        $this->validator = $validator;
+    }
+
+    /**
+     * List resource permissions
+     */
+    public function list(int $tenantId, ?int $roleId = null): array
+    {
+        if ($roleId !== null && $roleId > 0) {
+            $permissions = $this->repo->getByRole($tenantId, $roleId);
+        } else {
+            $permissions = $this->repo->all($tenantId);
+        }
+
+        // Convert boolean fields
+        foreach ($permissions as &$perm) {
+            $perm['can_view_all'] = (bool)$perm['can_view_all'];
+            $perm['can_view_own'] = (bool)$perm['can_view_own'];
+            $perm['can_view_tenant'] = (bool)$perm['can_view_tenant'];
+            $perm['can_create'] = (bool)$perm['can_create'];
+            $perm['can_edit_all'] = (bool)$perm['can_edit_all'];
+            $perm['can_edit_own'] = (bool)$perm['can_edit_own'];
+            $perm['can_delete_all'] = (bool)$perm['can_delete_all'];
+            $perm['can_delete_own'] = (bool)$perm['can_delete_own'];
+        }
+
+        return $permissions;
+    }
+
+    /**
+     * Create new resource permission
+     */
+    public function create(array $data): array
+    {
+        $errors = $this->validator->validateCreate($data);
+        if ($errors) {
+            throw new InvalidArgumentException(
+                json_encode($errors, JSON_UNESCAPED_UNICODE)
+            );
+        }
+
+        $id = $this->repo->insert($data);
+
+        return ['id' => $id, 'created' => true];
+    }
+
+    /**
+     * Update single resource permission
+     */
+    public function update(int $id, array $data): array
+    {
+        $errors = $this->validator->validate(['id' => $id] + $data);
+        if ($errors) {
+            throw new InvalidArgumentException(
+                json_encode($errors, JSON_UNESCAPED_UNICODE)
+            );
+        }
+
+        // Check if exists
+        $existing = $this->repo->getById($id);
+        if (!$existing) {
+            throw new RuntimeException('Resource permission not found');
+        }
+
+        $updated = $this->repo->update($id, $data);
+
+        if (!$updated) {
+            throw new RuntimeException('Failed to update resource permission');
+        }
+
+        return ['id' => $id, 'updated' => true];
+    }
+
+    /**
+     * Bulk update resource permissions
+     */
+    public function bulkUpdate(array $updates): array
+    {
+        $errors = $this->validator->validateBulk($updates);
+        if ($errors) {
+            throw new InvalidArgumentException(
+                json_encode($errors, JSON_UNESCAPED_UNICODE)
+            );
+        }
+
+        $updatedCount = $this->repo->bulkUpdate($updates);
+
+        return [
+            'updated' => $updatedCount,
+            'total' => count($updates)
+        ];
+    }
+
+    /**
+     * Delete resource permission
+     */
+    public function delete(int $id): void
+    {
+        $existing = $this->repo->getById($id);
+        if (!$existing) {
+            throw new RuntimeException('Resource permission not found');
+        }
+
+        $this->repo->delete($id);
+    }
+}
