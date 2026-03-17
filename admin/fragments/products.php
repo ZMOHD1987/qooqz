@@ -184,7 +184,15 @@ if (!function_exists('renderFragmentThemeVars')) {
 <?php endif; ?>
 </style>
 <!-- Structural layout CSS (uses only var() for all visual properties) -->
-<link rel="stylesheet" href="/admin/assets/css/pages/products.css?v=<?= time() ?>">
+<?php
+if (!function_exists('prodAssetVer')) {
+    function prodAssetVer(string $path): string {
+        $full = $_SERVER['DOCUMENT_ROOT'] . $path;
+        return file_exists($full) ? (string)filemtime($full) : '1';
+    }
+}
+?>
+<link rel="stylesheet" href="/admin/assets/css/pages/products.css?v=<?= prodAssetVer('/admin/assets/css/pages/products.css') ?>">
 
 <!-- Page Meta -->
 <meta data-page="products"
@@ -1024,8 +1032,8 @@ window.PRODUCTS_CONFIG = {
 
 <!-- Load AdminFramework + Page module when embedded; otherwise load normally -->
 <?php if ($isFragment): ?>
-<script src="/admin/assets/js/admin_framework.js?v=<?= time() ?>"></script>
-<script src="/admin/assets/js/pages/products.js?v=<?= time() ?>"></script>
+<script src="/admin/assets/js/admin_framework.js?v=<?= prodAssetVer('/admin/assets/js/admin_framework.js') ?>"></script>
+<script src="/admin/assets/js/pages/products.js?v=<?= prodAssetVer('/admin/assets/js/pages/products.js') ?>"></script>
 
 <script>
 (function(){
@@ -1056,7 +1064,7 @@ window.PRODUCTS_CONFIG = {
 })();
 </script>
 <?php else: ?>
-<script src="/admin/assets/js/pages/products.js?v=<?= time() ?>"></script>
+<script src="/admin/assets/js/pages/products.js?v=<?= prodAssetVer('/admin/assets/js/pages/products.js') ?>"></script>
 <script>
 // Standalone mode init
 (function(){

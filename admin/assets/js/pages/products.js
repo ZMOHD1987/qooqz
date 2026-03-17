@@ -2531,6 +2531,8 @@
         if (!_messageListenerAdded) {
             _messageListenerAdded = true;
             window.addEventListener('message', function (e) {
+                // Only accept messages from the same origin to prevent cross-origin injection
+                if (e.origin !== window.location.origin) return;
                 if (e.data && e.data.type === 'media-selected') {
                     state.selectedImages = e.data.images || [];
                     renderProductImages();
