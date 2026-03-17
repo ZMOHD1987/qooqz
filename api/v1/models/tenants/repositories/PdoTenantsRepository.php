@@ -1,7 +1,9 @@
 <?php
 declare(strict_types=1);
 
-final class PdoTenantsRepository
+require_once __DIR__ . '/../Contracts/TenantsRepositoryInterface.php';
+
+final class PdoTenantsRepository implements TenantsRepositoryInterface
 {
     private PDO $pdo;
 
@@ -39,7 +41,7 @@ final class PdoTenantsRepository
                    u.username AS owner_username, 
                    u.email AS owner_email
             FROM tenants t
-            JOIN users u ON t.owner_user_id = u.id
+            LEFT JOIN users u ON t.owner_user_id = u.id
             {$where}
             ORDER BY t.created_at DESC
             LIMIT :limit OFFSET :offset
@@ -83,7 +85,7 @@ final class PdoTenantsRepository
         $stmt = $this->pdo->prepare("
             SELECT COUNT(*) as total
             FROM tenants t
-            JOIN users u ON t.owner_user_id = u.id
+            LEFT JOIN users u ON t.owner_user_id = u.id
             {$where}
         ");
         
@@ -106,13 +108,50 @@ final class PdoTenantsRepository
                    u.username AS owner_username, 
                    u.email AS owner_email
             FROM tenants t
-            JOIN users u ON t.owner_user_id = u.id
+            LEFT JOIN users u ON t.owner_user_id = u.id
             WHERE t.id = :id
             LIMIT 1
         ");
         $stmt->execute([':id' => $id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
+    }
+
+    /**
+     * Find tenant by domain slug
+     */
+    public function findByDomain(string $domain): ?array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT t.*,
+                   u.username AS owner_username,
+                   u.email AS owner_email
+            FROM tenants t
+            LEFT JOIN users u ON t.owner_user_id = u.id
+            WHERE t.domain = :domain
+            LIMIT 1
+        ");
+        $stmt->execute([':domain' => $domain]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
+    /**
+     * Return all active tenants (no pagination)
+     */
+    public function findActive(): array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT t.*,
+                   u.username AS owner_username,
+                   u.email AS owner_email
+            FROM tenants t
+            LEFT JOIN users u ON t.owner_user_id = u.id
+            WHERE t.status = 'active'
+            ORDER BY t.name ASC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**

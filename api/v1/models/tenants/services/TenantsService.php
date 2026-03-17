@@ -62,6 +62,26 @@ final class TenantsService
     }
 
     /**
+     * Get tenant by domain
+     */
+    public function getByDomain(string $domain): array
+    {
+        $row = $this->repo->findByDomain($domain);
+        if (!$row) {
+            throw new RuntimeException('Tenant not found');
+        }
+        return $row;
+    }
+
+    /**
+     * Get all active tenants (no pagination)
+     */
+    public function getActive(): array
+    {
+        return $this->repo->findActive();
+    }
+
+    /**
      * Create new tenant
      */
     public function create(array $data, ?int $userId = null): array

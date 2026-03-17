@@ -2,302 +2,569 @@
 declare(strict_types=1);
 
 /**
- * Tenants Management Page
+ * /admin/fragments/tenant.php
+ * Production Version
+ *
+ * ✅ Uses admin_context.php helpers (not PermissionsFramework.php)
+ * ✅ Role-based + resource-based permission checks
+ * ✅ Super-admin sees all tenants, regular admin scoped to own tenant
+ * ✅ Tabs: Basic Info | Users (embedded tenant_users) | Addresses (embedded addresses)
+ * ✅ Colors and sizing from database CSS variables (via ADMIN_UI theme)
+ * ✅ i18n translation loader (languages/Tenants/{lang}.json)
+ * ✅ Embedded / AJAX / standalone mode switching
+ * ✅ No inline permission management – delegated to JS module + API
  */
 
-require_once __DIR__ . '/../includes/PermissionsFramework.php';
+// ════════════════════════════════════════════════════════════
+// DETECT REQUEST TYPE
+// ════════════════════════════════════════════════════════════
+$isAjax     = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+              strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+$isEmbedded = isset($_GET['embedded']) || isset($_POST['embedded']);
+$isFragment = $isAjax || $isEmbedded;
 
-$payload = $GLOBALS['ADMIN_UI'] ?? [];
-$user = $payload['user'] ?? [];
-$permissions = $user['permissions'] ?? [];
-$roles = $user['roles'] ?? [];
-$csrf = $payload['csrf_token'] ?? '';
+// ════════════════════════════════════════════════════════════
+// LOAD CONTEXT / HEADER
+// ════════════════════════════════════════════════════════════
+if ($isFragment) {
+    require_once __DIR__ . '/../includes/admin_context.php';
+} else {
+    require_once __DIR__ . '/../includes/header.php';
+}
 
-// Check permissions
-$isSuperAdmin = in_array('super_admin', $roles, true);
-$canView = $isSuperAdmin || in_array('manage_tenants', $permissions) || in_array('view_tenants', $permissions);
-$canCreate = $isSuperAdmin || in_array('manage_tenants', $permissions);
-$canEdit = $isSuperAdmin || in_array('manage_tenants', $permissions);
-$canDelete = $isSuperAdmin || in_array('manage_tenants', $permissions);
-
-if (!$canView) {
-    header('Location: /admin/dashboard.php');
+// ════════════════════════════════════════════════════════════
+// VERIFY USER IS LOGGED IN
+// ════════════════════════════════════════════════════════════
+if (!is_admin_logged_in()) {
+    if ($isFragment) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Not authenticated']);
+        exit;
+    }
+    header('Location: /admin/login.php');
     exit;
 }
-?>
 
-<!-- Page Container -->
-<div class="page-container">
-    
+// ════════════════════════════════════════════════════════════
+// USER CONTEXT & PERMISSIONS
+// ════════════════════════════════════════════════════════════
+$user      = admin_user();
+$lang      = admin_lang();
+$dir       = admin_dir();
+$csrf      = admin_csrf();
+$tenantId  = admin_tenant_id();
+$userId    = admin_user_id();
+$apiBase   = '/api';
+
+// Resource-based permissions
+$canManage     = can('tenants.manage') || can('tenants.create');
+$canViewAll    = can_view_all('tenants')    || is_super_admin();
+$canViewOwn    = can_view_own('tenants');
+$canViewTenant = can_view_tenant('tenants');
+$canCreate     = can_create('tenants')     || is_super_admin() || $canManage;
+$canEditAll    = can_edit_all('tenants')   || is_super_admin();
+$canEditOwn    = can_edit_own('tenants');
+$canDeleteAll  = can_delete_all('tenants') || is_super_admin();
+$canDeleteOwn  = can_delete_own('tenants');
+
+$canView   = $canViewAll || $canViewOwn || $canViewTenant;
+$canEdit   = $canEditAll || $canEditOwn  || $canManage;
+$canDelete = $canDeleteAll || $canDeleteOwn || $canManage;
+
+if (!$canView && !is_super_admin()) {
+    if ($isFragment) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Access denied']);
+        exit;
+    }
+    http_response_code(403);
+    die('Access denied: You do not have permission to view tenants');
+}
+
+// ════════════════════════════════════════════════════════════
+// TRANSLATION HELPER
+// ════════════════════════════════════════════════════════════
+if (!function_exists('__t')) {
+    function __t(string $key, string $fallback = ''): string
+    {
+        if (function_exists('i18n_get')) {
+            $v = i18n_get($key);
+            return $v ?? ($fallback ?: $key);
+        }
+        return $fallback ?: $key;
+    }
+}
+
+?>
+<?php if ($isFragment): ?>
+<link rel="stylesheet" href="/admin/assets/css/pages/tenant.css?v=<?= time() ?>">
+<?php endif; ?>
+
+<meta data-page="tenants"
+      data-i18n-files="/languages/Tenants/<?= rawurlencode($lang) ?>.json">
+
+<div class="page-container" id="tenantsPageContainer" dir="<?= htmlspecialchars($dir) ?>">
+
     <!-- Page Header -->
     <div class="page-header">
         <div class="page-header-content">
-            <h1 class="page-title">
+            <h1 class="page-title" data-i18n="page.title">
                 <i class="fas fa-building"></i>
-                Tenants Management
+                <?= __t('page.title', 'Tenants') ?>
             </h1>
-            <p class="page-subtitle">Manage multi-tenant organizations and their configurations</p>
+            <p class="page-subtitle" data-i18n="page.subtitle">
+                <?= __t('page.subtitle', 'Manage multi-tenant organisations') ?>
+            </p>
         </div>
         <div class="page-header-actions">
             <?php if ($canCreate): ?>
             <button id="btnAddTenant" class="btn btn-primary">
                 <i class="fas fa-plus"></i>
-                Add Tenant
+                <span data-i18n="page.add_new"><?= __t('page.add_new', 'Add Tenant') ?></span>
             </button>
             <?php endif; ?>
+            <button id="btnRefresh" class="btn btn-outline btn-sm">
+                <i class="fas fa-sync-alt"></i>
+                <span data-i18n="page.refresh"><?= __t('page.refresh', 'Refresh') ?></span>
+            </button>
         </div>
     </div>
+
+    <!-- Form Card -->
+    <div id="tenantFormContainer" class="card form-card" style="display:none">
+        <div class="card-header">
+            <h3 class="card-title" id="formTitle">
+                <i class="fas fa-building"></i>
+                <span data-i18n="form.add_title"><?= __t('form.add_title', 'Add Tenant') ?></span>
+            </h3>
+            <button type="button" class="btn btn-sm btn-outline" id="btnCloseForm" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="card-body">
+            <form id="tenantForm" novalidate>
+                <input type="hidden" id="formId"      name="id">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+
+                <!-- Tabs Navigation -->
+                <div class="form-tabs" id="tenantFormTabs">
+                    <button type="button" class="tab-btn active" data-tab="tab-basic">
+                        <i class="fas fa-info-circle"></i>
+                        <span data-i18n="tabs.basic"><?= __t('tabs.basic', 'Basic Info') ?></span>
+                    </button>
+                    <button type="button" class="tab-btn" data-tab="tab-users" id="tabBtnUsers" disabled>
+                        <i class="fas fa-users"></i>
+                        <span data-i18n="tabs.users"><?= __t('tabs.users', 'Users') ?></span>
+                    </button>
+                    <button type="button" class="tab-btn" data-tab="tab-addresses" id="tabBtnAddresses" disabled>
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span data-i18n="tabs.addresses"><?= __t('tabs.addresses', 'Addresses') ?></span>
+                    </button>
+                </div>
+
+                <!-- Tab: Basic Info -->
+                <div class="tab-content active" id="tab-basic">
+                    <div class="form-grid">
+
+                        <div class="form-group">
+                            <label for="formName" class="required">
+                                <i class="fas fa-signature"></i>
+                                <span data-i18n="form.fields.name.label">
+                                    <?= __t('form.fields.name.label', 'Tenant Name') ?>
+                                </span>
+                            </label>
+                            <input type="text" id="formName" name="name" class="form-control"
+                                   data-i18n-placeholder="form.fields.name.placeholder"
+                                   placeholder="<?= __t('form.fields.name.placeholder', 'Enter tenant name') ?>"
+                                   required minlength="3" maxlength="150">
+                            <small class="form-text" data-i18n="form.fields.name.hint">
+                                <?= __t('form.fields.name.hint', 'Minimum 3 characters, maximum 150') ?>
+                            </small>
+                            <div class="invalid-feedback" data-i18n="form.validation.name_required">
+                                <?= __t('form.validation.name_required', 'Please enter a valid tenant name') ?>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="formDomain">
+                                <i class="fas fa-globe"></i>
+                                <span data-i18n="form.fields.domain.label">
+                                    <?= __t('form.fields.domain.label', 'Domain') ?>
+                                </span>
+                            </label>
+                            <input type="text" id="formDomain" name="domain" class="form-control"
+                                   data-i18n-placeholder="form.fields.domain.placeholder"
+                                   placeholder="<?= __t('form.fields.domain.placeholder', 'e.g. acme-corp.example.com') ?>"
+                                   pattern="^[a-z0-9][a-z0-9\.\-]*[a-z0-9]$" maxlength="255">
+                            <small class="form-text" data-i18n="form.fields.domain.hint">
+                                <?= __t('form.fields.domain.hint', 'Lowercase letters, numbers, dots and hyphens only') ?>
+                            </small>
+                            <div class="invalid-feedback" data-i18n="form.validation.domain_invalid">
+                                <?= __t('form.validation.domain_invalid', 'Please enter a valid domain') ?>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="formOwnerUserId" class="required">
+                                <i class="fas fa-user-shield"></i>
+                                <span data-i18n="form.fields.owner_user_id.label">
+                                    <?= __t('form.fields.owner_user_id.label', 'Owner User ID') ?>
+                                </span>
+                            </label>
+                            <input type="number" id="formOwnerUserId" name="owner_user_id" class="form-control"
+                                   data-i18n-placeholder="form.fields.owner_user_id.placeholder"
+                                   placeholder="<?= __t('form.fields.owner_user_id.placeholder', 'Enter owner user ID') ?>"
+                                   required min="1">
+                            <small class="form-text" data-i18n="form.fields.owner_user_id.hint">
+                                <?= __t('form.fields.owner_user_id.hint', 'The user who owns this tenant') ?>
+                            </small>
+                            <div class="invalid-feedback" data-i18n="form.validation.owner_required">
+                                <?= __t('form.validation.owner_required', 'Please enter a valid user ID') ?>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="formStatus" class="required">
+                                <i class="fas fa-toggle-on"></i>
+                                <span data-i18n="form.fields.status.label">
+                                    <?= __t('form.fields.status.label', 'Status') ?>
+                                </span>
+                            </label>
+                            <select id="formStatus" name="status" class="form-control" required>
+                                <option value="active" data-i18n="form.fields.status.active">
+                                    <?= __t('form.fields.status.active', 'Active') ?>
+                                </option>
+                                <option value="suspended" data-i18n="form.fields.status.suspended">
+                                    <?= __t('form.fields.status.suspended', 'Suspended') ?>
+                                </option>
+                            </select>
+                        </div>
+
+                    </div><!-- /.form-grid -->
+
+                    <div class="form-actions">
+                        <button type="submit" id="btnSubmitForm" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            <span data-i18n="form.buttons.save">
+                                <?= __t('form.buttons.save', 'Save Tenant') ?>
+                            </span>
+                        </button>
+                        <button type="button" id="btnCancelForm" class="btn btn-outline">
+                            <i class="fas fa-times"></i>
+                            <span data-i18n="form.buttons.cancel">
+                                <?= __t('form.buttons.cancel', 'Cancel') ?>
+                            </span>
+                        </button>
+                    </div>
+                </div><!-- /#tab-basic -->
+
+                <!-- Tab: Users -->
+                <div class="tab-content" id="tab-users" style="display:none">
+                    <div id="tenantUsersContainer" class="sub-fragment-container">
+                        <div class="sub-fragment-placeholder">
+                            <i class="fas fa-users fa-2x"></i>
+                            <p data-i18n="tabs.users"><?= __t('tabs.users', 'Users') ?></p>
+                            <small><?= __t('page.save_first', 'Save the tenant first to manage users') ?></small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Addresses -->
+                <div class="tab-content" id="tab-addresses" style="display:none">
+                    <div id="tenantAddressesContainer" class="sub-fragment-container">
+                        <div class="sub-fragment-placeholder">
+                            <i class="fas fa-map-marker-alt fa-2x"></i>
+                            <p data-i18n="tabs.addresses"><?= __t('tabs.addresses', 'Addresses') ?></p>
+                            <small><?= __t('page.save_first', 'Save the tenant first to manage addresses') ?></small>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div><!-- /#tenantFormContainer -->
 
     <!-- Filters Card -->
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">
                 <i class="fas fa-filter"></i>
-                Filters
+                <span data-i18n="filters.search"><?= __t('filters.search', 'Search') ?></span>
             </h3>
         </div>
         <div class="card-body">
             <div class="filters-grid">
+
                 <div class="form-group">
                     <label for="searchInput">
                         <i class="fas fa-search"></i>
-                        Search
+                        <span data-i18n="filters.search"><?= __t('filters.search', 'Search') ?></span>
                     </label>
-                    <input type="text" 
-                           id="searchInput" 
-                           class="form-control" 
-                           placeholder="Search by name or domain...">
-                </div>
-                
-                <div class="form-group">
-                    <label for="statusFilter">
-                        <i class="fas fa-toggle-on"></i>
-                        Status
-                    </label>
-                    <select id="statusFilter" class="form-control">
-                        <option value="">All Statuses</option>
-                        <option value="active">Active</option>
-                        <option value="suspended">Suspended</option>
-                    </select>
+                    <input type="text" id="searchInput" class="form-control"
+                           data-i18n-placeholder="filters.search_placeholder"
+                           placeholder="<?= __t('filters.search_placeholder', 'Search by name or domain') ?>">
                 </div>
 
                 <div class="form-group">
+                    <label for="statusFilter">
+                        <i class="fas fa-toggle-on"></i>
+                        <span data-i18n="filters.status"><?= __t('filters.status', 'Status') ?></span>
+                    </label>
+                    <select id="statusFilter" class="form-control">
+                        <option value=""         data-i18n="filters.all_statuses"><?= __t('filters.all_statuses', 'All Statuses') ?></option>
+                        <option value="active"   data-i18n="table.status.active"><?= __t('table.status.active', 'Active') ?></option>
+                        <option value="suspended" data-i18n="table.status.suspended"><?= __t('table.status.suspended', 'Suspended') ?></option>
+                    </select>
+                </div>
+
+                <?php if (is_super_admin()): ?>
+                <div class="form-group">
+                    <label for="ownerFilter">
+                        <i class="fas fa-user"></i>
+                        <span data-i18n="filters.owner"><?= __t('filters.owner', 'Owner User ID') ?></span>
+                    </label>
+                    <input type="number" id="ownerFilter" class="form-control" min="1"
+                           data-i18n-placeholder="filters.owner_placeholder"
+                           placeholder="<?= __t('filters.owner_placeholder', 'Filter by owner ID') ?>">
+                </div>
+                <?php endif; ?>
+
+                <div class="form-group filter-actions-group">
                     <label>&nbsp;</label>
                     <div class="filter-actions">
                         <button id="btnApplyFilters" class="btn btn-secondary">
                             <i class="fas fa-check"></i>
-                            Apply
+                            <span data-i18n="filters.apply"><?= __t('filters.apply', 'Apply') ?></span>
                         </button>
                         <button id="btnResetFilters" class="btn btn-outline">
                             <i class="fas fa-undo"></i>
-                            Reset
+                            <span data-i18n="filters.reset"><?= __t('filters.reset', 'Reset') ?></span>
                         </button>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
 
     <!-- Table Card -->
     <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">
-                <i class="fas fa-table"></i>
-                Tenants List
-            </h3>
-            <div class="card-actions">
-                <button id="btnRefresh" class="btn btn-sm btn-outline">
-                    <i class="fas fa-sync-alt"></i>
-                    Refresh
-                </button>
-            </div>
-        </div>
         <div class="card-body">
-            
-            <!-- Loading State -->
+
             <div id="tableLoading" class="loading-state">
                 <div class="spinner"></div>
-                <p>Loading tenants...</p>
+                <p data-i18n="page.loading"><?= __t('page.loading', 'Loading tenants') ?></p>
             </div>
 
-            <!-- Table Container -->
             <div id="tableContainer" style="display:none">
                 <div class="table-responsive">
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <th>Domain</th>
-                                <th>Owner</th>
-                                <th>Status</th>
-                                <th>Created</th>
-                                <th>Actions</th>
+                                <th data-i18n="table.headers.id"><?= __t('table.headers.id', 'ID') ?></th>
+                                <th data-i18n="table.headers.name"><?= __t('table.headers.name', 'Name') ?></th>
+                                <th data-i18n="table.headers.domain"><?= __t('table.headers.domain', 'Domain') ?></th>
+                                <th data-i18n="table.headers.owner"><?= __t('table.headers.owner', 'Owner') ?></th>
+                                <th data-i18n="table.headers.status"><?= __t('table.headers.status', 'Status') ?></th>
+                                <th data-i18n="table.headers.created"><?= __t('table.headers.created', 'Created') ?></th>
+                                <th data-i18n="table.headers.actions"><?= __t('table.headers.actions', 'Actions') ?></th>
                             </tr>
                         </thead>
                         <tbody id="tableBody"></tbody>
                     </table>
                 </div>
-
-                <!-- Pagination -->
                 <div class="table-footer">
                     <div id="paginationInfo" class="pagination-info"></div>
-                    <div id="pagination" class="pagination"></div>
+                    <div id="pagination"     class="pagination"></div>
                 </div>
             </div>
 
-            <!-- Empty State -->
             <div id="emptyState" class="empty-state" style="display:none">
-                <div class="empty-icon">
-                    <i class="fas fa-building"></i>
-                </div>
-                <h3>No Tenants Found</h3>
-                <p>No tenants match your current filters</p>
+                <div class="empty-icon"><i class="fas fa-building"></i></div>
+                <h3 data-i18n="table.empty.title"><?= __t('table.empty.title', 'No Tenants Found') ?></h3>
+                <p   data-i18n="table.empty.message"><?= __t('table.empty.message', 'No tenants match your current filters') ?></p>
                 <?php if ($canCreate): ?>
                 <button class="btn btn-primary" onclick="Tenants.add()">
                     <i class="fas fa-plus"></i>
-                    Create First Tenant
+                    <span data-i18n="table.empty.add_first"><?= __t('table.empty.add_first', 'Create First Tenant') ?></span>
                 </button>
                 <?php endif; ?>
             </div>
 
-            <!-- Error State -->
             <div id="errorState" class="error-state" style="display:none">
-                <div class="error-icon">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <h3>Error Loading Tenants</h3>
+                <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <h3 data-i18n="messages.error.load_failed"><?= __t('messages.error.load_failed', 'Failed to load tenants') ?></h3>
                 <p id="errorMessage"></p>
                 <button id="btnRetry" class="btn btn-secondary">
                     <i class="fas fa-redo"></i>
-                    Retry
+                    <span data-i18n="page.retry"><?= __t('page.retry', 'Retry') ?></span>
                 </button>
             </div>
 
         </div>
     </div>
 
-    <!-- Form Card (Hidden by default) -->
-    <div id="tenantFormContainer" class="card form-card" style="display:none">
-        <div class="card-header">
-            <h3 class="card-title">
-                <i class="fas fa-building"></i>
-                <span id="formTitle">Add Tenant</span>
-            </h3>
-            <button id="btnCloseForm" class="btn-close" type="button">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="card-body">
-            <form id="tenantForm" novalidate>
-                <input type="hidden" id="formId" name="id">
-                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+</div><!-- /#tenantsPageContainer -->
 
-                <div class="form-grid">
-                    
-                    <!-- Name -->
-                    <div class="form-group">
-                        <label for="formName" class="required">
-                            <i class="fas fa-signature"></i>
-                            Tenant Name
-                        </label>
-                        <input type="text" 
-                               id="formName" 
-                               name="name" 
-                               class="form-control" 
-                               placeholder="Enter tenant name..."
-                               required
-                               minlength="3"
-                               maxlength="150">
-                        <small class="form-text">Minimum 3 characters, maximum 150</small>
-                        <div class="invalid-feedback">Please enter a valid tenant name</div>
-                    </div>
+<!-- Client-side globals -->
+<script type="text/javascript">
+window.APP_CONFIG = window.APP_CONFIG || {};
+window.APP_CONFIG.API_BASE       = window.APP_CONFIG.API_BASE       || '<?= $apiBase ?>';
+window.APP_CONFIG.TENANT_ID      = window.APP_CONFIG.TENANT_ID      || <?= $tenantId ?>;
+window.APP_CONFIG.CSRF_TOKEN     = window.APP_CONFIG.CSRF_TOKEN     || '<?= addslashes($csrf) ?>';
+window.APP_CONFIG.USER_ID        = window.APP_CONFIG.USER_ID        || <?= $userId ?>;
+window.APP_CONFIG.IS_SUPER_ADMIN = <?= is_super_admin() ? 'true' : 'false' ?>;
 
-                    <!-- Domain -->
-                    <div class="form-group">
-                        <label for="formDomain">
-                            <i class="fas fa-globe"></i>
-                            Domain
-                        </label>
-                        <input type="text" 
-                               id="formDomain" 
-                               name="domain" 
-                               class="form-control" 
-                               placeholder="e.g., acme-corp"
-                               pattern="^[a-z0-9.-]+$"
-                               maxlength="255">
-                        <small class="form-text">Lowercase letters, numbers, dots, and hyphens only</small>
-                        <div class="invalid-feedback">Please enter a valid domain</div>
-                    </div>
+window.USER_LANGUAGE  = window.USER_LANGUAGE  || '<?= addslashes($lang) ?>';
+window.USER_DIRECTION = window.USER_DIRECTION || '<?= addslashes($dir) ?>';
+window.CSRF_TOKEN     = window.CSRF_TOKEN     || '<?= addslashes($csrf) ?>';
 
-                    <!-- Owner User ID -->
-                    <div class="form-group">
-                        <label for="formOwnerUserId" class="required">
-                            <i class="fas fa-user-shield"></i>
-                            Owner User ID
-                        </label>
-                        <input type="number" 
-                               id="formOwnerUserId" 
-                               name="owner_user_id" 
-                               class="form-control" 
-                               placeholder="Enter owner user ID..."
-                               required
-                               min="1">
-                        <small class="form-text">The user who owns this tenant</small>
-                        <div class="invalid-feedback">Please enter a valid user ID</div>
-                    </div>
+if (!window.ADMIN_UI) {
+    window.ADMIN_UI = <?= json_encode($GLOBALS['ADMIN_UI'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+}
 
-                    <!-- Status -->
-                    <div class="form-group">
-                        <label for="formStatus" class="required">
-                            <i class="fas fa-toggle-on"></i>
-                            Status
-                        </label>
-                        <select id="formStatus" name="status" class="form-control" required>
-                            <option value="active" selected>Active</option>
-                            <option value="suspended">Suspended</option>
-                        </select>
-                        <div class="invalid-feedback">Please select a status</div>
-                    </div>
+window.PAGE_PERMISSIONS = <?= json_encode([
+    'canCreate'     => $canCreate,
+    'canEdit'       => $canEdit,
+    'canDelete'     => $canDelete,
+    'canView'       => $canView,
+    'canViewAll'    => $canViewAll,
+    'canViewOwn'    => $canViewOwn,
+    'canViewTenant' => $canViewTenant,
+    'canEditAll'    => $canEditAll,
+    'canEditOwn'    => $canEditOwn,
+    'canDeleteAll'  => $canDeleteAll,
+    'canDeleteOwn'  => $canDeleteOwn,
+    'isSuperAdmin'  => is_super_admin()
+], JSON_UNESCAPED_UNICODE) ?>;
 
-                </div>
+window.TENANTS_CONFIG = {
+    apiUrl:         '<?= $apiBase ?>/tenants',
+    tenantUsersUrl: '/admin/fragments/tenant_users.php',
+    addressesUrl:   '/admin/fragments/addresses.php',
+    csrfToken:      '<?= addslashes($csrf) ?>',
+    lang:           '<?= addslashes($lang) ?>',
+    itemsPerPage:   25
+};
+</script>
 
-                <!-- Form Actions -->
-                <div class="form-actions">
-                    <button type="submit" id="btnSubmitForm" class="btn btn-primary">
-                        <i class="fas fa-save"></i>
-                        Save Tenant
-                    </button>
-                    <button type="button" id="btnCancelForm" class="btn btn-outline">
-                        <i class="fas fa-times"></i>
-                        Cancel
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-</div>
-
-<!-- Page Permissions Data -->
-<script type="application/json" id="pagePermissions">
+<script id="pagePermissions" type="application/json">
 <?= json_encode([
-    'canView' => $canView,
-    'canCreate' => $canCreate,
-    'canEdit' => $canEdit,
-    'canDelete' => $canDelete,
-    'isSuperAdmin' => $isSuperAdmin
-], JSON_PRETTY_PRINT) ?>
+    'canCreate'     => $canCreate,
+    'canEdit'       => $canEdit,
+    'canDelete'     => $canDelete,
+    'canView'       => $canView,
+    'canViewAll'    => $canViewAll,
+    'canViewOwn'    => $canViewOwn,
+    'canViewTenant' => $canViewTenant,
+    'canEditAll'    => $canEditAll,
+    'canEditOwn'    => $canEditOwn,
+    'canDeleteAll'  => $canDeleteAll,
+    'canDeleteOwn'  => $canDeleteOwn,
+    'isSuperAdmin'  => is_super_admin()
+], JSON_UNESCAPED_UNICODE) ?>
 </script>
 
-<!-- Load JS -->
-<link rel="stylesheet" href="/admin/assets/css/tenant.css?v=<?= time() ?>">
-<script src="/admin/assets/js/pages/tenant.js?v=<?= time() ?>"></script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof Tenants !== 'undefined') {
-        Tenants.init();
+<!-- Translation loader -->
+<script type="text/javascript">
+(function () {
+    async function applyTranslations() {
+        try {
+            const lang = window.USER_LANGUAGE || 'en';
+            const url  = `/languages/Tenants/${encodeURIComponent(lang)}.json`;
+            console.log('[Tenants] Loading translations from', url);
+            const res  = await fetch(url, { credentials: 'same-origin' });
+            if (!res.ok) throw new Error('Translation fetch failed: ' + res.status);
+            const translations = await res.json();
+            window.TENANTS_TRANSLATIONS = translations;
+            const container = document.getElementById('tenantsPageContainer');
+            if (!container) return;
+            container.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                const txt = key.split('.').reduce(
+                    (o, k) => (o && o[k] !== undefined) ? o[k] : null, translations
+                );
+                if (txt !== null && txt !== undefined) {
+                    if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
+                        el.placeholder = txt;
+                    } else {
+                        el.textContent = txt;
+                    }
+                }
+            });
+            container.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                const txt = key.split('.').reduce(
+                    (o, k) => (o && o[k] !== undefined) ? o[k] : null, translations
+                );
+                if (txt !== null && txt !== undefined) el.placeholder = txt;
+            });
+            console.log('[Tenants] Translations applied');
+        } catch (err) {
+            console.warn('[Tenants] Translation load/apply failed:', err);
+        }
     }
-});
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', applyTranslations);
+    } else {
+        setTimeout(applyTranslations, 50);
+    }
+})();
 </script>
+
+<?php if ($isFragment): ?>
+<script src="/admin/assets/js/admin_framework.js?v=<?= time() ?>"></script>
+<script src="/admin/assets/js/pages/tenant.js?v=<?= time() ?>"></script>
+<script>
+(function () {
+    console.log('[Tenants] Embedded mode - waiting for framework & module...');
+    let attempts = 0, maxAttempts = 50;
+    const interval = setInterval(function () {
+        attempts++;
+        if (window.AdminFramework && window.Tenants && typeof window.Tenants.init === 'function') {
+            clearInterval(interval);
+            console.log('[Tenants] Module ready - initializing...');
+            try {
+                const p = window.Tenants.init();
+                if (p && typeof p.then === 'function') {
+                    p.then(() => console.log('[Tenants] Initialized')).catch(e => console.error('[Tenants] Init failed', e));
+                } else {
+                    console.log('[Tenants] Initialized (sync)');
+                }
+            } catch (e) {
+                console.error('[Tenants] Init threw', e);
+            }
+        } else if (attempts > maxAttempts) {
+            clearInterval(interval);
+            console.error('[Tenants] Timeout. Framework:', !!window.AdminFramework, 'Module:', !!window.Tenants);
+        } else if (attempts % 10 === 0) {
+            console.log('[Tenants] waiting...', attempts, '/', maxAttempts);
+        }
+    }, 100);
+})();
+</script>
+<?php else: ?>
+<script src="/admin/assets/js/pages/tenant.js?v=<?= time() ?>"></script>
+<script>
+(function () {
+    function tryInit() {
+        if (window.Tenants && typeof window.Tenants.init === 'function') {
+            const p = window.Tenants.init();
+            if (p && typeof p.then === 'function') {
+                p.catch(e => console.error('[Tenants] Init failed', e));
+            }
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', tryInit);
+    } else {
+        tryInit();
+    }
+})();
+</script>
+<?php endif; ?>
+
+<?php
+if (!$isFragment) {
+    require_once __DIR__ . '/../includes/footer.php';
+}

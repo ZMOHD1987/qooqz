@@ -35,6 +35,22 @@ final class TenantsController
     }
 
     /**
+     * Get tenant by domain
+     */
+    public function getByDomain(string $domain): array
+    {
+        return $this->service->getByDomain($domain);
+    }
+
+    /**
+     * Get all active tenants
+     */
+    public function getActive(): array
+    {
+        return $this->service->getActive();
+    }
+
+    /**
      * Create new tenant
      */
     public function create(array $data): array

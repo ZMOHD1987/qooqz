@@ -1,0 +1,111 @@
+{
+  "direction": "rtl",
+  "page": {
+    "title": "المستأجرون",
+    "subtitle": "إدارة المؤسسات متعددة المستأجرين وإعداداتها",
+    "add_new": "إضافة مستأجر",
+    "refresh": "تحديث",
+    "loading": "جاري التحميل…",
+    "retry": "إعادة المحاولة"
+  },
+  "tabs": {
+    "basic": "المعلومات الأساسية",
+    "users": "المستخدمون",
+    "addresses": "العناوين"
+  },
+  "filters": {
+    "search": "بحث",
+    "search_placeholder": "البحث بالاسم أو النطاق…",
+    "status": "الحالة",
+    "all_statuses": "جميع الحالات",
+    "owner": "معرّف المالك",
+    "owner_placeholder": "تصفية بمعرّف المالك",
+    "apply": "تطبيق",
+    "reset": "إعادة تعيين"
+  },
+  "table": {
+    "headers": {
+      "id": "المعرّف",
+      "name": "الاسم",
+      "domain": "النطاق",
+      "owner": "المالك",
+      "status": "الحالة",
+      "created": "تاريخ الإنشاء",
+      "actions": "الإجراءات"
+    },
+    "actions": {
+      "edit": "تعديل",
+      "delete": "حذف",
+      "view_users": "المستخدمون",
+      "view_addresses": "العناوين",
+      "activate": "تفعيل",
+      "suspend": "تعليق",
+      "confirm_delete": "هل أنت متأكد من حذف هذا المستأجر؟ لا يمكن التراجع عن هذا الإجراء.",
+      "confirm_suspend": "هل تريد تعليق هذا المستأجر؟"
+    },
+    "status": {
+      "active": "نشط",
+      "suspended": "معلّق"
+    },
+    "empty": {
+      "title": "لا يوجد مستأجرون",
+      "message": "لا توجد نتائج تطابق الفلاتر الحالية",
+      "add_first": "إنشاء أول مستأجر"
+    },
+    "no_domain": "بدون نطاق",
+    "owner_label": "المعرّف: "
+  },
+  "form": {
+    "add_title": "إضافة مستأجر",
+    "edit_title": "تعديل المستأجر",
+    "fields": {
+      "name": {
+        "label": "اسم المستأجر",
+        "placeholder": "أدخل اسم المستأجر…",
+        "hint": "3 أحرف على الأقل، 150 حرفاً كحد أقصى"
+      },
+      "domain": {
+        "label": "النطاق",
+        "placeholder": "مثال: acme-corp.example.com",
+        "hint": "حروف صغيرة وأرقام ونقاط وشرطات فقط"
+      },
+      "owner_user_id": {
+        "label": "معرّف مالك المستأجر",
+        "placeholder": "أدخل معرّف المالك…",
+        "hint": "المستخدم المالك لهذا المستأجر"
+      },
+      "status": {
+        "label": "الحالة",
+        "active": "نشط",
+        "suspended": "معلّق"
+      }
+    },
+    "validation": {
+      "name_required": "يرجى إدخال اسم مستأجر صحيح",
+      "domain_invalid": "يرجى إدخال نطاق صحيح",
+      "owner_required": "يرجى إدخال معرّف مستخدم صحيح"
+    },
+    "buttons": {
+      "save": "حفظ المستأجر",
+      "saving": "جاري الحفظ…",
+      "update": "تحديث المستأجر",
+      "updating": "جاري التحديث…",
+      "cancel": "إلغاء"
+    }
+  },
+  "messages": {
+    "success": {
+      "created": "تم إنشاء المستأجر بنجاح",
+      "updated": "تم تحديث المستأجر بنجاح",
+      "deleted": "تم حذف المستأجر بنجاح",
+      "activated": "تم تفعيل المستأجر",
+      "suspended": "تم تعليق المستأجر"
+    },
+    "error": {
+      "load_failed": "فشل تحميل المستأجرين",
+      "save_failed": "فشل حفظ المستأجر",
+      "delete_failed": "فشل حذف المستأجر",
+      "not_found": "المستأجر غير موجود"
+    }
+  }
+}
