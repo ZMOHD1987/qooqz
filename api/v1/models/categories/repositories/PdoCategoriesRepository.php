@@ -22,7 +22,7 @@ final class PdoCategoriesRepository implements CategoriesRepositoryInterface
      * GET ALL CATEGORIES
      * ============================================================ */
     public function all(
-        int $tenantId,
+        ?int $tenantId,
         ?int $parentId = null,
         bool $featuredOnly = false,
         string $lang = 'en',
@@ -32,7 +32,11 @@ final class PdoCategoriesRepository implements CategoriesRepositoryInterface
         int $offset = 0,
         bool $skipTcFilter = false
     ): array {
-        $hasAssignments = $skipTcFilter ? false : $this->hasTenantCategoryAssignments($tenantId);
+        // Super-admin bypass: when tenantId is null, skip tenant filter and tc-join
+        $isSuperAdmin = ($tenantId === null);
+        $hasAssignments = (!$isSuperAdmin && !$skipTcFilter)
+            ? $this->hasTenantCategoryAssignments($tenantId)
+            : false;
 
         $sql = "
             SELECT
@@ -69,12 +73,15 @@ final class PdoCategoriesRepository implements CategoriesRepositoryInterface
             ";
         }
 
-        $sql .= " WHERE c.tenant_id = :tenantId";
+        $params = [':lang' => $lang];
 
-        $params = [
-            ':tenantId' => $tenantId,
-            ':lang'     => $lang
-        ];
+        // Tenant filter — skipped entirely for super admin (tenantId null)
+        if (!$isSuperAdmin) {
+            $sql .= " WHERE c.tenant_id = :tenantId";
+            $params[':tenantId'] = $tenantId;
+        } else {
+            $sql .= " WHERE 1=1";
+        }
 
         if ($hasAssignments) {
             $params[':tenantId_tc'] = $tenantId;
@@ -133,23 +140,31 @@ final class PdoCategoriesRepository implements CategoriesRepositoryInterface
     /* ============================================================
      * GET CATEGORY BY ID
      * ============================================================ */
-    public function findById(int $tenantId, int $id): ?array
+    public function findById(?int $tenantId, int $id): ?array
     {
-        $stmt = $this->pdo->prepare("
-            SELECT *
-            FROM categories
-            WHERE tenant_id = :tenantId AND id = :id
-            LIMIT 1
-        ");
-        $stmt->execute([
-            ':tenantId' => $tenantId,
-            ':id'       => $id
-        ]);
+        if ($tenantId === null) {
+            // Super-admin bypass: find by ID alone, no tenant scope
+            $stmt = $this->pdo->prepare("
+                SELECT * FROM categories WHERE id = :id LIMIT 1
+            ");
+            $stmt->execute([':id' => $id]);
+        } else {
+            $stmt = $this->pdo->prepare("
+                SELECT *
+                FROM categories
+                WHERE tenant_id = :tenantId AND id = :id
+                LIMIT 1
+            ");
+            $stmt->execute([
+                ':tenantId' => $tenantId,
+                ':id'       => $id
+            ]);
+        }
 
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    public function findByIdWithTranslations(int $tenantId, int $id): ?array
+    public function findByIdWithTranslations(?int $tenantId, int $id): ?array
     {
         $row = $this->findById($tenantId, $id);
         if (!$row) return null;
@@ -163,8 +178,16 @@ final class PdoCategoriesRepository implements CategoriesRepositoryInterface
     /* ============================================================
      * CREATE / UPDATE CATEGORY
      * ============================================================ */
-    public function save(int $tenantId, array $data, ?int $userId = null): int
+    public function save(?int $tenantId, array $data, ?int $userId = null): int
     {
+        // When super admin calls with null tenantId, derive tenant from data
+        if ($tenantId === null) {
+            if (empty($data['tenant_id'])) {
+                throw new \InvalidArgumentException('tenant_id is required in data when super admin saves a category');
+            }
+            $tenantId = (int)$data['tenant_id'];
+        }
+
         $isUpdate = !empty($data['id']);
         $oldData = $isUpdate ? $this->findByIdWithTranslations($tenantId, (int)$data['id']) : null;
 
@@ -268,7 +291,7 @@ final class PdoCategoriesRepository implements CategoriesRepositoryInterface
     /* ============================================================
      * DELETE CATEGORY
      * ============================================================ */
-    public function delete(int $tenantId, int $categoryId, ?int $userId = null): bool
+    public function delete(?int $tenantId, int $categoryId, ?int $userId = null): bool
     {
         $this->pdo->beginTransaction();
         try {
@@ -293,18 +316,27 @@ final class PdoCategoriesRepository implements CategoriesRepositoryInterface
                   )
             ")->execute([':categoryId' => $categoryId]);
 
-            // حذف الفئة
-            $this->pdo->prepare("
-                DELETE FROM categories
-                WHERE tenant_id = :tenantId AND id = :categoryId
-            ")->execute([
-                ':tenantId'   => $tenantId,
-                ':categoryId' => $categoryId
-            ]);
+            // حذف الفئة — super admin (tenantId null) can delete across all tenants
+            if ($tenantId === null) {
+                $this->pdo->prepare("
+                    DELETE FROM categories WHERE id = :categoryId
+                ")->execute([':categoryId' => $categoryId]);
+            } else {
+                $this->pdo->prepare("
+                    DELETE FROM categories
+                    WHERE tenant_id = :tenantId AND id = :categoryId
+                ")->execute([
+                    ':tenantId'   => $tenantId,
+                    ':categoryId' => $categoryId
+                ]);
+            }
+
+            // استخدم tenant_id من الكيان القديم للتسجيل إذا كان null
+            $logTenantId = $tenantId ?? (int)($oldData['tenant_id'] ?? 0);
 
             // تسجيل اللوج
             if ($userId) {
-                $this->logAction($tenantId, $userId, 'delete', $categoryId, $oldData, null);
+                $this->logAction($logTenantId, $userId, 'delete', $categoryId, $oldData, null);
             }
 
             $this->pdo->commit();
@@ -406,23 +438,38 @@ final class PdoCategoriesRepository implements CategoriesRepositoryInterface
     /* ============================================================
      * IMAGES - public للاستخدام من CategoriesService
      * ============================================================ */
-    public function getMainImage(int $tenantId, int $categoryId): ?array
+    public function getMainImage(?int $tenantId, int $categoryId): ?array
     {
-        $stmt = $this->pdo->prepare("
-            SELECT id, url, thumb_url
-            FROM images
-            WHERE tenant_id = :tenantId
-              AND owner_id = :owner_id
-              AND is_main = 1
-              AND image_type_id = (
-                  SELECT id FROM image_types WHERE name = 'category' LIMIT 1
-              )
-            LIMIT 1
-        ");
-        $stmt->execute([
-            ':tenantId' => $tenantId,
-            ':owner_id' => $categoryId
-        ]);
+        if ($tenantId === null) {
+            // Super-admin: find image without tenant scope
+            $stmt = $this->pdo->prepare("
+                SELECT id, url, thumb_url
+                FROM images
+                WHERE owner_id = :owner_id
+                  AND is_main = 1
+                  AND image_type_id = (
+                      SELECT id FROM image_types WHERE name = 'category' LIMIT 1
+                  )
+                LIMIT 1
+            ");
+            $stmt->execute([':owner_id' => $categoryId]);
+        } else {
+            $stmt = $this->pdo->prepare("
+                SELECT id, url, thumb_url
+                FROM images
+                WHERE tenant_id = :tenantId
+                  AND owner_id = :owner_id
+                  AND is_main = 1
+                  AND image_type_id = (
+                      SELECT id FROM image_types WHERE name = 'category' LIMIT 1
+                  )
+                LIMIT 1
+            ");
+            $stmt->execute([
+                ':tenantId' => $tenantId,
+                ':owner_id' => $categoryId
+            ]);
+        }
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
@@ -510,7 +557,7 @@ final class PdoCategoriesRepository implements CategoriesRepositoryInterface
      * ADDITIONAL METHODS
      * ============================================================ */
     
-    public function getActiveCategories(int $tenantId, string $lang = 'en'): array
+    public function getActiveCategories(?int $tenantId, string $lang = 'en'): array
     {
         $sql = "
             SELECT
@@ -528,17 +575,25 @@ final class PdoCategoriesRepository implements CategoriesRepositoryInterface
                    SELECT id FROM image_types WHERE name = 'category' LIMIT 1
                )
                AND i.is_main = 1
-            WHERE c.tenant_id = :tenantId AND c.is_active = 1
-            ORDER BY c.sort_order ASC
+            WHERE c.is_active = 1
         ";
-        
+
+        $params = [':lang' => $lang];
+
+        if ($tenantId !== null) {
+            $sql .= " AND c.tenant_id = :tenantId";
+            $params[':tenantId'] = $tenantId;
+        }
+
+        $sql .= " ORDER BY c.sort_order ASC";
+
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':tenantId' => $tenantId, ':lang' => $lang]);
+        $stmt->execute($params);
         
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getFeaturedCategories(int $tenantId, string $lang = 'en'): array
+    public function getFeaturedCategories(?int $tenantId, string $lang = 'en'): array
     {
         $sql = "
             SELECT
@@ -556,34 +611,52 @@ final class PdoCategoriesRepository implements CategoriesRepositoryInterface
                    SELECT id FROM image_types WHERE name = 'category' LIMIT 1
                )
                AND i.is_main = 1
-            WHERE c.tenant_id = :tenantId 
-              AND c.is_active = 1 
+            WHERE c.is_active = 1
               AND c.is_featured = 1
-            ORDER BY c.sort_order ASC
         ";
-        
+
+        $params = [':lang' => $lang];
+
+        if ($tenantId !== null) {
+            $sql .= " AND c.tenant_id = :tenantId";
+            $params[':tenantId'] = $tenantId;
+        }
+
+        $sql .= " ORDER BY c.sort_order ASC";
+
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':tenantId' => $tenantId, ':lang' => $lang]);
+        $stmt->execute($params);
         
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function findIdBySlug(int $tenantId, string $slug): ?int
+    public function findIdBySlug(?int $tenantId, string $slug): ?int
     {
-        $stmt = $this->pdo->prepare("
-            SELECT id FROM categories 
-            WHERE tenant_id = :tenantId AND slug = :slug
-            LIMIT 1
-        ");
-        $stmt->execute([':tenantId' => $tenantId, ':slug' => $slug]);
+        if ($tenantId === null) {
+            $stmt = $this->pdo->prepare("
+                SELECT id FROM categories WHERE slug = :slug LIMIT 1
+            ");
+            $stmt->execute([':slug' => $slug]);
+        } else {
+            $stmt = $this->pdo->prepare("
+                SELECT id FROM categories
+                WHERE tenant_id = :tenantId AND slug = :slug
+                LIMIT 1
+            ");
+            $stmt->execute([':tenantId' => $tenantId, ':slug' => $slug]);
+        }
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
         return $result ? (int)$result['id'] : null;
     }
 
-    public function countAll(int $tenantId, array $filters = [], bool $skipTcFilter = false): int
+    public function countAll(?int $tenantId, array $filters = [], bool $skipTcFilter = false): int
     {
-        $hasAssignments = $skipTcFilter ? false : $this->hasTenantCategoryAssignments($tenantId);
+        // Super-admin bypass: when tenantId is null, skip tenant filter and tc-join
+        $isSuperAdmin = ($tenantId === null);
+        $hasAssignments = (!$isSuperAdmin && !$skipTcFilter)
+            ? $this->hasTenantCategoryAssignments($tenantId)
+            : false;
 
         if ($hasAssignments) {
             $sql = "SELECT COUNT(*) as total
@@ -593,15 +666,14 @@ final class PdoCategoriesRepository implements CategoriesRepositoryInterface
                        AND tc_assign.tenant_id = :tenantId_tc
                        AND tc_assign.is_active = 1
                     WHERE c.tenant_id = :tenantId";
+            $params = [':tenantId' => $tenantId, ':tenantId_tc' => $tenantId];
+        } elseif (!$isSuperAdmin) {
+            $sql = "SELECT COUNT(*) as total FROM categories c WHERE c.tenant_id = :tenantId";
+            $params = [':tenantId' => $tenantId];
         } else {
-            $sql = "SELECT COUNT(*) as total
-                    FROM categories c
-                    WHERE c.tenant_id = :tenantId";
-        }
-
-        $params = [':tenantId' => $tenantId];
-        if ($hasAssignments) {
-            $params[':tenantId_tc'] = $tenantId;
+            // Super admin — no tenant filter at all
+            $sql = "SELECT COUNT(*) as total FROM categories c WHERE 1=1";
+            $params = [];
         }
 
         if (isset($filters['parent_id'])) {
@@ -637,13 +709,16 @@ final class PdoCategoriesRepository implements CategoriesRepositoryInterface
         return (int)($result['total'] ?? 0);
     }
 
-    public function slugExists(int $tenantId, string $slug, ?int $excludeId = null): bool
+    public function slugExists(?int $tenantId, string $slug, ?int $excludeId = null): bool
     {
-        $sql = "SELECT COUNT(*) as count FROM categories WHERE tenant_id = :tenantId AND slug = :slug";
-        $params = [
-            ':tenantId' => $tenantId,
-            ':slug' => $slug
-        ];
+        if ($tenantId === null) {
+            // Super-admin: check globally across all tenants
+            $sql = "SELECT COUNT(*) as count FROM categories WHERE slug = :slug";
+            $params = [':slug' => $slug];
+        } else {
+            $sql = "SELECT COUNT(*) as count FROM categories WHERE tenant_id = :tenantId AND slug = :slug";
+            $params = [':tenantId' => $tenantId, ':slug' => $slug];
+        }
 
         if ($excludeId) {
             $sql .= " AND id != :excludeId";
@@ -668,8 +743,11 @@ final class PdoCategoriesRepository implements CategoriesRepositoryInterface
         return ($result['count'] ?? 0) > 0;
     }
 
-    private function hasTenantCategoryAssignments(int $tenantId): bool
+    private function hasTenantCategoryAssignments(?int $tenantId): bool
     {
+        if ($tenantId === null) {
+            return false;
+        }
         $stmt = $this->pdo->prepare(
             "SELECT COUNT(*) as cnt FROM tenant_categories WHERE tenant_id = :tenantId LIMIT 1"
         );
