@@ -29,6 +29,16 @@
     let deletedTranslations = []; // مصفوفة لتتبع الترجمات المحذوفة
 
     // ----------------------------
+    // Super-admin tenant helper
+    // Returns {tenant_id: N} for regular users, {} for super admin
+    // (omitting tenant_id causes the API to skip all tenant filters)
+    // ----------------------------
+    function tenantParam() {
+        if (window.PAGE_PERMISSIONS?.isSuperAdmin) return {};
+        return { tenant_id: window.APP_CONFIG?.TENANT_ID || 1 };
+    }
+
+    // ----------------------------
     // Direction helper
     // ----------------------------
     function setDirectionForLang(lang) {
@@ -464,7 +474,7 @@
             const params = new URLSearchParams({
                 parents: '1',
                 limit: 1000,
-                tenant_id: window.APP_CONFIG?.TENANT_ID || 1,
+                ...tenantParam(),
                 lang: state.language,
                 format: 'json'
             });
@@ -629,7 +639,7 @@
         deletedTranslations = []; // إعادة تهيئة المصفوفة
 
         const data = {
-            tenant_id: window.APP_CONFIG?.TENANT_ID || 1,
+            tenant_id: parseInt(el.tenantId?.value || formData?.tenant_id) || window.APP_CONFIG?.TENANT_ID || 1,
             name: formData.name || '',
             slug: formData.slug || '',
             parent_id: formData.parent_id === '' ? null : parseInt(formData.parent_id),
@@ -680,7 +690,8 @@
         console.log('[Categories] Starting edit for ID:', id);
         try {
             // جلب بيانات الفئة مع كل الترجمات
-            const response = await AF.get(`${API}/${id}?format=json&lang=${state.language}&tenant_id=${window.APP_CONFIG?.TENANT_ID || 1}&all_translations=1`);
+            const tenantQs = window.PAGE_PERMISSIONS?.isSuperAdmin ? '' : `&tenant_id=${window.APP_CONFIG?.TENANT_ID || 1}`;
+            const response = await AF.get(`${API}/${id}?format=json&lang=${state.language}${tenantQs}&all_translations=1`);
             const { payload } = normalizeApiResponse(response);
 
             // تحديد العنصر الصحيح مهما كان شكل payload
@@ -798,7 +809,7 @@
     async function remove(id) {
         AF.Modal.confirm(t('table.actions.confirm_delete'), async () => {
             try {
-                await AF.delete(`${API}/${id}`, { id: id, tenant_id: window.APP_CONFIG?.TENANT_ID || 1 });
+                await AF.delete(`${API}/${id}`, { id: id, ...tenantParam() });
                 AF.success(t('messages.success.deleted'));
                 load();
             } catch (err) {
@@ -873,7 +884,7 @@
             const params = new URLSearchParams({
                 page: page,
                 limit: state.perPage,
-                tenant_id: window.APP_CONFIG?.TENANT_ID || 1,
+                ...tenantParam(),
                 lang: state.language,
                 format: 'json',
                 ...state.filters
@@ -1038,7 +1049,13 @@
         }
         if (el.tenantFilter) {
             const t = el.tenantFilter.value.trim();
-            if (t && t !== window.APP_CONFIG?.TENANT_ID.toString()) state.filters.tenant_id = t;
+            // For super admin: any non-empty value scopes to that tenant.
+            // For regular users: skip if value matches their own tenant (already in base URL via tenantParam).
+            if (t) {
+                if (window.PAGE_PERMISSIONS?.isSuperAdmin || t !== (window.APP_CONFIG?.TENANT_ID || '').toString()) {
+                    state.filters.tenant_id = t;
+                }
+            }
         }
         if (el.parentFilter) {
             const p = el.parentFilter.value.trim();
@@ -1057,7 +1074,11 @@
 
     function resetFilters() {
         if (el.searchInput) el.searchInput.value = '';
-        if (el.tenantFilter) el.tenantFilter.value = window.APP_CONFIG?.TENANT_ID || 1;
+        // For super admin, clear the tenant filter entirely (no default tenant scoping).
+        // For regular users, reset to their own tenant.
+        if (el.tenantFilter) {
+            el.tenantFilter.value = window.PAGE_PERMISSIONS?.isSuperAdmin ? '' : (window.APP_CONFIG?.TENANT_ID || 1);
+        }
         if (el.parentFilter) el.parentFilter.value = '';
         if (el.statusFilter) el.statusFilter.value = '';
         if (el.featuredFilter) el.featuredFilter.value = '';
@@ -1525,7 +1546,12 @@
             if (progressLog) progressLog.textContent += msg + '\n';
         };
 
-        const tenantId = window.APP_CONFIG?.TENANT_ID || 1;
+        const isSuperAdmin = window.PAGE_PERMISSIONS?.isSuperAdmin || false;
+        // For import, super admin resolves tenant from the import-form tenant field (if present) or leaves it
+        // unscoped when loading existing categories for parent lookup.
+        const tenantId = isSuperAdmin
+            ? (parseInt(document.getElementById('importTenantId')?.value) || window.APP_CONFIG?.TENANT_ID || 1)
+            : (window.APP_CONFIG?.TENANT_ID || 1);
         const csrfToken = window.APP_CONFIG?.CSRF_TOKEN || window.CSRF_TOKEN || '';
         const apiUrl = (window.APP_CONFIG?.API_BASE || '/api') + '/categories';
 
@@ -1533,7 +1559,8 @@
         // Load existing categories first
         const nameToId = {};
         try {
-            const res = await fetch(apiUrl + '?per_page=9999&tenant_id=' + tenantId, { credentials: 'same-origin' });
+            const listQs = isSuperAdmin ? `?per_page=9999` : `?per_page=9999&tenant_id=${tenantId}`;
+            const res = await fetch(apiUrl + listQs, { credentials: 'same-origin' });
             if (res.ok) {
                 const data = await res.json();
                 const items = data.data?.items || data.data || [];
