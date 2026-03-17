@@ -73,6 +73,9 @@
         });
 
         // Lazy-load sub-fragments when tab is first opened
+        if (tabId === 'tab-domains' && state.currentTenantId) {
+            loadDomains(state.currentTenantId);
+        }
         if (tabId === 'tab-users' && state.currentTenantId) {
             loadSubFragment('tenantUsersContainer',
                 `${window.TENANTS_CONFIG?.tenantUsersUrl || '/admin/fragments/tenant_users.php'}?embedded=1&tenant_id=${state.currentTenantId}&lang=${state.language}`
@@ -87,10 +90,12 @@
 
     function enableSubTabs(tenantId) {
         state.currentTenantId = tenantId;
-        const btnUsers = document.getElementById('tabBtnUsers');
-        const btnAddr  = document.getElementById('tabBtnAddresses');
-        if (btnUsers) btnUsers.disabled = false;
-        if (btnAddr)  btnAddr.disabled  = false;
+        const btnDomains = document.getElementById('tabBtnDomains');
+        const btnUsers   = document.getElementById('tabBtnUsers');
+        const btnAddr    = document.getElementById('tabBtnAddresses');
+        if (btnDomains) btnDomains.disabled = false;
+        if (btnUsers)   btnUsers.disabled   = false;
+        if (btnAddr)    btnAddr.disabled    = false;
     }
 
     async function loadSubFragment(containerId, url) {
@@ -99,6 +104,110 @@
         // Only load once (detect by checking for iframe)
         if (container.querySelector('iframe')) return;
         container.innerHTML = `<iframe src="${url}" style="width:100%;min-height:500px;border:none;" loading="lazy"></iframe>`;
+    }
+
+    // ─────────────────────────────────────────────
+    // DOMAINS
+    // ─────────────────────────────────────────────
+    const domainsApiUrl = () => window.TENANTS_CONFIG?.domainsApiUrl || '/api/tenant_domains';
+
+    let _domainsLoaded = false;
+
+    async function loadDomains(tenantId, force = false) {
+        if (_domainsLoaded && !force) return;
+        const list = document.getElementById('domainsList');
+        const placeholder = document.getElementById('domainsPlaceholder');
+        if (!list) return;
+
+        try {
+            list.innerHTML = '<p style="color:var(--text-secondary);padding:1rem;">Loading…</p>';
+            const res = await AF.get(`${domainsApiUrl()}?tenant_id=${tenantId}`);
+            const items = res?.data?.items || res?.items || [];
+            _domainsLoaded = true;
+
+            if (!items.length) {
+                list.innerHTML = `<div class="sub-fragment-placeholder" id="domainsPlaceholder">
+                    <i class="fas fa-globe fa-2x"></i>
+                    <p>${t('domains.no_domains', 'No domains registered yet')}</p>
+                </div>`;
+                return;
+            }
+
+            list.innerHTML = items.map(d => {
+                const typeCls = {primary:'badge-primary-type',custom:'badge-custom-type',subdomain:'badge-subdomain-type',alias:'badge-alias-type'}[d.type] || '';
+                const sslCls  = {active:'badge-success',pending:'badge-warning',failed:'badge-danger',none:'badge-muted'}[d.ssl_status] || 'badge-muted';
+                const sslLabel = t('domains.ssl_' + (d.ssl_status || 'none'), d.ssl_status || 'None');
+                const verLabel = d.is_verified ? t('domains.verified','Verified') : t('domains.unverified','Unverified');
+                const verCls   = d.is_verified ? 'badge-verified' : 'badge-unverified';
+                return `
+                <div class="domain-row" data-id="${d.id}">
+                    <div class="domain-row-main">
+                        <code class="domain-badge">${esc(d.domain)}</code>
+                        <span class="badge-status ${typeCls}">${t('domains.' + d.type, d.type)}</span>
+                        <span class="badge-status ${verCls}">${verLabel}</span>
+                        <span class="badge-status ${sslCls}">${sslLabel}</span>
+                    </div>
+                    <div class="domain-row-actions">
+                        ${!d.is_verified ? `<button class="btn btn-sm btn-outline" onclick="Tenants.verifyDomain(${d.id})" title="Mark Verified"><i class="fas fa-check"></i></button>` : ''}
+                        ${d.type !== 'primary' ? `<button class="btn btn-sm btn-danger" onclick="Tenants.removeDomain(${d.id})" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+
+        } catch (err) {
+            list.innerHTML = `<p style="color:var(--danger-color);padding:1rem;">${err?.message || 'Failed to load domains'}</p>`;
+        }
+    }
+
+    async function addDomain() {
+        const input   = document.getElementById('newDomainInput');
+        const typeEl  = document.getElementById('newDomainType');
+        const domain  = input?.value?.trim();
+        const type    = typeEl?.value || 'custom';
+
+        if (!domain) { if (AF.error) AF.error('Please enter a domain'); return; }
+        if (!state.currentTenantId) return;
+
+        try {
+            await AF.post(domainsApiUrl(), { tenant_id: state.currentTenantId, domain, type });
+            if (AF.success) AF.success('Domain added');
+            if (input)  input.value = '';
+            document.getElementById('domainFormInline').style.display = 'none';
+            _domainsLoaded = false;
+            loadDomains(state.currentTenantId, true);
+        } catch (err) {
+            if (AF.error) AF.error(err?.message || 'Failed to add domain');
+        }
+    }
+
+    async function verifyDomain(id) {
+        try {
+            await AF.post(`${domainsApiUrl()}/${id}/verify`, {});
+            if (AF.success) AF.success('Domain marked as verified');
+            _domainsLoaded = false;
+            loadDomains(state.currentTenantId, true);
+        } catch (err) {
+            if (AF.error) AF.error(err?.message || 'Failed to verify domain');
+        }
+    }
+
+    async function removeDomain(id) {
+        const msg = t('domains.delete_confirm', 'Are you sure you want to remove this domain?');
+        const doDelete = async () => {
+            try {
+                await AF.delete(`${domainsApiUrl()}/${id}`);
+                if (AF.success) AF.success('Domain removed');
+                _domainsLoaded = false;
+                loadDomains(state.currentTenantId, true);
+            } catch (err) {
+                if (AF.error) AF.error(err?.message || 'Failed to remove domain');
+            }
+        };
+        if (AF.Modal?.confirm) {
+            AF.Modal.confirm(msg, doDelete);
+        } else if (confirm(msg)) {
+            doDelete();
+        }
     }
 
     // ─────────────────────────────────────────────
@@ -367,6 +476,7 @@
     function add() {
         console.log('[Tenants] Add new');
         state.currentTenantId = null;
+        _domainsLoaded = false;
 
         const form = document.getElementById('tenantForm');
         if (form) {
@@ -376,14 +486,18 @@
         if (el.formId) el.formId.value = '';
 
         // Disable sub-tabs until saved
-        const btnUsers = document.getElementById('tabBtnUsers');
-        const btnAddr  = document.getElementById('tabBtnAddresses');
-        if (btnUsers) btnUsers.disabled = true;
-        if (btnAddr)  btnAddr.disabled  = true;
+        const btnDomains = document.getElementById('tabBtnDomains');
+        const btnUsers   = document.getElementById('tabBtnUsers');
+        const btnAddr    = document.getElementById('tabBtnAddresses');
+        if (btnDomains) btnDomains.disabled = true;
+        if (btnUsers)   btnUsers.disabled   = true;
+        if (btnAddr)    btnAddr.disabled    = true;
 
         // Reset sub-fragment containers
+        const domainsList    = document.getElementById('domainsList');
         const usersContainer = document.getElementById('tenantUsersContainer');
         const addrContainer  = document.getElementById('tenantAddressesContainer');
+        if (domainsList)    domainsList.innerHTML    = '<div class="sub-fragment-placeholder"><i class="fas fa-globe fa-2x"></i><p>' + t('domains.no_domains', 'No domains registered yet') + '</p></div>';
         if (usersContainer) usersContainer.innerHTML = '<div class="sub-fragment-placeholder"><i class="fas fa-users fa-2x"></i><p>' + t('tabs.users', 'Users') + '</p></div>';
         if (addrContainer)  addrContainer.innerHTML  = '<div class="sub-fragment-placeholder"><i class="fas fa-map-marker-alt fa-2x"></i><p>' + t('tabs.addresses', 'Addresses') + '</p></div>';
 
@@ -501,6 +615,15 @@
         if (el.btnRetry)   el.btnRetry.onclick     = () => load(state.page);
         if (el.btnRefresh) el.btnRefresh.onclick   = () => load(state.page);
 
+        // Domain form events
+        const btnAddDomain    = document.getElementById('btnAddDomain');
+        const btnSaveDomain   = document.getElementById('btnSaveDomain');
+        const btnCancelDomain = document.getElementById('btnCancelDomain');
+        const domainFormInline = document.getElementById('domainFormInline');
+        if (btnAddDomain)    btnAddDomain.onclick    = () => { if (domainFormInline) domainFormInline.style.display = 'block'; };
+        if (btnCancelDomain) btnCancelDomain.onclick = () => { if (domainFormInline) domainFormInline.style.display = 'none'; };
+        if (btnSaveDomain)   btnSaveDomain.onclick   = addDomain;
+
         if (el.searchInput) {
             el.searchInput.addEventListener('keypress', e => {
                 if (e.key === 'Enter') applyFilters();
@@ -523,7 +646,7 @@
     // ─────────────────────────────────────────────
     // PUBLIC API
     // ─────────────────────────────────────────────
-    window.Tenants = { init, load, edit, remove, add };
+    window.Tenants = { init, load, edit, remove, add, verifyDomain, removeDomain, addDomain };
 
     // Auto-init in standalone mode
     if (document.readyState === 'loading') {

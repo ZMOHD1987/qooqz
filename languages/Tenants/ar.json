@@ -10,6 +10,7 @@
   },
   "tabs": {
     "basic": "المعلومات الأساسية",
+    "domains": "النطاقات",
     "users": "المستخدمون",
     "addresses": "العناوين"
   },
@@ -107,5 +108,22 @@
       "delete_failed": "فشل حذف المستأجر",
       "not_found": "المستأجر غير موجود"
     }
+  },
+  "domains": {
+    "tab_title": "إدارة النطاقات",
+    "add": "إضافة نطاق",
+    "no_domains": "لا توجد نطاقات مسجلة",
+    "primary": "أساسي",
+    "custom": "مخصص",
+    "subdomain": "نطاق فرعي",
+    "alias": "بديل",
+    "verified": "موثق",
+    "unverified": "غير موثق",
+    "ssl_none": "بدون SSL",
+    "ssl_pending": "SSL معلق",
+    "ssl_active": "SSL نشط",
+    "ssl_failed": "SSL فاشل",
+    "delete_confirm": "هل أنت متأكد من حذف هذا النطاق؟",
+    "cannot_delete_primary": "لا يمكن حذف النطاق الأساسي. قم بترقية نطاق آخر أولاً."
   }
 }

@@ -10,6 +10,7 @@
   },
   "tabs": {
     "basic": "Basic Info",
+    "domains": "Domains",
     "users": "Users",
     "addresses": "Addresses"
   },
@@ -92,6 +93,23 @@
       "updating": "Updating…",
       "cancel": "Cancel"
     }
+  },
+  "domains": {
+    "tab_title": "Domain Management",
+    "add": "Add Domain",
+    "no_domains": "No domains registered yet",
+    "primary": "Primary",
+    "custom": "Custom",
+    "subdomain": "Subdomain",
+    "alias": "Alias",
+    "verified": "Verified",
+    "unverified": "Unverified",
+    "ssl_none": "No SSL",
+    "ssl_pending": "SSL Pending",
+    "ssl_active": "SSL Active",
+    "ssl_failed": "SSL Failed",
+    "delete_confirm": "Are you sure you want to remove this domain?",
+    "cannot_delete_primary": "Cannot delete the primary domain. Promote another domain first."
   },
   "messages": {
     "success": {

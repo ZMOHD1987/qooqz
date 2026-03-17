@@ -19,10 +19,25 @@ require_once $baseDir . '/shared/helpers/safe_helpers.php';
 require_once $baseDir . '/shared/config/db.php';
 
 // ===== تحميل ملفات tenants =====
+require_once API_VERSION_PATH . '/models/tenants/Contracts/TenantsRepositoryInterface.php';
 require_once API_VERSION_PATH . '/models/tenants/repositories/PdoTenantsRepository.php';
 require_once API_VERSION_PATH . '/models/tenants/validators/TenantsValidator.php';
 require_once API_VERSION_PATH . '/models/tenants/services/TenantsService.php';
 require_once API_VERSION_PATH . '/models/tenants/controllers/TenantsController.php';
+
+// ===== تحميل audit_logs (اختياري) =====
+$auditLogsPath = API_VERSION_PATH . '/models/audit_logs';
+if (is_file($auditLogsPath . '/Contracts/AuditLogsRepositoryInterface.php')) {
+    require_once $auditLogsPath . '/Contracts/AuditLogsRepositoryInterface.php';
+    require_once $auditLogsPath . '/repositories/PdoAuditLogsRepository.php';
+}
+
+// ===== تحميل bad_words (اختياري) =====
+$badWordsPath = API_VERSION_PATH . '/models/bad_words';
+if (is_file($badWordsPath . '/repositories/PdoBadWordsRepository.php')) {
+    require_once $badWordsPath . '/repositories/PdoBadWordsRepository.php';
+    require_once $badWordsPath . '/services/BadWordsService.php';
+}
 
 /** @var PDO $pdo */
 $pdo = $GLOBALS['ADMIN_DB'] ?? null;
@@ -31,10 +46,16 @@ if (!$pdo instanceof PDO) {
     return;
 }
 
+// ===== إنشاء الاعتمادات الاختيارية =====
+$auditRepo = class_exists('PdoAuditLogsRepository') ? new PdoAuditLogsRepository($pdo) : null;
+$badWordsService = class_exists('BadWordsService')
+    ? new BadWordsService(new PdoBadWordsRepository($pdo))
+    : null;
+
 // إنشاء الاعتمادات
-$repo      = new PdoTenantsRepository($pdo);
-$validator = new TenantsValidator();
-$service   = new TenantsService($repo, $validator);
+$repo       = new PdoTenantsRepository($pdo);
+$validator  = new TenantsValidator();
+$service    = new TenantsService($repo, $validator, $auditRepo, $badWordsService);
 $controller = new TenantsController($service);
 
 // توجيه الطلب

@@ -152,6 +152,10 @@ if (!function_exists('__t')) {
                         <i class="fas fa-info-circle"></i>
                         <span data-i18n="tabs.basic"><?= __t('tabs.basic', 'Basic Info') ?></span>
                     </button>
+                    <button type="button" class="tab-btn" data-tab="tab-domains" id="tabBtnDomains" disabled>
+                        <i class="fas fa-globe"></i>
+                        <span data-i18n="tabs.domains"><?= __t('tabs.domains', 'Domains') ?></span>
+                    </button>
                     <button type="button" class="tab-btn" data-tab="tab-users" id="tabBtnUsers" disabled>
                         <i class="fas fa-users"></i>
                         <span data-i18n="tabs.users"><?= __t('tabs.users', 'Users') ?></span>
@@ -257,6 +261,71 @@ if (!function_exists('__t')) {
                         </button>
                     </div>
                 </div><!-- /#tab-basic -->
+
+                <!-- Tab: Domains -->
+                <div class="tab-content" id="tab-domains" style="display:none">
+                    <div id="tenantDomainsPanel" class="domains-panel">
+                        <div class="domains-panel-header">
+                            <h4 data-i18n="domains.tab_title">
+                                <i class="fas fa-globe"></i>
+                                <?= __t('domains.tab_title', 'Domain Management') ?>
+                            </h4>
+                            <?php if ($canEdit): ?>
+                            <button type="button" id="btnAddDomain" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus"></i>
+                                <span data-i18n="domains.add"><?= __t('domains.add', 'Add Domain') ?></span>
+                            </button>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Inline add-domain form -->
+                        <div id="domainFormInline" class="domain-form-inline" style="display:none">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="newDomainInput" class="required">
+                                        <i class="fas fa-globe"></i>
+                                        <span data-i18n="form.fields.domain.label">
+                                            <?= __t('form.fields.domain.label', 'Domain') ?>
+                                        </span>
+                                    </label>
+                                    <input type="text" id="newDomainInput" class="form-control"
+                                           placeholder="e.g. acme-corp.example.com"
+                                           maxlength="255">
+                                </div>
+                                <div class="form-group">
+                                    <label for="newDomainType">
+                                        <i class="fas fa-tag"></i>
+                                        Type
+                                    </label>
+                                    <select id="newDomainType" class="form-control">
+                                        <option value="custom" data-i18n="domains.custom"><?= __t('domains.custom', 'Custom') ?></option>
+                                        <option value="subdomain" data-i18n="domains.subdomain"><?= __t('domains.subdomain', 'Subdomain') ?></option>
+                                        <option value="alias" data-i18n="domains.alias"><?= __t('domains.alias', 'Alias') ?></option>
+                                        <option value="primary" data-i18n="domains.primary"><?= __t('domains.primary', 'Primary') ?></option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-actions form-actions-compact">
+                                <button type="button" id="btnSaveDomain" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-save"></i> Save
+                                </button>
+                                <button type="button" id="btnCancelDomain" class="btn btn-outline btn-sm">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Domains list -->
+                        <div id="domainsList" class="domains-list">
+                            <div class="sub-fragment-placeholder" id="domainsPlaceholder">
+                                <i class="fas fa-globe fa-2x"></i>
+                                <p data-i18n="domains.no_domains">
+                                    <?= __t('domains.no_domains', 'No domains registered yet') ?>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- /#tab-domains -->
 
                 <!-- Tab: Users -->
                 <div class="tab-content" id="tab-users" style="display:none">
@@ -440,6 +509,7 @@ window.PAGE_PERMISSIONS = <?= json_encode([
 
 window.TENANTS_CONFIG = {
     apiUrl:         '<?= $apiBase ?>/tenants',
+    domainsApiUrl:  '<?= $apiBase ?>/tenant_domains',
     tenantUsersUrl: '/admin/fragments/tenant_users.php',
     addressesUrl:   '/admin/fragments/addresses.php',
     csrfToken:      '<?= addslashes($csrf) ?>',
