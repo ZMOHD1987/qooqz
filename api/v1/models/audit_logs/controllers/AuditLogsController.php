@@ -10,6 +10,9 @@ final class AuditLogsController
         $this->service = $service;
     }
 
+    /**
+     * Return paginated list of audit log entries.
+     */
     public function list(
         int $tenantId,
         ?int $limit = null,
@@ -18,11 +21,13 @@ final class AuditLogsController
         string $orderBy = 'id',
         string $orderDir = 'DESC'
     ): array {
-        $items = $this->service->list($tenantId, $limit, $offset, $filters, $orderBy, $orderDir);
-        $total = $this->service->count($tenantId, $filters);
-        return ['items' => $items, 'total' => $total];
+        return $this->service->list($tenantId, $limit, $offset, $filters, $orderBy, $orderDir);
     }
 
+    /**
+     * Return a single audit log entry by ID.
+     * The full diff/old_values/new_values/metadata are included.
+     */
     public function get(int $tenantId, int $id): array
     {
         return $this->service->get($tenantId, $id);

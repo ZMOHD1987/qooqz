@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
- $baseDir = dirname(__DIR__, 2);
+$baseDir = dirname(__DIR__, 2);
 require_once $baseDir . '/bootstrap.php';
 require_once $baseDir . '/shared/core/ResponseFormatter.php';
 require_once $baseDir . '/shared/helpers/safe_helpers.php';
 require_once $baseDir . '/shared/config/db.php';
 
- $modelsPath = API_VERSION_PATH . '/models/audit_logs';
+$modelsPath = API_VERSION_PATH . '/models/audit_logs';
 require_once $modelsPath . '/Contracts/AuditLogsRepositoryInterface.php';
 require_once $modelsPath . '/repositories/PdoAuditLogsRepository.php';
 require_once $modelsPath . '/validators/AuditLogsValidator.php';
@@ -29,15 +29,15 @@ if (!isset($GLOBALS['ADMIN_DB']) || !$GLOBALS['ADMIN_DB'] instanceof PDO) {
     exit;
 }
 
- $pdo    = $GLOBALS['ADMIN_DB'];
- $method = $_SERVER['REQUEST_METHOD'];
+$pdo    = $GLOBALS['ADMIN_DB'];
+$method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'OPTIONS') {
     http_response_code(204);
     exit;
 }
 
- $tenantId = isset($_GET['tenant_id']) && is_numeric($_GET['tenant_id'])
+$tenantId = isset($_GET['tenant_id']) && is_numeric($_GET['tenant_id'])
     ? (int)$_GET['tenant_id']
     : (isset($_SESSION['tenant_id']) ? (int)$_SESSION['tenant_id'] : null);
 
@@ -51,8 +51,8 @@ try {
     $service    = new AuditLogsService($repo);
     $controller = new AuditLogsController($service);
 
-    $page     = isset($_GET['page'])  ? max(1, (int)$_GET['page'])                   : 1;
-    $limit    = isset($_GET['limit']) ? min(200, max(1, (int)$_GET['limit']))        : 50;
+    $page     = isset($_GET['page'])      ? max(1, (int)$_GET['page'])              : 1;
+    $limit    = isset($_GET['limit'])     ? min(200, max(1, (int)$_GET['limit']))   : 50;
     $offset   = ($page - 1) * $limit;
     $orderBy  = $_GET['order_by']  ?? 'id';
     $orderDir = $_GET['order_dir'] ?? 'DESC';
@@ -61,7 +61,12 @@ try {
         'action'      => $_GET['action']      ?? null,
         'entity_type' => $_GET['entity_type'] ?? null,
         'entity_id'   => isset($_GET['entity_id']) ? (int)$_GET['entity_id'] : null,
-        'user_id'     => isset($_GET['user_id']) ? (int)$_GET['user_id'] : null,
+        'user_id'     => isset($_GET['user_id'])   ? (int)$_GET['user_id']   : null,
+        'http_method' => $_GET['http_method'] ?? null,
+        'session_id'  => $_GET['session_id']  ?? null,
+        'request_id'  => $_GET['request_id']  ?? null,
+        'date_from'   => $_GET['date_from']   ?? null,
+        'date_to'     => $_GET['date_to']     ?? null,
         'search'      => $_GET['search']      ?? null,
     ];
 

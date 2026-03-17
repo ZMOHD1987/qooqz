@@ -132,7 +132,10 @@
       "remove_variant": "إزالة المتغير",
       "generate_variants": "توليد المتغيرات",
       "generate_from_attributes": "توليد المتغيرات من الخصائص أو إضافة يدوياً",
-      "no_combinations": "لا تتوفر تركيبات للمتغيرات"
+      "no_combinations": "لا تتوفر تركيبات للمتغيرات",
+      "variant_name": "الاسم",
+      "variant_barcode": "الباركود",
+      "variant_sku_placeholder": "يُولَّد تلقائياً إذا تُرك فارغاً"
     },
     "translations": {
       "translations": "الترجمات",

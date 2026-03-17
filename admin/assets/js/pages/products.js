@@ -259,6 +259,22 @@
                 no_attributes: s.no_attributes || attr.no_attributes || 'No attributes added',
                 no_combinations: s.no_combinations || vr.no_combinations || 'No variant combinations available'
             },
+            // variants.* keys — used directly by renderVariants()
+            variants: {
+                variants: vr.variants,
+                variant_name: vr.variant_name || g.name,
+                variant_sku: vr.variant_sku,
+                variant_sku_placeholder: vr.variant_sku_placeholder || g.sku_placeholder,
+                variant_barcode: vr.variant_barcode || g.barcode,
+                variant_stock: vr.variant_stock,
+                variant_price: vr.variant_price,
+                variant_active: vr.variant_active,
+                add_variant: vr.add_variant,
+                remove_variant: vr.remove_variant,
+                generate_variants: vr.generate_variants,
+                generate_from_attributes: vr.generate_from_attributes,
+                no_combinations: vr.no_combinations
+            },
             // csv.* keys used in CSV import modal
             csv: {
                 import_button: csv.import_button,
@@ -1315,23 +1331,23 @@
             <div class="variant-item card" data-index="${idx}" style="margin-bottom:12px; padding:12px;">
                 <div class="form-row">
                     <div class="form-group" style="flex:1;">
-                        <label>Name</label>
+                        <label>${t('variants.variant_name', 'Name')}</label>
                         <input type="text" class="form-control" value="${esc(variant.name || '')}"
                                onchange="Products.updateVariantField(${idx}, 'name', this.value)">
                     </div>
                     <div class="form-group" style="flex:1;">
-                        <label>SKU</label>
+                        <label>${t('variants.variant_sku', 'SKU')}</label>
                         <input type="text" class="form-control" value="${esc(variant.sku || '')}"
-                               placeholder="Auto-generated"
+                               placeholder="${t('variants.variant_sku_placeholder', 'Auto-generated')}"
                                onchange="Products.updateVariantField(${idx}, 'sku', this.value)">
                     </div>
                     <div class="form-group" style="flex:1;">
-                        <label>Barcode</label>
+                        <label>${t('variants.variant_barcode', 'Barcode')}</label>
                         <input type="text" class="form-control" value="${esc(variant.barcode || '')}"
                                onchange="Products.updateVariantField(${idx}, 'barcode', this.value)">
                     </div>
                     <div class="form-group" style="width:100px;">
-                        <label>Stock</label>
+                        <label>${t('variants.variant_stock', 'Stock')}</label>
                         <input type="number" class="form-control" value="${esc(variant.stock_quantity || 0)}"
                                onchange="Products.updateVariantField(${idx}, 'stock_quantity', this.value)">
                     </div>

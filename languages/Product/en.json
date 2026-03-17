@@ -132,7 +132,10 @@
       "remove_variant": "Remove Variant",
       "generate_variants": "Generate Variants",
       "generate_from_attributes": "Generate variants from attributes or add manually",
-      "no_combinations": "No variant combinations available"
+      "no_combinations": "No variant combinations available",
+      "variant_name": "Name",
+      "variant_barcode": "Barcode",
+      "variant_sku_placeholder": "Auto-generated if empty"
     },
     "translations": {
       "translations": "Translations",
