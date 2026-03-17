@@ -24,7 +24,9 @@
         currencies: CONFIG.currenciesApi || '/api/currencies',
         languages: CONFIG.languagesApi || '/api/languages',
         images: CONFIG.imagesApi || '/api/images',
-        tenants: CONFIG.tenantsApi || '/api/tenants'
+        tenants: CONFIG.tenantsApi || '/api/tenants',
+        badWords: '/api/bad_words/check',
+        auditLogs: '/api/audit_logs'
     };
 
     const state = {
@@ -91,21 +93,29 @@
         const val = s.validation || {};
         const msg = s.messages || {};
         const csv = s.csv || {};
+        const tbl = s.table || {};
+        const fil = s.filters || {};
+        const tabs = s.tabs || {};
         return {
             // products.* keys
             products: {
                 title: s.title || s.products,
-                subtitle: s.product || s.title,
+                subtitle: s.subtitle || s.product || s.title,
                 add_new: s.create,
                 loading: s.loading,
-                retry: s.refresh || 'Retry'
+                retry: s.refresh || 'Retry',
+                found: s.found || '{count} product(s)'
             },
             // tabs.* keys (top-level, NOT under form)
             tabs: {
-                general: g.general, pricing: p.pricing, inventory: inv.inventory,
-                attributes: attr.attributes, variants: vr.variants,
-                images: med.images, categories: cat.categories,
-                translations: tr.translations
+                general: tabs.general || g.general,
+                pricing: tabs.pricing || p.pricing,
+                inventory: tabs.inventory || inv.inventory,
+                attributes: tabs.attributes || attr.attributes,
+                variants: tabs.variants || vr.variants,
+                images: tabs.images || med.images,
+                categories: tabs.categories || cat.categories,
+                translations: tabs.translations || tr.translations
             },
             // form.* keys
             form: {
@@ -113,20 +123,20 @@
                 edit_title: s.edit,
                 fields: {
                     name: { label: g.name, placeholder: g.name, required: val.name_required },
-                    sku: { label: g.sku, placeholder: g.sku },
-                    slug: { label: g.slug, placeholder: g.slug },
-                    barcode: { label: g.barcode, placeholder: g.barcode },
-                    product_type: { label: g.type },
-                    brand: { label: g.brand },
-                    main_category: { label: cat.categories },
-                    sub_category: { label: cat.hierarchy_info },
+                    sku: { label: g.sku, placeholder: g.sku_placeholder || g.sku },
+                    slug: { label: g.slug, placeholder: g.slug_placeholder || g.slug },
+                    barcode: { label: g.barcode, placeholder: g.barcode_placeholder || g.barcode },
+                    product_type: { label: g.type, select: g.select_type || g.select },
+                    brand: { label: g.brand, select: g.select_brand || g.select },
+                    main_category: { label: cat.categories, select: cat.select_main || g.select },
+                    sub_category: { label: cat.hierarchy_info, select: cat.select_sub || g.select },
                     categories: { label: cat.categories },
                     price: { label: p.price },
                     compare_price: { label: p.compare_at_price },
                     cost_price: { label: p.cost_price },
                     tax_rate: { label: p.tax_rate },
-                    currency: { label: g.select || 'Currency' },
-                    pricing_type: { label: p.pricing },
+                    currency: { label: g.currency || g.select || 'Currency', select: g.select_currency || g.select },
+                    pricing_type: { label: p.pricing_type || p.pricing },
                     stock_quantity: { label: inv.stock_quantity },
                     low_stock_threshold: { label: inv.low_stock_threshold },
                     stock_status: {
@@ -138,13 +148,13 @@
                     featured: { label: s.featured || 'Featured', yes: g.yes, no: g.no },
                     bestseller: { label: s.bestseller || 'Bestseller', yes: g.yes, no: g.no },
                     new: { label: s.new_product || 'New', yes: g.yes, no: g.no },
-                    status: { label: s.active || 'Status', active: s.active, inactive: s.inactive },
+                    status: { label: g.status || s.active || 'Status', active: s.active, inactive: s.inactive },
                     weight: { label: dim.weight },
                     length: { label: dim.length },
                     width: { label: dim.width },
                     height: { label: dim.height },
-                    weight_unit: { label: dim.weight },
-                    dimension_unit: { label: dim.dimensions },
+                    weight_unit: { label: dim.weight_unit || dim.weight },
+                    dimension_unit: { label: dim.dimension_unit || dim.dimensions },
                     images: { label: med.images },
                     short_description: { label: g.short_description },
                     description: { label: g.description },
@@ -156,50 +166,98 @@
                 buttons: {
                     save: s.save, cancel: s.cancel,
                     add_attribute: attr.add_attribute,
-                    add_variant: vr.variants,
+                    add_variant: vr.add_variant || vr.variants,
                     generate_variants: vr.generate_variants
                 },
                 sections: { physical: dim.dimensions },
-                translations: { select_lang: tr.add_language }
+                translations: { select_lang: tr.add_language },
+                attributes: {
+                    select: attr.select_attribute || attr.attribute,
+                    select_value: attr.select_value || attr.value,
+                    custom_value: attr.custom_value
+                }
             },
             // filters.* keys
             filters: {
                 search: s.search_placeholder,
                 search_placeholder: s.search_placeholder,
-                product_type: g.type, brand: g.brand,
-                status: inv.stock_status, tenant_id: 'Tenant',
-                tenant_placeholder: 'Tenant ID',
-                status_options: { all: s.total, active: s.active, inactive: s.inactive },
-                apply: s.save, reset: s.cancel
+                product_type: fil.product_type || g.type,
+                brand: fil.brand || g.brand,
+                status: fil.status || inv.stock_status,
+                tenant_id: fil.tenant_id || 'Tenant',
+                tenant_placeholder: fil.tenant_placeholder || 'Tenant ID',
+                status_options: {
+                    all: fil.all_statuses || s.total,
+                    active: s.active,
+                    inactive: s.inactive
+                },
+                apply: fil.apply || s.save,
+                reset: fil.reset || s.cancel,
+                all_types: fil.all_types || g.type,
+                all_brands: fil.all_brands || g.brand
             },
             // common.* keys
             common: { select_image: med.select_from_studio },
             // table.* keys
             table: {
                 headers: {
-                    id: 'ID', tenant: 'Tenant', image: med.images,
-                    name: g.name, sku: g.sku, type: g.type,
-                    price: p.price, stock: inv.stock_quantity,
-                    status: s.active, actions: s.actions
+                    id: tbl.id || 'ID',
+                    tenant: tbl.tenant || 'Tenant',
+                    image: tbl.image || med.images,
+                    name: tbl.name || g.name,
+                    sku: tbl.sku || g.sku,
+                    type: tbl.type || g.type,
+                    price: tbl.price || p.price,
+                    stock: tbl.stock || inv.stock_quantity,
+                    status: tbl.status || s.active,
+                    actions: tbl.actions || s.actions
                 },
                 empty: {
                     title: s.no_products,
                     message: s.create || 'Add your first product',
                     add_first: s.create
                 },
-                actions: { delete: s.delete }
+                actions: {
+                    edit: tbl.edit || s.edit,
+                    delete: tbl.delete || s.delete,
+                    duplicate: tbl.duplicate || s.duplicate || 'Duplicate'
+                },
+                status: {
+                    active: s.active,
+                    inactive: s.inactive
+                }
             },
             // pagination.* keys
             pagination: { showing: s.total || 'Showing' },
-            // messages.* keys
+            // messages.* keys (covers all t('messages.*') calls)
             messages: {
-                error: { load_failed: msg.server_error || 'Error loading data' }
+                created: s.save_success || 'Product created successfully',
+                updated: s.update_success || 'Product updated successfully',
+                deleted: s.delete_success || 'Product deleted successfully',
+                confirm_delete: s.delete_confirm || 'Are you sure?',
+                validation_failed: val.validation_failed || msg.validation_failed || 'Please fill all required fields',
+                attribute_exists: msg.attribute_exists || 'Attribute already added',
+                translation_exists: msg.translation_exists || 'Translation already exists for this language',
+                save_first: msg.save_first || 'Please save the product first',
+                bad_words_found: msg.bad_words_found || 'Content contains prohibited words',
+                checking_content: msg.checking_content || 'Checking content…',
+                error: {
+                    load_failed: msg.server_error || 'Error loading data',
+                    save_failed: msg.save_failed || msg.server_error || 'Failed to save product',
+                    delete_failed: msg.delete_failed || msg.server_error || 'Failed to delete product',
+                    duplicate_failed: msg.duplicate_failed || msg.server_error || 'Failed to duplicate product'
+                }
             },
             // strings used internally
             strings: {
-                save_success: s.save_success, update_success: s.update_success,
-                delete_confirm: s.delete_confirm, delete_success: s.delete_success,
-                saving: s.saving, loading: s.loading
+                save_success: s.save_success,
+                update_success: s.update_success,
+                delete_confirm: s.delete_confirm,
+                delete_success: s.delete_success,
+                saving: s.saving,
+                loading: s.loading,
+                no_attributes: s.no_attributes || attr.no_attributes || 'No attributes added',
+                no_combinations: s.no_combinations || vr.no_combinations || 'No variant combinations available'
             },
             // csv.* keys used in CSV import modal
             csv: {
@@ -707,6 +765,36 @@
         if (!validateForm()) {
             showNotification(t('messages.validation_failed', 'Please fill all required fields'), 'error');
             return;
+        }
+
+        // Client-side bad words check before sending to server
+        const textFieldsToCheck = [
+            el.enProdName?.value || '',
+            el.enProdShortDesc?.value || '',
+            el.enProdDesc?.value || '',
+            el.enProdSpecs?.value || ''
+        ].filter(Boolean);
+
+        for (const text of textFieldsToCheck) {
+            if (!text.trim()) continue;
+            try {
+                const checkResult = await apiCall(API.badWords, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                if (checkResult.success && checkResult.data && !checkResult.data.clean) {
+                    const words = (checkResult.data.found || []).map(f => f.word).join(', ');
+                    showNotification(
+                        t('messages.bad_words_found', 'Content contains prohibited words') + (words ? ': ' + words : ''),
+                        'error'
+                    );
+                    return;
+                }
+            } catch (bwErr) {
+                // Don't block save if bad words API is unavailable
+                console.warn('[Products] Bad words check failed:', bwErr);
+            }
         }
 
         try {

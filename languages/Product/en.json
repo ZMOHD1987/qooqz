@@ -5,14 +5,16 @@
     "products": "Products",
     "product": "Product",
     "title": "Products",
-    "create": "Create Product",
+    "subtitle": "Manage your product catalog",
+    "create": "Add Product",
     "edit": "Edit Product",
+    "duplicate": "Duplicate",
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
     "delete_confirm": "Are you sure you want to delete this product?",
     "delete_success": "Product deleted successfully",
-    "save_success": "Product saved successfully",
+    "save_success": "Product created successfully",
     "update_success": "Product updated successfully",
     "loading": "Loading...",
     "saving": "Saving...",
@@ -22,36 +24,62 @@
     "refresh": "Refresh",
     "active": "Active",
     "inactive": "Inactive",
+    "featured": "Featured",
+    "bestseller": "Bestseller",
+    "new_product": "New",
     "actions": "Actions",
     "total": "Total",
+    "found": "Found {count} product(s)",
+    "no_attributes": "No attributes added yet",
+    "no_combinations": "No variant combinations available",
     "general": {
-      "general": "General Information",
-      "name": "Name",
+      "general": "General",
+      "name": "Product Name",
       "default_name": "Default Name",
       "sku": "SKU",
+      "sku_placeholder": "Auto-generated if empty",
       "slug": "Slug",
+      "slug_placeholder": "product-slug",
       "barcode": "Barcode",
-      "type": "Type",
+      "barcode_placeholder": "Enter barcode",
+      "type": "Product Type",
       "brand": "Brand",
       "manufacturer": "Manufacturer",
       "published_at": "Published At",
       "short_description": "Short Description",
       "description": "Description",
+      "specifications": "Specifications",
+      "status": "Status",
+      "currency": "Currency",
       "yes": "Yes",
       "no": "No",
       "choose": "Choose",
       "select": "Select",
+      "select_type": "Select product type",
+      "select_brand": "Select brand",
+      "select_currency": "Select currency",
       "simple": "Simple",
       "variable": "Variable",
       "digital": "Digital",
       "bundle": "Bundle"
     },
+    "tabs": {
+      "general": "General",
+      "pricing": "Pricing",
+      "inventory": "Inventory",
+      "attributes": "Attributes",
+      "variants": "Variants",
+      "images": "Images",
+      "categories": "Categories",
+      "translations": "Translations"
+    },
     "pricing": {
       "pricing": "Pricing",
+      "pricing_type": "Pricing Type",
       "price": "Price",
       "compare_at_price": "Compare at Price",
       "cost_price": "Cost Price",
-      "tax_rate": "Tax Rate"
+      "tax_rate": "Tax Rate (%)"
     },
     "inventory": {
       "inventory": "Inventory",
@@ -65,11 +93,13 @@
       "on_backorder": "On Backorder"
     },
     "dimensions": {
-      "dimensions": "Dimensions",
+      "dimensions": "Physical Attributes",
       "weight": "Weight",
+      "weight_unit": "Weight Unit",
       "length": "Length",
       "width": "Width",
-      "height": "Height"
+      "height": "Height",
+      "dimension_unit": "Dimension Unit"
     },
     "media": {
       "images": "Images",
@@ -77,7 +107,9 @@
     },
     "categories": {
       "categories": "Categories",
-      "hierarchy_info": "Select one primary category (radio) and multiple secondary (checkbox)"
+      "hierarchy_info": "Sub Category",
+      "select_main": "Select main category",
+      "select_sub": "Select sub category"
     },
     "attributes": {
       "attributes": "Attributes",
@@ -85,43 +117,89 @@
       "value": "Value",
       "custom_value": "Custom Value",
       "add_attribute": "Add Attribute",
-      "remove": "Remove"
+      "select_attribute": "Select attribute",
+      "select_value": "Select value",
+      "remove": "Remove",
+      "no_attributes": "No attributes added yet"
     },
     "variants": {
       "variants": "Variants",
       "variant_sku": "Variant SKU",
       "variant_stock": "Variant Stock",
       "variant_price": "Variant Price",
-      "variant_active": "Variant Active",
+      "variant_active": "Active",
+      "add_variant": "Add Variant",
       "remove_variant": "Remove Variant",
       "generate_variants": "Generate Variants",
-      "generate_from_attributes": "Generate variants from attributes or add manually"
+      "generate_from_attributes": "Generate variants from attributes or add manually",
+      "no_combinations": "No variant combinations available"
     },
     "translations": {
       "translations": "Translations",
       "toggle_translations": "Toggle Translations",
       "fill_from_default": "Fill from Default",
       "add_language": "Add Language",
-      "each_language_panel": "Each language panel contains full fields",
+      "each_language_panel": "Each language panel contains full translation fields",
       "collapse": "Collapse",
       "open": "Open",
+      "name": "Product Name",
       "short_description": "Short Description",
+      "description": "Description",
       "specifications": "Specifications",
       "meta_title": "Meta Title",
       "meta_description": "Meta Description",
       "meta_keywords": "Meta Keywords",
-      "enter_language_code": "Enter language code (e.g., ar)",
+      "enter_language_code": "Enter language code (e.g., ar, fr, de)",
       "enter_language_name": "Enter language name (e.g., Arabic)",
       "remove_language": "Remove Language"
     },
+    "table": {
+      "id": "ID",
+      "tenant": "Tenant",
+      "image": "Image",
+      "name": "Name",
+      "sku": "SKU",
+      "type": "Type",
+      "price": "Price",
+      "stock": "Stock",
+      "status": "Status",
+      "actions": "Actions",
+      "edit": "Edit",
+      "delete": "Delete",
+      "duplicate": "Duplicate"
+    },
+    "filters": {
+      "product_type": "Product Type",
+      "brand": "Brand",
+      "status": "Status",
+      "tenant_id": "Tenant ID",
+      "tenant_placeholder": "Filter by tenant",
+      "apply": "Apply",
+      "reset": "Reset",
+      "all_types": "All Types",
+      "all_brands": "All Brands",
+      "all_statuses": "All Statuses"
+    },
     "validation": {
       "sku_required": "SKU is required",
-      "name_required": "Product name is required"
+      "name_required": "Product name is required",
+      "validation_failed": "Please fill all required fields correctly"
     },
     "messages": {
       "are_you_sure": "Are you sure?",
       "network_error": "Network error occurred",
-      "server_error": "Server error occurred"
+      "server_error": "Server error occurred",
+      "attribute_exists": "This attribute has already been added",
+      "translation_exists": "A translation already exists for this language",
+      "save_first": "Please save the product first before adding translations",
+      "bad_words_found": "Content contains prohibited words",
+      "checking_content": "Checking content for prohibited words...",
+      "save_failed": "Failed to save product",
+      "delete_failed": "Failed to delete product",
+      "duplicate_failed": "Failed to duplicate product"
+    },
+    "accessibility": {
+      "close": "Close"
     },
     "csv": {
       "import_button": "Import CSV",

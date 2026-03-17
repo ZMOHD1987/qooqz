@@ -13,6 +13,17 @@ require_once $modelsPath . '/repositories/PdoProductsRepository.php';
 require_once $modelsPath . '/services/ProductsService.php';
 require_once $modelsPath . '/controllers/ProductsController.php';
 
+// Bad words service
+$badWordsPath = API_VERSION_PATH . '/models/bad_words';
+require_once $badWordsPath . '/repositories/PdoBadWordsRepository.php';
+require_once $badWordsPath . '/services/BadWordsService.php';
+
+// Audit logs service
+$auditPath = API_VERSION_PATH . '/models/audit_logs';
+require_once $auditPath . '/Contracts/AuditLogsRepositoryInterface.php';
+require_once $auditPath . '/repositories/PdoAuditLogsRepository.php';
+require_once $auditPath . '/services/AuditLogsService.php';
+
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 $pdo = $GLOBALS['ADMIN_DB'] ?? null;
@@ -120,6 +131,34 @@ try {
                 // Don't block product creation if limit check fails
             }
 
+            // Bad words check on text fields
+            try {
+                $badWordsRepo    = new PdoBadWordsRepository($pdo);
+                $badWordsService = new BadWordsService($badWordsRepo);
+                $fieldsToCheck   = ['name', 'description', 'short_description', 'specifications'];
+                $badFound        = [];
+                foreach ($fieldsToCheck as $field) {
+                    $val = $data[$field] ?? '';
+                    if ($val === '' || $val === null) continue;
+                    $check = $badWordsService->checkText((string)$val);
+                    if (!$check['clean']) {
+                        foreach ($check['found'] as $hit) {
+                            $badFound[] = $hit['word'];
+                        }
+                    }
+                }
+                if (!empty($badFound)) {
+                    ResponseFormatter::error(
+                        'Content contains prohibited words: ' . implode(', ', array_unique($badFound)),
+                        422
+                    );
+                    break;
+                }
+            } catch (\Throwable $e) {
+                // Don't block product creation if bad-words check fails (service unavailable)
+                safe_log('warning', 'products.bad_words_check_failed', ['error' => $e->getMessage()]);
+            }
+
             $newId = $controller->create($tenantId, $data);
 
             // Auto-populate SEO meta
@@ -135,10 +174,47 @@ try {
                 // SEO sync failure should not break product creation
             }
 
+            // Audit log: product created
+            AuditLogsService::log(
+                'product.create',
+                'product',
+                (int)$newId,
+                ['name' => $data['name'] ?? '', 'sku' => $data['sku'] ?? ''],
+                $tenantId,
+                isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null
+            );
+
             ResponseFormatter::success(['id' => $newId], 'Created successfully', 201);
             break;
 
         case 'PUT':
+            // Bad words check on text fields
+            try {
+                $badWordsRepo    = new PdoBadWordsRepository($pdo);
+                $badWordsService = new BadWordsService($badWordsRepo);
+                $fieldsToCheck   = ['name', 'description', 'short_description', 'specifications'];
+                $badFound        = [];
+                foreach ($fieldsToCheck as $field) {
+                    $val = $data[$field] ?? '';
+                    if ($val === '' || $val === null) continue;
+                    $check = $badWordsService->checkText((string)$val);
+                    if (!$check['clean']) {
+                        foreach ($check['found'] as $hit) {
+                            $badFound[] = $hit['word'];
+                        }
+                    }
+                }
+                if (!empty($badFound)) {
+                    ResponseFormatter::error(
+                        'Content contains prohibited words: ' . implode(', ', array_unique($badFound)),
+                        422
+                    );
+                    break;
+                }
+            } catch (\Throwable $e) {
+                safe_log('warning', 'products.bad_words_check_failed', ['error' => $e->getMessage()]);
+            }
+
             $updatedId = $controller->update($tenantId, $data);
 
             // Auto-update SEO meta
@@ -153,6 +229,16 @@ try {
             } catch (\Throwable $e) {
                 // SEO sync failure should not break product update
             }
+
+            // Audit log: product updated
+            AuditLogsService::log(
+                'product.update',
+                'product',
+                (int)$updatedId,
+                ['name' => $data['name'] ?? '', 'id' => $updatedId],
+                $tenantId,
+                isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null
+            );
 
             ResponseFormatter::success(['id' => $updatedId], 'Updated successfully');
             break;
@@ -169,6 +255,16 @@ try {
             } catch (\Throwable $e) {
                 // SEO delete failure should not break product deletion
             }
+
+            // Audit log: product deleted
+            AuditLogsService::log(
+                'product.delete',
+                'product',
+                (int)$data['id'],
+                ['id' => $data['id']],
+                $tenantId,
+                isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null
+            );
 
             ResponseFormatter::success(['deleted' => $deleted], 'Deleted successfully');
             break;
