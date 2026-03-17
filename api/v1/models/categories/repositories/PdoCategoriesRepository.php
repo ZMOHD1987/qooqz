@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-final class PdoCategoriesRepository
+final class PdoCategoriesRepository implements CategoriesRepositoryInterface
 {
     private PDO $pdo;
 
@@ -437,59 +437,72 @@ final class PdoCategoriesRepository
         ?array $oldData,
         ?array $newData
     ): void {
-        // تنظيف البيانات الحساسة قبل التسجيل
+        // Strip sensitive fields before persisting
         $sensitiveFields = ['password', 'token', 'api_key', 'secret_key', 'refresh_token', 'access_token', 'session_id'];
-        
+
         if ($oldData) {
             foreach ($sensitiveFields as $field) {
                 unset($oldData[$field]);
             }
         }
-        
+
         if ($newData) {
             foreach ($sensitiveFields as $field) {
                 unset($newData[$field]);
             }
         }
 
-        // إعداد بيانات السجل
-        $payload = [
-            'action' => $action,
-            'entity_type' => 'category',
-            'entity_id' => $entityId,
-            'user_id' => $userId,
-            'old_data' => $oldData,
-            'new_data' => $newData,
-            'timestamp' => date('Y-m-d H:i:s'),
-            'tenant_id' => $tenantId
-        ];
+        // Delegate to AuditLogsService (full diff/metadata/trace support) when available;
+        // fall back to a direct INSERT for environments where the service is not loaded.
+        if (class_exists('AuditLogsService')) {
+            AuditLogsService::log(
+                'category.' . $action,  // e.g. "category.create", "category.update"
+                'category',
+                $entityId,
+                null,           // payload: superseded by old_values / new_values
+                $tenantId,
+                $userId,
+                $oldData,       // old_values — diff is auto-computed by repository
+                $newData        // new_values
+            );
+            return;
+        }
 
+        // Fallback: direct insert using the full schema (all new columns)
         try {
+            $diff = null;
+            if ($oldData !== null && $newData !== null) {
+                $diff = PdoAuditLogsRepository::computeDiff($oldData, $newData);
+            }
+
             $stmt = $this->pdo->prepare("
                 INSERT INTO audit_logs
-                (tenant_id, entity_type, entity_id, user_id, action, 
-                 ip_address, user_agent, payload)
+                    (tenant_id, entity_type, entity_id, user_id, action,
+                     ip_address, user_agent, old_values, new_values, diff,
+                     http_method, http_url, session_id)
                 VALUES
-                (:tenantId, :entity_type, :entity_id, :userId, :action,
-                 :ip, :user_agent, :payload)
+                    (:tenantId, :entity_type, :entity_id, :userId, :action,
+                     :ip, :user_agent, :old_values, :new_values, :diff,
+                     :http_method, :http_url, :session_id)
             ");
-            
+
             $stmt->execute([
-                ':tenantId'     => $tenantId,
-                ':entity_type'  => 'category',
-                ':entity_id'    => $entityId,
-                ':userId'       => $userId,
-                ':action'       => $action,
-                ':ip'           => $_SERVER['REMOTE_ADDR'] ?? null,
-                ':user_agent'   => $_SERVER['HTTP_USER_AGENT'] ?? null,
-                ':payload'      => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
+                ':tenantId'    => $tenantId,
+                ':entity_type' => 'category',
+                ':entity_id'   => $entityId,
+                ':userId'      => $userId,
+                ':action'      => 'category.' . $action,
+                ':ip'          => $_SERVER['REMOTE_ADDR']     ?? null,
+                ':user_agent'  => $_SERVER['HTTP_USER_AGENT'] ?? null,
+                ':old_values'  => $oldData !== null ? json_encode($oldData, JSON_UNESCAPED_UNICODE) : null,
+                ':new_values'  => $newData !== null ? json_encode($newData, JSON_UNESCAPED_UNICODE) : null,
+                ':diff'        => $diff    !== null ? json_encode($diff,    JSON_UNESCAPED_UNICODE) : null,
+                ':http_method' => $_SERVER['REQUEST_METHOD'] ?? null,
+                ':http_url'    => $_SERVER['REQUEST_URI']    ?? null,
+                ':session_id'  => session_id() ?: null,
             ]);
-            
-            error_log("Audit log created for category {$entityId}, action: {$action}, user: {$userId}");
-            
-        } catch (Throwable $e) {
-            error_log("Failed to create audit log: " . $e->getMessage());
-            // لا نرمي خطأ هنا لأن فشل التسجيل لا يجب أن يوقف العملية الرئيسية
+        } catch (\Throwable $e) {
+            error_log('AuditLog (categories fallback) failed: ' . $e->getMessage());
         }
     }
 

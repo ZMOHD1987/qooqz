@@ -11,7 +11,14 @@ require_once $baseDir . '/shared/helpers/safe_helpers.php';
 require_once $baseDir . '/shared/helpers/SeoAutoManager.php';
 require_once $baseDir . '/shared/config/db.php';
 
+// ===== تحميل ملفات audit_logs (لتمكين AuditLogsService في المستودع) =====
+$auditPath = API_VERSION_PATH . '/models/audit_logs';
+require_once $auditPath . '/Contracts/AuditLogsRepositoryInterface.php';
+require_once $auditPath . '/repositories/PdoAuditLogsRepository.php';
+require_once $auditPath . '/services/AuditLogsService.php';
+
 // ===== تحميل ملفات categories =====
+require_once API_VERSION_PATH . '/models/categories/Contracts/CategoriesRepositoryInterface.php';
 require_once API_VERSION_PATH . '/models/categories/repositories/PdoCategoriesRepository.php';
 require_once API_VERSION_PATH . '/models/categories/validators/CategoriesValidator.php';
 require_once API_VERSION_PATH . '/models/categories/services/CategoriesService.php';
