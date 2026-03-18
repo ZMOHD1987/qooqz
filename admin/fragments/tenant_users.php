@@ -303,7 +303,7 @@ $apiBase = '/api';
                     </div>
                 </div>
 
-                <div class="form-row" style="margin-top:1rem">
+                <div class="form-row form-row-mt">
                     <!-- Status -->
                     <div class="form-group">
                         <label for="formIsActive" data-i18n="form.fields.status.label">
@@ -411,7 +411,7 @@ $apiBase = '/api';
                     <button id="btnResetFilters" class="btn btn-outline" data-i18n="filters.reset">
                         <?= __t('filters.reset', 'Reset') ?>
                     </button>
-                    <button id="btnExportExcel" class="btn btn-success" data-i18n="table.actions.export" style="margin-inline-start:auto">
+                    <button id="btnExportExcel" class="btn btn-success btn-export" data-i18n="table.actions.export">
                         <i class="fas fa-file-excel"></i> <?= __t('table.actions.export', 'Export Excel') ?>
                     </button>
                 </div>
