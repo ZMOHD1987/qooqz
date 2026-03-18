@@ -87,9 +87,7 @@
             );
         }
         if (tabId === 'tab-categories' && state.currentTenantId) {
-            loadSubFragment('tenantCategoriesContainer',
-                `${window.TENANTS_CONFIG?.tenantCategoriesUrl || '/admin/fragments/tenant_categories.php'}?embedded=1&tenant_id=${state.currentTenantId}&lang=${state.language}`
-            );
+            loadTenantCategories(state.currentTenantId);
         }
     }
 
@@ -369,6 +367,118 @@
             }
         } catch (err) {
             if (AF.error) AF.error(err?.message || t('domains.messages.load_failed', 'Failed to load domain'));
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // CATEGORIES
+    // ─────────────────────────────────────────────
+    const tenantCatApiUrl  = () => window.TENANTS_CONFIG?.tenantCategoriesApiUrl || '/api/categories-tenants';
+    const allCatApiUrl     = () => window.TENANTS_CONFIG?.categoriesApiUrl       || '/api/categories';
+
+    let _catsLoaded = false;
+
+    async function loadCategoriesDropdown() {
+        const select = document.getElementById('catFormCategoryId');
+        if (!select || select.dataset.populated) return;
+        try {
+            const res = await AF.get(`${allCatApiUrl()}?limit=500&lang=${state.language}&skip_tc_filter=1&parent_id=0`);
+            const items = res?.data?.items || res?.items || [];
+            items.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = `${c.name || c.id} (#${c.id})`;
+                select.appendChild(opt);
+            });
+            select.dataset.populated = '1';
+        } catch (err) {
+            console.warn('[Tenants] Could not load categories dropdown:', err);
+        }
+    }
+
+    async function loadTenantCategories(tenantId, force = false) {
+        if (_catsLoaded && !force) return;
+        const list = document.getElementById('tenantCategoriesList');
+        if (!list) return;
+
+        list.innerHTML = '<p style="color:var(--text-secondary);padding:1rem;">Loading…</p>';
+        try {
+            const res = await AF.get(`${tenantCatApiUrl()}?tenant_id=${tenantId}`);
+            const items = res?.data || (Array.isArray(res) ? res : []);
+            _catsLoaded = true;
+
+            if (!items.length) {
+                list.innerHTML = '<div class="sub-fragment-placeholder" id="tenantCategoriesPlaceholder"><i class="fas fa-tags fa-2x"></i><p>' + t('categories.no_categories', 'No categories assigned yet') + '</p></div>';
+                return;
+            }
+
+            list.innerHTML = items.map(c => `
+                <div class="domain-row" data-id="${c.id}">
+                    <div class="domain-row-main">
+                        <span class="domain-badge">${esc(c.category_name || String(c.category_id))}</span>
+                        <span class="badge-status badge-muted">#${c.sort_order}</span>
+                        <span class="badge-status ${c.is_active ? 'badge-verified' : 'badge-unverified'}">${c.is_active ? t('categories.active', 'Active') : t('categories.inactive', 'Inactive')}</span>
+                    </div>
+                    <div class="domain-row-actions">
+                        <button class="btn btn-sm btn-danger" onclick="Tenants.removeTenantCategory(${c.id})" title="${t('categories.delete', 'Remove')}"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`).join('');
+
+            // Ensure dropdown is populated once list is shown
+            loadCategoriesDropdown();
+        } catch (err) {
+            list.innerHTML = `<p style="color:var(--danger-color);padding:1rem;">${err?.message || 'Failed to load categories'}</p>`;
+        }
+    }
+
+    async function addTenantCategory() {
+        const selectEl     = document.getElementById('catFormCategoryId');
+        const sortOrderEl  = document.getElementById('catFormSortOrder');
+        const idEl         = document.getElementById('catFormId');
+        const categoryId   = parseInt(selectEl?.value || '0', 10);
+
+        if (!categoryId) {
+            if (AF.error) AF.error(t('categories.fields.category_required', 'Please select a category'));
+            return;
+        }
+        if (!state.currentTenantId) return;
+
+        const payload = {
+            tenant_id:   state.currentTenantId,
+            category_id: categoryId,
+            sort_order:  parseInt(sortOrderEl?.value || '0', 10),
+            is_active:   1,
+        };
+        const existingId = parseInt(idEl?.value || '0', 10);
+        if (existingId) payload.id = existingId;
+
+        try {
+            if (existingId) {
+                await AF.put(`${tenantCatApiUrl()}/${existingId}`, payload);
+            } else {
+                await AF.post(tenantCatApiUrl(), payload);
+            }
+            if (AF.success) AF.success(t('categories.saved', 'Category saved'));
+            const formInline = document.getElementById('tenantCategoryFormInline');
+            if (formInline) formInline.style.display = 'none';
+            if (selectEl) selectEl.value = '';
+            if (sortOrderEl) sortOrderEl.value = '0';
+            if (idEl) idEl.value = '';
+            _catsLoaded = false;
+            loadTenantCategories(state.currentTenantId, true);
+        } catch (err) {
+            if (AF.error) AF.error(err?.message || t('categories.save_failed', 'Failed to save category'));
+        }
+    }
+
+    async function removeTenantCategory(id) {
+        if (!confirm(t('categories.confirm_delete', 'Remove this category assignment?'))) return;
+        try {
+            await AF.delete(`${tenantCatApiUrl()}/${id}`, { id });
+            _catsLoaded = false;
+            loadTenantCategories(state.currentTenantId, true);
+        } catch (err) {
+            if (AF.error) AF.error(err?.message || t('categories.delete_failed', 'Failed to remove category'));
         }
     }
 
@@ -659,11 +769,15 @@
         const domainsList       = document.getElementById('domainsList');
         const usersContainer    = document.getElementById('tenantUsersContainer');
         const addrContainer     = document.getElementById('tenantAddressesContainer');
-        const catsContainer     = document.getElementById('tenantCategoriesContainer');
+        const catsList          = document.getElementById('tenantCategoriesList');
         if (domainsList)    domainsList.innerHTML    = '<div class="sub-fragment-placeholder"><i class="fas fa-globe fa-2x"></i><p>' + t('domains.no_domains', 'No domains registered yet') + '</p></div>';
         if (usersContainer) usersContainer.innerHTML = '<div class="sub-fragment-placeholder"><i class="fas fa-users fa-2x"></i><p>' + t('tabs.users', 'Users') + '</p></div>';
         if (addrContainer)  addrContainer.innerHTML  = '<div class="sub-fragment-placeholder"><i class="fas fa-map-marker-alt fa-2x"></i><p>' + t('tabs.addresses', 'Addresses') + '</p></div>';
-        if (catsContainer)  catsContainer.innerHTML  = '<div class="sub-fragment-placeholder"><i class="fas fa-tags fa-2x"></i><p>' + t('tabs.categories', 'Categories') + '</p></div>';
+        if (catsList)       { catsList.innerHTML = '<div class="sub-fragment-placeholder" id="tenantCategoriesPlaceholder"><i class="fas fa-tags fa-2x"></i><p>' + t('categories.no_categories', 'No categories assigned yet') + '</p></div>'; delete catsList.dataset.loaded; }
+        // Reset inline category form
+        const catFormInline = document.getElementById('tenantCategoryFormInline');
+        if (catFormInline) catFormInline.style.display = 'none';
+        _catsLoaded = false;
 
         activateTab('tab-basic');
 
@@ -793,6 +907,22 @@
         if (btnCancelDomain) btnCancelDomain.onclick = () => { if (domainFormInline) domainFormInline.style.display = 'none'; };
         if (btnSaveDomain)   btnSaveDomain.onclick   = addDomain;
 
+        // Category form events
+        const btnAddCat    = document.getElementById('btnAddTenantCategory');
+        const btnSaveCat   = document.getElementById('btnSaveTenantCategory');
+        const btnCancelCat = document.getElementById('btnCancelTenantCategory');
+        const catFormInline = document.getElementById('tenantCategoryFormInline');
+        if (btnAddCat) btnAddCat.onclick = () => {
+            const idEl = document.getElementById('catFormId');
+            if (idEl) idEl.value = '';
+            const titleEl = document.getElementById('tenantCategoryFormTitle');
+            if (titleEl) titleEl.textContent = t('categories.add', 'Add Category');
+            if (catFormInline) catFormInline.style.display = 'block';
+            loadCategoriesDropdown();
+        };
+        if (btnCancelCat) btnCancelCat.onclick = () => { if (catFormInline) catFormInline.style.display = 'none'; };
+        if (btnSaveCat)   btnSaveCat.onclick   = addTenantCategory;
+
         if (el.searchInput) {
             el.searchInput.addEventListener('keypress', e => {
                 if (e.key === 'Enter') applyFilters();
@@ -815,7 +945,7 @@
     // ─────────────────────────────────────────────
     // PUBLIC API
     // ─────────────────────────────────────────────
-    window.Tenants = { init, load, edit, remove, add, verifyDomain, removeDomain, addDomain, editDomain };
+    window.Tenants = { init, load, edit, remove, add, verifyDomain, removeDomain, addDomain, editDomain, loadTenantCategories, addTenantCategory, removeTenantCategory };
 
     // Auto-init in standalone mode
     if (document.readyState === 'loading') {

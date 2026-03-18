@@ -465,11 +465,73 @@ if (!function_exists('__t')) {
 
                 <!-- Tab: Categories -->
                 <div class="tab-content" id="tab-categories" style="display:none">
-                    <div id="tenantCategoriesContainer" class="sub-fragment-container">
-                        <div class="sub-fragment-placeholder">
-                            <i class="fas fa-tags fa-2x"></i>
-                            <p data-i18n="tabs.categories"><?= __t('tabs.categories', 'Categories') ?></p>
-                            <small><?= __t('page.save_first', 'Save the tenant first to manage categories') ?></small>
+                    <div id="tenantCategoriesPanel" class="domains-panel">
+                        <div class="domains-panel-header">
+                            <h4>
+                                <i class="fas fa-tags"></i>
+                                <span data-i18n="categories.tab_title"><?= __t('categories.tab_title', 'Category Management') ?></span>
+                            </h4>
+                            <?php if ($canEdit): ?>
+                            <button type="button" id="btnAddTenantCategory" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus"></i>
+                                <span data-i18n="categories.add"><?= __t('categories.add', 'Add Category') ?></span>
+                            </button>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Inline add/edit category form -->
+                        <div id="tenantCategoryFormInline" class="domain-form-inline" style="display:none">
+                            <div class="domain-form-header">
+                                <i class="fas fa-tags"></i>
+                                <span id="tenantCategoryFormTitle" class="domain-form-title">
+                                    <?= __t('categories.add', 'Add Category') ?>
+                                </span>
+                            </div>
+                            <input type="hidden" id="catFormId">
+                            <div class="form-grid">
+
+                                <!-- Category select -->
+                                <div class="form-group">
+                                    <label for="catFormCategoryId" class="required">
+                                        <i class="fas fa-tag"></i>
+                                        <span data-i18n="categories.fields.category"><?= __t('categories.fields.category', 'Category') ?></span>
+                                    </label>
+                                    <select id="catFormCategoryId" class="form-control">
+                                        <option value=""><?= __t('categories.fields.category_placeholder', '-- Select Category --') ?></option>
+                                    </select>
+                                </div>
+
+                                <!-- Sort order -->
+                                <div class="form-group">
+                                    <label for="catFormSortOrder">
+                                        <i class="fas fa-sort-numeric-up"></i>
+                                        <span data-i18n="categories.fields.sort_order"><?= __t('categories.fields.sort_order', 'Sort Order') ?></span>
+                                    </label>
+                                    <input type="number" id="catFormSortOrder" class="form-control" value="0" min="0">
+                                </div>
+
+                            </div><!-- /.form-grid -->
+
+                            <div class="form-actions form-actions-compact">
+                                <button type="button" id="btnSaveTenantCategory" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-save"></i>
+                                    <span data-i18n="categories.buttons.save"><?= __t('categories.buttons.save', 'Save Category') ?></span>
+                                </button>
+                                <button type="button" id="btnCancelTenantCategory" class="btn btn-outline btn-sm">
+                                    <i class="fas fa-times"></i>
+                                    <span data-i18n="categories.buttons.cancel"><?= __t('categories.buttons.cancel', 'Cancel') ?></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Categories list -->
+                        <div id="tenantCategoriesList" class="domains-list">
+                            <div class="sub-fragment-placeholder" id="tenantCategoriesPlaceholder">
+                                <i class="fas fa-tags fa-2x"></i>
+                                <p data-i18n="categories.no_categories">
+                                    <?= __t('categories.no_categories', 'No categories assigned yet') ?>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -633,11 +695,12 @@ window.PAGE_PERMISSIONS = <?= json_encode([
 ], JSON_UNESCAPED_UNICODE) ?>;
 
 window.TENANTS_CONFIG = {
-    apiUrl:              '<?= $apiBase ?>/tenants',
-    domainsApiUrl:       '<?= $apiBase ?>/tenant_domains',
-    tenantUsersUrl:      '/admin/fragments/tenant_users.php',
-    addressesUrl:        '/admin/fragments/addresses.php',
-    tenantCategoriesUrl: '/admin/fragments/tenant_categories.php',
+    apiUrl:                 '<?= $apiBase ?>/tenants',
+    domainsApiUrl:          '<?= $apiBase ?>/tenant_domains',
+    tenantUsersUrl:         '/admin/fragments/tenant_users.php',
+    addressesUrl:           '/admin/fragments/addresses.php',
+    tenantCategoriesApiUrl: '<?= $apiBase ?>/categories-tenants',
+    categoriesApiUrl:       '<?= $apiBase ?>/categories',
     csrfToken:      '<?= addslashes($csrf) ?>',
     lang:           '<?= addslashes($lang) ?>',
     itemsPerPage:   25
