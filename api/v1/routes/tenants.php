@@ -262,7 +262,12 @@ try {
     }
 
 } catch (InvalidArgumentException $e) {
-    ResponseFormatter::error($e->getMessage(), 422);
+    $decoded = json_decode($e->getMessage(), true);
+    if (is_array($decoded)) {
+        ResponseFormatter::error('Validation failed', 422, $decoded);
+    } else {
+        ResponseFormatter::error($e->getMessage(), 422);
+    }
 } catch (RuntimeException $e) {
     ResponseFormatter::error($e->getMessage(), 404);
 } catch (Throwable $e) {
