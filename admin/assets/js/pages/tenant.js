@@ -86,16 +86,23 @@
                 `${window.TENANTS_CONFIG?.addressesUrl || '/admin/fragments/addresses.php'}?embedded=1&owner_type=entity&tenant_id=${state.currentTenantId}&lang=${state.language}`
             );
         }
+        if (tabId === 'tab-categories' && state.currentTenantId) {
+            loadSubFragment('tenantCategoriesContainer',
+                `${window.TENANTS_CONFIG?.tenantCategoriesUrl || '/admin/fragments/tenant_categories.php'}?embedded=1&tenant_id=${state.currentTenantId}&lang=${state.language}`
+            );
+        }
     }
 
     function enableSubTabs(tenantId) {
         state.currentTenantId = tenantId;
-        const btnDomains = document.getElementById('tabBtnDomains');
-        const btnUsers   = document.getElementById('tabBtnUsers');
-        const btnAddr    = document.getElementById('tabBtnAddresses');
-        if (btnDomains) btnDomains.disabled = false;
-        if (btnUsers)   btnUsers.disabled   = false;
-        if (btnAddr)    btnAddr.disabled    = false;
+        const btnDomains     = document.getElementById('tabBtnDomains');
+        const btnUsers       = document.getElementById('tabBtnUsers');
+        const btnAddr        = document.getElementById('tabBtnAddresses');
+        const btnCategories  = document.getElementById('tabBtnCategories');
+        if (btnDomains)    btnDomains.disabled    = false;
+        if (btnUsers)      btnUsers.disabled      = false;
+        if (btnAddr)       btnAddr.disabled       = false;
+        if (btnCategories) btnCategories.disabled = false;
     }
 
     async function loadSubFragment(containerId, url) {
@@ -639,20 +646,24 @@
         if (el.formId) el.formId.value = '';
 
         // Disable sub-tabs until saved
-        const btnDomains = document.getElementById('tabBtnDomains');
-        const btnUsers   = document.getElementById('tabBtnUsers');
-        const btnAddr    = document.getElementById('tabBtnAddresses');
-        if (btnDomains) btnDomains.disabled = true;
-        if (btnUsers)   btnUsers.disabled   = true;
-        if (btnAddr)    btnAddr.disabled    = true;
+        const btnDomains    = document.getElementById('tabBtnDomains');
+        const btnUsers      = document.getElementById('tabBtnUsers');
+        const btnAddr       = document.getElementById('tabBtnAddresses');
+        const btnCategories = document.getElementById('tabBtnCategories');
+        if (btnDomains)    btnDomains.disabled    = true;
+        if (btnUsers)      btnUsers.disabled      = true;
+        if (btnAddr)       btnAddr.disabled       = true;
+        if (btnCategories) btnCategories.disabled = true;
 
         // Reset sub-fragment containers
-        const domainsList    = document.getElementById('domainsList');
-        const usersContainer = document.getElementById('tenantUsersContainer');
-        const addrContainer  = document.getElementById('tenantAddressesContainer');
+        const domainsList       = document.getElementById('domainsList');
+        const usersContainer    = document.getElementById('tenantUsersContainer');
+        const addrContainer     = document.getElementById('tenantAddressesContainer');
+        const catsContainer     = document.getElementById('tenantCategoriesContainer');
         if (domainsList)    domainsList.innerHTML    = '<div class="sub-fragment-placeholder"><i class="fas fa-globe fa-2x"></i><p>' + t('domains.no_domains', 'No domains registered yet') + '</p></div>';
         if (usersContainer) usersContainer.innerHTML = '<div class="sub-fragment-placeholder"><i class="fas fa-users fa-2x"></i><p>' + t('tabs.users', 'Users') + '</p></div>';
         if (addrContainer)  addrContainer.innerHTML  = '<div class="sub-fragment-placeholder"><i class="fas fa-map-marker-alt fa-2x"></i><p>' + t('tabs.addresses', 'Addresses') + '</p></div>';
+        if (catsContainer)  catsContainer.innerHTML  = '<div class="sub-fragment-placeholder"><i class="fas fa-tags fa-2x"></i><p>' + t('tabs.categories', 'Categories') + '</p></div>';
 
         activateTab('tab-basic');
 

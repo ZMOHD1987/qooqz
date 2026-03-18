@@ -164,6 +164,10 @@ if (!function_exists('__t')) {
                         <i class="fas fa-map-marker-alt"></i>
                         <span data-i18n="tabs.addresses"><?= __t('tabs.addresses', 'Addresses') ?></span>
                     </button>
+                    <button type="button" class="tab-btn" data-tab="tab-categories" id="tabBtnCategories" disabled>
+                        <i class="fas fa-tags"></i>
+                        <span data-i18n="tabs.categories"><?= __t('tabs.categories', 'Categories') ?></span>
+                    </button>
                 </div>
 
                 <!-- Tab: Basic Info -->
@@ -459,6 +463,17 @@ if (!function_exists('__t')) {
                     </div>
                 </div>
 
+                <!-- Tab: Categories -->
+                <div class="tab-content" id="tab-categories" style="display:none">
+                    <div id="tenantCategoriesContainer" class="sub-fragment-container">
+                        <div class="sub-fragment-placeholder">
+                            <i class="fas fa-tags fa-2x"></i>
+                            <p data-i18n="tabs.categories"><?= __t('tabs.categories', 'Categories') ?></p>
+                            <small><?= __t('page.save_first', 'Save the tenant first to manage categories') ?></small>
+                        </div>
+                    </div>
+                </div>
+
             </form>
         </div>
     </div><!-- /#tenantFormContainer -->
@@ -618,10 +633,11 @@ window.PAGE_PERMISSIONS = <?= json_encode([
 ], JSON_UNESCAPED_UNICODE) ?>;
 
 window.TENANTS_CONFIG = {
-    apiUrl:         '<?= $apiBase ?>/tenants',
-    domainsApiUrl:  '<?= $apiBase ?>/tenant_domains',
-    tenantUsersUrl: '/admin/fragments/tenant_users.php',
-    addressesUrl:   '/admin/fragments/addresses.php',
+    apiUrl:              '<?= $apiBase ?>/tenants',
+    domainsApiUrl:       '<?= $apiBase ?>/tenant_domains',
+    tenantUsersUrl:      '/admin/fragments/tenant_users.php',
+    addressesUrl:        '/admin/fragments/addresses.php',
+    tenantCategoriesUrl: '/admin/fragments/tenant_categories.php',
     csrfToken:      '<?= addslashes($csrf) ?>',
     lang:           '<?= addslashes($lang) ?>',
     itemsPerPage:   25
