@@ -12,15 +12,18 @@ final class PdoTenantCategoriesRepository
         $this->pdo = $pdo;
     }
 
-    public function all(?int $tenantId = null, ?int $categoryId = null, ?int $isActive = null, int $offset = 0, int $limit = null): array
+    public function all(?int $tenantId = null, ?int $categoryId = null, ?int $isActive = null, int $offset = 0, int $limit = null, string $lang = 'ar'): array
     {
-        $sql = "SELECT tc.*, t.name AS tenant_name, c.name AS category_name
+        $sql = "SELECT tc.*, t.name AS tenant_name,
+                       COALESCE(ct.name, c.name) AS category_name
                 FROM tenant_categories tc
                 LEFT JOIN tenants t ON tc.tenant_id = t.id
                 LEFT JOIN categories c ON tc.category_id = c.id
+                LEFT JOIN category_translations ct
+                    ON ct.category_id = c.id AND ct.language_code = :lang
                 WHERE 1=1";
 
-        $params = [];
+        $params = [':lang' => $lang];
 
         if ($tenantId !== null) {
             $sql .= " AND tc.tenant_id = :tenantId";
@@ -52,17 +55,20 @@ final class PdoTenantCategoriesRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function find(int $id): ?array
+    public function find(int $id, string $lang = 'ar'): ?array
     {
         $stmt = $this->pdo->prepare("
-            SELECT tc.*, t.name AS tenant_name, c.name AS category_name
+            SELECT tc.*, t.name AS tenant_name,
+                   COALESCE(ct.name, c.name) AS category_name
             FROM tenant_categories tc
             LEFT JOIN tenants t ON tc.tenant_id = t.id
             LEFT JOIN categories c ON tc.category_id = c.id
+            LEFT JOIN category_translations ct
+                ON ct.category_id = c.id AND ct.language_code = :lang
             WHERE tc.id = :id
             LIMIT 1
         ");
-        $stmt->execute([':id' => $id]);
+        $stmt->execute([':id' => $id, ':lang' => $lang]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
     }

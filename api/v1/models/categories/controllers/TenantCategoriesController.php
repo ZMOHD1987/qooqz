@@ -18,24 +18,28 @@ final class TenantCategoriesController
         $isActive = isset($_GET['is_active']) ? (int)$_GET['is_active'] : null;
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 25;
+        $lang = isset($_GET['lang']) ? (string)$_GET['lang'] : 'ar';
 
-        return $this->service->list($tenantId, $categoryId, $isActive, $page, $limit);
+        return $this->service->list($tenantId, $categoryId, $isActive, $page, $limit, $lang);
     }
 
     public function get(int $id): array
     {
-        return $this->service->get($id);
+        $lang = isset($_GET['lang']) ? (string)$_GET['lang'] : 'ar';
+        return $this->service->get($id, $lang);
     }
 
     public function create(array $data): array
     {
-        return $this->service->save($data);
+        $lang = isset($_GET['lang']) ? (string)$_GET['lang'] : 'ar';
+        return $this->service->save($data, $lang);
     }
 
     public function update(array $data): array
     {
         if (empty($data['id'])) throw new InvalidArgumentException('ID is required');
-        return $this->service->save($data);
+        $lang = isset($_GET['lang']) ? (string)$_GET['lang'] : 'ar';
+        return $this->service->save($data, $lang);
     }
 
     public function toggleStatus(array $data): array

@@ -14,20 +14,20 @@ final class TenantCategoriesService
         $this->repo = $repo;
     }
 
-    public function list(?int $tenantId = null, ?int $categoryId = null, ?int $isActive = null, int $page = 1, int $limit = 25): array
+    public function list(?int $tenantId = null, ?int $categoryId = null, ?int $isActive = null, int $page = 1, int $limit = 25, string $lang = 'ar'): array
     {
         $offset = ($page - 1) * $limit;
-        return $this->repo->all($tenantId, $categoryId, $isActive, $offset, $limit);
+        return $this->repo->all($tenantId, $categoryId, $isActive, $offset, $limit, $lang);
     }
 
-    public function get(int $id): array
+    public function get(int $id, string $lang = 'ar'): array
     {
-        $row = $this->repo->find($id);
+        $row = $this->repo->find($id, $lang);
         if (!$row) throw new RuntimeException('Tenant Category not found');
         return $row;
     }
 
-    public function save(array $data): array
+    public function save(array $data, string $lang = 'ar'): array
     {
         $errors = TenantCategoriesValidator::validate($data);
         if (!empty($errors)) {
@@ -35,7 +35,7 @@ final class TenantCategoriesService
         }
 
         $id = $this->repo->save($data);
-        return $this->get($id);
+        return $this->get($id, $lang);
     }
 
     public function toggleStatus(int $id, int $isActive): array

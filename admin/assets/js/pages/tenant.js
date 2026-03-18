@@ -403,7 +403,7 @@
 
         list.innerHTML = '<p style="color:var(--text-secondary);padding:1rem;"><i class="fas fa-spinner fa-spin"></i> ' + t('categories.loading', 'Loading…') + '</p>';
         try {
-            const res = await AF.get(`${tenantCatApiUrl()}?tenant_id=${tenantId}`);
+            const res = await AF.get(`${tenantCatApiUrl()}?tenant_id=${tenantId}&lang=${state.language || 'ar'}`);
             const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
             _catsLoaded = true;
 
