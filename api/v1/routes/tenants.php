@@ -206,7 +206,7 @@ try {
         }
 
         ResponseFormatter::success(
-            $controller->activate($data),
+            $controller->activate($data, $actingUserId),
             'Tenants activated successfully'
         );
     }
@@ -221,7 +221,7 @@ try {
         }
 
         ResponseFormatter::success(
-            $controller->suspend($data),
+            $controller->suspend($data, $actingUserId),
             'Tenants suspended successfully'
         );
     }

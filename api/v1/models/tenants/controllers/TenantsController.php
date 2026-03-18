@@ -100,6 +100,30 @@ final class TenantsController
     }
 
     /**
+     * Activate multiple tenants (convenience wrapper)
+     */
+    public function activate(array $data, ?int $actingUserId = null): array
+    {
+        if (empty($data['ids']) || !is_array($data['ids'])) {
+            throw new InvalidArgumentException('IDs array is required');
+        }
+        $userId = $actingUserId ?? (isset($_SESSION['admin_id']) ? (int)$_SESSION['admin_id'] : null);
+        return $this->service->bulkUpdateStatus($data['ids'], 'active', $userId);
+    }
+
+    /**
+     * Suspend multiple tenants (convenience wrapper)
+     */
+    public function suspend(array $data, ?int $actingUserId = null): array
+    {
+        if (empty($data['ids']) || !is_array($data['ids'])) {
+            throw new InvalidArgumentException('IDs array is required');
+        }
+        $userId = $actingUserId ?? (isset($_SESSION['admin_id']) ? (int)$_SESSION['admin_id'] : null);
+        return $this->service->bulkUpdateStatus($data['ids'], 'suspended', $userId);
+    }
+
+    /**
      * Get statistics
      */
     public function getStats(): array

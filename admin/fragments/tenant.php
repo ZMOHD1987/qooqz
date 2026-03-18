@@ -275,7 +275,7 @@ if (!function_exists('__t')) {
                                     <input type="text" id="newDomainInput" class="form-control"
                                            data-i18n-placeholder="domains.fields.domain.placeholder"
                                            placeholder="<?= __t('domains.fields.domain.placeholder', 'e.g. acme-corp.example.com') ?>"
-                                           maxlength="255" required>
+                                           maxlength="255">
                                     <small class="form-text" data-i18n="domains.fields.domain.hint">
                                         <?= __t('domains.fields.domain.hint', 'Lowercase letters, numbers, dots and hyphens only') ?>
                                     </small>
