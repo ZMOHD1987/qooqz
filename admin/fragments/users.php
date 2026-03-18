@@ -110,33 +110,6 @@ $username = admin_username();
                         <label for="phone" data-i18n="users.form.phone">Phone</label>
                         <input type="text" id="phone" name="phone" data-i18n-placeholder="users.form.phone_placeholder" placeholder="Enter phone">
                     </div>
-                    <div class="form-group">
-                        <label for="role_id" data-i18n="users.form.role">Role</label>
-                        <select id="role_id" name="role_id">
-                            <option value="" data-i18n="users.form.select_role">Select Role</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="country_id" data-i18n="users.form.country">Country</label>
-                        <select id="country_id" name="country_id">
-                            <option value="" data-i18n="users.form.select_country">Select Country</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="city_id" data-i18n="users.form.city">City</label>
-                        <select id="city_id" name="city_id">
-                            <option value="" data-i18n="users.form.select_city">Select City</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="timezone" data-i18n="users.form.timezone">Timezone</label>
-                        <select id="timezone" name="timezone">
-                            <option value="" data-i18n="users.form.select_timezone">Select Timezone</option>
-                        </select>
-                    </div>
                 </div>
 
                 <div class="form-row">
@@ -166,13 +139,6 @@ $username = admin_username();
                 <div class="filter-group">
                     <label for="searchInput" data-i18n="users.search">Search</label>
                     <input type="text" id="searchInput" class="form-control" data-i18n-placeholder="users.search_placeholder" placeholder="Search">
-                </div>
-
-                <div class="filter-group">
-                    <label for="roleFilter" data-i18n="users.role">Role</label>
-                    <select id="roleFilter" class="form-control">
-                        <option value="" data-i18n="users.all_roles">All Roles</option>
-                    </select>
                 </div>
 
                 <div class="filter-group">
@@ -218,10 +184,6 @@ $username = admin_username();
                                 <th data-i18n="users.table.id">ID</th>
                                 <th data-i18n="users.table.username">Username</th>
                                 <th data-i18n="users.table.email">Email</th>
-                                <th data-i18n="users.table.role">Role</th>
-                                <th data-i18n="users.table.phone">Phone</th>
-                                <th data-i18n="users.table.country">Country</th>
-                                <th data-i18n="users.table.city">City</th>
                                 <th data-i18n="users.table.created_at">Created At</th>
                                 <th data-i18n="users.table.status">Status</th>
                                 <th data-i18n="users.table.actions">Actions</th>

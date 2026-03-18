@@ -108,18 +108,10 @@ final class TenantsService
 
         // Bad-words check
         $this->assertNoBadWords('name', $data['name'] ?? '');
-        if (!empty($data['domain'])) {
-            $this->assertNoBadWords('domain', $data['domain']);
-        }
 
         // Owner existence
         if (!$this->repo->userExists((int)$data['owner_user_id'])) {
             throw new InvalidArgumentException('Owner user does not exist');
-        }
-
-        // Domain uniqueness
-        if (!empty($data['domain']) && $this->repo->domainExists($data['domain'])) {
-            throw new InvalidArgumentException('Domain is already in use');
         }
 
         $id  = $this->repo->save($data, $userId);
@@ -163,22 +155,14 @@ final class TenantsService
             throw new InvalidArgumentException(json_encode($errors, JSON_UNESCAPED_UNICODE));
         }
 
-        // Bad-words check (only when name/domain changed)
+        // Bad-words check (only when name changed)
         if (($data['name'] ?? '') !== ($existing['name'] ?? '')) {
             $this->assertNoBadWords('name', $data['name']);
-        }
-        if (!empty($data['domain']) && ($data['domain'] ?? '') !== ($existing['domain'] ?? '')) {
-            $this->assertNoBadWords('domain', $data['domain']);
         }
 
         // Owner existence
         if (!$this->repo->userExists((int)$data['owner_user_id'])) {
             throw new InvalidArgumentException('Owner user does not exist');
-        }
-
-        // Domain uniqueness
-        if (!empty($data['domain']) && $this->repo->domainExists($data['domain'], $id)) {
-            throw new InvalidArgumentException('Domain is already in use by another tenant');
         }
 
         $savedId = $this->repo->save($data, $userId);

@@ -28,10 +28,11 @@
     "headers": {
       "id": "المعرّف",
       "name": "الاسم",
-      "domain": "النطاق",
+      "primary_domain": "النطاق الأساسي",
       "owner": "المالك",
       "status": "الحالة",
       "created": "تاريخ الإنشاء",
+      "updated": "آخر تحديث",
       "actions": "الإجراءات"
     },
     "actions": {

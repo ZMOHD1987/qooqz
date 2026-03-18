@@ -190,25 +190,6 @@ if (!function_exists('__t')) {
                         </div>
 
                         <div class="form-group">
-                            <label for="formDomain">
-                                <i class="fas fa-globe"></i>
-                                <span data-i18n="form.fields.domain.label">
-                                    <?= __t('form.fields.domain.label', 'Domain') ?>
-                                </span>
-                            </label>
-                            <input type="text" id="formDomain" name="domain" class="form-control"
-                                   data-i18n-placeholder="form.fields.domain.placeholder"
-                                   placeholder="<?= __t('form.fields.domain.placeholder', 'e.g. acme-corp.example.com') ?>"
-                                   pattern="^[a-z0-9][a-z0-9\.\-]*[a-z0-9]$" maxlength="255">
-                            <small class="form-text" data-i18n="form.fields.domain.hint">
-                                <?= __t('form.fields.domain.hint', 'Lowercase letters, numbers, dots and hyphens only') ?>
-                            </small>
-                            <div class="invalid-feedback" data-i18n="form.validation.domain_invalid">
-                                <?= __t('form.validation.domain_invalid', 'Please enter a valid domain') ?>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
                             <label for="formOwnerUserId" class="required">
                                 <i class="fas fa-user-shield"></i>
                                 <span data-i18n="form.fields.owner_user_id.label">
@@ -432,10 +413,11 @@ if (!function_exists('__t')) {
                             <tr>
                                 <th data-i18n="table.headers.id"><?= __t('table.headers.id', 'ID') ?></th>
                                 <th data-i18n="table.headers.name"><?= __t('table.headers.name', 'Name') ?></th>
-                                <th data-i18n="table.headers.domain"><?= __t('table.headers.domain', 'Domain') ?></th>
+                                <th data-i18n="table.headers.primary_domain"><?= __t('table.headers.primary_domain', 'Primary Domain') ?></th>
                                 <th data-i18n="table.headers.owner"><?= __t('table.headers.owner', 'Owner') ?></th>
                                 <th data-i18n="table.headers.status"><?= __t('table.headers.status', 'Status') ?></th>
                                 <th data-i18n="table.headers.created"><?= __t('table.headers.created', 'Created') ?></th>
+                                <th data-i18n="table.headers.updated"><?= __t('table.headers.updated', 'Updated') ?></th>
                                 <th data-i18n="table.headers.actions"><?= __t('table.headers.actions', 'Actions') ?></th>
                             </tr>
                         </thead>

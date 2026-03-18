@@ -34,10 +34,7 @@ $offset = ($page - 1) * $limit;
 $filters = [];
 if (!empty($_GET['role_id'])) $filters['role_id'] = (int)$_GET['role_id'];
 if (!empty($_GET['search'])) $filters['search'] = trim($_GET['search']);
-if (isset($_GET['is_active']) && $_GET['is_active'] !== '') {
-    $filters['is_active'] = $_GET['is_active'] === '1' || $_GET['is_active'] === 'true';
-}
-if (!empty($_GET['preferred_language'])) $filters['preferred_language'] = trim($_GET['preferred_language']);
+if (isset($_GET['is_active'])) $filters['is_active'] = (bool)$_GET['is_active'];
 
 // Create dependencies
 $repo = new PdoUsersRepository($pdo);

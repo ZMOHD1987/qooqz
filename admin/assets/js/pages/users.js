@@ -19,7 +19,6 @@
     let filters = {};
     let permissions = {};
     let languages = [];
-    let roles = [];
     let userLanguage = window.USER_LANGUAGE || window.ADMIN_LANG || 'en';
 
     // ════════════════════════════════════════════════════════════
@@ -137,123 +136,6 @@
     }
 
     // ════════════════════════════════════════════════════════════
-    // LOAD ROLES
-    // ════════════════════════════════════════════════════════════
-
-    async function loadRoles() {
-        try {
-            const result = await apiFetch('/api/roles');
-            if (result.success && result.data) {
-                roles = result.data.items || result.data || [];
-
-                const filterEl = getEl('roleFilter');
-                if (filterEl) {
-                    filterEl.innerHTML = '<option value="">All Roles</option>';
-                    roles.forEach(r => {
-                        const opt = document.createElement('option');
-                        opt.value = r.id;
-                        opt.textContent = r.display_name || r.name || r.id;
-                        filterEl.appendChild(opt);
-                    });
-                }
-
-                const formEl = getEl('role_id');
-                if (formEl) {
-                    formEl.innerHTML = '<option value="">Select Role</option>';
-                    roles.forEach(r => {
-                        const opt = document.createElement('option');
-                        opt.value = r.id;
-                        opt.textContent = r.display_name || r.name || r.id;
-                        formEl.appendChild(opt);
-                    });
-                }
-                console.log('✓ Roles:', roles.length);
-            }
-        } catch (e) {
-            console.warn('⚠ loadRoles:', e.message);
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════
-    // LOAD COUNTRIES
-    // ════════════════════════════════════════════════════════════
-
-    async function loadCountries() {
-        try {
-            const result = await apiFetch('/api/countries');
-            if (result.success && result.data) {
-                const countries = result.data.items || result.data || [];
-
-                const formEl = getEl('country_id');
-                if (formEl) {
-                    formEl.innerHTML = '<option value="">Select Country</option>';
-                    countries.forEach(c => {
-                        const opt = document.createElement('option');
-                        opt.value = c.id;
-                        opt.textContent = c.name;
-                        formEl.appendChild(opt);
-                    });
-                }
-                console.log('✓ Countries:', countries.length);
-            }
-        } catch (e) {
-            console.warn('⚠ loadCountries:', e.message);
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════
-    // LOAD CITIES (dependent on country)
-    // ════════════════════════════════════════════════════════════
-
-    async function loadCities(countryId, selectedCityId = null) {
-        const cityEl = getEl('city_id');
-        if (!cityEl) return;
-        cityEl.innerHTML = '<option value="">Select City</option>';
-        if (!countryId) return;
-        try {
-            const result = await apiFetch('/api/cities?country_id=' + countryId);
-            if (result.success && result.data) {
-                const cities = result.data.items || result.data || [];
-                cities.forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = c.id;
-                    opt.textContent = c.name;
-                    if (selectedCityId && String(c.id) === String(selectedCityId)) opt.selected = true;
-                    cityEl.appendChild(opt);
-                });
-            }
-        } catch (e) {
-            console.warn('⚠ loadCities:', e.message);
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════
-    // LOAD TIMEZONES
-    // ════════════════════════════════════════════════════════════
-
-    async function loadTimezones() {
-        try {
-            const result = await apiFetch('/api/timezones');
-            if (result.success && result.data) {
-                const timezones = result.data.items || result.data || [];
-                const formEl = getEl('timezone');
-                if (formEl) {
-                    formEl.innerHTML = '<option value="">Select Timezone</option>';
-                    timezones.forEach(tz => {
-                        const opt = document.createElement('option');
-                        opt.value = tz.timezone || tz.value || tz.id;
-                        opt.textContent = tz.label || tz.name || tz.timezone;
-                        formEl.appendChild(opt);
-                    });
-                }
-                console.log('✓ Timezones:', timezones.length);
-            }
-        } catch (e) {
-            console.warn('⚠ loadTimezones:', e.message);
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════
     // LOAD USERS
     // ════════════════════════════════════════════════════════════
     
@@ -324,18 +206,11 @@
             
             const statusClass = user.is_active ? 'badge-active' : 'badge-inactive';
             const statusText = user.is_active ? 'Active' : 'Inactive';
-            const roleName = user.role_name || (user.role_id ? '#' + user.role_id : '—');
-            const countryName = user.country_name || (user.country_id ? '#' + user.country_id : '—');
-            const cityName = user.city_name || (user.city_id ? '#' + user.city_id : '—');
 
             tr.innerHTML = `
                 <td>${user.id}</td>
                 <td><strong>${escapeHtml(user.username)}</strong></td>
                 <td>${escapeHtml(user.email)}</td>
-                <td>${escapeHtml(roleName)}</td>
-                <td>${escapeHtml(user.phone || '—')}</td>
-                <td>${escapeHtml(countryName)}</td>
-                <td>${escapeHtml(cityName)}</td>
                 <td>${formatDate(user.created_at)}</td>
                 <td><span class="badge ${statusClass}">${statusText}</span></td>
                 <td class="table-actions">
@@ -453,18 +328,7 @@
                 safeSetValue('preferred_language', user.preferred_language || 'en');
                 safeSetValue('phone', user.phone);
                 safeSetValue('is_active', user.is_active == 1);
-                safeSetValue('role_id', user.role_id || '');
-                safeSetValue('timezone', user.timezone || '');
-
-                // Load cities for the stored country, then set city
-                if (user.country_id) {
-                    safeSetValue('country_id', user.country_id);
-                    await loadCities(user.country_id, user.city_id);
-                } else {
-                    safeSetValue('country_id', '');
-                    safeSetValue('city_id', '');
-                }
-
+                
                 if (permissions.canDelete) safeShow('btnDeleteUser');
                 
                 safeShow('formContainer');
@@ -494,12 +358,8 @@
             username: safeGetValue('username'),
             email: safeGetValue('email'),
             preferred_language: safeGetValue('preferred_language'),
-            phone: safeGetValue('phone') || null,
-            is_active: safeGetValue('is_active') ? 1 : 0,
-            role_id: safeGetValue('role_id') || null,
-            country_id: safeGetValue('country_id') || null,
-            city_id: safeGetValue('city_id') || null,
-            timezone: safeGetValue('timezone') || null
+            phone: safeGetValue('phone'),
+            is_active: safeGetValue('is_active') ? 1 : 0
         };
 
         const password = safeGetValue('password');
@@ -567,9 +427,6 @@
         const search = safeGetValue('searchInput');
         if (search && search.trim()) filters.search = search.trim();
 
-        const role = safeGetValue('roleFilter');
-        if (role) filters.role_id = role;
-
         const language = safeGetValue('languageFilter');
         if (language) filters.preferred_language = language;
 
@@ -581,7 +438,7 @@
     }
 
     function resetFilters() {
-        ['searchInput', 'roleFilter', 'languageFilter', 'statusFilter'].forEach(id => {
+        ['searchInput', 'languageFilter', 'statusFilter'].forEach(id => {
             const el = getEl(id);
             if (el) {
                 if (el.tagName === 'SELECT') el.selectedIndex = 0;
@@ -657,15 +514,6 @@
             });
             searchInput._bound = true;
         }
-
-        // Reload cities when country changes
-        const countryEl = getEl('country_id');
-        if (countryEl && !countryEl._bound) {
-            countryEl.addEventListener('change', () => {
-                loadCities(countryEl.value);
-            });
-            countryEl._bound = true;
-        }
         
         console.log('✓ Events bound');
     }
@@ -686,12 +534,7 @@
         bindEvents();
         
         console.log('📥 Loading data...');
-        await Promise.all([
-            loadLanguages(),
-            loadRoles(),
-            loadCountries(),
-            loadTimezones(),
-        ]);
+        await loadLanguages();
         
         console.log('📊 Loading users...');
         await loadUsers();

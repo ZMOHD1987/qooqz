@@ -16,17 +16,6 @@ final class TenantsValidator
             $errors['name'] = 'Name must not exceed 150 characters';
         }
 
-        // domain validation - optional but must be valid if provided
-        if (!empty($data['domain'])) {
-            if (!is_string($data['domain'])) {
-                $errors['domain'] = 'Domain must be a string';
-            } elseif (strlen($data['domain']) > 255) {
-                $errors['domain'] = 'Domain must not exceed 255 characters';
-            } elseif (!filter_var($data['domain'], FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)) {
-                $errors['domain'] = 'Domain must be a valid domain name';
-            }
-        }
-
         // owner_user_id validation - required for create, optional for update
         if (!$isUpdate || isset($data['owner_user_id'])) {
             if (empty($data['owner_user_id']) || !is_numeric($data['owner_user_id'])) {

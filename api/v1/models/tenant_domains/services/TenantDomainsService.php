@@ -92,11 +92,6 @@ final class TenantDomainsService
             throw new RuntimeException('Failed to retrieve created domain record');
         }
 
-        // Keep tenants.domain in sync when a primary domain is created
-        if (($data['type'] ?? 'custom') === 'primary') {
-            $this->repo->syncTenantCanonicalDomain((int)$data['tenant_id'], $data['domain']);
-        }
-
         return $row;
     }
 
@@ -142,17 +137,6 @@ final class TenantDomainsService
 
         if (!$row) {
             throw new RuntimeException('Failed to retrieve updated domain record');
-        }
-
-        // Sync tenants.domain when the primary domain's value or type changes
-        $isPrimaryNow = $row['type'] === 'primary';
-        $wasPrimary   = $existing['type'] === 'primary';
-        if ($isPrimaryNow) {
-            // Primary domain created or its domain string changed
-            $this->repo->syncTenantCanonicalDomain((int)$row['tenant_id'], $row['domain']);
-        } elseif ($wasPrimary && !$isPrimaryNow) {
-            // Type was downgraded from primary – clear tenants.domain
-            $this->repo->syncTenantCanonicalDomain((int)$row['tenant_id'], null);
         }
 
         return $row;

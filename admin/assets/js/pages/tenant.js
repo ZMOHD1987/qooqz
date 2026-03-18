@@ -243,9 +243,13 @@
                 ? `${esc(item.owner_username)} <small>(ID: ${item.owner_user_id})</small>`
                 : `<span class="text-muted">ID: ${item.owner_user_id}</span>`;
 
-            const domainDisplay = item.domain
-                ? `<code class="domain-badge">${esc(item.domain)}</code>`
+            const domainDisplay = item.primary_domain
+                ? `<code class="domain-badge">${esc(item.primary_domain)}</code>`
                 : `<span class="text-muted">${t('table.no_domain', 'No domain')}</span>`;
+
+            const updatedAtDisplay = item.updated_at
+                ? `<span class="date-display">${AF.formatDate ? AF.formatDate(item.updated_at) : esc(item.updated_at)}</span>`
+                : `<span class="text-muted">—</span>`;
 
             return `
                 <tr>
@@ -255,6 +259,7 @@
                     <td>${ownerDisplay}</td>
                     <td><span class="${statusCls}">${esc(statusText)}</span></td>
                     <td><span class="date-display">${AF.formatDate ? AF.formatDate(item.created_at) : esc(item.created_at || '')}</span></td>
+                    <td>${updatedAtDisplay}</td>
                     <td>
                         <div class="table-actions">
                             ${state.permissions.canEdit
@@ -375,7 +380,6 @@
 
         const data = {
             name:          (formData.name || '').trim(),
-            domain:        (formData.domain || '').trim() || null,
             owner_user_id: parseInt(formData.owner_user_id) || 0,
             status:        formData.status || 'active'
         };
@@ -444,11 +448,10 @@
                 form.reset();
                 form.classList.remove('was-validated');
             }
-            if (el.formId)         el.formId.value         = item.id;
-            if (el.formName)       el.formName.value       = item.name || '';
-            if (el.formDomain)     el.formDomain.value     = item.domain || '';
+            if (el.formId)          el.formId.value          = item.id;
+            if (el.formName)        el.formName.value        = item.name || '';
             if (el.formOwnerUserId) el.formOwnerUserId.value = item.owner_user_id || '';
-            if (el.formStatus)     el.formStatus.value     = item.status || 'active';
+            if (el.formStatus)      el.formStatus.value      = item.status || 'active';
 
             // Enable sub-tabs
             enableSubTabs(item.id);
@@ -567,7 +570,6 @@
             form:           document.getElementById('tenantForm'),
             formId:         document.getElementById('formId'),
             formName:       document.getElementById('formName'),
-            formDomain:     document.getElementById('formDomain'),
             formOwnerUserId:document.getElementById('formOwnerUserId'),
             formStatus:     document.getElementById('formStatus'),
 

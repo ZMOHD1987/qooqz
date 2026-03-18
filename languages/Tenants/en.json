@@ -28,10 +28,11 @@
     "headers": {
       "id": "ID",
       "name": "Name",
-      "domain": "Domain",
+      "primary_domain": "Primary Domain",
       "owner": "Owner",
       "status": "Status",
       "created": "Created",
+      "updated": "Updated",
       "actions": "Actions"
     },
     "actions": {
