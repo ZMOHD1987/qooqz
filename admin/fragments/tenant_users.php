@@ -265,50 +265,40 @@ $apiBase = '/api';
                 </div>
 
                 <!-- Entity Info Box -->
-                <div id="entityInfo" style="display:none;margin-top:1rem;padding:1rem;background:var(--background-tertiary,#0f172a);border:1px solid var(--border-color,#334155);border-radius:8px">
-                    <div style="display:flex;align-items:center;gap:0.5rem">
-                        <i class="fas fa-store" style="color:var(--warning-color,#f59e0b)"></i>
+                <div id="entityInfo" class="user-info-box">
+                    <div class="info-content">
+                        <i class="fas fa-store entity-icon"></i>
                         <div>
-                            <strong style="color:var(--text-primary,#fff)" data-i18n="form.entity_info.name">
-                                <?= __t('form.entity_info.name', 'Store:') ?>
-                            </strong>
-                            <span id="entityName" style="color:var(--text-primary,#fff)"></span>
-                            <br>
-                            <small id="entitySlug" style="color:var(--text-secondary,#94a3b8)"></small>
-                            <span id="entityStatus" class="badge" style="margin-<?= $dir === 'rtl' ? 'right' : 'left' ?>:0.5rem"></span>
+                            <strong data-i18n="form.entity_info.name"><?= __t('form.entity_info.name', 'Store:') ?></strong>
+                            <span id="entityName"></span>
+                            <small id="entitySlug"></small>
+                            <span id="entityStatus" class="badge"></span>
                         </div>
                     </div>
                 </div>
 
-
                 <!-- Tenant Info Box -->
-                <div id="tenantInfo" style="display:none;margin-top:1rem;padding:1rem;background:var(--background-tertiary,#0f172a);border:1px solid var(--border-color,#334155);border-radius:8px">
-                    <div style="display:flex;align-items:center;gap:0.5rem">
-                        <i class="fas fa-building" style="color:var(--primary-color,#3b82f6)"></i>
+                <div id="tenantInfo" class="user-info-box">
+                    <div class="info-content">
+                        <i class="fas fa-building tenant-icon"></i>
                         <div>
-                            <strong style="color:var(--text-primary,#fff)" data-i18n="form.tenant_info.name">
-                                <?= __t('form.tenant_info.name', 'Name:') ?>
-                            </strong>
-                            <span id="tenantName" style="color:var(--text-primary,#fff)"></span>
-                            <br>
-                            <small id="tenantDomain" style="color:var(--text-secondary,#94a3b8)"></small>
-                            <span id="tenantStatus" class="badge" style="margin-<?= $dir === 'rtl' ? 'right' : 'left' ?>:0.5rem"></span>
+                            <strong data-i18n="form.tenant_info.name"><?= __t('form.tenant_info.name', 'Name:') ?></strong>
+                            <span id="tenantName"></span>
+                            <small id="tenantDomain"></small>
+                            <span id="tenantStatus" class="badge"></span>
                         </div>
                     </div>
                 </div>
 
                 <!-- User Info Box -->
-                <div id="userInfo" style="display:none;margin-top:1rem;padding:1rem;background:var(--background-tertiary,#0f172a);border:1px solid var(--border-color,#334155);border-radius:8px">
-                    <div style="display:flex;align-items:center;gap:0.5rem">
-                        <i class="fas fa-user" style="color:var(--success-color,#10b981)"></i>
+                <div id="userInfo" class="user-info-box">
+                    <div class="info-content">
+                        <i class="fas fa-user user-icon"></i>
                         <div>
-                            <strong style="color:var(--text-primary,#fff)" data-i18n="form.user_info.name">
-                                <?= __t('form.user_info.name', 'Name:') ?>
-                            </strong>
-                            <span id="userName" style="color:var(--text-primary,#fff)"></span>
-                            <br>
-                            <small id="userEmail" style="color:var(--text-secondary,#94a3b8)"></small>
-                            <span id="userStatus" class="badge" style="margin-<?= $dir === 'rtl' ? 'right' : 'left' ?>:0.5rem"></span>
+                            <strong data-i18n="form.user_info.name"><?= __t('form.user_info.name', 'Name:') ?></strong>
+                            <span id="userName"></span>
+                            <small id="userEmail"></small>
+                            <span id="userStatus" class="badge"></span>
                         </div>
                     </div>
                 </div>
@@ -421,7 +411,7 @@ $apiBase = '/api';
                     <button id="btnResetFilters" class="btn btn-outline" data-i18n="filters.reset">
                         <?= __t('filters.reset', 'Reset') ?>
                     </button>
-                    <button id="btnExportExcel" class="btn btn-success" data-i18n="table.actions.export" style="margin-<?= $dir === 'rtl' ? 'right' : 'left' ?>:auto">
+                    <button id="btnExportExcel" class="btn btn-success" data-i18n="table.actions.export" style="margin-inline-start:auto">
                         <i class="fas fa-file-excel"></i> <?= __t('table.actions.export', 'Export Excel') ?>
                     </button>
                 </div>
