@@ -176,7 +176,7 @@ $apiBase = '/api';
                 <?php endif; ?>
                 <?php else: ?>
                 <!-- Super Admin Fields -->
-                <div class="alert-info" style="padding: 12px; background: #dbeafe; border: 1px solid #3b82f6; border-radius: 6px; margin-bottom: 16px;">
+                <div class="super-admin-notice">
                     <i class="fas fa-crown"></i> <?= __t('super_admin_mode', 'Super Admin Mode - Full Control') ?>
                 </div>
 
