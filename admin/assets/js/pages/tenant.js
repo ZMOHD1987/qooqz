@@ -83,7 +83,7 @@
         }
         if (tabId === 'tab-addresses' && state.currentTenantId) {
             loadSubFragment('tenantAddressesContainer',
-                `${window.TENANTS_CONFIG?.addressesUrl || '/admin/fragments/addresses.php'}?embedded=1&owner_type=entity&owner_id=${state.currentTenantId}&tenant_id=${state.currentTenantId}&lang=${state.language}`
+                `${window.TENANTS_CONFIG?.addressesUrl || '/admin/fragments/addresses.php'}?embedded=1&owner_type=entity&tenant_id=${state.currentTenantId}&lang=${state.language}`
             );
         }
     }

@@ -81,6 +81,10 @@ try {
         'country_id' => isset($_GET['country_id']) ? (int)$_GET['country_id'] : null,
         'is_primary' => isset($_GET['is_primary']) ? (int)$_GET['is_primary'] : null,
         'language'   => $language,
+        // Tenant-wide entity filter: shows all addresses for entities belonging to a tenant
+        'tenant_id'  => isset($_GET['filter_tenant_id']) && is_numeric($_GET['filter_tenant_id'])
+                        ? (int)$_GET['filter_tenant_id']
+                        : null,
     ];
 
     // ================================

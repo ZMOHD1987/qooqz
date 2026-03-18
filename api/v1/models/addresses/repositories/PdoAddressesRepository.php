@@ -35,12 +35,18 @@ final class PdoAddressesRepository
         $params = [];
         $language = $filters['language'] ?? 'ar';
 
-        foreach ([
-            'id','owner_type','owner_id','city_id','country_id','is_primary'
-        ] as $field) {
-            if (array_key_exists($field, $filters) && $filters[$field] !== null && $filters[$field] !== '') {
-                $where[] = "a.$field = :filter_$field";
-                $params["filter_$field"] = $filters[$field];
+        // When filtering by tenant_id, fetch all entity addresses for that tenant
+        if (isset($filters['tenant_id']) && $filters['tenant_id'] !== null && $filters['tenant_id'] !== '') {
+            $where[] = "(a.owner_type = 'entity' AND a.owner_id IN (SELECT id FROM entities WHERE tenant_id = :filter_tenant_id))";
+            $params['filter_tenant_id'] = (int)$filters['tenant_id'];
+        } else {
+            foreach ([
+                'id','owner_type','owner_id','city_id','country_id','is_primary'
+            ] as $field) {
+                if (array_key_exists($field, $filters) && $filters[$field] !== null && $filters[$field] !== '') {
+                    $where[] = "a.$field = :filter_$field";
+                    $params["filter_$field"] = $filters[$field];
+                }
             }
         }
 
