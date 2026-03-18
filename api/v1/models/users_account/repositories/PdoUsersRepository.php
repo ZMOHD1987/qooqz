@@ -13,7 +13,9 @@ final class PdoUsersRepository
     public function all(?int $limit = null, ?int $offset = null, array $filters = []): array
     {
         $sql = "
-            SELECT u.id, u.username, u.email, u.preferred_language, u.phone, u.is_active, u.created_at, u.updated_at
+            SELECT u.id, u.username, u.email, u.preferred_language, u.phone,
+                   u.role_id, u.country_id, u.city_id, u.timezone,
+                   u.is_active, u.created_at, u.updated_at
             FROM users u
             WHERE 1=1
         ";
@@ -28,6 +30,14 @@ final class PdoUsersRepository
         if (isset($filters['search']) && $filters['search']) {
             $sql .= " AND (u.username LIKE :search OR u.email LIKE :search)";
             $params[':search'] = '%' . $filters['search'] . '%';
+        }
+        if (!empty($filters['role_id'])) {
+            $sql .= " AND u.role_id = :role_id";
+            $params[':role_id'] = (int)$filters['role_id'];
+        }
+        if (!empty($filters['preferred_language'])) {
+            $sql .= " AND u.preferred_language = :preferred_language";
+            $params[':preferred_language'] = $filters['preferred_language'];
         }
 
         $sql .= " ORDER BY u.created_at DESC";
@@ -62,6 +72,14 @@ final class PdoUsersRepository
             $sql .= " AND (u.username LIKE :search OR u.email LIKE :search)";
             $params[':search'] = '%' . $filters['search'] . '%';
         }
+        if (!empty($filters['role_id'])) {
+            $sql .= " AND u.role_id = :role_id";
+            $params[':role_id'] = (int)$filters['role_id'];
+        }
+        if (!empty($filters['preferred_language'])) {
+            $sql .= " AND u.preferred_language = :preferred_language";
+            $params[':preferred_language'] = $filters['preferred_language'];
+        }
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
@@ -71,7 +89,9 @@ final class PdoUsersRepository
     public function find(int $id): ?array
     {
         $stmt = $this->pdo->prepare("
-            SELECT u.id, u.username, u.email, u.preferred_language, u.phone, u.is_active, u.created_at, u.updated_at
+            SELECT u.id, u.username, u.email, u.preferred_language, u.phone,
+                   u.role_id, u.country_id, u.city_id, u.timezone,
+                   u.is_active, u.created_at, u.updated_at
             FROM users u
             WHERE u.id = :id
             LIMIT 1
@@ -84,7 +104,9 @@ final class PdoUsersRepository
     public function findByUsername(string $username): ?array
     {
         $stmt = $this->pdo->prepare("
-            SELECT u.id, u.username, u.email, u.preferred_language, u.phone, u.is_active, u.created_at, u.updated_at
+            SELECT u.id, u.username, u.email, u.preferred_language, u.phone,
+                   u.role_id, u.country_id, u.city_id, u.timezone,
+                   u.is_active, u.created_at, u.updated_at
             FROM users u
             WHERE u.username = :username
             LIMIT 1
@@ -97,7 +119,9 @@ final class PdoUsersRepository
     public function findByEmail(string $email): ?array
     {
         $stmt = $this->pdo->prepare("
-            SELECT u.id, u.username, u.email, u.preferred_language, u.phone, u.is_active, u.created_at, u.updated_at
+            SELECT u.id, u.username, u.email, u.preferred_language, u.phone,
+                   u.role_id, u.country_id, u.city_id, u.timezone,
+                   u.is_active, u.created_at, u.updated_at
             FROM users u
             WHERE u.email = :email
             LIMIT 1
@@ -131,33 +155,45 @@ final class PdoUsersRepository
                 UPDATE users
                 SET username = :username, email = :email, " . ($passwordHash ? "password_hash = :password_hash, " : "") . "
                     preferred_language = :preferred_language,
-                    phone = :phone, is_active = :is_active,
+                    phone = :phone, role_id = :role_id,
+                    country_id = :country_id, city_id = :city_id,
+                    timezone = :timezone, is_active = :is_active,
                     updated_at = NOW()
                 WHERE id = :id
             ");
             $params = [
-                ':username' => $data['username'],
-                ':email' => $data['email'],
-                ':preferred_language' => $data['preferred_language'] ?? 'en',
-                ':phone' => $data['phone'] ?: null,
-                ':is_active' => (int)($data['is_active'] ?? 1),
-                ':id' => (int)$data['id']
+                ':username'            => $data['username'],
+                ':email'               => $data['email'],
+                ':preferred_language'  => $data['preferred_language'] ?? 'en',
+                ':phone'               => $data['phone'] ?: null,
+                ':role_id'             => !empty($data['role_id']) ? (int)$data['role_id'] : null,
+                ':country_id'          => !empty($data['country_id']) ? (int)$data['country_id'] : null,
+                ':city_id'             => !empty($data['city_id']) ? (int)$data['city_id'] : null,
+                ':timezone'            => $data['timezone'] ?: null,
+                ':is_active'           => (int)($data['is_active'] ?? 1),
+                ':id'                  => (int)$data['id'],
             ];
             if ($passwordHash) $params[':password_hash'] = $passwordHash;
             $stmt->execute($params);
             $id = (int)$data['id'];
         } else {
             $stmt = $this->pdo->prepare("
-                INSERT INTO users (username, email, password_hash, preferred_language, phone, is_active, created_at)
-                VALUES (:username, :email, :password_hash, :preferred_language, :phone, :is_active, NOW())
+                INSERT INTO users (username, email, password_hash, preferred_language, phone,
+                                   role_id, country_id, city_id, timezone, is_active, created_at)
+                VALUES (:username, :email, :password_hash, :preferred_language, :phone,
+                        :role_id, :country_id, :city_id, :timezone, :is_active, NOW())
             ");
             $stmt->execute([
-                ':username' => $data['username'],
-                ':email' => $data['email'],
-                ':password_hash' => $passwordHash ?: '',
+                ':username'           => $data['username'],
+                ':email'              => $data['email'],
+                ':password_hash'      => $passwordHash ?: '',
                 ':preferred_language' => $data['preferred_language'] ?? 'en',
-                ':phone' => $data['phone'] ?: null,
-                ':is_active' => (int)($data['is_active'] ?? 1)
+                ':phone'              => $data['phone'] ?: null,
+                ':role_id'            => !empty($data['role_id']) ? (int)$data['role_id'] : null,
+                ':country_id'         => !empty($data['country_id']) ? (int)$data['country_id'] : null,
+                ':city_id'            => !empty($data['city_id']) ? (int)$data['city_id'] : null,
+                ':timezone'           => $data['timezone'] ?: null,
+                ':is_active'          => (int)($data['is_active'] ?? 1),
             ]);
             $id = (int)$this->pdo->lastInsertId();
         }

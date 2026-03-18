@@ -114,4 +114,14 @@ interface TenantDomainsRepositoryInterface
      * @return bool
      */
     public function updateSslStatus(int $id, string $status, ?string $expiresAt = null): bool;
+
+    /**
+     * Sync the canonical tenants.domain column with the primary domain value.
+     * Pass null to clear it when the primary domain is removed.
+     *
+     * @param  int         $tenantId
+     * @param  string|null $domain
+     * @return void
+     */
+    public function syncTenantCanonicalDomain(int $tenantId, ?string $domain): void;
 }

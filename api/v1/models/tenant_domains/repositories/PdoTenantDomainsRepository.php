@@ -132,6 +132,7 @@ final class PdoTenantDomainsRepository implements TenantDomainsRepositoryInterfa
 
     public function domainExists(string $domain, ?int $excludeId = null): bool
     {
+        // Check tenant_domains table
         $sql    = "SELECT COUNT(*) FROM " . self::TABLE . " WHERE domain = :domain";
         $params = [':domain' => $domain];
         if ($excludeId !== null) {
@@ -140,7 +141,14 @@ final class PdoTenantDomainsRepository implements TenantDomainsRepositoryInterfa
         }
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
-        return (int)$stmt->fetchColumn() > 0;
+        if ((int)$stmt->fetchColumn() > 0) {
+            return true;
+        }
+
+        // Also check tenants.domain to prevent cross-table duplication
+        $stmt2 = $this->pdo->prepare("SELECT COUNT(*) FROM tenants WHERE domain = :domain");
+        $stmt2->execute([':domain' => $domain]);
+        return (int)$stmt2->fetchColumn() > 0;
     }
 
     public function findPrimary(int $tenantId): ?array
@@ -251,5 +259,17 @@ final class PdoTenantDomainsRepository implements TenantDomainsRepositoryInterfa
             ':id'            => $id,
         ]);
         return $stmt->rowCount() > 0;
+    }
+
+    /**
+     * Keep tenants.domain in sync with the primary domain in tenant_domains.
+     * Set $domain to null to clear tenants.domain (e.g. when primary is deleted).
+     */
+    public function syncTenantCanonicalDomain(int $tenantId, ?string $domain): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE tenants SET domain = :domain, updated_at = NOW() WHERE id = :id'
+        );
+        $stmt->execute([':domain' => $domain, ':id' => $tenantId]);
     }
 }
