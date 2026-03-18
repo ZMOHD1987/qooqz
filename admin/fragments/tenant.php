@@ -259,8 +259,14 @@ if (!function_exists('__t')) {
                             <?php endif; ?>
                         </div>
 
-                        <!-- Inline add-domain form -->
+                        <!-- Inline add/edit domain form -->
                         <div id="domainFormInline" class="domain-form-inline" style="display:none">
+                            <div class="domain-form-header">
+                                <i class="fas fa-globe"></i>
+                                <span id="domainFormTitle" class="domain-form-title">
+                                    <?= __t('domains.add', 'Add Domain') ?>
+                                </span>
+                            </div>
                             <input type="hidden" id="newDomainId">
                             <div class="form-grid">
 

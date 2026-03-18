@@ -205,8 +205,9 @@
                         <span class="badge-status ${sslCls}">${sslLabel}</span>
                     </div>
                     <div class="domain-row-actions">
-                        ${!d.is_verified ? `<button class="btn btn-sm btn-outline" onclick="Tenants.verifyDomain(${d.id})" title="Mark Verified"><i class="fas fa-check"></i></button>` : ''}
-                        ${d.type !== 'primary' ? `<button class="btn btn-sm btn-danger" onclick="Tenants.removeDomain(${d.id})" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+                        <button class="btn btn-sm btn-outline" onclick="Tenants.editDomain(${d.id})" title="${t('domains.edit', 'Edit')}"><i class="fas fa-edit"></i></button>
+                        ${!d.is_verified ? `<button class="btn btn-sm btn-outline" onclick="Tenants.verifyDomain(${d.id})" title="${t('domains.verify', 'Mark Verified')}"><i class="fas fa-check"></i></button>` : ''}
+                        ${d.type !== 'primary' ? `<button class="btn btn-sm btn-danger" onclick="Tenants.removeDomain(${d.id})" title="${t('domains.delete', 'Delete')}"><i class="fas fa-trash"></i></button>` : ''}
                     </div>
                 </div>`;
             }).join('');
@@ -319,6 +320,48 @@
             AF.Modal.confirm(msg, doDelete);
         } else if (confirm(msg)) {
             doDelete();
+        }
+    }
+
+    async function editDomain(id) {
+        try {
+            const res = await AF.get(`${domainsApiUrl()}/${id}`);
+            const d   = res?.data || res;
+
+            const input         = document.getElementById('newDomainInput');
+            const typeEl        = document.getElementById('newDomainType');
+            const sslStatusEl   = document.getElementById('newDomainSslStatus');
+            const sslExpiresEl  = document.getElementById('newDomainSslExpiresAt');
+            const verTokenEl    = document.getElementById('newDomainVerificationToken');
+            const verifiedAtEl  = document.getElementById('newDomainVerifiedAt');
+            const metaEl        = document.getElementById('newDomainMeta');
+            const isVerifiedEl  = document.getElementById('newDomainIsVerified');
+            const redirectEl    = document.getElementById('newDomainRedirectToPrimary');
+            const hiddenIdEl    = document.getElementById('newDomainId');
+            const titleEl       = document.getElementById('domainFormTitle');
+
+            // Helper: convert "YYYY-MM-DD HH:MM:SS" → "YYYY-MM-DDTHH:MM"
+            const toLocal = v => v ? String(v).replace(' ', 'T').slice(0, 16) : '';
+
+            if (input)        input.value          = d.domain || '';
+            if (typeEl)       typeEl.value         = d.type || 'custom';
+            if (sslStatusEl)  sslStatusEl.value    = d.ssl_status || 'none';
+            if (sslExpiresEl) sslExpiresEl.value   = toLocal(d.ssl_expires_at);
+            if (verTokenEl)   verTokenEl.value     = d.verification_token || '';
+            if (verifiedAtEl) verifiedAtEl.value   = toLocal(d.verified_at);
+            if (metaEl)       metaEl.value         = d.meta ? (typeof d.meta === 'string' ? d.meta : JSON.stringify(d.meta, null, 2)) : '';
+            if (isVerifiedEl) isVerifiedEl.checked = !!parseInt(d.is_verified);
+            if (redirectEl)   redirectEl.checked   = !!parseInt(d.redirect_to_primary);
+            if (hiddenIdEl)   hiddenIdEl.value     = id;
+            if (titleEl)      titleEl.textContent  = t('domains.edit', 'Edit Domain');
+
+            const domainFormInline = document.getElementById('domainFormInline');
+            if (domainFormInline) {
+                domainFormInline.style.display = 'block';
+                domainFormInline.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        } catch (err) {
+            if (AF.error) AF.error(err?.message || t('domains.messages.load_failed', 'Failed to load domain'));
         }
     }
 
@@ -732,6 +775,8 @@
         if (btnAddDomain)    btnAddDomain.onclick    = () => {
             const hiddenIdEl = document.getElementById('newDomainId');
             if (hiddenIdEl) hiddenIdEl.value = '';
+            const titleEl = document.getElementById('domainFormTitle');
+            if (titleEl) titleEl.textContent = t('domains.add', 'Add Domain');
             if (domainFormInline) domainFormInline.style.display = 'block';
         };
         if (btnCancelDomain) btnCancelDomain.onclick = () => { if (domainFormInline) domainFormInline.style.display = 'none'; };
@@ -759,7 +804,7 @@
     // ─────────────────────────────────────────────
     // PUBLIC API
     // ─────────────────────────────────────────────
-    window.Tenants = { init, load, edit, remove, add, verifyDomain, removeDomain, addDomain };
+    window.Tenants = { init, load, edit, remove, add, verifyDomain, removeDomain, addDomain, editDomain };
 
     // Auto-init in standalone mode
     if (document.readyState === 'loading') {
