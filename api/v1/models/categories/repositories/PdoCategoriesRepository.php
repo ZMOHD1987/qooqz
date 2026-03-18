@@ -75,12 +75,17 @@ final class PdoCategoriesRepository implements CategoriesRepositoryInterface
 
         $params = [':lang' => $lang];
 
-        // Tenant filter — skipped entirely for super admin (tenantId null)
-        if (!$isSuperAdmin) {
+        // Tenant filter:
+        // - Super admin (tenantId null): no filter.
+        // - hasAssignments: the INNER JOIN on tenant_categories already restricts to this
+        //   tenant's assigned categories, so we must NOT also filter by c.tenant_id because
+        //   shared/global categories (c.tenant_id != tenantId) would be wrongly excluded.
+        // - Regular tenant without assignments: filter by c.tenant_id.
+        if ($isSuperAdmin || $hasAssignments) {
+            $sql .= " WHERE 1=1";
+        } else {
             $sql .= " WHERE c.tenant_id = :tenantId";
             $params[':tenantId'] = $tenantId;
-        } else {
-            $sql .= " WHERE 1=1";
         }
 
         if ($hasAssignments) {
@@ -659,14 +664,16 @@ final class PdoCategoriesRepository implements CategoriesRepositoryInterface
             : false;
 
         if ($hasAssignments) {
+            // The INNER JOIN already restricts to this tenant's assigned categories;
+            // do NOT also add WHERE c.tenant_id = :tenantId (would drop shared categories).
             $sql = "SELECT COUNT(*) as total
                     FROM categories c
                     INNER JOIN tenant_categories tc_assign
                         ON c.id = tc_assign.category_id
                        AND tc_assign.tenant_id = :tenantId_tc
                        AND tc_assign.is_active = 1
-                    WHERE c.tenant_id = :tenantId";
-            $params = [':tenantId' => $tenantId, ':tenantId_tc' => $tenantId];
+                    WHERE 1=1";
+            $params = [':tenantId_tc' => $tenantId];
         } elseif (!$isSuperAdmin) {
             $sql = "SELECT COUNT(*) as total FROM categories c WHERE c.tenant_id = :tenantId";
             $params = [':tenantId' => $tenantId];
