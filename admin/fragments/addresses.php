@@ -56,7 +56,14 @@ if ($isSuperAdmin && !isset($_GET['owner_type']) && !isset($_GET['owner_id'])) {
 } else {
     // Normal user or Super Admin filtering by owner
     $ownerType = $_GET['owner_type'] ?? 'user';
-    $ownerId   = isset($_GET['owner_id']) ? (int)$_GET['owner_id'] : (int)($user['id'] ?? 1);
+    if (isset($_GET['owner_id'])) {
+        $ownerId = (int)$_GET['owner_id'];
+    } elseif ($ownerType === 'entity' && isset($_GET['tenant_id'])) {
+        // When embedded in tenant context, use tenant_id as the entity owner_id
+        $ownerId = (int)$_GET['tenant_id'];
+    } else {
+        $ownerId = (int)($user['id'] ?? 1);
+    }
     $showAllAddresses = false;
 }
 
