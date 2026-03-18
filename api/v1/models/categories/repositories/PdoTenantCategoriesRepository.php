@@ -15,12 +15,14 @@ final class PdoTenantCategoriesRepository
     public function all(?int $tenantId = null, ?int $categoryId = null, ?int $isActive = null, int $offset = 0, int $limit = null, string $lang = 'ar'): array
     {
         $sql = "SELECT tc.*, t.name AS tenant_name,
-                       COALESCE(ct.name, c.name) AS category_name
+                       COALESCE(
+                           (SELECT name FROM category_translations WHERE category_id = c.id AND language_code = :lang LIMIT 1),
+                           (SELECT name FROM category_translations WHERE category_id = c.id ORDER BY language_code LIMIT 1),
+                           c.name
+                       ) AS category_name
                 FROM tenant_categories tc
                 LEFT JOIN tenants t ON tc.tenant_id = t.id
                 LEFT JOIN categories c ON tc.category_id = c.id
-                LEFT JOIN category_translations ct
-                    ON ct.category_id = c.id AND ct.language_code = :lang
                 WHERE 1=1";
 
         $params = [':lang' => $lang];
@@ -59,12 +61,14 @@ final class PdoTenantCategoriesRepository
     {
         $stmt = $this->pdo->prepare("
             SELECT tc.*, t.name AS tenant_name,
-                   COALESCE(ct.name, c.name) AS category_name
+                   COALESCE(
+                       (SELECT name FROM category_translations WHERE category_id = c.id AND language_code = :lang LIMIT 1),
+                       (SELECT name FROM category_translations WHERE category_id = c.id ORDER BY language_code LIMIT 1),
+                       c.name
+                   ) AS category_name
             FROM tenant_categories tc
             LEFT JOIN tenants t ON tc.tenant_id = t.id
             LEFT JOIN categories c ON tc.category_id = c.id
-            LEFT JOIN category_translations ct
-                ON ct.category_id = c.id AND ct.language_code = :lang
             WHERE tc.id = :id
             LIMIT 1
         ");
