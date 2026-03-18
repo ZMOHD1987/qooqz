@@ -160,23 +160,78 @@
     }
 
     async function addDomain() {
-        const input   = document.getElementById('newDomainInput');
-        const typeEl  = document.getElementById('newDomainType');
-        const domain  = input?.value?.trim();
-        const type    = typeEl?.value || 'custom';
+        const input            = document.getElementById('newDomainInput');
+        const typeEl           = document.getElementById('newDomainType');
+        const sslStatusEl      = document.getElementById('newDomainSslStatus');
+        const sslExpiresAtEl   = document.getElementById('newDomainSslExpiresAt');
+        const verTokenEl       = document.getElementById('newDomainVerificationToken');
+        const verifiedAtEl     = document.getElementById('newDomainVerifiedAt');
+        const metaEl           = document.getElementById('newDomainMeta');
+        const isVerifiedEl     = document.getElementById('newDomainIsVerified');
+        const redirectEl       = document.getElementById('newDomainRedirectToPrimary');
+        const hiddenIdEl       = document.getElementById('newDomainId');
 
-        if (!domain) { if (AF.error) AF.error('Please enter a domain'); return; }
+        const domain = input?.value?.trim();
+        const type   = typeEl?.value || 'custom';
+
+        if (!domain) { if (AF.error) AF.error(t('domains.fields.domain.required', 'Please enter a domain')); return; }
         if (!state.currentTenantId) return;
 
+        // Validate meta JSON if provided
+        const rawMeta = metaEl?.value?.trim() || '';
+        let metaValue = null;
+        if (rawMeta) {
+            try {
+                metaValue = JSON.parse(rawMeta);
+            } catch (_) {
+                if (AF.error) AF.error(t('domains.fields.meta.invalid_json', 'Meta must be valid JSON'));
+                return;
+            }
+        }
+
+        const payload = {
+            tenant_id:            state.currentTenantId,
+            domain,
+            type,
+            ssl_status:           sslStatusEl?.value       || 'none',
+            ssl_expires_at:       sslExpiresAtEl?.value    || null,
+            verification_token:   verTokenEl?.value?.trim() || null,
+            verified_at:          verifiedAtEl?.value       || null,
+            is_verified:          isVerifiedEl?.checked    ? 1 : 0,
+            redirect_to_primary:  redirectEl?.checked      ? 1 : 0,
+            meta:                 metaValue,
+        };
+
+        // Clean up empty strings to null
+        if (!payload.ssl_expires_at)     payload.ssl_expires_at     = null;
+        if (!payload.verification_token) payload.verification_token = null;
+        if (!payload.verified_at)        payload.verified_at        = null;
+
         try {
-            await AF.post(domainsApiUrl(), { tenant_id: state.currentTenantId, domain, type });
-            if (AF.success) AF.success('Domain added');
-            if (input)  input.value = '';
+            const editId = hiddenIdEl?.value ? parseInt(hiddenIdEl.value) : null;
+            if (editId) {
+                await AF.put(`${domainsApiUrl()}/${editId}`, payload);
+                if (AF.success) AF.success(t('domains.messages.updated', 'Domain updated'));
+            } else {
+                await AF.post(domainsApiUrl(), payload);
+                if (AF.success) AF.success(t('domains.messages.added', 'Domain added'));
+            }
+            // Reset form
+            if (input)          input.value          = '';
+            if (typeEl)         typeEl.value         = 'custom';
+            if (sslStatusEl)    sslStatusEl.value    = 'none';
+            if (sslExpiresAtEl) sslExpiresAtEl.value = '';
+            if (verTokenEl)     verTokenEl.value     = '';
+            if (verifiedAtEl)   verifiedAtEl.value   = '';
+            if (metaEl)         metaEl.value         = '';
+            if (isVerifiedEl)   isVerifiedEl.checked = false;
+            if (redirectEl)     redirectEl.checked   = false;
+            if (hiddenIdEl)     hiddenIdEl.value     = '';
             document.getElementById('domainFormInline').style.display = 'none';
             _domainsLoaded = false;
             loadDomains(state.currentTenantId, true);
         } catch (err) {
-            if (AF.error) AF.error(err?.message || 'Failed to add domain');
+            if (AF.error) AF.error(err?.message || t('domains.messages.add_failed', 'Failed to save domain'));
         }
     }
 
@@ -622,7 +677,11 @@
         const btnSaveDomain   = document.getElementById('btnSaveDomain');
         const btnCancelDomain = document.getElementById('btnCancelDomain');
         const domainFormInline = document.getElementById('domainFormInline');
-        if (btnAddDomain)    btnAddDomain.onclick    = () => { if (domainFormInline) domainFormInline.style.display = 'block'; };
+        if (btnAddDomain)    btnAddDomain.onclick    = () => {
+            const hiddenIdEl = document.getElementById('newDomainId');
+            if (hiddenIdEl) hiddenIdEl.value = '';
+            if (domainFormInline) domainFormInline.style.display = 'block';
+        };
         if (btnCancelDomain) btnCancelDomain.onclick = () => { if (domainFormInline) domainFormInline.style.display = 'none'; };
         if (btnSaveDomain)   btnSaveDomain.onclick   = addDomain;
 

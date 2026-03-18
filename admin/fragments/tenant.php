@@ -261,37 +261,160 @@ if (!function_exists('__t')) {
 
                         <!-- Inline add-domain form -->
                         <div id="domainFormInline" class="domain-form-inline" style="display:none">
+                            <input type="hidden" id="newDomainId">
                             <div class="form-grid">
+
+                                <!-- domain -->
                                 <div class="form-group">
                                     <label for="newDomainInput" class="required">
                                         <i class="fas fa-globe"></i>
-                                        <span data-i18n="form.fields.domain.label">
-                                            <?= __t('form.fields.domain.label', 'Domain') ?>
+                                        <span data-i18n="domains.fields.domain.label">
+                                            <?= __t('domains.fields.domain.label', 'Domain') ?>
                                         </span>
                                     </label>
                                     <input type="text" id="newDomainInput" class="form-control"
-                                           placeholder="e.g. acme-corp.example.com"
-                                           maxlength="255">
+                                           data-i18n-placeholder="domains.fields.domain.placeholder"
+                                           placeholder="<?= __t('domains.fields.domain.placeholder', 'e.g. acme-corp.example.com') ?>"
+                                           maxlength="255" required>
+                                    <small class="form-text" data-i18n="domains.fields.domain.hint">
+                                        <?= __t('domains.fields.domain.hint', 'Lowercase letters, numbers, dots and hyphens only') ?>
+                                    </small>
                                 </div>
+
+                                <!-- type -->
                                 <div class="form-group">
                                     <label for="newDomainType">
                                         <i class="fas fa-tag"></i>
-                                        Type
+                                        <span data-i18n="domains.fields.type.label">
+                                            <?= __t('domains.fields.type.label', 'Type') ?>
+                                        </span>
                                     </label>
                                     <select id="newDomainType" class="form-control">
-                                        <option value="custom" data-i18n="domains.custom"><?= __t('domains.custom', 'Custom') ?></option>
+                                        <option value="custom"    data-i18n="domains.custom"><?= __t('domains.custom', 'Custom') ?></option>
                                         <option value="subdomain" data-i18n="domains.subdomain"><?= __t('domains.subdomain', 'Subdomain') ?></option>
-                                        <option value="alias" data-i18n="domains.alias"><?= __t('domains.alias', 'Alias') ?></option>
-                                        <option value="primary" data-i18n="domains.primary"><?= __t('domains.primary', 'Primary') ?></option>
+                                        <option value="alias"     data-i18n="domains.alias"><?= __t('domains.alias', 'Alias') ?></option>
+                                        <option value="primary"   data-i18n="domains.primary"><?= __t('domains.primary', 'Primary') ?></option>
                                     </select>
                                 </div>
-                            </div>
+
+                                <!-- ssl_status -->
+                                <div class="form-group">
+                                    <label for="newDomainSslStatus">
+                                        <i class="fas fa-lock"></i>
+                                        <span data-i18n="domains.fields.ssl_status.label">
+                                            <?= __t('domains.fields.ssl_status.label', 'SSL Status') ?>
+                                        </span>
+                                    </label>
+                                    <select id="newDomainSslStatus" class="form-control">
+                                        <option value="none"    data-i18n="domains.ssl_none"><?= __t('domains.ssl_none', 'No SSL') ?></option>
+                                        <option value="pending" data-i18n="domains.ssl_pending"><?= __t('domains.ssl_pending', 'SSL Pending') ?></option>
+                                        <option value="active"  data-i18n="domains.ssl_active"><?= __t('domains.ssl_active', 'SSL Active') ?></option>
+                                        <option value="failed"  data-i18n="domains.ssl_failed"><?= __t('domains.ssl_failed', 'SSL Failed') ?></option>
+                                    </select>
+                                </div>
+
+                                <!-- ssl_expires_at -->
+                                <div class="form-group">
+                                    <label for="newDomainSslExpiresAt">
+                                        <i class="fas fa-calendar-times"></i>
+                                        <span data-i18n="domains.fields.ssl_expires_at.label">
+                                            <?= __t('domains.fields.ssl_expires_at.label', 'SSL Expires At') ?>
+                                        </span>
+                                    </label>
+                                    <input type="datetime-local" id="newDomainSslExpiresAt" class="form-control">
+                                    <small class="form-text" data-i18n="domains.fields.ssl_expires_at.hint">
+                                        <?= __t('domains.fields.ssl_expires_at.hint', 'Leave blank if SSL has no expiry or is not active') ?>
+                                    </small>
+                                </div>
+
+                                <!-- verification_token -->
+                                <div class="form-group">
+                                    <label for="newDomainVerificationToken">
+                                        <i class="fas fa-key"></i>
+                                        <span data-i18n="domains.fields.verification_token.label">
+                                            <?= __t('domains.fields.verification_token.label', 'Verification Token') ?>
+                                        </span>
+                                    </label>
+                                    <input type="text" id="newDomainVerificationToken" class="form-control"
+                                           data-i18n-placeholder="domains.fields.verification_token.placeholder"
+                                           placeholder="<?= __t('domains.fields.verification_token.placeholder', 'Auto-generated or enter manually') ?>"
+                                           maxlength="128">
+                                    <small class="form-text" data-i18n="domains.fields.verification_token.hint">
+                                        <?= __t('domains.fields.verification_token.hint', 'Used for DNS TXT-record or HTTP-file domain verification') ?>
+                                    </small>
+                                </div>
+
+                                <!-- verified_at -->
+                                <div class="form-group">
+                                    <label for="newDomainVerifiedAt">
+                                        <i class="fas fa-calendar-check"></i>
+                                        <span data-i18n="domains.fields.verified_at.label">
+                                            <?= __t('domains.fields.verified_at.label', 'Verified At') ?>
+                                        </span>
+                                    </label>
+                                    <input type="datetime-local" id="newDomainVerifiedAt" class="form-control">
+                                    <small class="form-text" data-i18n="domains.fields.verified_at.hint">
+                                        <?= __t('domains.fields.verified_at.hint', 'Date and time the domain ownership was confirmed') ?>
+                                    </small>
+                                </div>
+
+                                <!-- meta -->
+                                <div class="form-group form-group-full">
+                                    <label for="newDomainMeta">
+                                        <i class="fas fa-code"></i>
+                                        <span data-i18n="domains.fields.meta.label">
+                                            <?= __t('domains.fields.meta.label', 'Meta (JSON)') ?>
+                                        </span>
+                                    </label>
+                                    <textarea id="newDomainMeta" class="form-control" rows="3"
+                                              data-i18n-placeholder="domains.fields.meta.placeholder"
+                                              placeholder="<?= __t('domains.fields.meta.placeholder', '{"key":"value"} — optional extra data') ?>"></textarea>
+                                    <small class="form-text" data-i18n="domains.fields.meta.hint">
+                                        <?= __t('domains.fields.meta.hint', 'Optional JSON object for additional domain metadata') ?>
+                                    </small>
+                                </div>
+
+                            </div><!-- /.form-grid -->
+
+                            <!-- Checkboxes row -->
+                            <div class="form-row-checks">
+
+                                <div class="form-group form-group-check">
+                                    <label class="check-label">
+                                        <input type="checkbox" id="newDomainIsVerified" value="1">
+                                        <i class="fas fa-shield-alt"></i>
+                                        <span data-i18n="domains.fields.is_verified.label">
+                                            <?= __t('domains.fields.is_verified.label', 'Verified') ?>
+                                        </span>
+                                    </label>
+                                    <small class="form-text" data-i18n="domains.fields.is_verified.hint">
+                                        <?= __t('domains.fields.is_verified.hint', 'Mark domain as already verified') ?>
+                                    </small>
+                                </div>
+
+                                <div class="form-group form-group-check">
+                                    <label class="check-label">
+                                        <input type="checkbox" id="newDomainRedirectToPrimary" value="1">
+                                        <i class="fas fa-directions"></i>
+                                        <span data-i18n="domains.fields.redirect_to_primary.label">
+                                            <?= __t('domains.fields.redirect_to_primary.label', 'Redirect to Primary') ?>
+                                        </span>
+                                    </label>
+                                    <small class="form-text" data-i18n="domains.fields.redirect_to_primary.hint">
+                                        <?= __t('domains.fields.redirect_to_primary.hint', 'Redirect all traffic on this domain to the primary domain') ?>
+                                    </small>
+                                </div>
+
+                            </div><!-- /.form-row-checks -->
+
                             <div class="form-actions form-actions-compact">
                                 <button type="button" id="btnSaveDomain" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-save"></i> Save
+                                    <i class="fas fa-save"></i>
+                                    <span data-i18n="domains.buttons.save"><?= __t('domains.buttons.save', 'Save Domain') ?></span>
                                 </button>
                                 <button type="button" id="btnCancelDomain" class="btn btn-outline btn-sm">
-                                    <i class="fas fa-times"></i> Cancel
+                                    <i class="fas fa-times"></i>
+                                    <span data-i18n="domains.buttons.cancel"><?= __t('domains.buttons.cancel', 'Cancel') ?></span>
                                 </button>
                             </div>
                         </div>

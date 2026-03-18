@@ -110,7 +110,57 @@
     "ssl_active": "SSL Active",
     "ssl_failed": "SSL Failed",
     "delete_confirm": "Are you sure you want to remove this domain?",
-    "cannot_delete_primary": "Cannot delete the primary domain. Promote another domain first."
+    "cannot_delete_primary": "Cannot delete the primary domain. Promote another domain first.",
+    "buttons": {
+      "save": "Save Domain",
+      "cancel": "Cancel"
+    },
+    "messages": {
+      "added": "Domain added successfully",
+      "updated": "Domain updated successfully",
+      "add_failed": "Failed to save domain"
+    },
+    "fields": {
+      "domain": {
+        "label": "Domain",
+        "placeholder": "e.g. acme-corp.example.com",
+        "hint": "Lowercase letters, numbers, dots and hyphens only",
+        "required": "Please enter a domain"
+      },
+      "type": {
+        "label": "Type"
+      },
+      "ssl_status": {
+        "label": "SSL Status"
+      },
+      "ssl_expires_at": {
+        "label": "SSL Expires At",
+        "hint": "Leave blank if SSL has no expiry or is not active"
+      },
+      "verification_token": {
+        "label": "Verification Token",
+        "placeholder": "Auto-generated or enter manually",
+        "hint": "Used for DNS TXT-record or HTTP-file domain verification"
+      },
+      "verified_at": {
+        "label": "Verified At",
+        "hint": "Date and time the domain ownership was confirmed"
+      },
+      "is_verified": {
+        "label": "Verified",
+        "hint": "Mark domain as already verified"
+      },
+      "redirect_to_primary": {
+        "label": "Redirect to Primary",
+        "hint": "Redirect all traffic on this domain to the primary domain"
+      },
+      "meta": {
+        "label": "Meta (JSON)",
+        "placeholder": "{\"key\":\"value\"} — optional extra data",
+        "hint": "Optional JSON object for additional domain metadata",
+        "invalid_json": "Meta must be valid JSON"
+      }
+    }
   },
   "messages": {
     "success": {
