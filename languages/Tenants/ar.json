@@ -12,7 +12,8 @@
     "basic": "المعلومات الأساسية",
     "domains": "النطاقات",
     "users": "المستخدمون",
-    "addresses": "العناوين"
+    "addresses": "العناوين",
+    "categories": "التصنيفات"
   },
   "filters": {
     "search": "بحث",
@@ -93,6 +94,29 @@
       "update": "تحديث المستأجر",
       "updating": "جاري التحديث…",
       "cancel": "إلغاء"
+    }
+  },
+  "categories": {
+    "tab_title": "إدارة التصنيفات",
+    "add": "إضافة تصنيف",
+    "no_categories": "لا توجد تصنيفات مخصصة بعد",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "sort_order_label": "الترتيب",
+    "confirm_delete": "هل تريد إزالة هذا التصنيف؟",
+    "saved": "تم حفظ التصنيف بنجاح",
+    "deleted": "تم حذف التصنيف",
+    "save_failed": "فشل في حفظ التصنيف",
+    "delete_failed": "فشل في حذف التصنيف",
+    "buttons": {
+      "save": "حفظ التصنيف",
+      "cancel": "إلغاء"
+    },
+    "fields": {
+      "category": "التصنيف",
+      "category_placeholder": "-- اختر تصنيفاً --",
+      "category_required": "يرجى اختيار تصنيف",
+      "sort_order": "ترتيب العرض"
     }
   },
   "messages": {

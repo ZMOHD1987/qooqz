@@ -382,12 +382,12 @@
         const select = document.getElementById('catFormCategoryId');
         if (!select || select.dataset.populated) return;
         try {
-            const res = await AF.get(`${allCatApiUrl()}?limit=500&lang=${state.language}&skip_tc_filter=1&parent_id=0`);
-            const items = res?.data?.items || res?.items || [];
+            const res = await AF.get(`${allCatApiUrl()}?limit=500&lang=${state.language}&skip_tc_filter=1`);
+            const items = res?.data?.items || res?.data || res?.items || [];
             items.forEach(c => {
                 const opt = document.createElement('option');
                 opt.value = c.id;
-                opt.textContent = `${c.name || c.id} (#${c.id})`;
+                opt.textContent = `${c.name || c.id}`;
                 select.appendChild(opt);
             });
             select.dataset.populated = '1';
@@ -401,10 +401,10 @@
         const list = document.getElementById('tenantCategoriesList');
         if (!list) return;
 
-        list.innerHTML = '<p style="color:var(--text-secondary);padding:1rem;">Loading…</p>';
+        list.innerHTML = '<p style="color:var(--text-secondary);padding:1rem;"><i class="fas fa-spinner fa-spin"></i> ' + t('categories.loading', 'Loading…') + '</p>';
         try {
             const res = await AF.get(`${tenantCatApiUrl()}?tenant_id=${tenantId}`);
-            const items = res?.data || (Array.isArray(res) ? res : []);
+            const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
             _catsLoaded = true;
 
             if (!items.length) {
@@ -412,22 +412,28 @@
                 return;
             }
 
-            list.innerHTML = items.map(c => `
-                <div class="domain-row" data-id="${c.id}">
-                    <div class="domain-row-main">
-                        <span class="domain-badge">${esc(c.category_name || String(c.category_id))}</span>
-                        <span class="badge-status badge-muted">#${c.sort_order}</span>
-                        <span class="badge-status ${c.is_active ? 'badge-verified' : 'badge-unverified'}">${c.is_active ? t('categories.active', 'Active') : t('categories.inactive', 'Inactive')}</span>
+            list.innerHTML = items.map(c => {
+                const name = esc(c.category_name || String(c.category_id));
+                const statusLabel = c.is_active ? t('categories.active', 'Active') : t('categories.inactive', 'Inactive');
+                const statusCls   = c.is_active ? 'badge-verified' : 'badge-unverified';
+                const sortLabel   = t('categories.sort_order_label', 'Order') + ': ' + (c.sort_order ?? 0);
+                return `
+                <div class="cat-row" data-id="${c.id}">
+                    <div class="cat-row-main">
+                        <span class="cat-row-name"><i class="fas fa-tag"></i>${name}</span>
+                        <span class="cat-row-meta"><i class="fas fa-sort-numeric-up"></i>${sortLabel}</span>
+                        <span class="badge-status ${statusCls}">${statusLabel}</span>
                     </div>
-                    <div class="domain-row-actions">
-                        <button class="btn btn-sm btn-danger" onclick="Tenants.removeTenantCategory(${c.id})" title="${t('categories.delete', 'Remove')}"><i class="fas fa-trash"></i></button>
+                    <div class="cat-row-actions">
+                        <button class="btn btn-sm btn-danger" onclick="Tenants.removeTenantCategory(${c.id})" title="${t('categories.confirm_delete', 'Remove')}"><i class="fas fa-trash"></i></button>
                     </div>
-                </div>`).join('');
+                </div>`;
+            }).join('');
 
             // Ensure dropdown is populated once list is shown
             loadCategoriesDropdown();
         } catch (err) {
-            list.innerHTML = `<p style="color:var(--danger-color);padding:1rem;">${err?.message || 'Failed to load categories'}</p>`;
+            list.innerHTML = `<p style="color:var(--danger-color);padding:1rem;"><i class="fas fa-exclamation-triangle"></i> ${esc(err?.message || 'Failed to load categories')}</p>`;
         }
     }
 

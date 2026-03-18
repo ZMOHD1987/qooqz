@@ -12,7 +12,8 @@
     "basic": "Basic Info",
     "domains": "Domains",
     "users": "Users",
-    "addresses": "Addresses"
+    "addresses": "Addresses",
+    "categories": "Categories"
   },
   "filters": {
     "search": "Search",
@@ -160,6 +161,29 @@
         "hint": "Optional JSON object for additional domain metadata",
         "invalid_json": "Meta must be valid JSON"
       }
+    }
+  },
+  "categories": {
+    "tab_title": "Category Management",
+    "add": "Add Category",
+    "no_categories": "No categories assigned yet",
+    "active": "Active",
+    "inactive": "Inactive",
+    "sort_order_label": "Order",
+    "confirm_delete": "Remove this category assignment?",
+    "saved": "Category saved successfully",
+    "deleted": "Category removed",
+    "save_failed": "Failed to save category",
+    "delete_failed": "Failed to remove category",
+    "buttons": {
+      "save": "Save Category",
+      "cancel": "Cancel"
+    },
+    "fields": {
+      "category": "Category",
+      "category_placeholder": "-- Select Category --",
+      "category_required": "Please select a category",
+      "sort_order": "Sort Order"
     }
   },
   "messages": {
