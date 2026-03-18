@@ -25,19 +25,15 @@ require_once API_VERSION_PATH . '/models/tenants/validators/TenantsValidator.php
 require_once API_VERSION_PATH . '/models/tenants/services/TenantsService.php';
 require_once API_VERSION_PATH . '/models/tenants/controllers/TenantsController.php';
 
-// ===== تحميل audit_logs (اختياري) =====
+// ===== تحميل audit_logs =====
 $auditLogsPath = API_VERSION_PATH . '/models/audit_logs';
-if (is_file($auditLogsPath . '/Contracts/AuditLogsRepositoryInterface.php')) {
-    require_once $auditLogsPath . '/Contracts/AuditLogsRepositoryInterface.php';
-    require_once $auditLogsPath . '/repositories/PdoAuditLogsRepository.php';
-}
+require_once $auditLogsPath . '/Contracts/AuditLogsRepositoryInterface.php';
+require_once $auditLogsPath . '/repositories/PdoAuditLogsRepository.php';
 
-// ===== تحميل bad_words (اختياري) =====
+// ===== تحميل bad_words =====
 $badWordsPath = API_VERSION_PATH . '/models/bad_words';
-if (is_file($badWordsPath . '/repositories/PdoBadWordsRepository.php')) {
-    require_once $badWordsPath . '/repositories/PdoBadWordsRepository.php';
-    require_once $badWordsPath . '/services/BadWordsService.php';
-}
+require_once $badWordsPath . '/repositories/PdoBadWordsRepository.php';
+require_once $badWordsPath . '/services/BadWordsService.php';
 
 /** @var PDO $pdo */
 $pdo = $GLOBALS['ADMIN_DB'] ?? null;
@@ -46,11 +42,17 @@ if (!$pdo instanceof PDO) {
     return;
 }
 
-// ===== إنشاء الاعتمادات الاختيارية =====
-$auditRepo = class_exists('PdoAuditLogsRepository') ? new PdoAuditLogsRepository($pdo) : null;
-$badWordsService = class_exists('BadWordsService')
-    ? new BadWordsService(new PdoBadWordsRepository($pdo))
-    : null;
+// ===== بدء الجلسة إن لم تكن بدأت =====
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// ===== المستخدم الحالي من الجلسة =====
+$actingUserId = $_SESSION['admin_id'] ?? $_SESSION['user_id'] ?? null;
+
+// ===== إنشاء الاعتمادات =====
+$auditRepo       = new PdoAuditLogsRepository($pdo);
+$badWordsService = new BadWordsService(new PdoBadWordsRepository($pdo));
 
 // إنشاء الاعتمادات
 $repo       = new PdoTenantsRepository($pdo);
@@ -161,7 +163,7 @@ try {
         }
 
         ResponseFormatter::success(
-            $controller->create($data),
+            $controller->create($data, $actingUserId),
             'Tenant created successfully',
             201
         );
@@ -178,7 +180,7 @@ try {
 
         $data['id'] = $id;
         ResponseFormatter::success(
-            $controller->update($data, $id),
+            $controller->update($data, $id, $actingUserId),
             'Tenant updated successfully'
         );
     }
@@ -187,7 +189,7 @@ try {
     // DELETE /tenants/{id} - حذف
     // ════════════════════════════════════════════════════════════
     elseif ($method === 'DELETE' && $id) {
-        $controller->delete(['id' => $id, 'user_id' => $queryParams['user_id'] ?? null]);
+        $controller->delete(['id' => $id, 'user_id' => $actingUserId]);
         ResponseFormatter::success(
             ['deleted' => true],
             'Tenant deleted successfully'
@@ -234,7 +236,7 @@ try {
         }
 
         ResponseFormatter::success(
-            $controller->bulkUpdateStatus($data),
+            $controller->bulkUpdateStatus($data, $actingUserId),
             'Bulk status update completed'
         );
     }

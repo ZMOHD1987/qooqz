@@ -536,7 +536,6 @@ if (!function_exists('__t')) {
                             <tr>
                                 <th data-i18n="table.headers.id"><?= __t('table.headers.id', 'ID') ?></th>
                                 <th data-i18n="table.headers.name"><?= __t('table.headers.name', 'Name') ?></th>
-                                <th data-i18n="table.headers.primary_domain"><?= __t('table.headers.primary_domain', 'Primary Domain') ?></th>
                                 <th data-i18n="table.headers.owner"><?= __t('table.headers.owner', 'Owner') ?></th>
                                 <th data-i18n="table.headers.status"><?= __t('table.headers.status', 'Status') ?></th>
                                 <th data-i18n="table.headers.created"><?= __t('table.headers.created', 'Created') ?></th>

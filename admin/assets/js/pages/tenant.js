@@ -101,9 +101,66 @@
     async function loadSubFragment(containerId, url) {
         const container = document.getElementById(containerId);
         if (!container) return;
-        // Only load once (detect by checking for iframe)
-        if (container.querySelector('iframe')) return;
-        container.innerHTML = `<iframe src="${url}" style="width:100%;min-height:500px;border:none;" loading="lazy"></iframe>`;
+        // Only load once (detect by a data-loaded flag)
+        if (container.dataset.loaded) return;
+        container.dataset.loaded = '1';
+
+        // Show a simple spinner while loading
+        container.innerHTML = '<div class="sub-fragment-loading"><div class="spinner"></div></div>';
+
+        try {
+            const res = await fetch(url, { credentials: 'same-origin' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const html = await res.text();
+
+            // Parse the fetched HTML in a detached document so we can extract scripts/links
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+
+            // Inject <link rel="stylesheet"> tags into the parent document <head> (once)
+            doc.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
+                const href = link.getAttribute('href') || '';
+                if (!href) return;
+                const absHref = new URL(href, window.location.origin).href;
+                if (!document.querySelector(`link[href="${absHref}"], link[href="${href}"]`)) {
+                    const el = document.createElement('link');
+                    el.rel  = 'stylesheet';
+                    el.href = absHref;
+                    document.head.appendChild(el);
+                }
+            });
+
+            // Set the container HTML (only body content, no link/script tags)
+            doc.querySelectorAll('link, script').forEach(n => n.remove());
+            container.innerHTML = doc.body.innerHTML;
+
+            // Execute inline <script> tags from the original HTML in order
+            const scripts = [];
+            const tmpDoc  = new DOMParser().parseFromString(html, 'text/html');
+            tmpDoc.querySelectorAll('script').forEach(s => scripts.push(s));
+
+            for (const src of scripts) {
+                const script = document.createElement('script');
+                if (src.src) {
+                    // External script: only load once
+                    const absSrc = new URL(src.src, window.location.origin).href;
+                    if (document.querySelector(`script[src="${absSrc}"]`)) continue;
+                    script.src   = absSrc;
+                    script.async = false;
+                    script.type  = src.type || 'text/javascript';
+                    await new Promise(resolve => {
+                        script.onload = script.onerror = resolve;
+                        document.head.appendChild(script);
+                    });
+                } else if (src.textContent.trim()) {
+                    script.textContent = src.textContent;
+                    script.type = src.type || 'text/javascript';
+                    document.body.appendChild(script);
+                }
+            }
+        } catch (err) {
+            container.innerHTML = `<div class="error-state"><p style="color:var(--danger-color)">${err.message || 'Failed to load'}</p></div>`;
+            delete container.dataset.loaded;
+        }
     }
 
     // ─────────────────────────────────────────────
@@ -298,10 +355,6 @@
                 ? `${esc(item.owner_username)} <small>(ID: ${item.owner_user_id})</small>`
                 : `<span class="text-muted">ID: ${item.owner_user_id}</span>`;
 
-            const domainDisplay = item.primary_domain
-                ? `<code class="domain-badge">${esc(item.primary_domain)}</code>`
-                : `<span class="text-muted">${t('table.no_domain', 'No domain')}</span>`;
-
             const updatedAtDisplay = item.updated_at
                 ? `<span class="date-display">${AF.formatDate ? AF.formatDate(item.updated_at) : esc(item.updated_at)}</span>`
                 : `<span class="text-muted">—</span>`;
@@ -310,7 +363,6 @@
                 <tr>
                     <td>${item.id}</td>
                     <td><strong>${esc(item.name)}</strong></td>
-                    <td>${domainDisplay}</td>
                     <td>${ownerDisplay}</td>
                     <td><span class="${statusCls}">${esc(statusText)}</span></td>
                     <td><span class="date-display">${AF.formatDate ? AF.formatDate(item.created_at) : esc(item.created_at || '')}</span></td>
