@@ -53,4 +53,34 @@ final class TenantCategoriesController
         if (empty($data['id'])) throw new InvalidArgumentException('ID is required');
         $this->service->delete((int)$data['id']);
     }
+
+    /**
+     * Handle POST /api/categories-tenants/sync
+     *
+     * Expected body (JSON):
+     * {
+     *   "tenant_id": 5,
+     *   "category_ids": [1, 2, 7],       // checked checkboxes
+     *   "include_children": true,          // optional, default true
+     *   "is_active": 1                     // optional, default 1
+     * }
+     */
+    public function sync(array $data): array
+    {
+        if (empty($data['tenant_id']) || !is_numeric($data['tenant_id'])) {
+            throw new InvalidArgumentException('tenant_id is required and must be a number');
+        }
+
+        $categoryIds = $data['category_ids'] ?? [];
+        if (!is_array($categoryIds)) {
+            throw new InvalidArgumentException('category_ids must be an array');
+        }
+
+        $tenantId        = (int)$data['tenant_id'];
+        $includeChildren = isset($data['include_children']) ? (bool)$data['include_children'] : true;
+        $isActive        = isset($data['is_active']) ? (int)$data['is_active'] : 1;
+        $lang            = isset($_GET['lang']) ? (string)$_GET['lang'] : 'ar';
+
+        return $this->service->sync($tenantId, $categoryIds, $includeChildren, $isActive, $lang);
+    }
 }

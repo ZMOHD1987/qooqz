@@ -30,11 +30,27 @@ $data = json_decode(file_get_contents('php://input'), true) ?? [];
 // Extract ID from URL path if present
 $requestUri = $_SERVER['REQUEST_URI'] ?? '';
 $id = null;
+$action = null;
+
 if (preg_match('/\/categories-tenants\/(\d+)/', $requestUri, $matches)) {
     $id = (int)$matches[1];
 }
+// Detect sub-action: /categories-tenants/sync
+if (preg_match('/\/categories-tenants\/(sync)/', $requestUri, $matches)) {
+    $action = $matches[1];
+}
 
 try {
+    // ─── Sync endpoint ───────────────────────────────────────────────
+    if ($action === 'sync' && $method === 'POST') {
+        if (empty($data['tenant_id'])) {
+            throw new InvalidArgumentException('tenant_id and category_ids are required');
+        }
+        $result = $controller->sync($data);
+        ResponseFormatter::success($result, 'Categories synced successfully');
+        return;
+    }
+
     switch ($method) {
 
         case 'GET':

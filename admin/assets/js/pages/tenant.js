@@ -619,30 +619,17 @@
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
         _setTreeStatus(t('categories.saving', 'Saving…'));
 
-        const assigned    = new Set(Object.keys(_catTree.assignedMap).map(Number));
-        const nowChecked  = new Set([..._catTree.checkedIds]);
-
-        // Only leaf-level or explicit: add checked that are NOT currently assigned
-        const toAdd    = [...nowChecked].filter(id => !assigned.has(id));
-        // Remove assigned that are no longer checked
-        const toRemove = [...assigned].filter(id => !nowChecked.has(id));
-
         try {
-            await Promise.all([
-                ...toAdd.map(catId => AF.post(tenantCatApiUrl(), {
-                    tenant_id:   state.currentTenantId,
-                    category_id: catId,
-                    sort_order:  0,
-                    is_active:   1,
-                })),
-                ...toRemove.map(catId => {
-                    const rowId = _catTree.assignedMap[catId];
-                    return AF.delete(`${tenantCatApiUrl()}/${rowId}`, { id: rowId });
-                }),
-            ]);
+            // Single batch-sync call — backend resolves children and diffs
+            await AF.post(`${tenantCatApiUrl()}/sync`, {
+                tenant_id:        state.currentTenantId,
+                category_ids:     [..._catTree.checkedIds],
+                include_children: true,
+                is_active:        1,
+            });
             if (AF.success) AF.success(t('categories.saved', 'Categories saved'));
             _setTreeStatus(t('categories.saved', 'Saved ✓'));
-            // Refresh assignedMap
+            // Refresh tree to reflect resolved server state
             _catTree.loaded = false;
             loadTenantCategories(state.currentTenantId, true);
         } catch (err) {
