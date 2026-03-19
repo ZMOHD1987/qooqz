@@ -1597,7 +1597,16 @@
         `).join('');
     }
 
-    function removeImage(index) {
+    async function removeImage(index) {
+        const img = state.selectedImages[index];
+        if (img && img.id && el.formId?.value) {
+            // In edit mode: delete via API so the change is persisted immediately
+            try {
+                await apiCall(`${API.images}/${img.id}`, { method: 'DELETE' });
+            } catch (err) {
+                console.warn('[Products] Failed to delete image via API:', err);
+            }
+        }
         state.selectedImages.splice(index, 1);
         renderProductImages();
     }
@@ -2895,17 +2904,25 @@
         if (el.prodMainCategory) el.prodMainCategory.onchange = onMainCategoryChange;
         if (el.prodSubCategory) el.prodSubCategory.onchange = onSubCategoryChange;
 
-        // Media Studio message listener (only add once to prevent accumulation)
+        // Media Studio event listener (only add once to prevent accumulation)
         if (!_messageListenerAdded) {
             _messageListenerAdded = true;
-            window.addEventListener('message', function (e) {
-                // Only accept messages from the same origin to prevent cross-origin injection
-                if (e.origin !== window.location.origin) return;
-                if (e.data && e.data.type === 'media-selected') {
-                    state.selectedImages = e.data.images || [];
-                    renderProductImages();
-                    closeMediaStudio();
+            window.addEventListener('ImageStudio:selected', async function (e) {
+                const detail = e.detail;
+                // detail is either a single image object or an array
+                const images = Array.isArray(detail) ? detail : (detail ? [detail] : []);
+                state.selectedImages = images;
+                renderProductImages();
+                closeMediaStudio();
+
+                // In edit mode, reload from API to get fully persisted state
+                const productId = el.formId?.value ? parseInt(el.formId.value) : null;
+                if (productId) {
+                    await loadProductImages(productId);
                 }
+            });
+            window.addEventListener('ImageStudio:close', function () {
+                closeMediaStudio();
             });
         }
 
