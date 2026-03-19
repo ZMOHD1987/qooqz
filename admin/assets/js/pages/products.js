@@ -744,7 +744,7 @@
                 loadProductImages(product.id);
                 loadProductCategories(product.id);
                 loadProductAttributes(product.id);
-                loadProductVariants(product.id, product.name);
+                loadProductVariants(product.id);
                 loadProductTranslations(product.id);
                 loadProductPricing(product.id);
                 loadPhysicalAttributes(product.id);
@@ -1372,11 +1372,6 @@
         el.prodVariantsList.innerHTML = state.productVariants.map((variant, idx) => `
             <div class="variant-item card" data-index="${idx}" style="margin-bottom:12px; padding:12px;">
                 <div class="form-row">
-                    <div class="form-group" style="flex:1;">
-                        <label>${t('variants.variant_name', 'Name')}</label>
-                        <input type="text" class="form-control" value="${esc(variant.name || '')}"
-                               onchange="Products.updateVariantField(${idx}, 'name', this.value)">
-                    </div>
                     <div class="form-group" style="flex:1;">
                         <label>${t('variants.variant_sku', 'SKU')}</label>
                         <input type="text" class="form-control" value="${esc(variant.sku || '')}"
@@ -2153,19 +2148,19 @@
         }
     }
 
-    async function loadProductVariants(productId, productFallbackName = '') {
+    async function loadProductVariants(productId) {
         try {
             console.log('[Products] Loading variants for product:', productId);
             const result = await apiCall(`/api/product_variants?product_id=${productId}&tenant_id=${state.tenantId}&language_code=${state.language}&format=json`);
             if (result.success) {
                 const items = result.data?.items || (Array.isArray(result.data) ? result.data : []);
                 // translation_name holds the value from product_variant_translations (pvt.name AS translation_name).
-                // Fall back to v.name (legacy), then to the product's own name for default/unnamed variants.
+                // Fall back to v.name (legacy) if present.
                 state.productVariants = items.map(v => ({
                     id: v.id,
                     sku: v.sku || '',
                     barcode: v.barcode || '',
-                    name: v.translation_name || v.name || (v.is_default ? productFallbackName : '') || '',
+                    name: v.translation_name || v.name || '',
                     stock_quantity: v.stock_quantity || 0,
                     price: v.price || '',
                     is_active: v.is_active || 1,
