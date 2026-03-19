@@ -56,6 +56,9 @@ $tenantId  = admin_tenant_id();
 $userId    = admin_user_id();
 $apiBase   = '/api';
 
+// Image type ID for tenant logo (mirrors image_types table row id=21)
+define('TENANT_LOGO_IMAGE_TYPE_ID', 21);
+
 // Resource-based permissions
 $canManage     = can('tenants.manage') || can('tenants.create');
 $canViewAll    = can_view_all('tenants')    || is_super_admin();
@@ -167,6 +170,10 @@ if (!function_exists('__t')) {
                     <button type="button" class="tab-btn" data-tab="tab-categories" id="tabBtnCategories" disabled>
                         <i class="fas fa-tags"></i>
                         <span data-i18n="tabs.categories"><?= __t('tabs.categories', 'Categories') ?></span>
+                    </button>
+                    <button type="button" class="tab-btn" data-tab="tab-media" id="tabBtnMedia" disabled>
+                        <i class="fas fa-image"></i>
+                        <span data-i18n="tabs.media"><?= __t('tabs.media', 'Media') ?></span>
                     </button>
                 </div>
 
@@ -513,6 +520,30 @@ if (!function_exists('__t')) {
                     </div>
                 </div>
 
+                <!-- Tab: Media (Tenant Logo) -->
+                <div class="tab-content" id="tab-media" style="display:none">
+                    <div class="media-section" style="margin-bottom: 30px;">
+                        <h5 style="margin-bottom: 15px; color: var(--text-primary);" data-i18n="form.sections.logo">
+                            <?= __t('form.sections.logo', 'Tenant Logo') ?>
+                        </h5>
+                        <div class="image-upload-section">
+                            <?php if ($canEdit): ?>
+                            <button type="button" id="btnSelectTenantLogo" class="btn btn-secondary" style="margin-bottom: 15px;" data-i18n="form.media.select_logo">
+                                <?= __t('form.media.select_logo', 'Select Logo from Studio') ?>
+                            </button>
+                            <?php endif; ?>
+                            <div id="tenantLogoPreview" class="single-image-preview">
+                                <div class="placeholder" data-i18n="form.media.no_logo">
+                                    <?= __t('form.media.no_logo', 'No logo selected') ?>
+                                </div>
+                            </div>
+                            <input type="text" id="tenantLogoUrlDisplay" class="form-control url-display" readonly
+                                   data-i18n-placeholder="form.media.logo_url"
+                                   placeholder="<?= __t('form.media.logo_url', 'Logo URL will appear here') ?>">
+                        </div>
+                    </div>
+                </div><!-- /#tab-media -->
+
             </form>
         </div>
     </div><!-- /#tenantFormContainer -->
@@ -639,6 +670,14 @@ if (!function_exists('__t')) {
 
 </div><!-- /#tenantsPageContainer -->
 
+<!-- Media Studio Modal -->
+<div id="tenantMediaModal" class="modal" style="display:none">
+    <div class="modal-content">
+        <span class="close" id="tenantMediaClose">&times;</span>
+        <iframe id="tenantMediaFrame" style="width:100%; height:500px; border:none;"></iframe>
+    </div>
+</div>
+
 <!-- Client-side globals -->
 <script type="text/javascript">
 window.APP_CONFIG = window.APP_CONFIG || {};
@@ -678,6 +717,9 @@ window.TENANTS_CONFIG = {
     addressesUrl:           '/admin/fragments/addresses.php',
     tenantCategoriesApiUrl: '<?= $apiBase ?>/categories-tenants',
     categoriesApiUrl:       '<?= $apiBase ?>/categories',
+    imagesApiUrl:           '<?= $apiBase ?>/images',
+    mediaStudioBase:        '/admin/fragments/media_studio.php',
+    logoImageTypeId:        <?= TENANT_LOGO_IMAGE_TYPE_ID ?>,
     csrfToken:      '<?= addslashes($csrf) ?>',
     lang:           '<?= addslashes($lang) ?>',
     itemsPerPage:   25

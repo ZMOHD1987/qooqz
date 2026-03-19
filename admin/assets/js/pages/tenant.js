@@ -15,6 +15,8 @@
     const AF  = window.AdminFramework;
     const API = '/api/tenants';
 
+    const TENANT_LOGO_IMAGE_TYPE_ID = window.TENANTS_CONFIG?.logoImageTypeId || 21;
+
     const state = {
         page: 1,
         perPage: window.TENANTS_CONFIG?.itemsPerPage || 25,
@@ -89,6 +91,9 @@
         if (tabId === 'tab-categories' && state.currentTenantId) {
             loadTenantCategories(state.currentTenantId);
         }
+        if (tabId === 'tab-media' && state.currentTenantId) {
+            loadTenantLogo(state.currentTenantId);
+        }
     }
 
     function enableSubTabs(tenantId) {
@@ -97,10 +102,12 @@
         const btnUsers       = document.getElementById('tabBtnUsers');
         const btnAddr        = document.getElementById('tabBtnAddresses');
         const btnCategories  = document.getElementById('tabBtnCategories');
+        const btnMedia       = document.getElementById('tabBtnMedia');
         if (btnDomains)    btnDomains.disabled    = false;
         if (btnUsers)      btnUsers.disabled      = false;
         if (btnAddr)       btnAddr.disabled       = false;
         if (btnCategories) btnCategories.disabled = false;
+        if (btnMedia)      btnMedia.disabled      = false;
     }
 
     async function loadSubFragment(containerId, url) {
@@ -668,6 +675,69 @@
     }
 
     // ─────────────────────────────────────────────
+    // MEDIA (TENANT LOGO)
+    // ─────────────────────────────────────────────
+    function openTenantMediaStudio() {
+        if (!state.currentTenantId) {
+            if (AF.error) AF.error(t('form.media.save_first', 'Please save the tenant first before adding media'));
+            return;
+        }
+        const cfg     = window.TENANTS_CONFIG || {};
+        const base    = cfg.mediaStudioBase  || '/admin/fragments/media_studio.php';
+        const typeId  = TENANT_LOGO_IMAGE_TYPE_ID;
+        const tenantId = window.APP_CONFIG?.TENANT_ID || cfg.tenantId || '';
+        const lang    = state.language;
+
+        const frame = document.getElementById('tenantMediaFrame');
+        const modal = document.getElementById('tenantMediaModal');
+        if (!frame || !modal) return;
+
+        frame.src = `${base}?embedded=1&tenant_id=${tenantId}&lang=${lang}&owner_id=${state.currentTenantId}&image_type_id=${typeId}&owner_type=tenant`;
+        modal.style.display = 'flex';
+    }
+
+    function closeTenantMediaStudio() {
+        const modal = document.getElementById('tenantMediaModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function updateTenantLogoPreview(imageUrl) {
+        const previewEl    = document.getElementById('tenantLogoPreview');
+        const urlDisplayEl = document.getElementById('tenantLogoUrlDisplay');
+
+        if (previewEl) {
+            if (imageUrl) {
+                const wrapper = document.createElement('div');
+                wrapper.style.cssText = 'position:relative; display:inline-block;';
+
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.style.cssText = 'max-width:100%; max-height:200px; border-radius:4px;';
+                wrapper.appendChild(img);
+
+                previewEl.innerHTML = '';
+                previewEl.appendChild(wrapper);
+            } else {
+                previewEl.innerHTML = `<div class="placeholder">${t('form.media.no_logo', 'No logo selected')}</div>`;
+            }
+        }
+        if (urlDisplayEl) urlDisplayEl.value = imageUrl || '';
+    }
+
+    async function loadTenantLogo(tenantId) {
+        const cfg    = window.TENANTS_CONFIG || {};
+        const apiUrl = cfg.imagesApiUrl || '/api/images';
+        try {
+            const res = await AF.get(`${apiUrl}/by_owner?owner_id=${tenantId}&image_type_id=${TENANT_LOGO_IMAGE_TYPE_ID}`);
+            const images = res?.data?.images || res?.data || res?.images || [];
+            const main   = Array.isArray(images) ? images.find(i => i.is_main) || images[0] : null;
+            updateTenantLogoPreview(main ? (main.url || main.thumb_url || null) : null);
+        } catch (_) {
+            updateTenantLogoPreview(null);
+        }
+    }
+
+    // ─────────────────────────────────────────────
     // RENDER TABLE
     // ─────────────────────────────────────────────
     function renderTable(items) {
@@ -898,6 +968,9 @@
             // Enable sub-tabs
             enableSubTabs(item.id);
 
+            // Pre-load logo in background so it's ready when media tab is opened
+            loadTenantLogo(item.id);
+
             // Switch to Basic tab
             activateTab('tab-basic');
 
@@ -935,10 +1008,12 @@
         const btnUsers      = document.getElementById('tabBtnUsers');
         const btnAddr       = document.getElementById('tabBtnAddresses');
         const btnCategories = document.getElementById('tabBtnCategories');
+        const btnMedia      = document.getElementById('tabBtnMedia');
         if (btnDomains)    btnDomains.disabled    = true;
         if (btnUsers)      btnUsers.disabled      = true;
         if (btnAddr)       btnAddr.disabled       = true;
         if (btnCategories) btnCategories.disabled = true;
+        if (btnMedia)      btnMedia.disabled      = true;
 
         // Reset sub-fragment containers
         const domainsList       = document.getElementById('domainsList');
@@ -1094,6 +1169,30 @@
         if (catTreeSearchInput) {
             catTreeSearchInput.addEventListener('input', e => _filterTree(e.target.value));
         }
+
+        // Media (logo) events
+        const btnSelectLogo    = document.getElementById('btnSelectTenantLogo');
+        const btnMediaClose    = document.getElementById('tenantMediaClose');
+        const tenantMediaModal = document.getElementById('tenantMediaModal');
+        if (btnSelectLogo) btnSelectLogo.onclick = openTenantMediaStudio;
+        if (btnMediaClose) btnMediaClose.onclick = closeTenantMediaStudio;
+        if (tenantMediaModal) {
+            tenantMediaModal.addEventListener('click', e => {
+                if (e.target === tenantMediaModal) closeTenantMediaStudio();
+            });
+        }
+
+        // Listen for media-selected postMessage from media studio iframe
+        window.addEventListener('message', function onTenantMediaMessage(e) {
+            if (!e.data || e.data.type !== 'media-selected') return;
+            const images  = e.data.images || [];
+            const typeId  = e.data.imageTypeId;
+            if (typeId == TENANT_LOGO_IMAGE_TYPE_ID && images.length) {
+                const imageUrl = images[0].url || images[0].thumb_url || '';
+                if (imageUrl) updateTenantLogoPreview(imageUrl);
+                closeTenantMediaStudio();
+            }
+        });
 
         if (el.searchInput) {
             el.searchInput.addEventListener('keypress', e => {

@@ -430,7 +430,7 @@ if (!function_exists('pub_load_theme')) {
                                 "SELECT i.url FROM images i
                                  LEFT JOIN image_types it ON it.id = i.image_type_id
                                  WHERE i.owner_type = 'tenant' AND i.owner_id = ?
-                                   AND (it.code = 'logo' OR it.code = 'entity_logo')
+                                   AND (it.code = 'logo' OR it.code = 'entity_logo' OR it.code = 'tenant_logo')
                                  ORDER BY i.id ASC LIMIT 1"
                             );
                             $logoSt->execute([$tenantId]);
