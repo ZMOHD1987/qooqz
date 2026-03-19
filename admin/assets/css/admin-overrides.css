@@ -1,17 +1,145 @@
-/* admin/assets/css/admin-overrides.css
- * Production Overrides - Minimal & Safe
- * ONLY critical fixes that can't be in admin.css
+/* admin/assets/css/admin-overrides.css  v4
+ * Fixes: logo · desktop toggle · sidebar collapse/expand · slider responsive
  */
 
-/* Force hide backdrop by default - NO exceptions */
+/* ═══════════════════════════════════════════════
+   1. LOGO
+═══════════════════════════════════════════════ */
+.brand-logo {
+    max-height: 36px !important;
+    max-width: 140px !important;
+    width: auto !important;
+    object-fit: contain !important;
+    display: block;
+}
+.brand { gap: 0.5rem; }
+
+/* ═══════════════════════════════════════════════
+   2. TOGGLE BUTTON — always visible
+═══════════════════════════════════════════════ */
+#sidebarToggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+/* Rotate icon 180° when sidebar is collapsed */
+body.sidebar-collapsed #sidebarToggle i,
+body.sidebar-collapsed #sidebarToggle svg {
+    transform: rotate(180deg);
+}
+#sidebarToggle i,
+#sidebarToggle svg {
+    transition: transform 0.26s ease;
+}
+
+/* ═══════════════════════════════════════════════
+   3. SIDEBAR — smooth transition
+═══════════════════════════════════════════════ */
+.admin-sidebar {
+    transition: width 0.26s ease, padding 0.26s ease, transform 0.3s ease !important;
+    will-change: width;
+    overflow: hidden !important;
+}
+
+/* ═══════════════════════════════════════════════
+   4a. DESKTOP — EXPANDED (default, no extra class)
+═══════════════════════════════════════════════ */
+@media (min-width: 769px) {
+    /* Make sure the text is visible when NOT collapsed */
+    body:not(.sidebar-collapsed) .admin-sidebar .sidebar-title {
+        display: inline !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        max-width: 200px !important;
+        overflow: hidden !important;
+        white-space: nowrap !important;
+    }
+    body:not(.sidebar-collapsed) .admin-sidebar .sidebar-link {
+        justify-content: flex-start !important;
+        gap: 0.75rem !important;
+        padding: 0.875rem 1rem !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════
+   4b. DESKTOP — COLLAPSED (body.sidebar-collapsed)
+═══════════════════════════════════════════════ */
+@media (min-width: 769px) {
+    body.sidebar-collapsed .admin-sidebar {
+        width: 64px !important;
+        min-width: 64px !important;
+        max-width: 64px !important;
+        padding: 1rem 0.375rem !important;
+    }
+
+    /* Hide text */
+    body.sidebar-collapsed .admin-sidebar .sidebar-title {
+        display: none !important;
+        width: 0 !important;
+        overflow: hidden !important;
+    }
+
+    /* Hide sub-menus */
+    body.sidebar-collapsed .admin-sidebar .sidebar-list .sidebar-list {
+        display: none !important;
+    }
+
+    /* Centre icon */
+    body.sidebar-collapsed .admin-sidebar .sidebar-link {
+        justify-content: center !important;
+        gap: 0 !important;
+        padding: 0.75rem 0 !important;
+        position: relative;
+        overflow: visible !important;
+    }
+
+    /* Keep icon visible */
+    body.sidebar-collapsed .admin-sidebar .sidebar-icon {
+        display: inline-flex !important;
+        min-width: 22px;
+        justify-content: center;
+    }
+
+    /* Tooltip on hover */
+    body.sidebar-collapsed .admin-sidebar .sidebar-link[data-tooltip]::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        left: calc(100% + 10px);
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0,0,0,0.88);
+        color: #fff;
+        font-size: 0.8125rem;
+        white-space: nowrap;
+        padding: 0.4rem 0.75rem;
+        border-radius: 5px;
+        pointer-events: none;
+        opacity: 0;
+        z-index: 9999;
+        transition: opacity 0.15s ease;
+    }
+    body.sidebar-collapsed .admin-sidebar .sidebar-link[data-tooltip]:hover::after {
+        opacity: 1;
+    }
+
+    /* RTL tooltip */
+    [dir="rtl"] body.sidebar-collapsed .admin-sidebar .sidebar-link[data-tooltip]::after {
+        left: auto;
+        right: calc(100% + 10px);
+    }
+}
+
+/* ═══════════════════════════════════════════════
+   5. BACKDROP — mobile only
+═══════════════════════════════════════════════ */
 .sidebar-backdrop {
     display: none !important;
     opacity: 0 !important;
     visibility: hidden !important;
     pointer-events: none !important;
 }
-
-/* ONLY on mobile when sidebar is actually open */
 @media (max-width: 768px) {
     body.sidebar-open .sidebar-backdrop {
         display: block !important;
@@ -20,14 +148,79 @@
         pointer-events: auto !important;
     }
 }
-
-/* Desktop - NEVER show backdrop */
 @media (min-width: 769px) {
-    .sidebar-backdrop {
+    .sidebar-backdrop,
+    body.sidebar-open .sidebar-backdrop,
+    body.sidebar-collapsed .sidebar-backdrop {
         display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
     }
-    
-    body.sidebar-open .sidebar-backdrop {
-        display: none !important;
+}
+
+/* ═══════════════════════════════════════════════
+   6. RANGE SLIDER — responsive
+═══════════════════════════════════════════════ */
+.color-slider-wrapper,
+.color-slider-container,
+[class*="color-slider"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+input[type="range"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border-color, #334155);
+    outline: none;
+    margin: 0.5rem 0;
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary-color, #3b82f6);
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+}
+input[type="range"]::-moz-range-thumb {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--primary-color, #3b82f6);
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+    border: none;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+    border-radius: 3px;
+    height: 6px;
+}
+input[type="range"]::-moz-range-track {
+    border-radius: 3px;
+    height: 6px;
+    background: var(--border-color, #334155);
+}
+@media (max-width: 768px) {
+    .color-slider-wrapper,
+    .color-slider-container,
+    [class*="color-slider"] {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
     }
 }
