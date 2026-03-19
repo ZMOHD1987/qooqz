@@ -886,9 +886,9 @@
                 allow_backorder: formData.get('allow_backorder') || '0',
 
                 // Related data — DO NOT pass translations here; they are saved via saveProductTranslations
+                // NOTE: variants are managed exclusively via /api/product_variants — not included here
                 categories: state.selectedCategories,
-                attributes: state.productAttributes,
-                variants: state.productVariants
+                attributes: state.productAttributes
             };
 
             if (isEdit) {
@@ -1366,6 +1366,8 @@
     function renderVariants() {
         if (!el.prodVariantsList) return;
 
+        const isEditMode = !!(el.formId?.value);
+
         el.prodVariantsList.innerHTML = state.productVariants.map((variant, idx) => `
             <div class="variant-item card" data-index="${idx}" style="margin-bottom:12px; padding:12px;">
                 <div class="form-row">
@@ -1390,8 +1392,11 @@
                         <input type="number" class="form-control" value="${esc(variant.stock_quantity || 0)}"
                                onchange="Products.updateVariantField(${idx}, 'stock_quantity', this.value)">
                     </div>
-                    <div style="display:flex;align-items:flex-end;padding-bottom:8px;">
-                        <button type="button" class="btn btn-sm btn-danger" onclick="Products.removeVariant(${idx})">
+                    <div style="display:flex;align-items:flex-end;gap:6px;padding-bottom:8px;">
+                        ${isEditMode ? `<button type="button" class="btn btn-sm btn-primary" title="${t('variants.save_variant', 'Save')}" onclick="Products.saveVariantRow(${idx})">
+                            <i class="fas fa-save"></i>
+                        </button>` : ''}
+                        <button type="button" class="btn btn-sm btn-danger" title="${t('common.delete', 'Delete')}" onclick="Products.removeVariant(${idx})">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -1406,12 +1411,89 @@
         }
     }
 
-    function removeVariant(index) {
+    async function removeVariant(index) {
+        const variant = state.productVariants[index];
+        if (variant && variant.id) {
+            try {
+                await apiCall(`/api/product_variants?tenant_id=${state.tenantId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: parseInt(variant.id) })
+                });
+            } catch (err) {
+                console.warn('[Products] Failed to delete variant via API:', err);
+            }
+        }
         state.productVariants.splice(index, 1);
         renderVariants();
     }
 
-    function generateVariantsFromAttributes() {
+    /**
+     * Save (POST or PUT) a single variant row via /api/product_variants.
+     * In edit mode (product already exists) this fires immediately so the API
+     * is always the source of truth.  In create mode the buffered
+     * saveProductVariants() call after product creation covers the save.
+     */
+    async function saveVariantRow(index) {
+        const variant = state.productVariants[index];
+        if (!variant) return;
+
+        const productId = el.formId?.value ? parseInt(el.formId.value) : null;
+        if (!productId) {
+            // Create mode: nothing to persist yet — saveProductVariants() handles this
+            return;
+        }
+
+        const variantData = {
+            product_id: productId,
+            sku: variant.sku || null,
+            barcode: variant.barcode || null,
+            stock_quantity: parseInt(variant.stock_quantity) || 0,
+            low_stock_threshold: parseInt(variant.low_stock_threshold) || 5,
+            is_active: variant.is_active !== undefined ? parseInt(variant.is_active) : 1,
+            is_default: variant.is_default !== undefined ? parseInt(variant.is_default) : 0
+        };
+        if (variant.id) variantData.id = parseInt(variant.id);
+
+        const method = variant.id ? 'PUT' : 'POST';
+
+        try {
+            const result = await apiCall(`/api/product_variants?tenant_id=${state.tenantId}`, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(variantData)
+            });
+
+            if (result.success) {
+                const savedId = variant.id || result.data?.id;
+                if (savedId) {
+                    state.productVariants[index].id = savedId;
+
+                    // Persist name as translation
+                    if (variant.name) {
+                        try {
+                            await apiCall(`/api/product_variants?tenant_id=${state.tenantId}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    variant_id: parseInt(savedId),
+                                    translation: { language_code: state.language, name: variant.name }
+                                })
+                            });
+                        } catch (err) {
+                            console.warn('[Products] Failed to save variant translation:', err);
+                        }
+                    }
+                }
+                renderVariants(); // Refresh to show saved state (id now set)
+            }
+        } catch (err) {
+            console.warn('[Products] Failed to save variant row:', err);
+        }
+    }
+
+
+    async function generateVariantsFromAttributes() {
         // Collect variation attributes that have values
         const variationAttrs = state.productAttributes.filter(a => !!(a.attribute_value_id || a.value));
 
@@ -1442,6 +1524,7 @@
 
         // Create variants from combinations
         const baseSku = document.getElementById('prodSku')?.value || 'VAR';
+        const startIdx = state.productVariants.length;
         combinations.forEach((combo, i) => {
             const nameParts = combo.map(v => v.label);
             const variant = {
@@ -1458,6 +1541,14 @@
         });
 
         renderVariants();
+
+        // In edit mode, auto-save each generated variant via API immediately
+        const productId = el.formId?.value ? parseInt(el.formId.value) : null;
+        if (productId) {
+            for (let i = startIdx; i < state.productVariants.length; i++) {
+                await saveVariantRow(i);
+            }
+        }
     }
 
     function cartesian(arrays) {
@@ -2860,6 +2951,7 @@
         removeAttribute,
         updateVariantField,
         removeVariant,
+        saveVariantRow,
         generateVariantsFromAttributes,
         removeImage,
         toggleCategory,
