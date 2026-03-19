@@ -371,139 +371,301 @@
     }
 
     // ─────────────────────────────────────────────
-    // CATEGORIES
+    // CATEGORIES  (checkbox tree)
     // ─────────────────────────────────────────────
-    const tenantCatApiUrl  = () => window.TENANTS_CONFIG?.tenantCategoriesApiUrl || '/api/categories-tenants';
-    const allCatApiUrl     = () => window.TENANTS_CONFIG?.categoriesApiUrl       || '/api/categories';
+    const tenantCatApiUrl = () => window.TENANTS_CONFIG?.tenantCategoriesApiUrl || '/api/categories-tenants';
+    const allCatApiUrl    = () => window.TENANTS_CONFIG?.categoriesApiUrl       || '/api/categories';
 
-    let _catsLoaded = false;
+    // Internal state for the tree
+    let _catTree = {
+        loaded:      false,
+        allCats:     [],      // raw flat list from API
+        assignedMap: {},      // { category_id: assignment_id } — existing server assignments
+        checkedIds:  new Set(),  // category_ids currently checked in UI
+        nodeIndex:   {},      // { id: node } for fast lookup
+    };
 
-    async function loadCategoriesDropdown() {
-        const select = document.getElementById('catFormCategoryId');
-        if (!select || select.dataset.populated) return;
-        try {
-            const res = await AF.get(`${allCatApiUrl()}?limit=500&lang=${state.language}&skip_tc_filter=1`);
-            const items = res?.data?.items || res?.data || res?.items || [];
-            items.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c.id;
-                opt.textContent = `${c.name || c.id}`;
-                select.appendChild(opt);
-            });
-            select.dataset.populated = '1';
-        } catch (err) {
-            console.warn('[Tenants] Could not load categories dropdown:', err);
+    // ── Build flat→tree index ──────────────────────────────
+    function _buildNodeIndex(items) {
+        const idx = {};
+        items.forEach(c => {
+            idx[c.id] = { ...c, children: [] };
+        });
+        const roots = [];
+        items.forEach(c => {
+            if (c.parent_id && idx[c.parent_id]) {
+                idx[c.parent_id].children.push(idx[c.id]);
+            } else {
+                roots.push(idx[c.id]);
+            }
+        });
+        return { roots, idx };
+    }
+
+    // ── Render tree HTML ───────────────────────────────────
+    function _renderNodes(nodes, depth) {
+        if (!nodes.length) return '';
+        const wrapClass = depth === 0 ? '' : 'cat-tree-children collapsed';
+        const wrapId    = depth === 0 ? 'id="catTreeRootList"' : '';
+        let html = `<div class="${wrapClass}" ${wrapId}>`;
+        nodes.forEach(node => {
+            const hasChildren = node.children.length > 0;
+            const checked     = _catTree.checkedIds.has(node.id);
+            const toggleCls   = hasChildren ? '' : ' leaf';
+            const toggleIcon  = 'fa-chevron-right';
+            html += `
+            <div class="cat-tree-node" data-cat-id="${node.id}" data-parent-id="${node.parent_id || 0}">
+                <span class="cat-tree-toggle${toggleCls}" data-toggle="${node.id}"><i class="fas ${toggleIcon}"></i></span>
+                <input type="checkbox" class="cat-tree-cb" data-cb="${node.id}" ${checked ? 'checked' : ''}>
+                <span class="cat-tree-label">${esc(node.name || String(node.id))}</span>
+                ${hasChildren ? `<span class="cat-tree-count" data-count="${node.id}">${node.children.length}</span>` : ''}
+            </div>
+            ${hasChildren ? _renderNodes(node.children, depth + 1) : ''}`;
+        });
+        html += '</div>';
+        return html;
+    }
+
+    // ── Refresh indeterminate states after render ──────────
+    function _syncAllParents() {
+        // Bottom-up: iterate all nodes that have children
+        Object.values(_catTree.nodeIndex).forEach(node => {
+            if (node.children.length) _syncParentState(node.id);
+        });
+    }
+
+    function _syncParentState(parentId) {
+        const node = _catTree.nodeIndex[parentId];
+        if (!node || !node.children.length) return;
+        const cbEl = document.querySelector(`.cat-tree-cb[data-cb="${parentId}"]`);
+        if (!cbEl) return;
+        const childIds    = _getAllDescendants(node.id);
+        const checkedCnt  = childIds.filter(id => _catTree.checkedIds.has(id)).length;
+        if (checkedCnt === 0) {
+            cbEl.checked       = false;
+            cbEl.indeterminate = false;
+            _catTree.checkedIds.delete(parentId);
+        } else if (checkedCnt === childIds.length) {
+            cbEl.checked       = true;
+            cbEl.indeterminate = false;
+            _catTree.checkedIds.add(parentId);
+        } else {
+            cbEl.checked       = false;
+            cbEl.indeterminate = true;
+            _catTree.checkedIds.delete(parentId);
         }
     }
 
+    function _getAllDescendants(nodeId) {
+        const node = _catTree.nodeIndex[nodeId];
+        if (!node) return [];
+        let ids = [];
+        node.children.forEach(c => {
+            ids.push(c.id);
+            ids = ids.concat(_getAllDescendants(c.id));
+        });
+        return ids;
+    }
+
+    // ── Handle a checkbox click ────────────────────────────
+    function _onCbClick(catId, checked) {
+        const node        = _catTree.nodeIndex[catId];
+        if (!node) return;
+
+        // Update self
+        if (checked) {
+            _catTree.checkedIds.add(catId);
+        } else {
+            _catTree.checkedIds.delete(catId);
+        }
+
+        // Cascade to all descendants
+        const descendants = _getAllDescendants(catId);
+        descendants.forEach(id => {
+            const el = document.querySelector(`.cat-tree-cb[data-cb="${id}"]`);
+            if (el) { el.checked = checked; el.indeterminate = false; }
+            if (checked) _catTree.checkedIds.add(id);
+            else         _catTree.checkedIds.delete(id);
+        });
+
+        // Bubble up ancestors
+        let parentId = node.parent_id;
+        while (parentId) {
+            _syncParentState(parentId);
+            const p = _catTree.nodeIndex[parentId];
+            parentId = p ? p.parent_id : null;
+        }
+    }
+
+    // ── Toggle expand/collapse ─────────────────────────────
+    function _onToggle(catId) {
+        const nodeEl     = document.querySelector(`.cat-tree-node[data-cat-id="${catId}"]`);
+        if (!nodeEl) return;
+        const childrenEl = nodeEl.nextElementSibling;
+        if (!childrenEl || !childrenEl.classList.contains('cat-tree-children')) return;
+        const isCollapsed = childrenEl.classList.contains('collapsed');
+        childrenEl.classList.toggle('collapsed', !isCollapsed);
+        const icon = nodeEl.querySelector('.cat-tree-toggle i');
+        if (icon) {
+            icon.className = isCollapsed ? 'fas fa-chevron-down' : 'fas fa-chevron-right';
+        }
+    }
+
+    // ── Search / filter ───────────────────────────────────
+    function _filterTree(query) {
+        const q = query.toLowerCase().trim();
+        document.querySelectorAll('#tenantCategoryTree .cat-tree-node').forEach(el => {
+            const label = el.querySelector('.cat-tree-label')?.textContent?.toLowerCase() || '';
+            el.classList.toggle('hidden', q !== '' && !label.includes(q));
+        });
+        // Reveal parent nodes if any visible children exist
+        if (q !== '') {
+            document.querySelectorAll('#tenantCategoryTree .cat-tree-children').forEach(grp => {
+                const anyVisible = grp.querySelector('.cat-tree-node:not(.hidden)');
+                if (anyVisible) grp.classList.remove('collapsed');
+            });
+        }
+    }
+
+    // ── Main loader ───────────────────────────────────────
     async function loadTenantCategories(tenantId, force = false) {
-        if (_catsLoaded && !force) return;
-        const list = document.getElementById('tenantCategoriesList');
-        if (!list) return;
+        if (_catTree.loaded && !force) return;
+        const container = document.getElementById('tenantCategoryTree');
+        if (!container) return;
 
-        list.innerHTML = '<p style="color:var(--text-secondary);padding:1rem;"><i class="fas fa-spinner fa-spin"></i> ' + t('categories.loading', 'Loading…') + '</p>';
+        container.innerHTML = '<p class="cat-row-meta" style="padding:1rem;"><i class="fas fa-spinner fa-spin"></i> ' + t('categories.loading', 'Loading…') + '</p>';
+        _setTreeStatus('');
+
         try {
-            const res = await AF.get(`${tenantCatApiUrl()}?tenant_id=${tenantId}&lang=${state.language || 'ar'}`);
-            const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
-            _catsLoaded = true;
+            // Parallel fetch: all categories + existing assignments
+            const [allRes, assignedRes] = await Promise.all([
+                AF.get(`${allCatApiUrl()}?limit=2000&lang=${state.language}&skip_tc_filter=1`),
+                AF.get(`${tenantCatApiUrl()}?tenant_id=${tenantId}&lang=${state.language || 'ar'}`),
+            ]);
 
-            if (!items.length) {
-                list.innerHTML = '<div class="sub-fragment-placeholder" id="tenantCategoriesPlaceholder"><i class="fas fa-tags fa-2x"></i><p>' + t('categories.no_categories', 'No categories assigned yet') + '</p></div>';
+            const allItems      = allRes?.data?.items || allRes?.data || allRes?.items || [];
+            const assignedItems = Array.isArray(assignedRes?.data) ? assignedRes.data : (Array.isArray(assignedRes) ? assignedRes : []);
+
+            if (!allItems.length) {
+                container.innerHTML = '<div class="sub-fragment-placeholder" id="tenantCategoriesPlaceholder"><i class="fas fa-tags fa-2x"></i><p>' + t('categories.no_categories', 'No categories assigned yet') + '</p></div>';
                 return;
             }
 
-            list.innerHTML = items.map(c => {
-                const name = esc(c.category_name || String(c.category_id));
-                const statusLabel = c.is_active ? t('categories.active', 'Active') : t('categories.inactive', 'Inactive');
-                const statusCls   = c.is_active ? 'badge-verified' : 'badge-unverified';
-                const sortLabel   = t('categories.sort_order_label', 'Order') + ': ' + (c.sort_order ?? 0);
-                return `
-                <div class="cat-row" data-id="${c.id}">
-                    <div class="cat-row-main">
-                        <span class="cat-row-name"><i class="fas fa-tag"></i>${name}</span>
-                        <span class="cat-row-meta"><i class="fas fa-sort-numeric-up"></i>${sortLabel}</span>
-                        <span class="badge-status ${statusCls}">${statusLabel}</span>
-                    </div>
-                    <div class="cat-row-actions">
-                        <button class="btn btn-sm btn-warning" onclick="Tenants.editTenantCategory(${c.id},${c.category_id},${c.sort_order ?? 0})" title="${t('categories.edit', 'Edit')}"><i class="fas fa-pencil-alt"></i></button>
-                        <button class="btn btn-sm btn-danger" onclick="Tenants.removeTenantCategory(${c.id})" title="${t('categories.confirm_delete', 'Remove')}"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>`;
-            }).join('');
+            // Build node index and tree roots
+            const { roots, idx } = _buildNodeIndex(allItems);
+            _catTree.nodeIndex   = idx;
+            _catTree.allCats     = allItems;
 
-            // Ensure dropdown is populated once list is shown
-            loadCategoriesDropdown();
+            // Build assignedMap  and initial checkedIds
+            _catTree.assignedMap = {};
+            _catTree.checkedIds  = new Set();
+            assignedItems.forEach(a => {
+                _catTree.assignedMap[a.category_id] = a.id;   // category_id → assignment row id
+                _catTree.checkedIds.add(a.category_id);
+            });
+
+            // Render
+            container.innerHTML = _renderNodes(roots, 0);
+
+            // Fix indeterminate states
+            _syncAllParents();
+
+            // Re-apply checked state DOM (for parents whose children are all checked)
+            Object.values(_catTree.nodeIndex).forEach(node => {
+                if (node.children.length) {
+                    const cbEl = document.querySelector(`.cat-tree-cb[data-cb="${node.id}"]`);
+                    if (cbEl && _catTree.checkedIds.has(node.id)) cbEl.checked = true;
+                }
+            });
+
+            // Attach event delegation to container
+            _attachTreeEvents(container);
+
+            _catTree.loaded = true;
         } catch (err) {
-            list.innerHTML = `<p style="color:var(--danger-color);padding:1rem;"><i class="fas fa-exclamation-triangle"></i> ${esc(err?.message || 'Failed to load categories')}</p>`;
+            container.innerHTML = `<p class="cat-row-meta" style="padding:1rem;color:var(--danger-color,#ef4444);"><i class="fas fa-exclamation-triangle"></i> ${esc(err?.message || 'Failed to load categories')}</p>`;
         }
     }
 
-    async function addTenantCategory() {
-        const selectEl     = document.getElementById('catFormCategoryId');
-        const sortOrderEl  = document.getElementById('catFormSortOrder');
-        const idEl         = document.getElementById('catFormId');
-        const categoryId   = parseInt(selectEl?.value || '0', 10);
+    function _attachTreeEvents(container) {
+        // Use event delegation – single listener for thousands of nodes
+        container.addEventListener('click', e => {
+            const cb     = e.target.closest('.cat-tree-cb');
+            const toggle = e.target.closest('.cat-tree-toggle:not(.leaf)');
 
-        if (!categoryId) {
-            if (AF.error) AF.error(t('categories.fields.category_required', 'Please select a category'));
-            return;
-        }
-        if (!state.currentTenantId) return;
-
-        const payload = {
-            tenant_id:   state.currentTenantId,
-            category_id: categoryId,
-            sort_order:  parseInt(sortOrderEl?.value || '0', 10),
-            is_active:   1,
-        };
-        const existingId = parseInt(idEl?.value || '0', 10);
-        if (existingId) payload.id = existingId;
-
-        try {
-            if (existingId) {
-                await AF.put(`${tenantCatApiUrl()}/${existingId}`, payload);
-            } else {
-                await AF.post(tenantCatApiUrl(), payload);
+            if (cb) {
+                const catId = parseInt(cb.dataset.cb, 10);
+                _onCbClick(catId, cb.checked);
+                return;
             }
-            if (AF.success) AF.success(t('categories.saved', 'Category saved'));
-            const formInline = document.getElementById('tenantCategoryFormInline');
-            if (formInline) formInline.style.display = 'none';
-            if (selectEl) selectEl.value = '';
-            if (sortOrderEl) sortOrderEl.value = '0';
-            if (idEl) idEl.value = '';
-            _catsLoaded = false;
-            loadTenantCategories(state.currentTenantId, true);
-        } catch (err) {
-            if (AF.error) AF.error(err?.message || t('categories.save_failed', 'Failed to save category'));
-        }
+            if (toggle) {
+                const catId = parseInt(toggle.dataset.toggle, 10);
+                _onToggle(catId);
+                return;
+            }
+            // Click on row itself (not checkbox, not toggle) → toggle checkbox
+            const node = e.target.closest('.cat-tree-node');
+            if (node && !e.target.classList.contains('cat-tree-cb')) {
+                const cb2 = node.querySelector('.cat-tree-cb');
+                if (cb2) { cb2.checked = !cb2.checked; _onCbClick(parseInt(cb2.dataset.cb, 10), cb2.checked); }
+            }
+        }, { passive: true });
     }
 
-    async function removeTenantCategory(id) {
-        if (!confirm(t('categories.confirm_delete', 'Remove this category assignment?'))) return;
+    // ── Batch save ────────────────────────────────────────
+    async function saveCategoryTree() {
+        if (!state.currentTenantId) return;
+        const btn = document.getElementById('btnSaveCategoryTree');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
+        _setTreeStatus(t('categories.saving', 'Saving…'));
+
+        const assigned    = new Set(Object.keys(_catTree.assignedMap).map(Number));
+        const nowChecked  = new Set([..._catTree.checkedIds]);
+
+        // Only leaf-level or explicit: add checked that are NOT currently assigned
+        const toAdd    = [...nowChecked].filter(id => !assigned.has(id));
+        // Remove assigned that are no longer checked
+        const toRemove = [...assigned].filter(id => !nowChecked.has(id));
+
         try {
-            await AF.delete(`${tenantCatApiUrl()}/${id}`, { id });
-            _catsLoaded = false;
+            await Promise.all([
+                ...toAdd.map(catId => AF.post(tenantCatApiUrl(), {
+                    tenant_id:   state.currentTenantId,
+                    category_id: catId,
+                    sort_order:  0,
+                    is_active:   1,
+                })),
+                ...toRemove.map(catId => {
+                    const rowId = _catTree.assignedMap[catId];
+                    return AF.delete(`${tenantCatApiUrl()}/${rowId}`, { id: rowId });
+                }),
+            ]);
+            if (AF.success) AF.success(t('categories.saved', 'Categories saved'));
+            _setTreeStatus(t('categories.saved', 'Saved ✓'));
+            // Refresh assignedMap
+            _catTree.loaded = false;
             loadTenantCategories(state.currentTenantId, true);
         } catch (err) {
-            if (AF.error) AF.error(err?.message || t('categories.delete_failed', 'Failed to remove category'));
+            if (AF.error) AF.error(err?.message || t('categories.save_failed', 'Failed to save categories'));
+            _setTreeStatus('');
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> ' + t('categories.buttons.save', 'Save Categories'); }
         }
     }
 
-    function editTenantCategory(id, categoryId, sortOrder) {
-        const catFormInline = document.getElementById('tenantCategoryFormInline');
-        const idEl          = document.getElementById('catFormId');
-        const selectEl      = document.getElementById('catFormCategoryId');
-        const sortOrderEl   = document.getElementById('catFormSortOrder');
-        const titleEl       = document.getElementById('tenantCategoryFormTitle');
+    function _setTreeStatus(msg) {
+        const el = document.getElementById('catTreeStatus');
+        if (el) el.textContent = msg;
+    }
 
-        if (idEl)       idEl.value       = id;
-        if (sortOrderEl) sortOrderEl.value = sortOrder ?? 0;
-        if (titleEl)    titleEl.textContent = t('categories.edit', 'Edit Category');
-        if (catFormInline) catFormInline.style.display = 'block';
-
-        // Populate dropdown then set selected value
-        loadCategoriesDropdown().then(() => {
-            if (selectEl) selectEl.value = categoryId;
+    // ── Select All / Deselect All ─────────────────────────
+    function _selectAllCategories(checked) {
+        document.querySelectorAll('#tenantCategoryTree .cat-tree-cb').forEach(cb => {
+            cb.checked        = checked;
+            cb.indeterminate  = false;
+            const id = parseInt(cb.dataset.cb, 10);
+            if (checked) _catTree.checkedIds.add(id);
+            else         _catTree.checkedIds.delete(id);
         });
     }
 
@@ -513,6 +675,7 @@
     function esc(text) {
         if (text === null || text === undefined) return '';
         const d = document.createElement('div');
+
         d.textContent = String(text);
         return d.innerHTML;
     }
@@ -794,15 +957,16 @@
         const domainsList       = document.getElementById('domainsList');
         const usersContainer    = document.getElementById('tenantUsersContainer');
         const addrContainer     = document.getElementById('tenantAddressesContainer');
-        const catsList          = document.getElementById('tenantCategoriesList');
+        const catsTree          = document.getElementById('tenantCategoryTree');
         if (domainsList)    domainsList.innerHTML    = '<div class="sub-fragment-placeholder"><i class="fas fa-globe fa-2x"></i><p>' + t('domains.no_domains', 'No domains registered yet') + '</p></div>';
         if (usersContainer) usersContainer.innerHTML = '<div class="sub-fragment-placeholder"><i class="fas fa-users fa-2x"></i><p>' + t('tabs.users', 'Users') + '</p></div>';
         if (addrContainer)  addrContainer.innerHTML  = '<div class="sub-fragment-placeholder"><i class="fas fa-map-marker-alt fa-2x"></i><p>' + t('tabs.addresses', 'Addresses') + '</p></div>';
-        if (catsList)       { catsList.innerHTML = '<div class="sub-fragment-placeholder" id="tenantCategoriesPlaceholder"><i class="fas fa-tags fa-2x"></i><p>' + t('categories.no_categories', 'No categories assigned yet') + '</p></div>'; delete catsList.dataset.loaded; }
-        // Reset inline category form
-        const catFormInline = document.getElementById('tenantCategoryFormInline');
-        if (catFormInline) catFormInline.style.display = 'none';
-        _catsLoaded = false;
+        if (catsTree)       { catsTree.innerHTML = '<div class="sub-fragment-placeholder" id="tenantCategoriesPlaceholder"><i class="fas fa-tags fa-2x"></i><p>' + t('categories.no_categories', 'No categories assigned yet') + '</p></div>'; }
+        // Reset tree state
+        _catTree.loaded = false;
+        _catTree.checkedIds = new Set();
+        _catTree.assignedMap = {};
+        _setTreeStatus('');
 
         activateTab('tab-basic');
 
@@ -932,21 +1096,17 @@
         if (btnCancelDomain) btnCancelDomain.onclick = () => { if (domainFormInline) domainFormInline.style.display = 'none'; };
         if (btnSaveDomain)   btnSaveDomain.onclick   = addDomain;
 
-        // Category form events
-        const btnAddCat    = document.getElementById('btnAddTenantCategory');
-        const btnSaveCat   = document.getElementById('btnSaveTenantCategory');
-        const btnCancelCat = document.getElementById('btnCancelTenantCategory');
-        const catFormInline = document.getElementById('tenantCategoryFormInline');
-        if (btnAddCat) btnAddCat.onclick = () => {
-            const idEl = document.getElementById('catFormId');
-            if (idEl) idEl.value = '';
-            const titleEl = document.getElementById('tenantCategoryFormTitle');
-            if (titleEl) titleEl.textContent = t('categories.add', 'Add Category');
-            if (catFormInline) catFormInline.style.display = 'block';
-            loadCategoriesDropdown();
-        };
-        if (btnCancelCat) btnCancelCat.onclick = () => { if (catFormInline) catFormInline.style.display = 'none'; };
-        if (btnSaveCat)   btnSaveCat.onclick   = addTenantCategory;
+        // Category tree events
+        const btnSaveCategoryTree  = document.getElementById('btnSaveCategoryTree');
+        const btnCatSelectAll      = document.getElementById('btnCatSelectAll');
+        const btnCatDeselectAll    = document.getElementById('btnCatDeselectAll');
+        const catTreeSearchInput   = document.getElementById('catTreeSearch');
+        if (btnSaveCategoryTree) btnSaveCategoryTree.onclick = saveCategoryTree;
+        if (btnCatSelectAll)     btnCatSelectAll.onclick     = () => _selectAllCategories(true);
+        if (btnCatDeselectAll)   btnCatDeselectAll.onclick   = () => _selectAllCategories(false);
+        if (catTreeSearchInput) {
+            catTreeSearchInput.addEventListener('input', e => _filterTree(e.target.value));
+        }
 
         if (el.searchInput) {
             el.searchInput.addEventListener('keypress', e => {
@@ -970,7 +1130,7 @@
     // ─────────────────────────────────────────────
     // PUBLIC API
     // ─────────────────────────────────────────────
-    window.Tenants = { init, load, edit, remove, add, verifyDomain, removeDomain, addDomain, editDomain, loadTenantCategories, addTenantCategory, removeTenantCategory, editTenantCategory };
+    window.Tenants = { init, load, edit, remove, add, verifyDomain, removeDomain, addDomain, editDomain, loadTenantCategories, saveCategoryTree };
 
     // Auto-init in standalone mode
     if (document.readyState === 'loading') {

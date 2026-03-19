@@ -471,61 +471,27 @@ if (!function_exists('__t')) {
                                 <i class="fas fa-tags"></i>
                                 <span data-i18n="categories.tab_title"><?= __t('categories.tab_title', 'Category Management') ?></span>
                             </h4>
+                        </div>
+
+                        <!-- Toolbar: search + bulk actions -->
+                        <div class="cat-tree-toolbar">
+                            <input type="text" id="catTreeSearch" class="form-control cat-tree-search"
+                                   data-i18n-placeholder="categories.search_placeholder"
+                                   placeholder="<?= __t('categories.search_placeholder', 'Search categories…') ?>">
                             <?php if ($canEdit): ?>
-                            <button type="button" id="btnAddTenantCategory" class="btn btn-primary btn-sm">
-                                <i class="fas fa-plus"></i>
-                                <span data-i18n="categories.add"><?= __t('categories.add', 'Add Category') ?></span>
+                            <button type="button" id="btnCatSelectAll" class="btn btn-outline btn-sm">
+                                <i class="fas fa-check-square"></i>
+                                <span data-i18n="categories.select_all"><?= __t('categories.select_all', 'Select All') ?></span>
+                            </button>
+                            <button type="button" id="btnCatDeselectAll" class="btn btn-outline btn-sm">
+                                <i class="far fa-square"></i>
+                                <span data-i18n="categories.deselect_all"><?= __t('categories.deselect_all', 'Deselect All') ?></span>
                             </button>
                             <?php endif; ?>
                         </div>
 
-                        <!-- Inline add/edit category form -->
-                        <div id="tenantCategoryFormInline" class="domain-form-inline" style="display:none">
-                            <div class="domain-form-header">
-                                <i class="fas fa-tags"></i>
-                                <span id="tenantCategoryFormTitle" class="domain-form-title">
-                                    <?= __t('categories.add', 'Add Category') ?>
-                                </span>
-                            </div>
-                            <input type="hidden" id="catFormId">
-                            <div class="form-grid">
-
-                                <!-- Category select -->
-                                <div class="form-group">
-                                    <label for="catFormCategoryId" class="required">
-                                        <i class="fas fa-tag"></i>
-                                        <span data-i18n="categories.fields.category"><?= __t('categories.fields.category', 'Category') ?></span>
-                                    </label>
-                                    <select id="catFormCategoryId" class="form-control">
-                                        <option value=""><?= __t('categories.fields.category_placeholder', '-- Select Category --') ?></option>
-                                    </select>
-                                </div>
-
-                                <!-- Sort order -->
-                                <div class="form-group">
-                                    <label for="catFormSortOrder">
-                                        <i class="fas fa-sort-numeric-up"></i>
-                                        <span data-i18n="categories.fields.sort_order"><?= __t('categories.fields.sort_order', 'Sort Order') ?></span>
-                                    </label>
-                                    <input type="number" id="catFormSortOrder" class="form-control" value="0" min="0">
-                                </div>
-
-                            </div><!-- /.form-grid -->
-
-                            <div class="form-actions form-actions-compact">
-                                <button type="button" id="btnSaveTenantCategory" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-save"></i>
-                                    <span data-i18n="categories.buttons.save"><?= __t('categories.buttons.save', 'Save Category') ?></span>
-                                </button>
-                                <button type="button" id="btnCancelTenantCategory" class="btn btn-outline btn-sm">
-                                    <i class="fas fa-times"></i>
-                                    <span data-i18n="categories.buttons.cancel"><?= __t('categories.buttons.cancel', 'Cancel') ?></span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Categories list -->
-                        <div id="tenantCategoriesList" class="domains-list">
+                        <!-- Tree container -->
+                        <div id="tenantCategoryTree" class="cat-tree-wrap">
                             <div class="sub-fragment-placeholder" id="tenantCategoriesPlaceholder">
                                 <i class="fas fa-tags fa-2x"></i>
                                 <p data-i18n="categories.no_categories">
@@ -533,6 +499,17 @@ if (!function_exists('__t')) {
                                 </p>
                             </div>
                         </div>
+
+                        <!-- Save bar -->
+                        <?php if ($canEdit): ?>
+                        <div class="cat-tree-save-bar">
+                            <button type="button" id="btnSaveCategoryTree" class="btn btn-primary btn-sm">
+                                <i class="fas fa-save"></i>
+                                <span data-i18n="categories.buttons.save"><?= __t('categories.buttons.save', 'Save Categories') ?></span>
+                            </button>
+                            <span id="catTreeStatus" class="cat-row-meta"></span>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
