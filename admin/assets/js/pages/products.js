@@ -591,13 +591,47 @@
 
         el.tbody.innerHTML = items.map(prod => {
             const image = prod.main_image_url || prod.image_url || '';
-            const name = prod.name || prod.slug || `Product #${prod.id}`;
+
+            // Resolve display name: prefer current-language translation over default name
+            let name = prod.name || prod.slug || `Product #${prod.id}`;
+            if (prod.translations && typeof prod.translations === 'object') {
+                const langTrans = prod.translations[state.language] || prod.translations['en'];
+                if (langTrans && (langTrans.name || langTrans.title)) {
+                    name = langTrans.name || langTrans.title;
+                }
+            }
+            // Also check flat translation fields (e.g. name_ar, name_en)
+            const langSuffix = `_${state.language}`;
+            if (!name && prod[`name${langSuffix}`]) name = prod[`name${langSuffix}`];
+
             const price = prod.price ? Number(prod.price).toFixed(2) : '0.00';
             const currency = prod.currency_code || 'SAR';
             const stock = prod.stock_quantity || 0;
             const statusBadge = prod.is_active == 1
                 ? `<span class="badge badge-active">${t('table.status.active', 'Active')}</span>`
                 : `<span class="badge badge-inactive">${t('table.status.inactive', 'Inactive')}</span>`;
+
+            // Variants / variables summary
+            const variantCount = prod.variants_count ?? prod.product_variants?.length ?? 0;
+            const variantsBadge = variantCount > 0
+                ? `<span class="badge badge-variants" title="${t('table.variants', 'Variants')}">${variantCount} ${t('table.variants_label', 'vars')}</span>`
+                : '';
+
+            // Key variable values shown as pills (size, color, SKU-level attributes)
+            let varPills = '';
+            if (Array.isArray(prod.product_variants) && prod.product_variants.length) {
+                // Collect unique attribute combos from first few variants
+                const pills = prod.product_variants.slice(0, 3).map(v => {
+                    const combo = v.attributes_label || v.combination || v.sku || '';
+                    return combo ? `<span class="var-pill">${esc(combo)}</span>` : '';
+                }).filter(Boolean);
+                if (pills.length) varPills = `<div class="var-pills">${pills.join('')}${variantCount > 3 ? `<span class="var-pill var-pill-more">+${variantCount - 3}</span>` : ''}</div>`;
+            } else if (Array.isArray(prod.attributes) && prod.attributes.length) {
+                const pills = prod.attributes.slice(0, 3).map(a =>
+                    `<span class="var-pill">${esc(a.value_label || a.value || a.name || '')}</span>`
+                ).filter(p => p.includes('>') && !p.includes('></span>'));
+                if (pills.length) varPills = `<div class="var-pills">${pills.join('')}</div>`;
+            }
 
             const canEdit = state.permissions.canEdit || state.permissions.canEditAll ||
                 (state.permissions.canEditOwn && prod.created_by_user_id == window.APP_CONFIG?.USER_ID);
@@ -611,7 +645,12 @@
                     <td>
                         ${image ? `<img src="${esc(image)}" alt="${esc(name)}" style="width:50px;height:50px;object-fit:cover;border-radius:4px;">` : '📦'}
                     </td>
-                    <td><strong>${esc(name)}</strong><br><small style="color:var(--text-secondary,#94a3b8);">${esc(prod.sku || '')}</small></td>
+                    <td>
+                        <strong>${esc(name)}</strong>
+                        <br><small style="color:var(--text-secondary,#94a3b8);">${esc(prod.sku || '')}</small>
+                        ${variantsBadge}
+                        ${varPills}
+                    </td>
                     <td>${esc(prod.sku || '-')}</td>
                     <td>${esc(prod.product_type_name || (state.productTypes.find(pt => pt.id == prod.product_type_id)?.name) || '-')}</td>
                     <td>${price} ${esc(currency)}</td>
@@ -1549,42 +1588,178 @@
     // ════════════════════════════════════════════════════════════
     // CATEGORIES TREE
     // ════════════════════════════════════════════════════════════
+    // ── Category tree helpers ──────────────────────────────────
+
+    /** Return all descendant IDs of a category (any depth) */
+    function getDescendantIds(categoryId) {
+        const ids = [];
+        const queue = [categoryId];
+        while (queue.length) {
+            const pid = queue.shift();
+            state.categories.forEach(c => {
+                if (c.parent_id == pid) {
+                    ids.push(c.id);
+                    queue.push(c.id);
+                }
+            });
+        }
+        return ids;
+    }
+
+    /** Return the direct parent ID of a category (null if root) */
+    function getCategoryParentId(categoryId) {
+        const cat = state.categories.find(c => c.id == categoryId);
+        return cat ? (cat.parent_id || null) : null;
+    }
+
+    /** Sync indeterminate / checked state on every checkbox in the tree */
+    function syncTreeCheckboxStates() {
+        if (!el.prodCategoriesTree) return;
+        el.prodCategoriesTree.querySelectorAll('input[type="checkbox"][data-cat-id]').forEach(cb => {
+            const id = parseInt(cb.dataset.catId, 10);
+            const descendants = getDescendantIds(id);
+            if (!descendants.length) {
+                // Leaf node: simply reflect selection
+                cb.checked       = state.selectedCategories.includes(id);
+                cb.indeterminate = false;
+            } else {
+                const selectedDescendants = descendants.filter(d => state.selectedCategories.includes(d));
+                if (selectedDescendants.length === 0 && !state.selectedCategories.includes(id)) {
+                    cb.checked       = false;
+                    cb.indeterminate = false;
+                } else if (selectedDescendants.length === descendants.length && state.selectedCategories.includes(id)) {
+                    cb.checked       = true;
+                    cb.indeterminate = false;
+                } else {
+                    cb.checked       = false;
+                    cb.indeterminate = true;
+                }
+            }
+        });
+    }
+
     function renderCategoriesTree() {
         if (!el.prodCategoriesTree) return;
 
-        const buildTree = (categories, parentId = null) => {
-            return categories
-                .filter(cat => cat.parent_id == parentId)
-                .map(cat => {
-                    const isSelected = state.selectedCategories.includes(cat.id);
-                    const children = buildTree(categories, cat.id);
+        // Build the DOM tree recursively from flat array
+        const buildNodes = (parentId) => {
+            const children = state.categories.filter(c => c.parent_id == parentId);
+            if (!children.length) return null;
 
-                    return `
-                        <div class="category-node" style="margin-left:${parentId ? '20px' : '0'};">
-                            <label style="display:flex;align-items:center;gap:8px;padding:4px 0;">
-                                <input type="checkbox" value="${cat.id}" 
-                                       ${isSelected ? 'checked' : ''}
-                                       onchange="Products.toggleCategory(${cat.id}, this.checked)">
-                                <span>${esc(cat.name)}</span>
-                            </label>
-                            ${children ? `<div class="category-children">${children}</div>` : ''}
-                        </div>
-                    `;
-                }).join('');
+            const ul = document.createElement('ul');
+            ul.className = parentId ? 'category-children' : 'category-tree-root';
+
+            children.forEach(cat => {
+                const hasChildren = state.categories.some(c => c.parent_id == cat.id);
+                const isSelected  = state.selectedCategories.includes(cat.id);
+
+                const li = document.createElement('li');
+                li.className = 'category-node';
+                li.dataset.nodeId = cat.id;
+
+                // Toggle button (only for nodes that have children)
+                const toggleBtn = document.createElement('button');
+                toggleBtn.type = 'button';
+                toggleBtn.className = 'category-toggle';
+                toggleBtn.setAttribute('aria-label', 'Expand/Collapse');
+                if (!hasChildren) {
+                    toggleBtn.style.visibility = 'hidden';
+                    toggleBtn.setAttribute('tabindex', '-1');
+                }
+                toggleBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+
+                const label = document.createElement('label');
+                label.className = 'category-label';
+
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.dataset.catId = cat.id;
+                cb.checked = isSelected;
+
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = cat.name || `#${cat.id}`;
+
+                label.appendChild(cb);
+                label.appendChild(nameSpan);
+                li.appendChild(toggleBtn);
+                li.appendChild(label);
+
+                const subNodes = buildNodes(cat.id);
+                if (subNodes) {
+                    subNodes.style.display = 'none'; // start collapsed
+                    li.appendChild(subNodes);
+                    li.classList.add('has-children', 'collapsed');
+                }
+
+                ul.appendChild(li);
+            });
+
+            return ul;
         };
 
-        el.prodCategoriesTree.innerHTML = buildTree(state.categories);
+        el.prodCategoriesTree.innerHTML = '';
+        const tree = buildNodes(null) || buildNodes(0);
+        if (tree) {
+            tree.style.display = ''; // root is always visible
+            el.prodCategoriesTree.appendChild(tree);
+        }
+
+        // ── Event delegation on the tree container ───────────────
+
+        // Remove old listener and replace the node (clone trick to strip stale handlers)
+        const fresh = el.prodCategoriesTree.cloneNode(false);
+        // Move children into fresh clone
+        while (el.prodCategoriesTree.firstChild) fresh.appendChild(el.prodCategoriesTree.firstChild);
+        el.prodCategoriesTree.parentNode.replaceChild(fresh, el.prodCategoriesTree);
+        el.prodCategoriesTree = fresh;
+
+        el.prodCategoriesTree.addEventListener('change', e => {
+            const cb = e.target.closest('input[type="checkbox"][data-cat-id]');
+            if (!cb) return;
+            const id = parseInt(cb.dataset.catId, 10);
+            _toggleCategoryWithCascade(id, cb.checked);
+        });
+
+        el.prodCategoriesTree.addEventListener('click', e => {
+            const btn = e.target.closest('.category-toggle');
+            if (!btn) return;
+            const li = btn.closest('.category-node.has-children');
+            if (!li) return;
+            const subList = li.querySelector(':scope > ul');
+            if (!subList) return;
+            const collapsed = li.classList.contains('collapsed');
+            if (collapsed) {
+                subList.style.display = '';
+                li.classList.remove('collapsed');
+                li.classList.add('expanded');
+            } else {
+                subList.style.display = 'none';
+                li.classList.remove('expanded');
+                li.classList.add('collapsed');
+            }
+        });
+
+        syncTreeCheckboxStates();
+    }
+
+    /** Internal cascade: select/deselect a node and all its descendants */
+    function _toggleCategoryWithCascade(categoryId, checked) {
+        const all = [categoryId, ...getDescendantIds(categoryId)];
+        if (checked) {
+            all.forEach(id => {
+                if (!state.selectedCategories.includes(id)) {
+                    state.selectedCategories.push(id);
+                }
+            });
+        } else {
+            state.selectedCategories = state.selectedCategories.filter(id => !all.includes(id));
+        }
+        syncTreeCheckboxStates();
+        syncCategoryDropdownsFromSelection();
     }
 
     function toggleCategory(categoryId, checked) {
-        if (checked) {
-            if (!state.selectedCategories.includes(categoryId)) {
-                state.selectedCategories.push(categoryId);
-            }
-        } else {
-            state.selectedCategories = state.selectedCategories.filter(id => id != categoryId);
-        }
-        syncCategoryDropdownsFromSelection();
+        _toggleCategoryWithCascade(parseInt(categoryId, 10), checked);
     }
 
     function syncCategoryDropdownsFromSelection() {
