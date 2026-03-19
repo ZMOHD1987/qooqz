@@ -1735,9 +1735,10 @@
         const iframe = document.createElement('iframe');
         iframe.id = 'addressFrame';
         iframe.dataset.ownerId = String(ownerId);
-        iframe.style.cssText = 'width:100%; height:500px; border:none;';
+        iframe.style.cssText = 'width:100%; height:500px; border:none; visibility:hidden;';
         iframe.onload = () => {
             document.getElementById('addressLoading')?.remove();
+            iframe.style.visibility = 'visible';
 
             try {
                 iframe.contentWindow.postMessage({

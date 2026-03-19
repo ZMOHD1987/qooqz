@@ -677,6 +677,15 @@ textarea.form-control {
     margin-top: 0.75rem;
 }
 
+#addressEmbeddedContainer .loading-state {
+    position: absolute;
+    inset: 0;
+    min-height: unset;
+    border-radius: 8px;
+    background: var(--_bg-sec, var(--background-secondary, #1e293b));
+    z-index: 1;
+}
+
 .address-section h4 {
     display: flex;
     align-items: center;

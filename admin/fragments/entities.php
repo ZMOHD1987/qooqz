@@ -635,7 +635,7 @@ $apiBase = '/api';
                         <h4 style="margin-bottom: 15px; color: var(--text-primary);" data-i18n="form.sections.address">
                             <?= __t('form.sections.address', 'Entity Address') ?>
                         </h4>
-                        <div id="addressEmbeddedContainer" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; background: var(--card-bg);">
+                        <div id="addressEmbeddedContainer" style="position: relative; border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; background: transparent;">
                             <div class="loading-state" id="addressLoading">
                                 <div class="spinner"></div>
                                 <p data-i18n="common.loading"><?= __t('common.loading', 'Loading address form...') ?></p>
