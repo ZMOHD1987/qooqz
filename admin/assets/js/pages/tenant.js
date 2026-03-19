@@ -425,6 +425,7 @@
                         <span class="badge-status ${statusCls}">${statusLabel}</span>
                     </div>
                     <div class="cat-row-actions">
+                        <button class="btn btn-sm btn-warning" onclick="Tenants.editTenantCategory(${c.id},${c.category_id},${c.sort_order ?? 0})" title="${t('categories.edit', 'Edit')}"><i class="fas fa-pencil-alt"></i></button>
                         <button class="btn btn-sm btn-danger" onclick="Tenants.removeTenantCategory(${c.id})" title="${t('categories.confirm_delete', 'Remove')}"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>`;
@@ -486,6 +487,24 @@
         } catch (err) {
             if (AF.error) AF.error(err?.message || t('categories.delete_failed', 'Failed to remove category'));
         }
+    }
+
+    function editTenantCategory(id, categoryId, sortOrder) {
+        const catFormInline = document.getElementById('tenantCategoryFormInline');
+        const idEl          = document.getElementById('catFormId');
+        const selectEl      = document.getElementById('catFormCategoryId');
+        const sortOrderEl   = document.getElementById('catFormSortOrder');
+        const titleEl       = document.getElementById('tenantCategoryFormTitle');
+
+        if (idEl)       idEl.value       = id;
+        if (sortOrderEl) sortOrderEl.value = sortOrder ?? 0;
+        if (titleEl)    titleEl.textContent = t('categories.edit', 'Edit Category');
+        if (catFormInline) catFormInline.style.display = 'block';
+
+        // Populate dropdown then set selected value
+        loadCategoriesDropdown().then(() => {
+            if (selectEl) selectEl.value = categoryId;
+        });
     }
 
     // ─────────────────────────────────────────────
@@ -951,7 +970,7 @@
     // ─────────────────────────────────────────────
     // PUBLIC API
     // ─────────────────────────────────────────────
-    window.Tenants = { init, load, edit, remove, add, verifyDomain, removeDomain, addDomain, editDomain, loadTenantCategories, addTenantCategory, removeTenantCategory };
+    window.Tenants = { init, load, edit, remove, add, verifyDomain, removeDomain, addDomain, editDomain, loadTenantCategories, addTenantCategory, removeTenantCategory, editTenantCategory };
 
     // Auto-init in standalone mode
     if (document.readyState === 'loading') {
