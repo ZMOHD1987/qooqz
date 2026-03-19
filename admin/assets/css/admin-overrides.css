@@ -40,7 +40,8 @@ body.sidebar-collapsed #sidebarToggle svg {
 .admin-sidebar {
     transition: width 0.26s ease, padding 0.26s ease, transform 0.3s ease !important;
     will-change: width;
-    overflow: hidden !important;
+    overflow-x: hidden !important;  /* hide horizontal overflow during collapse animation */
+    overflow-y: auto !important;    /* allow vertical scroll when content is long */
 }
 
 /* ═══════════════════════════════════════════════

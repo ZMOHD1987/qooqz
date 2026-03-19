@@ -127,7 +127,7 @@
         var a = e.target.closest('a');
         if (!a) return;
         var href = a.getAttribute('href') || '';
-        if (href === '#' || href.indexOf('javascript:') === 0) return;
+        if (href === '#' || /^(javascript:|data:|vbscript:)/i.test(href)) return;
         setTimeout(closeMobile, 150);
       });
     }
