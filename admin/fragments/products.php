@@ -332,26 +332,6 @@ if (!function_exists('prodAssetVer')) {
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="prodMainCategory" data-i18n="form.fields.main_category.label">
-                                <?= __t('form.fields.main_category.label', 'Main Category') ?>
-                            </label>
-                            <select id="prodMainCategory" class="form-control">
-                                <option value=""><?= __t('form.fields.main_category.select', 'Select main category') ?></option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="prodSubCategory" data-i18n="form.fields.sub_category.label">
-                                <?= __t('form.fields.sub_category.label', 'Sub Category') ?>
-                            </label>
-                            <select id="prodSubCategory" class="form-control">
-                                <option value=""><?= __t('form.fields.sub_category.select', 'Select sub category') ?></option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
                             <label for="prodIsActive" data-i18n="form.fields.status.label">
                                 <?= __t('form.fields.status.label', 'Status') ?>
                             </label>
