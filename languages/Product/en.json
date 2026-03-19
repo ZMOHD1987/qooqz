@@ -135,7 +135,8 @@
       "no_combinations": "No variant combinations available",
       "variant_name": "Name",
       "variant_barcode": "Barcode",
-      "variant_sku_placeholder": "Auto-generated if empty"
+      "variant_sku_placeholder": "Auto-generated if empty",
+      "save_variant": "Save variant"
     },
     "translations": {
       "translations": "Translations",

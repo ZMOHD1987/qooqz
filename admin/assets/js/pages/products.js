@@ -197,7 +197,7 @@
                 all_brands: fil.all_brands || g.brand
             },
             // common.* keys
-            common: { select_image: med.select_from_studio },
+            common: { select_image: med.select_from_studio, delete: s.delete || 'Delete' },
             // table.* keys
             table: {
                 headers: {
@@ -273,7 +273,8 @@
                 remove_variant: vr.remove_variant,
                 generate_variants: vr.generate_variants,
                 generate_from_attributes: vr.generate_from_attributes,
-                no_combinations: vr.no_combinations
+                no_combinations: vr.no_combinations,
+                save_variant: vr.save_variant || s.save || 'Save'
             },
             // csv.* keys used in CSV import modal
             csv: {
@@ -743,7 +744,7 @@
                 loadProductImages(product.id);
                 loadProductCategories(product.id);
                 loadProductAttributes(product.id);
-                loadProductVariants(product.id);
+                loadProductVariants(product.id, product.name);
                 loadProductTranslations(product.id);
                 loadProductPricing(product.id);
                 loadPhysicalAttributes(product.id);
@@ -2152,17 +2153,19 @@
         }
     }
 
-    async function loadProductVariants(productId) {
+    async function loadProductVariants(productId, productFallbackName = '') {
         try {
             console.log('[Products] Loading variants for product:', productId);
             const result = await apiCall(`/api/product_variants?product_id=${productId}&tenant_id=${state.tenantId}&language_code=${state.language}&format=json`);
             if (result.success) {
                 const items = result.data?.items || (Array.isArray(result.data) ? result.data : []);
+                // translation_name holds the value from product_variant_translations (pvt.name AS translation_name).
+                // Fall back to v.name (legacy), then to the product's own name for default/unnamed variants.
                 state.productVariants = items.map(v => ({
                     id: v.id,
                     sku: v.sku || '',
                     barcode: v.barcode || '',
-                    name: v.name || '',
+                    name: v.translation_name || v.name || (v.is_default ? productFallbackName : '') || '',
                     stock_quantity: v.stock_quantity || 0,
                     price: v.price || '',
                     is_active: v.is_active || 1,

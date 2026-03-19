@@ -135,7 +135,8 @@
       "no_combinations": "لا تتوفر تركيبات للمتغيرات",
       "variant_name": "الاسم",
       "variant_barcode": "الباركود",
-      "variant_sku_placeholder": "يُولَّد تلقائياً إذا تُرك فارغاً"
+      "variant_sku_placeholder": "يُولَّد تلقائياً إذا تُرك فارغاً",
+      "save_variant": "حفظ المتغير"
     },
     "translations": {
       "translations": "الترجمات",
