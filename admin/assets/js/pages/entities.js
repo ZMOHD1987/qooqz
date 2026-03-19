@@ -487,20 +487,52 @@
                 populateAttributeSelect(state.attributes);
             }
 
-            // Load parent entities for the searchable dropdown
-            try {
-                const entitiesResult = await apiCall(`${API.entities}?limit=500&lang=${state.language}&tenant_id=${state.tenantId}`);
-                if (entitiesResult.success) {
-                    const entData = entitiesResult.data?.items || entitiesResult.data || [];
-                    state.allEntities = Array.isArray(entData) ? entData : [];
-                    populateParentEntitySelect(state.allEntities);
-                }
-            } catch (entErr) {
-                console.warn('[Entities] Failed to load parent entities list:', entErr);
-            }
         } catch (err) {
             console.warn('[Entities] Failed to load dropdown data:', err);
         }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // ASYNC PARENT ENTITY SEARCH
+    // ════════════════════════════════════════════════════════════
+    let _parentSearchTimer = null;
+
+    async function searchParentEntities(query) {
+        const sel = el.entityParentSelect || document.getElementById('entityParentSelect');
+        const searchEl = el.entityParentSearch || document.getElementById('entityParentSearch');
+        if (!sel) return;
+
+        const q = (query || '').trim();
+        if (q.length < 2) {
+            sel.innerHTML = '<option value="">' + t('form.fields.parent_entity.placeholder', '— Select parent entity —') + '</option>';
+            if (searchEl) searchEl.placeholder = t('form.fields.parent_entity.min_chars', 'Type at least 2 characters to search...');
+            return;
+        }
+
+        sel.innerHTML = '<option value="" disabled>' + t('form.fields.parent_entity.searching', 'Searching…') + '</option>';
+
+        try {
+            const result = await apiCall(
+                `${API.entities}?search=${encodeURIComponent(q)}&limit=20&lang=${state.language}&tenant_id=${state.tenantId}`
+            );
+            if (result.success) {
+                const items = Array.isArray(result.data?.items) ? result.data.items
+                            : Array.isArray(result.data) ? result.data : [];
+                populateParentEntitySelect(items);
+            } else {
+                sel.innerHTML = '<option value="" disabled>' + t('form.fields.parent_entity.no_results', 'No results') + '</option>';
+            }
+        } catch (err) {
+            console.warn('[Entities] Parent search failed:', err);
+            sel.innerHTML = '<option value="" disabled>' + t('form.fields.parent_entity.search_error', 'Search failed') + '</option>';
+        }
+    }
+
+    function debouncedParentSearch(query) {
+        clearTimeout(_parentSearchTimer);
+        _parentSearchTimer = setTimeout(function () {
+            searchParentEntities(query);
+        }, 300);
     }
 
     function populateTimezoneSelect(timezones) {
@@ -569,17 +601,7 @@
     }
 
     function filterParentEntitySelect(query) {
-        if (!state.allEntities) return;
-        const q = (query || '').toLowerCase().trim();
-        const filtered = q
-            ? state.allEntities.filter(function(ent) {
-                const name = (ent.store_name || ent.original_store_name || '').toLowerCase();
-                const code = (ent.branch_code || '').toLowerCase();
-                const id = String(ent.id);
-                return name.includes(q) || code.includes(q) || id.includes(q);
-            })
-            : state.allEntities;
-        populateParentEntitySelect(filtered);
+        debouncedParentSearch(query);
     }
 
     // ════════════════════════════════════════════════════════════
@@ -704,7 +726,10 @@
             }
             if (el.entityParentId) el.entityParentId.value = entity.parent_id || '';
             if (el.entityParentSelect && entity.parent_id) {
-                el.entityParentSelect.value = entity.parent_id;
+                // Pre-load the current parent entity into the async dropdown
+                searchParentEntities(String(entity.parent_id)).then(function () {
+                    if (el.entityParentSelect) el.entityParentSelect.value = entity.parent_id;
+                });
             }
             if (entity.parent_id) {
                 validateParentId(entity.parent_id);
@@ -813,9 +838,9 @@
             // Clear search filter and reset dropdown
             const searchEl = el.entityParentSearch || document.getElementById('entityParentSearch');
             if (searchEl) searchEl.value = '';
-            if (state.allEntities && state.allEntities.length) {
-                populateParentEntitySelect(state.allEntities);
-            }
+            // Reset the select to its empty placeholder state
+            const sel = el.entityParentSelect || document.getElementById('entityParentSelect');
+            if (sel) sel.innerHTML = '<option value="">' + t('form.fields.parent_entity.placeholder', '— Select parent entity —') + '</option>';
         }
     }
 
