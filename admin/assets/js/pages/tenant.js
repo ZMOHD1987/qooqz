@@ -28,11 +28,6 @@
 
     let el = {};
 
-    // Tracks the DB id of the currently saved tenant logo (so we can delete it)
-    let _logoImageId = null;
-    // Guard: only add ImageStudio event listeners once
-    let _studioListenerAdded = false;
-
     // ─────────────────────────────────────────────
     // TRANSLATION HELPER
     // ─────────────────────────────────────────────
@@ -687,30 +682,26 @@
             if (AF.error) AF.error(t('form.media.save_first', 'Please save the tenant first before adding media'));
             return;
         }
-        const cfg      = window.TENANTS_CONFIG || {};
-        const base     = cfg.mediaStudioBase || '/admin/fragments/media_studio.php';
-        const typeId   = TENANT_LOGO_IMAGE_TYPE_ID;
+        const cfg     = window.TENANTS_CONFIG || {};
+        const base    = cfg.mediaStudioBase  || '/admin/fragments/media_studio.php';
+        const typeId  = TENANT_LOGO_IMAGE_TYPE_ID;
         const tenantId = window.APP_CONFIG?.TENANT_ID || cfg.tenantId || '';
-        const lang     = state.language;
+        const lang    = state.language;
 
         const frame = document.getElementById('tenantMediaFrame');
         const modal = document.getElementById('tenantMediaModal');
         if (!frame || !modal) return;
 
-        frame.src = `${base}?embedded=1&tenant_id=${tenantId}&lang=${lang}&owner_id=${state.currentTenantId}&image_type_id=${typeId}&owner_type=tenant&mode=select&limit=1`;
+        frame.src = `${base}?embedded=1&tenant_id=${tenantId}&lang=${lang}&owner_id=${state.currentTenantId}&image_type_id=${typeId}&owner_type=tenant`;
         modal.style.display = 'flex';
     }
 
     function closeTenantMediaStudio() {
         const modal = document.getElementById('tenantMediaModal');
         if (modal) modal.style.display = 'none';
-        // Clear iframe src to stop any ongoing load
-        const frame = document.getElementById('tenantMediaFrame');
-        if (frame) frame.src = 'about:blank';
     }
 
-    function updateTenantLogoPreview(imageUrl, imageId) {
-        if (imageId !== undefined) _logoImageId = imageId || null;
+    function updateTenantLogoPreview(imageUrl) {
         const previewEl    = document.getElementById('tenantLogoPreview');
         const urlDisplayEl = document.getElementById('tenantLogoUrlDisplay');
 
@@ -720,19 +711,9 @@
                 wrapper.style.cssText = 'position:relative; display:inline-block;';
 
                 const img = document.createElement('img');
-                img.src   = imageUrl;
-                img.style.cssText = 'max-width:100%; max-height:200px; border-radius:4px; display:block;';
+                img.src = imageUrl;
+                img.style.cssText = 'max-width:100%; max-height:200px; border-radius:4px;';
                 wrapper.appendChild(img);
-
-                if (state.permissions.canEdit) {
-                    const btn = document.createElement('button');
-                    btn.type      = 'button';
-                    btn.title     = t('form.media.delete_logo', 'Delete logo');
-                    btn.innerHTML = '<i class="fas fa-times"></i>';
-                    btn.style.cssText = 'position:absolute; top:4px; right:4px; background:rgba(220,38,38,0.9); color:#fff; border:none; border-radius:50%; width:28px; height:28px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center;';
-                    btn.addEventListener('click', deleteTenantLogo);
-                    wrapper.appendChild(btn);
-                }
 
                 previewEl.innerHTML = '';
                 previewEl.appendChild(wrapper);
@@ -743,64 +724,17 @@
         if (urlDisplayEl) urlDisplayEl.value = imageUrl || '';
     }
 
-    async function deleteTenantLogo() {
-        const cfg    = window.TENANTS_CONFIG || {};
-        const apiUrl = cfg.imagesApiUrl || '/api/images';
-        if (_logoImageId) {
-            try {
-                await AF.delete(`${apiUrl}/${_logoImageId}`);
-            } catch (err) {
-                console.warn('[Tenants] Failed to delete logo from API:', err);
-            }
-        }
-        _logoImageId = null;
-        updateTenantLogoPreview(null);
-        // Also clear the logo thumbnail in the table row
-        _clearTableLogoCell(state.currentTenantId);
-    }
-
     async function loadTenantLogo(tenantId) {
         const cfg    = window.TENANTS_CONFIG || {};
         const apiUrl = cfg.imagesApiUrl || '/api/images';
         try {
-            const res    = await AF.get(`${apiUrl}/by_owner?owner_id=${tenantId}&image_type_id=${TENANT_LOGO_IMAGE_TYPE_ID}`);
-            const images = res?.data?.images || (Array.isArray(res?.data) ? res.data : []) || res?.images || [];
-            const main   = Array.isArray(images) ? (images.find(i => i.is_main) || images[0]) : null;
-            const url    = main ? (main.url || main.thumb_url || null) : null;
-            const id     = main ? (main.id || null) : null;
-            updateTenantLogoPreview(url, id);
+            const res = await AF.get(`${apiUrl}/by_owner?owner_id=${tenantId}&image_type_id=${TENANT_LOGO_IMAGE_TYPE_ID}`);
+            const images = res?.data?.images || res?.data || res?.images || [];
+            const main   = Array.isArray(images) ? images.find(i => i.is_main) || images[0] : null;
+            updateTenantLogoPreview(main ? (main.url || main.thumb_url || null) : null);
         } catch (_) {
-            updateTenantLogoPreview(null, null);
+            updateTenantLogoPreview(null);
         }
-    }
-
-    // ────────────────────────────────────────────────────────────
-    // TABLE LOGO THUMBNAILS  (loaded async after renderTable())
-    // ────────────────────────────────────────────────────────────
-    async function loadTableLogos(items) {
-        const cfg    = window.TENANTS_CONFIG || {};
-        const apiUrl = cfg.imagesApiUrl || '/api/images';
-        // Fire all requests in parallel; each resolves independently
-        items.forEach(async item => {
-            try {
-                const res    = await AF.get(`${apiUrl}/by_owner?owner_id=${item.id}&image_type_id=${TENANT_LOGO_IMAGE_TYPE_ID}`);
-                const images = res?.data?.images || (Array.isArray(res?.data) ? res.data : []) || res?.images || [];
-                const main   = Array.isArray(images) ? (images.find(i => i.is_main) || images[0]) : null;
-                const url    = main ? (main.url || main.thumb_url || null) : null;
-                const cell   = document.querySelector(`#tableBody tr[data-tenant-id="${item.id}"] .logo-thumb-cell`);
-                if (!cell) return;
-                if (url) {
-                    cell.innerHTML = `<img src="${esc(url)}" alt="logo" style="width:40px;height:40px;object-fit:cover;border-radius:4px;">`;
-                } else {
-                    cell.innerHTML = '<span style="color:var(--text-muted,#94a3b8);">—</span>';
-                }
-            } catch (_) { /* silent */ }
-        });
-    }
-
-    function _clearTableLogoCell(tenantId) {
-        const cell = document.querySelector(`#tableBody tr[data-tenant-id="${tenantId}"] .logo-thumb-cell`);
-        if (cell) cell.innerHTML = '<span style="color:var(--text-muted,#94a3b8);">—</span>';
     }
 
     // ─────────────────────────────────────────────
@@ -831,11 +765,8 @@
                 : `<span class="text-muted">—</span>`;
 
             return `
-                <tr data-tenant-id="${item.id}">
+                <tr>
                     <td>${item.id}</td>
-                    <td class="logo-thumb-cell" style="width:52px; text-align:center;">
-                        <span style="color:var(--text-muted,#94a3b8);">…</span>
-                    </td>
                     <td><strong>${esc(item.name)}</strong></td>
                     <td>${ownerDisplay}</td>
                     <td><span class="${statusCls}">${esc(statusText)}</span></td>
@@ -861,9 +792,7 @@
         if (el.container) el.container.style.display = 'block';
         if (el.empty)     el.empty.style.display     = 'none';
         if (el.error)     el.error.style.display     = 'none';
-
-        // Async-load logo thumbnails for each visible row
-        loadTableLogos(items);
+    }
 
     // ─────────────────────────────────────────────
     // DATA LOADING
