@@ -12,8 +12,8 @@
     // ─── State ───────────────────────────────────────────────────────
     const state = {
         lang:   window.USER_LANGUAGE || CFG.lang || 'ar',
-        tenant: window.APP_CONFIG?.TENANT_ID || CFG.tenantId || 1,
-        csrf:   window.APP_CONFIG?.CSRF_TOKEN  || CFG.csrfToken || '',
+        tenant: (window.APP_CONFIG && window.APP_CONFIG.TENANT_ID) || CFG.tenantId || 1,
+        csrf:   (window.APP_CONFIG && window.APP_CONFIG.CSRF_TOKEN) || CFG.csrfToken || '',
         perms:  window.PAGE_PERMISSIONS || {},
         initialized: false,
         zones:          { page: 1, items: [], filters: {}, loaded: false, total: 0, saving: false },
