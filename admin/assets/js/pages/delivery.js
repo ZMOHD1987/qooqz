@@ -9,8 +9,8 @@
     const AF  = window.AdminFramework;
     const CFG = window.DELIVERY_CONFIG || {};
     const APP = window.APP_CONFIG || {};
-    const MIN_MAP_RENDER_HEIGHT = 260;
-    const MAP_FALLBACK_MIN_HEIGHT = 320;
+    const MIN_VISIBLE_MAP_HEIGHT = 260;
+    const FALLBACK_MIN_MAP_HEIGHT = 320;
 
     // ─── State ───────────────────────────────────────────────────────
     const state = {
@@ -128,6 +128,7 @@
 
     function scheduleMapInvalidate() {
         if (!zonesMap) return;
+        // Progressive delays help after tab switches/mobile reflow where layout settles in phases.
         [80, 180, 350, 700, 1200].forEach(function(ms) {
             setTimeout(function() {
                 if (zonesMap) zonesMap.invalidateSize();
@@ -139,7 +140,7 @@
         var mapEl = $('zonesMap');
         if (!mapEl) return;
         var current = mapEl.getBoundingClientRect().height;
-        if (current < MIN_MAP_RENDER_HEIGHT) mapEl.style.minHeight = MAP_FALLBACK_MIN_HEIGHT + 'px';
+        if (current < MIN_VISIBLE_MAP_HEIGHT) mapEl.style.minHeight = FALLBACK_MIN_MAP_HEIGHT + 'px';
     }
 
     function isElementVisible(el) {

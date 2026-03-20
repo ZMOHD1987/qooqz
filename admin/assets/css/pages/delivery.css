@@ -161,12 +161,12 @@
     z-index: 10020;
     border-radius: 0;
     border: none;
+    --zones-map-toolbar-height: 56px;
 }
 .zones-map-panel.is-fullscreen .zones-map-canvas,
 .zones-map-panel.is-fullscreen .delivery-map {
     min-height: 0;
-    /* 56px ≈ zones map toolbar height in fullscreen mode */
-    height: calc(100vh - 56px);
+    height: calc(100vh - var(--zones-map-toolbar-height));
 }
 
 /* Zone GeoJSON textarea */
