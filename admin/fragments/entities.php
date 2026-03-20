@@ -381,7 +381,7 @@ if (!function_exists('_entRenderThemeVars')) {
                                         <?= __t('form.fields.parent_id.validate', 'Validate') ?>
                                     </button>
                                 </div>
-                                <div id="parentValidationResult" class="parent-validation-result" style="display:none;">
+                                <div id="parentValidationResult" class="parent-validation-result" style="display:none;"></div>
                             </div>
                         </div>
                     </div>
