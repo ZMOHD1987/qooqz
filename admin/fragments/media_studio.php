@@ -218,12 +218,15 @@ if (!function_exists('renderFragmentThemeVars')) {
         }
 
         $bgSec = $emitted['--background-secondary'] ?? $emitted['--background_secondary'] ?? null;
+        $bgMain = $emitted['--background-main'] ?? $emitted['--background_main'] ?? null;
+        $danger = $emitted['--danger-color'] ?? $emitted['--danger_color'] ?? $emitted['--error-color'] ?? $emitted['--error_color'] ?? null;
+        $success = $emitted['--success-color'] ?? $emitted['--success_color'] ?? null;
         $aliasDefaults = [
-            '--card-bg'       => $emitted['--card-bg']      ?? $emitted['--card_bg']      ?? ($bgSec ?: 'var(--background-secondary)'),
-            '--input-bg'      => $emitted['--input-bg']     ?? $emitted['--input_bg']     ?? ($bgSec ?: 'var(--background-secondary)'),
-            '--thead-bg'      => $emitted['--thead-bg']     ?? $emitted['--thead_bg']     ?? ($bgSec ?: 'var(--background-secondary)'),
-            '--danger-color'  => $emitted['--danger-color'] ?? $emitted['--danger_color'] ?? $emitted['--error-color'] ?? 'var(--danger-color)',
-            '--success-color' => $emitted['--success-color'] ?? $emitted['--success_color'] ?? 'var(--success-color)',
+            '--card-bg'       => $emitted['--card-bg']      ?? $emitted['--card_bg']      ?? $bgSec ?? $bgMain ?? '#081127',
+            '--input-bg'      => $emitted['--input-bg']     ?? $emitted['--input_bg']     ?? $bgSec ?? $bgMain ?? '#0b1220',
+            '--thead-bg'      => $emitted['--thead-bg']     ?? $emitted['--thead_bg']     ?? $bgSec ?? $bgMain ?? '#061021',
+            '--danger-color'  => $danger ?? '#ef4444',
+            '--success-color' => $success ?? '#22c55e',
         ];
         foreach ($aliasDefaults as $cssVar => $val) {
             if (!isset($emitted[$cssVar])) {
