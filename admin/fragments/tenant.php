@@ -697,7 +697,7 @@ if (!function_exists('__t')) {
 <div id="tenantMediaModal" class="modal" style="display:none">
     <div class="modal-content">
         <span class="close" id="tenantMediaClose">&times;</span>
-        <iframe id="tenantMediaFrame" style="width:100%; height:500px; border:none;"></iframe>
+        <iframe id="tenantMediaFrame" style="width:100%; height:80vh; border:none; display:block;"></iframe>
     </div>
 </div>
 

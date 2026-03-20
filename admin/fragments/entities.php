@@ -846,7 +846,7 @@ $apiBase = '/api';
     <div id="mediaStudioModal" class="modal" style="display:none">
         <div class="modal-content">
             <span class="close" id="mediaStudioClose">&times;</span>
-            <iframe id="mediaStudioFrame" style="width:100%; height:500px; border:none;"></iframe>
+            <iframe id="mediaStudioFrame" style="width:100%; height:80vh; border:none; display:block;"></iframe>
         </div>
     </div>
 

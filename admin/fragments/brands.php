@@ -412,7 +412,7 @@ $imageTypeId = 12; // brand image type (from image_types table)
     <div id="brandMediaStudioModal" class="modal" style="display:none">
         <div class="modal-content">
             <span class="close" id="brandMediaStudioClose">&times;</span>
-            <iframe id="brandMediaStudioFrame" src="/admin/fragments/media_studio.php?embedded=1&tenant_id=<?= $tenantId ?>&lang=<?= $lang ?>&image_type_id=<?= $imageTypeId ?>&mode=select" style="width:100%; height:500px; border:none;"></iframe>
+            <iframe id="brandMediaStudioFrame" src="/admin/fragments/media_studio.php?embedded=1&tenant_id=<?= $tenantId ?>&lang=<?= $lang ?>&image_type_id=<?= $imageTypeId ?>&mode=select" style="width:100%; height:80vh; border:none; display:block;"></iframe>
         </div>
     </div>
 
