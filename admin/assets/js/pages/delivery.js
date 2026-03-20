@@ -8,12 +8,22 @@
 
     const AF  = window.AdminFramework;
     const CFG = window.DELIVERY_CONFIG || {};
+    const APP = window.APP_CONFIG || {};
+    const MIN_VISIBLE_MAP_HEIGHT = 260;
+    const FALLBACK_MIN_MAP_HEIGHT = 320;
+    const MAP_INVALIDATE_DELAYS_MS = [80, 180, 350, 700, 1200];
+    const MAP_INIT_RETRY_DELAYS_MS = [100, 300, 700, 1200];
+    const MAP_TAB_OPEN_INVALIDATE_DELAYS_MS = [100, 250, 450, 800, 1400, 2200];
+    const MAP_VIEWPORT_RESIZE_DEBOUNCE_MS = 250;
+    const MAP_VIEWPORT_VISUAL_FIX_DELAY_MS = 100;
+    const GEOLOCATION_MIN_ZOOM_LEVEL = 13;
+    const GEOLOCATION_TIMEOUT_MS = 10000;
 
     // ─── State ───────────────────────────────────────────────────────
     const state = {
         lang:   window.USER_LANGUAGE || CFG.lang || 'ar',
-        tenant: window.APP_CONFIG?.TENANT_ID || CFG.tenantId || 1,
-        csrf:   window.APP_CONFIG?.CSRF_TOKEN  || CFG.csrfToken || '',
+        tenant: APP.TENANT_ID || CFG.tenantId || 1,
+        csrf:   APP.CSRF_TOKEN || CFG.csrfToken || '',
         perms:  window.PAGE_PERMISSIONS || {},
         initialized: false,
         zones:          { page: 1, items: [], filters: {}, loaded: false, total: 0, saving: false },
@@ -97,6 +107,10 @@
     let coordPickerMap    = null;
     let coordPickerMarker = null;
     let coordPickerTarget = null; // { latId, lngId }
+    let zonesLocateMarker = null;
+    let mapResizeObserver = null;
+    let mapViewportListenersBound = false;
+    let mapViewportResizeTimer = null;
 
     // ─── Helpers ─────────────────────────────────────────────────────
     function $(id) { return document.getElementById(id); }
@@ -119,6 +133,44 @@
         t.style.display = '';
         clearTimeout(t._tmr);
         t._tmr = setTimeout(function() { t.style.display = 'none'; }, 4000);
+    }
+
+    function scheduleMapInvalidate() {
+        if (!zonesMap) return;
+        // Progressive backoff covers immediate + late layout-settle phases on mobile/tab switches.
+        MAP_INVALIDATE_DELAYS_MS.forEach(function(ms) {
+            setTimeout(function() {
+                if (zonesMap) zonesMap.invalidateSize();
+            }, ms);
+        });
+    }
+
+    function isZonesTabVisible() {
+        var zonesTab = $('zonesTab');
+        return !!(zonesTab && zonesTab.style.display !== 'none');
+    }
+
+    function invalidateMapWithOptionalRefit(tryRefit) {
+        if (!zonesMap || !isZonesTabVisible()) return;
+        zonesMap.invalidateSize();
+        if (tryRefit && drawnItems && drawnItems.getBounds) {
+            try {
+                var b = drawnItems.getBounds();
+                if (b && b.isValid && b.isValid()) zonesMap.fitBounds(b, { padding:[30,30], maxZoom:14 });
+            } catch(_) {}
+        }
+    }
+
+    function ensureMapElementHeight() {
+        var mapEl = $('zonesMap');
+        if (!mapEl) return;
+        var current = mapEl.getBoundingClientRect().height;
+        if (current < MIN_VISIBLE_MAP_HEIGHT) mapEl.style.minHeight = FALLBACK_MIN_MAP_HEIGHT + 'px';
+    }
+
+    function isElementVisible(el) {
+        if (!el) return false;
+        return !!(el.offsetParent || el.getClientRects().length);
     }
 
     function showTableError(tbodyId, msg) {
@@ -478,8 +530,13 @@
     function initZonesMap() {
         var mapEl = $('zonesMap');
         if (!mapEl || typeof L === 'undefined' || zonesMap) return;
+        ensureMapElementHeight();
+        if (!isElementVisible(mapEl)) return;
 
-        zonesMap = L.map('zonesMap').setView(CFG.mapCenter || [24.7136, 46.6753], CFG.mapZoom || 5);
+        zonesMap = L.map('zonesMap', {
+            tap: true,
+            tapTolerance: 20
+        }).setView(CFG.mapCenter || [24.7136, 46.6753], CFG.mapZoom || 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
             maxZoom: 19
@@ -519,6 +576,10 @@
             if (!txt) return;
             try { drawGeoOnMap(JSON.parse(txt)); } catch(_) {}
         });
+
+        bindZonesMapControls();
+        scheduleMapInvalidate();
+        bindMapAutoResize();
     }
 
     function populateZoneGeoFromLayer(layer) {
@@ -598,6 +659,86 @@
         var zt = $('zoneType'), rf = $('radiusFields');
         if (!zt || !rf) return;
         rf.style.display = zt.value === 'radius' ? '' : 'none';
+    }
+
+    function bindMapAutoResize() {
+        var mapEl = $('zonesMap');
+        if (!mapEl || !window.ResizeObserver) return;
+        if (mapResizeObserver) {
+            try { mapResizeObserver.disconnect(); } catch(_) {}
+        }
+        mapResizeObserver = new ResizeObserver(function() { scheduleMapInvalidate(); });
+        mapResizeObserver.observe(mapEl);
+    }
+
+    function bindMapViewportFixes() {
+        if (mapViewportListenersBound) return;
+        mapViewportListenersBound = true;
+
+        window.addEventListener('resize', function() {
+            clearTimeout(mapViewportResizeTimer);
+            mapViewportResizeTimer = setTimeout(function() {
+                invalidateMapWithOptionalRefit(false);
+            }, MAP_VIEWPORT_RESIZE_DEBOUNCE_MS);
+        }, { passive: true });
+
+        if (window.visualViewport && typeof window.visualViewport.addEventListener === 'function') {
+            window.visualViewport.addEventListener('resize', function() {
+                setTimeout(function() { invalidateMapWithOptionalRefit(false); }, MAP_VIEWPORT_VISUAL_FIX_DELAY_MS);
+            }, { passive: true });
+        }
+    }
+
+    function cfgText(key, fallback) {
+        return (CFG.i18n && CFG.i18n[key]) ? CFG.i18n[key] : fallback;
+    }
+
+    function bindZonesMapControls() {
+        var fullscreenBtn = $('zonesFullscreenBtn');
+        var locateBtn = $('zonesLocateBtn');
+        var panel = document.querySelector('.zones-map-panel');
+
+        if (fullscreenBtn && !fullscreenBtn.dataset.bound) {
+            fullscreenBtn.dataset.bound = '1';
+            fullscreenBtn.addEventListener('click', function() {
+                if (!panel) return;
+                var on = panel.classList.toggle('is-fullscreen');
+                fullscreenBtn.innerHTML = on
+                    ? '<i class="fas fa-compress-arrows-alt" aria-hidden="true"></i><span>' + esc(cfgText('mapExitFullscreen', 'Exit fullscreen')) + '</span>'
+                    : '<i class="fas fa-expand-arrows-alt" aria-hidden="true"></i><span>' + esc(cfgText('mapFullscreen', 'Fullscreen map')) + '</span>';
+                fullscreenBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+                scheduleMapInvalidate();
+            });
+        }
+
+        if (locateBtn && !locateBtn.dataset.bound) {
+            locateBtn.dataset.bound = '1';
+            locateBtn.addEventListener('click', function() {
+                if (!navigator.geolocation || !zonesMap) {
+                    notify(cfgText('mapGeolocationUnsupported', 'Geolocation is not supported by your browser'), 'error');
+                    return;
+                }
+                locateBtn.disabled = true;
+                notify(cfgText('mapGettingLocation', 'Getting your location…'), 'info');
+                navigator.geolocation.getCurrentPosition(
+                    function(pos) {
+                        var lat = pos.coords.latitude;
+                        var lng = pos.coords.longitude;
+                        zonesMap.setView([lat, lng], Math.max(zonesMap.getZoom(), GEOLOCATION_MIN_ZOOM_LEVEL));
+                        if (zonesLocateMarker && zonesMap) zonesMap.removeLayer(zonesLocateMarker);
+                        zonesLocateMarker = L.marker([lat, lng]).addTo(zonesMap).bindPopup(esc(cfgText('mapYourLocation', 'Your location')));
+                        zonesLocateMarker.openPopup();
+                        locateBtn.disabled = false;
+                        notify(cfgText('mapLocationAcquired', 'Location acquired'), 'success');
+                    },
+                    function() {
+                        locateBtn.disabled = false;
+                        notify(cfgText('mapLocationUnavailable', 'Unable to get your location'), 'error');
+                    },
+                    { enableHighAccuracy: true, timeout: GEOLOCATION_TIMEOUT_MS }
+                );
+            });
+        }
     }
 
     // ─── Zones Module ─────────────────────────────────────────────────
@@ -1119,8 +1260,9 @@
                 var panel = document.getElementById(tab + 'Tab');
                 if (panel) panel.style.display = '';
                 if (tab === 'zones' && zonesMap) {
-                    [100, 400].forEach(function(ms) {
-                        setTimeout(function() { if (zonesMap) zonesMap.invalidateSize(); }, ms);
+                    scheduleMapInvalidate();
+                    MAP_TAB_OPEN_INVALIDATE_DELAYS_MS.forEach(function(ms) {
+                        setTimeout(function() { invalidateMapWithOptionalRefit(true); }, ms);
                     });
                 }
                 var modMap = {
@@ -1153,6 +1295,7 @@
         initTabs();
         bindZoneTypeChange();
         bindCascade();
+        bindMapViewportFixes();
         initCoordPicker();
 
         bindProviderLookup('orderProviderId',      'orderProviderName');
@@ -1176,9 +1319,11 @@
                     return;
                 }
                 initZonesMap();
-                [100, 300, 700, 1500, 3000].forEach(function (ms) {
-                    setTimeout(function () { if (zonesMap) zonesMap.invalidateSize(); }, ms);
-                });
+                if (!zonesMap) {
+                    // Retry map bootstrap after delayed CSS/layout availability.
+                    MAP_INIT_RETRY_DELAYS_MS.forEach(function(ms) { setTimeout(initZonesMap, ms); });
+                }
+                scheduleMapInvalidate();
             });
         });
 
@@ -1195,7 +1340,12 @@
             try { zonesMap.off(); zonesMap.remove(); } catch(e) {}
             zonesMap = null;
             drawnItems = null;
+            zonesLocateMarker = null;
             zoneLayerMap.clear();
+        }
+        if (mapResizeObserver) {
+            try { mapResizeObserver.disconnect(); } catch(e) {}
+            mapResizeObserver = null;
         }
         if (coordPickerMap) {
             try { coordPickerMap.off(); coordPickerMap.remove(); } catch(e) {}

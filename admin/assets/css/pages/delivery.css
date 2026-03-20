@@ -47,16 +47,13 @@
 
 /* ── Zones workspace: sidebar + map ──────────────────────── */
 .zones-workspace {
-    display: flex;
-    gap: 1rem;
-    min-height: 540px;
-    align-items: flex-start;
+    display: block;
+    margin-bottom: 1rem;
 }
 
 .zones-sidebar {
-    width: 300px;
-    min-width: 260px;
-    flex-shrink: 0;
+    width: 100%;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -64,6 +61,10 @@
     border: 1px solid var(--border-color, #263044);
     border-radius: 10px;
     overflow: hidden;
+}
+
+.zones-map-container {
+    width: 100%;
 }
 
 .zones-sidebar-header {
@@ -127,12 +128,47 @@
     border-radius: 10px;
     overflow: hidden;
     border: 1px solid var(--border-color, #263044);
+    display: flex;
+    flex-direction: column;
+}
+
+.zones-map-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid var(--border-color, #263044);
+    background: rgba(0,0,0,0.18);
+}
+.zones-map-toolbar .btn {
+    padding-inline: 0.75rem;
+}
+
+.zones-map-canvas {
+    flex: 1;
+    min-height: 320px;
 }
 
 .delivery-map {
     width: 100%;
-    height: 540px;
-    border-radius: 10px;
+    height: 100%;
+    min-height: 320px;
+    border-radius: 0 0 10px 10px;
+}
+
+.zones-map-panel.is-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 10020;
+    border-radius: 0;
+    border: none;
+    /* Reserves 56px for fullscreen toolbar vertical footprint (padding + controls + border) */
+    --zones-map-toolbar-height: 56px;
+}
+.zones-map-panel.is-fullscreen .zones-map-canvas,
+.zones-map-panel.is-fullscreen .delivery-map {
+    min-height: 0;
+    height: calc(100vh - var(--zones-map-toolbar-height));
 }
 
 /* Zone GeoJSON textarea */
@@ -163,14 +199,35 @@
 
 /* ── Filters ──────────────────────────────────────────────── */
 .filters-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.8rem;
     align-items: flex-end;
 }
-.filter-group { display: flex; flex-direction: column; gap: 0.25rem; min-width: 160px; }
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+.filter-group--search {
+    /* Search field spans 2 columns on wide layouts, then collapses in media queries */
+    --search-filter-span: 2;
+    grid-column: span var(--search-filter-span);
+}
 .filter-group label { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary, #94a3b8); }
-.filter-actions { display: flex; gap: 0.5rem; align-items: flex-end; padding-bottom: 1px; }
+.filter-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+    padding-bottom: 1px;
+    flex-wrap: wrap;
+}
+
+.filter-card .card-body {
+    padding-top: 0.9rem;
+    padding-bottom: 0.9rem;
+}
 
 /* ── Forms ────────────────────────────────────────────────── */
 .form-row { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.5rem; }
@@ -334,20 +391,34 @@
 
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 900px) {
-    .zones-workspace    { flex-direction: column; }
+    .zones-workspace    { margin-bottom: 0.9rem; }
     .zones-sidebar      { width: 100%; min-height: auto; }
-    .zones-map-panel    { min-height: 360px; }
-    .delivery-map       { height: 360px; }
+    .zones-map-panel    { width: 100%; min-height: 360px; }
+    .zones-map-toolbar  { justify-content: stretch; }
+    .zones-map-toolbar .btn { flex: 1; justify-content: center; }
+    .zones-map-canvas,
+    .delivery-map       { min-height: 360px; }
     .form-group.col-3,
     .form-group.col-4,
     .form-group.col-6   { flex: 1 1 100%; }
-    .filters-grid       { flex-direction: column; }
+    .filters-grid       { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .filter-group--search { grid-column: span 2; }
+}
+
+@media (max-width: 700px) {
+    .filters-grid { grid-template-columns: 1fr; }
+    .filter-group--search { grid-column: span 1; }
+    .filter-actions .btn { flex: 1; justify-content: center; }
+    .zones-sidebar-header { gap: 0.6rem; }
+    .zones-list { max-height: 320px; }
 }
 
 @media (max-width: 600px) {
     .workspace-tabs { gap: 0.2rem; }
     .tab-btn        { padding: 0.5rem 0.7rem; font-size: 0.78rem; }
     .tab-btn span   { display: none; }
+    .zones-map-canvas,
+    .delivery-map   { min-height: 300px; }
 }
 
 /* ── Provider ID Lookup ───────────────────────────────────── */
@@ -515,3 +586,4 @@
 [dir="rtl"] .coord-modal-header { flex-direction: row-reverse; }
 [dir="rtl"] .coord-modal-search { flex-direction: row-reverse; }
 [dir="rtl"] .coord-modal-footer { flex-direction: row-reverse; }
+[dir="rtl"] .zones-map-toolbar  { justify-content: flex-start; }

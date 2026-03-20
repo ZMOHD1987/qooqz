@@ -36,6 +36,37 @@ $autoFill = [
     'user_id'       => isset($_GET['user_id'])       ? (int)$_GET['user_id']       : ($user['id'] ?? null),
 ];
 
+if (!function_exists('resolveMediaStudioTheme')) {
+    /**
+     * Resolve active theme payload once per request (lightweight cache).
+     */
+    function resolveMediaStudioTheme(array $payload): array {
+        static $resolved = null;
+        if (is_array($resolved)) {
+            return $resolved;
+        }
+
+        $themePayload = $payload['theme'] ?? [];
+        if (isset($themePayload['theme']) && is_array($themePayload['theme'])) {
+            $resolved = $themePayload;
+            return $resolved;
+        }
+
+        $resolved = [
+            'theme'          => [],
+            'color_settings' => $themePayload['color_settings'] ?? [],
+            'font_settings'  => $themePayload['font_settings'] ?? [],
+            'design_settings'=> $themePayload['design_settings'] ?? [],
+            'button_styles'  => $themePayload['button_styles'] ?? [],
+            'card_styles'    => $themePayload['card_styles'] ?? [],
+            'generated_css'  => $themePayload['generated_css'] ?? '',
+        ];
+        return $resolved;
+    }
+}
+
+$activeTheme = resolveMediaStudioTheme($payload);
+
 // ════════════════════════════════════════════════════════════
 // DB-DRIVEN CSS VARS HELPER
 // ════════════════════════════════════════════════════════════
@@ -90,6 +121,13 @@ if (!function_exists('renderFragmentThemeVars')) {
             if (!empty($b['text_color']))        $emit("btn-{$slug}-color",  $b['text_color']);
             if (!empty($b['border_color']))      $emit("btn-{$slug}-border", $b['border_color']);
             if (!empty($b['border_radius']))     $emit("btn-{$slug}-radius", $b['border_radius'] . 'px');
+            if (isset($b['border_width']) && $b['border_width'] !== '') $emit("btn-{$slug}-border-width", (string)$b['border_width'] . 'px');
+            if (!empty($b['padding']))           $emit("btn-{$slug}-padding", $b['padding']);
+            if (!empty($b['font_size']))         $emit("btn-{$slug}-font-size", str_contains((string)$b['font_size'], 'px') ? (string)$b['font_size'] : ((string)$b['font_size'] . 'px'));
+            if (!empty($b['font_weight']))       $emit("btn-{$slug}-font-weight", (string)$b['font_weight']);
+            if (!empty($b['hover_background_color'])) $emit("btn-{$slug}-hover-bg", $b['hover_background_color']);
+            if (!empty($b['hover_text_color']))       $emit("btn-{$slug}-hover-color", $b['hover_text_color']);
+            if (!empty($b['hover_border_color']))     $emit("btn-{$slug}-hover-border", $b['hover_border_color']);
         }
         foreach ($theme['card_styles'] ?? [] as $cs) {
             if (empty($cs['slug'])) continue;
@@ -99,15 +137,20 @@ if (!function_exists('renderFragmentThemeVars')) {
             if (!empty($cs['border_radius']))     $emit("card-{$slug}-radius",  $cs['border_radius'] . 'px');
             if (!empty($cs['shadow_style']))      $emit("card-{$slug}-shadow",  $cs['shadow_style']);
             if (!empty($cs['padding']))           $emit("card-{$slug}-padding", $cs['padding']);
+            if (isset($cs['border_width']) && $cs['border_width'] !== '') $emit("card-{$slug}-border-width", (string)$cs['border_width'] . 'px');
+            if (!empty($cs['hover_effect']))      $emit("card-{$slug}-hover-effect", (string)$cs['hover_effect']);
         }
 
         $bgSec = $emitted['--background-secondary'] ?? $emitted['--background_secondary'] ?? null;
+        $bgMain = $emitted['--background-main'] ?? $emitted['--background_main'] ?? null;
+        $danger = $emitted['--danger-color'] ?? $emitted['--danger_color'] ?? $emitted['--error-color'] ?? $emitted['--error_color'] ?? null;
+        $success = $emitted['--success-color'] ?? $emitted['--success_color'] ?? null;
         $aliasDefaults = [
-            '--card-bg'       => $emitted['--card-bg']      ?? $emitted['--card_bg']      ?? $bgSec ?? '#081127',
-            '--input-bg'      => $emitted['--input-bg']     ?? $emitted['--input_bg']     ?? $bgSec ?? '#0b1220',
-            '--thead-bg'      => $emitted['--thead-bg']     ?? $emitted['--thead_bg']     ?? $bgSec ?? '#061021',
-            '--danger-color'  => $emitted['--danger-color'] ?? $emitted['--danger_color'] ?? $emitted['--error-color'] ?? '#ef4444',
-            '--success-color' => $emitted['--success-color'] ?? $emitted['--success_color'] ?? '#22c55e',
+            '--card-bg'       => $emitted['--card-bg']      ?? $emitted['--card_bg']      ?? $bgSec ?? $bgMain ?? '#081127',
+            '--input-bg'      => $emitted['--input-bg']     ?? $emitted['--input_bg']     ?? $bgSec ?? $bgMain ?? '#0b1220',
+            '--thead-bg'      => $emitted['--thead-bg']     ?? $emitted['--thead_bg']     ?? $bgSec ?? $bgMain ?? '#061021',
+            '--danger-color'  => $danger ?? '#ef4444',
+            '--success-color' => $success ?? '#22c55e',
         ];
         foreach ($aliasDefaults as $cssVar => $val) {
             if (!isset($emitted[$cssVar])) {
@@ -123,9 +166,9 @@ if (!function_exists('renderFragmentThemeVars')) {
 ?>
 <!-- DB-driven CSS vars (colors, fonts, buttons from database) -->
 <style id="db-theme-vars-media-studio">
-<?php renderFragmentThemeVars($GLOBALS['ADMIN_UI']['theme'] ?? []); ?>
-<?php if (!empty($GLOBALS['ADMIN_UI']['theme']['generated_css'])): ?>
-<?= $GLOBALS['ADMIN_UI']['theme']['generated_css'] ?>
+<?php renderFragmentThemeVars($activeTheme); ?>
+<?php if (!empty($activeTheme['generated_css'])): ?>
+<?= $activeTheme['generated_css'] ?>
 <?php endif; ?>
 </style>
 <!-- Framework CSS (only needed in embedded/fragment mode; header.php loads it in standalone mode) -->

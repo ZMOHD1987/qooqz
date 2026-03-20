@@ -234,9 +234,23 @@ if (!function_exists('__t')) {
                 <?php endif; ?>
             </div>
         </aside>
+    </div>
 
+    <div class="zones-map-container">
         <div class="zones-map-panel">
-            <div id="zonesMap" class="delivery-map" style="height:540px;width:100%"></div>
+            <div class="zones-map-toolbar">
+                <button type="button" id="zonesLocateBtn" class="btn btn-sm btn-outline" aria-label="<?= __t('delivery.location.use_gps','Use my location') ?>">
+                    <i class="fas fa-crosshairs" aria-hidden="true"></i>
+                    <span><?= __t('delivery.location.use_gps','Use my location') ?></span>
+                </button>
+                <button type="button" id="zonesFullscreenBtn" class="btn btn-sm btn-outline" aria-label="<?= __t('delivery.map.fullscreen','Fullscreen map') ?>">
+                    <i class="fas fa-expand-arrows-alt" aria-hidden="true"></i>
+                    <span><?= __t('delivery.map.fullscreen','Fullscreen map') ?></span>
+                </button>
+            </div>
+            <div class="zones-map-canvas">
+                <div id="zonesMap" class="delivery-map"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -312,7 +326,7 @@ if (!function_exists('__t')) {
     <div class="card filter-card">
         <div class="card-body">
             <div class="filters-grid">
-                <div class="filter-group"><label><?= __t('common.search','Search') ?></label><input type="text" id="providersSearch" class="form-control"></div>
+                <div class="filter-group filter-group--search"><label><?= __t('common.search','Search') ?></label><input type="text" id="providersSearch" class="form-control"></div>
                 <div class="filter-group"><label><?= __t('delivery.provider.type','Type') ?></label>
                     <select id="providersTypeFilter" class="form-control">
                         <option value=""><?= __t('common.all','All') ?></option>
@@ -808,6 +822,15 @@ window.DELIVERY_CONFIG = {
     userId: <?= (int)$userId ?>,
     mapCenter: [24.7136, 46.6753],
     mapZoom: 5,
+    i18n: {
+        mapFullscreen: '<?= addslashes(__t('delivery.map.fullscreen','Fullscreen map')) ?>',
+        mapExitFullscreen: '<?= addslashes(__t('delivery.map.exit_fullscreen','Exit fullscreen')) ?>',
+        mapYourLocation: '<?= addslashes(__t('delivery.map.your_location','Your location')) ?>',
+        mapLocationAcquired: '<?= addslashes(__t('delivery.map.location_acquired','Location acquired')) ?>',
+        mapLocationUnavailable: '<?= addslashes(__t('delivery.map.location_unavailable','Unable to get your location')) ?>',
+        mapGeolocationUnsupported: '<?= addslashes(__t('delivery.map.geolocation_unsupported','Geolocation is not supported by your browser')) ?>',
+        mapGettingLocation: '<?= addslashes(__t('delivery.map.getting_location','Getting your location…')) ?>'
+    },
     canCreate: <?= $canCreate ? 'true' : 'false' ?>,
     canEdit: <?= $canEdit ? 'true' : 'false' ?>,
     canDelete: <?= $canDelete ? 'true' : 'false' ?>,
@@ -831,25 +854,6 @@ window.PAGE_PERMISSIONS = <?= json_encode(['canCreate'=>$canCreate, 'canEdit'=>$
 </script>
 
 <!-- delivery.js self-loads Leaflet JS + CSS (same pattern as test_map.php / DeliveryZone.js) -->
-<?php if ($isFragment): ?>
 <script src="/admin/assets/js/pages/delivery.js?v=<?= $deliveryJsVer ?>"></script>
-<script>(function(){
-    // If delivery.js was already loaded on a prior navigation, Delivery.reinit() resets maps
-    // and re-runs init() on the fresh DOM.  On the very first load delivery.js auto-inits.
-    if (window.Delivery && typeof window.Delivery.reinit === 'function') {
-        window.Delivery.reinit();
-        return;
-    }
-    // delivery.js not yet loaded — it will self-init via its own IIFE.
-    // Just watch for load timeout as a safety net.
-    var i = 0;
-    var iv = setInterval(function(){
-        if (window.Delivery) { clearInterval(iv); }
-        else if (++i > 120) { clearInterval(iv); console.error('Delivery init timeout'); }
-    }, 100);
-})();</script>
-<?php else: ?>
-<script src="/admin/assets/js/pages/delivery.js?v=<?= $deliveryJsVer ?>"></script>
-<?php endif; ?>
 
 <?php if (!$isFragment): require_once __DIR__ . '/../includes/footer.php'; endif; ?>
