@@ -37,7 +37,7 @@
     padding: 1.125rem;
     box-sizing: border-box;
     color: var(--_text, var(--text-primary, #f1f5f9));
-    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    font-family: var(--body-font-family, Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial);
 }
 
 /* Header */
@@ -901,7 +901,7 @@ textarea.form-control {
 .parent-id-input-wrapper {
     display: flex;
     gap: 8px;
-    align-items: center;
+    align-items: flex-start;
 }
 
 .parent-id-input-wrapper .form-control {
@@ -947,4 +947,141 @@ textarea.form-control {
 
 .parent-validation-result small {
     opacity: 0.7;
+}
+/* ═══════════════════════════════════════════════════════════
+   INLINE STYLE REPLACEMENTS — all visual inline styles
+   extracted from entities.php into reusable CSS classes.
+   All values are DB-driven via var(--_*) tokens.
+   ══════════════════════════════════════════════════════════ */
+
+/* Parent search input – small bottom gap before the list select */
+#entityParentSearch.form-control {
+    margin-bottom: 0.375rem;
+}
+
+/* Select rendered as a visible list (height:auto) */
+.select-size-list {
+    height: auto !important;
+}
+
+/* Narrow input (Parent ID field) */
+.input-narrow {
+    max-width: 12.5rem;
+    flex-shrink: 0;
+}
+
+/* English content primary-language section */
+.english-content-section {
+    margin-top: 1.75rem;
+    padding-top: 1.25rem;
+    border-top: 2px solid var(--_primary, var(--primary-color, #3b82f6));
+}
+
+.english-content-section > h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    margin-bottom: 1rem;
+    color: var(--_text, var(--text-primary, #f1f5f9));
+}
+
+/* Language tag badge (e.g. "EN") */
+.lang-tag {
+    background: var(--_primary, var(--primary-color, #3b82f6));
+    color: #fff;
+    padding: 0.1875rem 0.625rem;
+    border-radius: 1.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* Subtle note beside a language tag */
+.lang-tag-note {
+    color: var(--_text-muted, var(--text-secondary, #94a3b8));
+    font-size: 0.8rem;
+    font-weight: 400;
+    margin-inline-start: 0.375rem;
+}
+
+/* Generic section heading (h4/h5 inside tab panels) */
+.section-heading {
+    margin-bottom: 0.9375rem;
+    color: var(--_text, var(--text-primary, #f1f5f9));
+}
+
+/* Section heading with a bottom border separator */
+.section-heading-border {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    color: var(--_text, var(--text-primary, #f1f5f9));
+    border-bottom: 1px solid var(--_border, var(--border-color, #334155));
+}
+
+/* Attributes controls row (select + button) */
+.attrs-controls {
+    display: flex;
+    gap: 0.625rem;
+    margin-bottom: 0.9375rem;
+    align-items: center;
+}
+
+.attrs-controls .form-control {
+    flex: 1;
+}
+
+/* Info box (hint/note paragraph) */
+.info-box {
+    font-size: 0.88rem;
+    color: var(--_text-muted, var(--text-secondary, #94a3b8));
+    margin-bottom: 1rem;
+    padding: 0.625rem 0.875rem;
+    background: var(--_bg-main, var(--background-main, #0a0a0a));
+    border-radius: var(--_radius-sm, 4px);
+    border: 1px solid var(--_border, var(--border-color, #334155));
+}
+
+/* Icon inside an info-box */
+.info-box-icon {
+    color: var(--_primary, var(--primary-color, #3b82f6));
+    margin-inline-end: 0.375rem;
+}
+
+/* "Select language + Add" row in the Translations tab */
+.lang-add-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+    margin-top: 0.75rem;
+}
+
+.lang-add-row .form-control {
+    flex: 1;
+}
+
+/* Language form-group (extra top spacing) */
+.lang-form-group {
+    margin-top: 0.75rem;
+}
+
+/* Media tab: spacing below "Select … from Studio" buttons */
+.image-upload-section > .btn,
+.image-upload-section > .btnSelectMedia {
+    margin-bottom: 0.9375rem;
+}
+
+/* Address embed container (card-like box) */
+#addressEmbeddedContainer {
+    border: 1px solid var(--_border, var(--border-color, #334155));
+    border-radius: var(--_radius, 8px);
+    padding: 0.9375rem;
+    background: var(--_bg-sec, var(--card-bg, var(--background-secondary, #1e293b)));
+}
+
+/* Results count row – hidden by default, shown by JS */
+#resultsCount {
+    display: none;
 }
