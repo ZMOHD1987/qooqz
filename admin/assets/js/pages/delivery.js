@@ -13,7 +13,7 @@
     const FALLBACK_MIN_MAP_HEIGHT = 320;
     const MAP_INVALIDATE_DELAYS_MS = [80, 180, 350, 700, 1200];
     const MAP_INIT_RETRY_DELAYS_MS = [100, 300, 700, 1200];
-    const MAP_TAB_OPEN_FIX_DELAYS_MS = [100, 250, 450, 800, 1400, 2200];
+    const MAP_TAB_OPEN_INVALIDATE_DELAYS_MS = [100, 250, 450, 800, 1400, 2200];
     const MAP_VIEWPORT_RESIZE_DEBOUNCE_MS = 250;
     const MAP_VIEWPORT_VISUAL_FIX_DELAY_MS = 100;
     const GEOLOCATION_MIN_ZOOM_LEVEL = 13;
@@ -1261,7 +1261,7 @@
                 if (panel) panel.style.display = '';
                 if (tab === 'zones' && zonesMap) {
                     scheduleMapInvalidate();
-                    MAP_TAB_OPEN_FIX_DELAYS_MS.forEach(function(ms) {
+                    MAP_TAB_OPEN_INVALIDATE_DELAYS_MS.forEach(function(ms) {
                         setTimeout(function() { invalidateMapWithOptionalRefit(true); }, ms);
                     });
                 }
