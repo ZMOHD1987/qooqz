@@ -363,6 +363,12 @@
     .coord-input-wrap   { flex-wrap: wrap; }
     /* Filter groups: release the 160px minimum so they stretch to fill the column */
     .filter-group       { min-width: 0; }
+    /* Filter action buttons: span full width and be easy to tap */
+    .filter-actions     { width: 100%; padding-bottom: 0; }
+    .filter-actions .btn { flex: 1; justify-content: center; min-height: 38px; }
+    .sidebar-filter-actions .btn { flex: 1; min-height: 38px; }
+    /* Larger touch targets for the Leaflet fullscreen / locate controls */
+    .leaflet-control-custom { width: 36px; height: 36px; font-size: 1rem; }
 }
 
 @media (max-width: 600px) {
@@ -376,11 +382,15 @@
     /* Tighter spacing on small phones */
     .page-title         { font-size: 1.2rem; }
     .card-header        { padding: 0.65rem 0.75rem; }
+    .card-body          { padding: 0.75rem; }
     .coord-modal        { padding: 0.5rem; }
     .coord-modal-header { padding: 0.65rem 0.75rem; }
     .coord-modal-search { padding: 0.5rem 0.75rem; }
     .coord-modal-footer { padding: 0.5rem 0.75rem; }
     .zones-list         { max-height: 180px; }
+    /* Taller tap targets on small phones */
+    .filter-actions .btn,
+    .sidebar-filter-actions .btn { min-height: 40px; }
 }
 
 @media (max-width: 480px) {
@@ -555,3 +565,65 @@
 [dir="rtl"] .coord-modal-header { flex-direction: row-reverse; }
 [dir="rtl"] .coord-modal-search { flex-direction: row-reverse; }
 [dir="rtl"] .coord-modal-footer { flex-direction: row-reverse; }
+
+/* ── Fullscreen map panel ─────────────────────────────────── */
+/* Applied by the JS fullscreen control; covers the full viewport */
+.zones-map-panel.is-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+}
+.zones-map-panel.is-fullscreen .delivery-map {
+    height: 100% !important;
+    border-radius: 0 !important;
+}
+
+/* ── Leaflet custom controls (fullscreen + locate me) ────── */
+.leaflet-control-custom {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    background: #fff;
+    border: none;
+    border-top: 1px solid rgba(0,0,0,0.12);
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: #444;
+    padding: 0;
+    line-height: 1;
+    transition: background 0.15s;
+    /* Prevent the iOS highlight flash on touch */
+    -webkit-tap-highlight-color: transparent;
+}
+.leaflet-control-custom:first-child { border-top: none; }
+.leaflet-control-custom:hover,
+.leaflet-control-custom:focus-visible { background: #f4f4f4; outline: none; }
+/* Spinning animation while awaiting the GPS fix */
+.ctrl-btn-locate.locating       { pointer-events: none; }
+.ctrl-btn-locate.locating i     { animation: spin 1s linear infinite; color: #3b82f6; }
+
+/* ── Search icon decoration for filter text inputs ───────── */
+/* Adds a magnifying-glass icon as the leading background of every plain-text
+   input that lives inside a filter-group or the sidebar header.           */
+.filter-group input[type="text"].form-control,
+.zones-sidebar-header input[type="text"].form-control {
+    padding-inline-start: 2.1rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 0.65rem center;
+    background-size: 0.875rem;
+}
+/* RTL: flip icon to trailing side */
+[dir="rtl"] .filter-group input[type="text"].form-control,
+[dir="rtl"] .zones-sidebar-header input[type="text"].form-control {
+    padding-inline-start: 0.65rem;
+    padding-inline-end: 2.1rem;
+    background-position: calc(100% - 0.65rem) center;
+}

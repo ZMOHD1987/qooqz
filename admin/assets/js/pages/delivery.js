@@ -532,6 +532,79 @@
             }).addTo(zonesMap);
         }
 
+        // ─── Custom map controls: fullscreen toggle + locate me ──────────
+        (function() {
+            // Fullscreen toggle — expands the map panel to cover the full viewport.
+            // Pressing Escape or clicking the button again collapses it back.
+            var FsControl = L.Control.extend({
+                options: { position: 'topright' },
+                onAdd: function() {
+                    var btn = L.DomUtil.create('button', 'leaflet-control-custom ctrl-btn-fullscreen');
+                    btn.type = 'button';
+                    btn.title = 'Toggle fullscreen';
+                    btn.setAttribute('aria-label', 'Toggle fullscreen');
+                    btn.innerHTML = '<i class="fas fa-expand" aria-hidden="true"></i>';
+                    L.DomEvent.disableClickPropagation(btn);
+                    L.DomEvent.on(btn, 'click touchend', function(e) {
+                        L.DomEvent.preventDefault(e);
+                        var panel = document.querySelector('.zones-map-panel');
+                        if (!panel) return;
+                        var isFs = panel.classList.toggle('is-fullscreen');
+                        btn.innerHTML = isFs
+                            ? '<i class="fas fa-compress" aria-hidden="true"></i>'
+                            : '<i class="fas fa-expand" aria-hidden="true"></i>';
+                        btn.title = isFs ? 'Exit fullscreen' : 'Toggle fullscreen';
+                        if (isFs) {
+                            var onEsc = function(ev) {
+                                if (ev.key === 'Escape') {
+                                    panel.classList.remove('is-fullscreen');
+                                    btn.innerHTML = '<i class="fas fa-expand" aria-hidden="true"></i>';
+                                    btn.title = 'Toggle fullscreen';
+                                    document.removeEventListener('keydown', onEsc);
+                                    setTimeout(function() { if (zonesMap) zonesMap.invalidateSize(); }, 50);
+                                }
+                            };
+                            document.addEventListener('keydown', onEsc);
+                        }
+                        setTimeout(function() { if (zonesMap) zonesMap.invalidateSize(); }, 50);
+                    });
+                    return btn;
+                }
+            });
+            new FsControl().addTo(zonesMap);
+
+            // Locate me — pans the map to the user's GPS position.
+            var LocControl = L.Control.extend({
+                options: { position: 'topright' },
+                onAdd: function() {
+                    var btn = L.DomUtil.create('button', 'leaflet-control-custom ctrl-btn-locate');
+                    btn.type = 'button';
+                    btn.title = 'My location';
+                    btn.setAttribute('aria-label', 'Go to my location');
+                    btn.innerHTML = '<i class="fas fa-crosshairs" aria-hidden="true"></i>';
+                    L.DomEvent.disableClickPropagation(btn);
+                    L.DomEvent.on(btn, 'click touchend', function(e) {
+                        L.DomEvent.preventDefault(e);
+                        if (!navigator.geolocation) { notify('Geolocation not supported', 'error'); return; }
+                        btn.classList.add('locating');
+                        navigator.geolocation.getCurrentPosition(
+                            function(pos) {
+                                btn.classList.remove('locating');
+                                zonesMap.setView([pos.coords.latitude, pos.coords.longitude], 14);
+                            },
+                            function() {
+                                btn.classList.remove('locating');
+                                notify('Location unavailable', 'error');
+                            },
+                            { enableHighAccuracy: true, timeout: 10000 }
+                        );
+                    });
+                    return btn;
+                }
+            });
+            new LocControl().addTo(zonesMap);
+        })();
+
         zonesMap.on(L.Draw.Event.CREATED, function(e) {
             drawnItems.clearLayers();
             drawnItems.addLayer(e.layer);

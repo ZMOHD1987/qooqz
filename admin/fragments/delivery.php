@@ -62,7 +62,7 @@ if (!function_exists('__t')) {
 }
 ?>
 <?php if ($isFragment): ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/delivery.css?v=4">
+<link rel="stylesheet" href="/admin/assets/css/pages/delivery.css?v=5">
 <?php endif; ?>
 <meta data-page="delivery" data-i18n-files="/languages/Delivery/<?= rawurlencode($lang) ?>.json">
 
@@ -793,7 +793,7 @@ if (!function_exists('__t')) {
 
 </div><!-- /page-container -->
 
-<?php $deliveryJsVer = '4'; ?>
+<?php $deliveryJsVer = '5'; ?>
 <script type="text/javascript">
 window.APP_CONFIG = window.APP_CONFIG || {};
 window.APP_CONFIG.TENANT_ID = <?= (int)$tenantId ?>;
