@@ -241,19 +241,31 @@ foreach ($theme['color_settings'] ?? [] as $c):
 // ── Alias vars — provide the stable names used by CSS files ─────────────────
 // These map framework-level CSS var names to values from the DB so that
 // CSS var() references work before admin_core.js runs.
+// design_settings entries whose setting_key matches one of these names will
+// have already been emitted above as --setting_key / --setting-key vars and
+// will therefore appear in $_emittedVars, causing these fallback aliases to
+// be skipped — which is the correct precedence.
 $backgroundSecondary = $_emittedVars['--background-secondary'] ?? $_emittedVars['--background_secondary'] ?? null;
 $backgroundPrimary   = $_emittedVars['--background-primary']   ?? $_emittedVars['--background_primary']   ?? null;
 $backgroundMain      = $_emittedVars['--background-main']      ?? $_emittedVars['--background_main']      ?? null;
 $backgroundFallback  = $backgroundSecondary ?? $backgroundPrimary ?? $backgroundMain;
 $errorColor          = $_emittedVars['--error-color']  ?? $_emittedVars['--error_color']  ?? null;
+$successColor        = $_emittedVars['--success-color'] ?? $_emittedVars['--success_color'] ?? null;
+$warningColor        = $_emittedVars['--warning-color'] ?? $_emittedVars['--warning_color'] ?? null;
+$primaryColor        = $_emittedVars['--primary-color'] ?? $_emittedVars['--primary_color'] ?? null;
+$surfaceColor        = $_emittedVars['--surface-color'] ?? $_emittedVars['--surface_color'] ?? $backgroundFallback;
 
 // Map: CSS-var-name => resolved value (only emit if not already set from DB)
 $themeAliasVars = [
-    '--card-bg'          => $_emittedVars['--card-bg']          ?? $_emittedVars['--card_bg']          ?? $backgroundFallback,
-    '--input-bg'         => $_emittedVars['--input-bg']         ?? $_emittedVars['--input_bg']         ?? $backgroundFallback,
-    '--input-background' => $_emittedVars['--input-background'] ?? $_emittedVars['--input_background'] ?? $backgroundFallback,
-    '--thead-bg'         => $_emittedVars['--thead-bg']         ?? $_emittedVars['--thead_bg']         ?? $backgroundFallback,
-    '--danger-color'     => $_emittedVars['--danger-color']     ?? $_emittedVars['--danger_color']     ?? $errorColor,
+    '--card-bg'            => $_emittedVars['--card-bg']          ?? $_emittedVars['--card_bg']          ?? $surfaceColor,
+    '--input-bg'           => $_emittedVars['--input-bg']         ?? $_emittedVars['--input_bg']         ?? $surfaceColor,
+    '--input-background'   => $_emittedVars['--input-background'] ?? $_emittedVars['--input_background'] ?? $surfaceColor,
+    '--thead-bg'           => $_emittedVars['--thead-bg']         ?? $_emittedVars['--thead_bg']         ?? $backgroundFallback,
+    '--surface-color'      => $surfaceColor,
+    '--danger-color'       => $_emittedVars['--danger-color']     ?? $_emittedVars['--danger_color']     ?? $errorColor,
+    '--success-color'      => $successColor,
+    '--warning-color'      => $warningColor,
+    '--info-color'         => $_emittedVars['--info-color']       ?? $_emittedVars['--info_color']       ?? $primaryColor,
 ];
 foreach ($themeAliasVars as $varName => $varValue):
     if (!$varValue || !empty($_emittedVars[$varName])) continue; // skip if already emitted or no value

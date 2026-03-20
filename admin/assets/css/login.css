@@ -1,11 +1,11 @@
 /* Minimal, clean styles for admin login/register forms */
 
 :root {
-    --bg: #f4f6f8;
-    --card: #ffffff;
-    --accent: #0d6efd;
-    --text: #222;
-    --muted: #6b7280;
+    --bg: var(--background-main, #f4f6f8);
+    --card: var(--surface-color, var(--card-bg, #ffffff));
+    --accent: var(--primary-color, #0d6efd);
+    --text: var(--text-primary, #222);
+    --muted: var(--text-secondary, #6b7280);
 }
 
 * { box-sizing: border-box; }
@@ -36,7 +36,7 @@ html,body { height:100%; margin:0; font-family: Inter, system-ui, -apple-system,
 .tab {
     flex:1;
     padding:8px 12px;
-    background:#f1f5f9;
+    background: var(--background-secondary, #f1f5f9);
     border-radius:6px;
     border: none;
     cursor:pointer;
@@ -45,7 +45,7 @@ html,body { height:100%; margin:0; font-family: Inter, system-ui, -apple-system,
 }
 
 .tab.active {
-    background:#fff;
+    background: var(--surface-color, var(--card-bg, #fff));
     color:var(--accent);
     box-shadow: inset 0 -2px 0 var(--accent);
 }
@@ -63,7 +63,7 @@ html,body { height:100%; margin:0; font-family: Inter, system-ui, -apple-system,
     padding:10px 12px;
     border:1px solid #e6edf3;
     border-radius:6px;
-    background:#fafbfd;
+    background: var(--input-bg, var(--surface-color, #fafbfd));
     font-size:14px;
     outline:none;
     transition: box-shadow .12s ease, border-color .12s ease;
@@ -86,7 +86,7 @@ html,body { height:100%; margin:0; font-family: Inter, system-ui, -apple-system,
 .btn:hover { filter:brightness(.95); }
 
 .result { margin-top:12px; min-height:28px; }
-.result-ok { color: #064e3b; background: #ecfdf5; padding:8px; border-radius:6px; }
-.result-err { color: #7f1d1d; background:#fff1f2; padding:8px; border-radius:6px; }
+.result-ok { color: var(--success-color, #064e3b); background: rgba(16,185,129,0.1); padding:8px; border-radius:6px; }
+.result-err { color: var(--danger-color, var(--error-color, #7f1d1d)); background: rgba(239,68,68,0.1); padding:8px; border-radius:6px; }
 
 .error { color:#b91c1c; font-size:13px; margin-top:6px; }

@@ -2,9 +2,53 @@
  * Production Admin Panel - Clean & Fixed
  */
 
-/* ══════════════════════════════════════════════════════��═════
-   RESET & BASE
+/* ════════════════════════════════════════════════════════════
+   CSS VARIABLE FALLBACK DEFINITIONS
+   These are the default values for all DB-driven CSS variables.
+   They are overridden at runtime by values from:
+     - color_settings  → --background-main, --primary-color, etc.
+     - font_settings   → --body-font-family, --heading-font-family, etc.
+     - design_settings → --surface-color, --border-radius, --spacing-unit, etc.
+   The dynamic-theme-vars <style> block in header.php emits the DB values
+   which take precedence over these fallbacks via CSS cascade order.
    ════════════════════════════════════════════════════════════ */
+
+:root {
+    /* ── backgrounds ──────────────────────────────────────── */
+    --background-main:       #0A0A0A;
+    --background-secondary:  #1A1A2E;
+    --surface-color:         #1E1E2E;
+
+    /* ── text ─────────────────────────────────────────────── */
+    --text-primary:          #FFFFFF;
+    --text-secondary:        #94A3B8;
+
+    /* ── brand / action ───────────────────────────────────── */
+    --primary-color:         #3B82F6;
+    --primary-hover:         #2563EB;
+    --success-color:         #10B981;
+    --warning-color:         #F59E0B;
+    --error-color:           #EF4444;
+    --danger-color:          #EF4444;
+    --info-color:            #2563EB;
+
+    /* ── borders / layout ─────────────────────────────────── */
+    --border-color:          #2D2D3A;
+    --border-radius:         8px;
+    --card-border-radius:    var(--border-radius);
+    --input-bg:              var(--surface-color);
+    --card-bg:               var(--surface-color);
+    --thead-bg:              var(--background-secondary);
+
+    /* ── sidebar ──────────────────────────────────────────── */
+    --sidebar-background:    #4B0082;
+    --sidebar-text:          #FFFFFF;
+
+    /* ── misc layout ──────────────────────────────────────── */
+    --container-width:       1280px;
+}
+
+
 
 *,
 *::before,

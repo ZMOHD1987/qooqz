@@ -163,7 +163,7 @@
 }
 
 select.form-control option {
-    background: #0f1e3a;
+    background: var(--background-secondary, var(--background-main, #0f1e3a));
 }
 
 .form-actions {
@@ -348,7 +348,7 @@ select.form-control option {
 }
 
 .btn-primary:hover {
-    background: #2563eb;
+    background: var(--primary-hover, #2563eb);
 }
 
 .btn-secondary {

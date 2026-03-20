@@ -106,10 +106,10 @@
 .plan-card.featured .btn-select-plan { background: var(--ps-accent); color: #111; }
 
 .badge { padding: 3px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
-.badge-active { background: #27ae60; color: #fff; }
-.badge-trial { background: #3498db; color: #fff; }
-.badge-expired { background: #e74c3c; color: #fff; }
-.badge-cancelled { background: #95a5a6; color: #fff; }
+.badge-active { background: var(--success-color, #27ae60); color: #fff; }
+.badge-trial { background: var(--info-color, var(--primary-color, #3498db)); color: #fff; }
+.badge-expired { background: var(--danger-color, var(--error-color, #e74c3c)); color: #fff; }
+.badge-cancelled { background: var(--text-secondary, #95a5a6); color: #fff; }
 
 .notification {
     position: fixed;
@@ -123,13 +123,13 @@
     transition: opacity 0.3s;
 }
 [dir="rtl"] .notification { right: auto; left: 20px; }
-.notification-success { background: #27ae60; }
-.notification-error { background: #e74c3c; }
-.notification-info { background: #3498db; }
+.notification-success { background: var(--success-color, #27ae60); }
+.notification-error { background: var(--danger-color, var(--error-color, #e74c3c)); }
+.notification-info { background: var(--info-color, var(--primary-color, #3498db)); }
 
-.loading-spinner { text-align: center; padding: 40px; color: #999; }
-.error-msg { color: #e74c3c; text-align: center; padding: 20px; }
-.no-plans { text-align: center; padding: 40px; color: #999; font-size: 1.1em; }
+.loading-spinner { text-align: center; padding: 40px; color: var(--text-secondary, #94a3b8); }
+.error-msg { color: var(--danger-color, var(--error-color, #e74c3c)); text-align: center; padding: 20px; }
+.no-plans { text-align: center; padding: 40px; color: var(--text-secondary, #94a3b8); font-size: 1.1em; }
 
 @media (max-width: 768px) {
     .plan-cards-grid { grid-template-columns: 1fr; }
