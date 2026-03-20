@@ -234,7 +234,9 @@ if (!function_exists('__t')) {
                 <?php endif; ?>
             </div>
         </aside>
+    </div>
 
+    <div class="zones-map-container">
         <div class="zones-map-panel">
             <div class="zones-map-toolbar">
                 <button type="button" id="zonesLocateBtn" class="btn btn-sm btn-outline" aria-label="<?= __t('delivery.location.use_gps','Use my location') ?>">

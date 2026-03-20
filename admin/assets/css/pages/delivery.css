@@ -47,16 +47,13 @@
 
 /* ── Zones workspace: sidebar + map ──────────────────────── */
 .zones-workspace {
-    display: flex;
-    gap: 1rem;
-    min-height: 540px;
-    align-items: flex-start;
+    display: block;
+    margin-bottom: 1rem;
 }
 
 .zones-sidebar {
-    width: 300px;
-    min-width: 260px;
-    flex-shrink: 0;
+    width: 100%;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -64,6 +61,10 @@
     border: 1px solid var(--border-color, #263044);
     border-radius: 10px;
     overflow: hidden;
+}
+
+.zones-map-container {
+    width: 100%;
 }
 
 .zones-sidebar-header {
@@ -390,7 +391,7 @@
 
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 900px) {
-    .zones-workspace    { flex-direction: column; align-items: stretch; }
+    .zones-workspace    { margin-bottom: 0.9rem; }
     .zones-sidebar      { width: 100%; min-height: auto; }
     .zones-map-panel    { width: 100%; min-height: 360px; }
     .zones-map-toolbar  { justify-content: stretch; }
