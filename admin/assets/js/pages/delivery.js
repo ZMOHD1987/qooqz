@@ -97,6 +97,7 @@
     let coordPickerMap    = null;
     let coordPickerMarker = null;
     let coordPickerTarget = null; // { latId, lngId }
+    let mapResizeObserver = null;
 
     // ─── Helpers ─────────────────────────────────────────────────────
     function $(id) { return document.getElementById(id); }
@@ -119,6 +120,27 @@
         t.style.display = '';
         clearTimeout(t._tmr);
         t._tmr = setTimeout(function() { t.style.display = 'none'; }, 4000);
+    }
+
+    function scheduleMapInvalidate() {
+        if (!zonesMap) return;
+        [80, 180, 350, 700, 1200].forEach(function(ms) {
+            setTimeout(function() {
+                if (zonesMap) zonesMap.invalidateSize();
+            }, ms);
+        });
+    }
+
+    function ensureMapElementHeight() {
+        var mapEl = $('zonesMap');
+        if (!mapEl) return;
+        var current = mapEl.getBoundingClientRect().height;
+        if (current < 260) mapEl.style.minHeight = '320px';
+    }
+
+    function isElementVisible(el) {
+        if (!el) return false;
+        return !!(el.offsetParent || el.getClientRects().length);
     }
 
     function showTableError(tbodyId, msg) {
@@ -478,8 +500,13 @@
     function initZonesMap() {
         var mapEl = $('zonesMap');
         if (!mapEl || typeof L === 'undefined' || zonesMap) return;
+        ensureMapElementHeight();
+        if (!isElementVisible(mapEl)) return;
 
-        zonesMap = L.map('zonesMap').setView(CFG.mapCenter || [24.7136, 46.6753], CFG.mapZoom || 5);
+        zonesMap = L.map('zonesMap', {
+            tap: true,
+            tapTolerance: 20
+        }).setView(CFG.mapCenter || [24.7136, 46.6753], CFG.mapZoom || 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
             maxZoom: 19
@@ -519,6 +546,10 @@
             if (!txt) return;
             try { drawGeoOnMap(JSON.parse(txt)); } catch(_) {}
         });
+
+        bindZonesMapControls();
+        scheduleMapInvalidate();
+        bindMapAutoResize();
     }
 
     function populateZoneGeoFromLayer(layer) {
@@ -598,6 +629,62 @@
         var zt = $('zoneType'), rf = $('radiusFields');
         if (!zt || !rf) return;
         rf.style.display = zt.value === 'radius' ? '' : 'none';
+    }
+
+    function bindMapAutoResize() {
+        var mapEl = $('zonesMap');
+        if (!mapEl || !window.ResizeObserver) return;
+        if (mapResizeObserver) {
+            try { mapResizeObserver.disconnect(); } catch(_) {}
+        }
+        mapResizeObserver = new ResizeObserver(function() { scheduleMapInvalidate(); });
+        mapResizeObserver.observe(mapEl);
+    }
+
+    function bindZonesMapControls() {
+        var fullscreenBtn = $('zonesFullscreenBtn');
+        var locateBtn = $('zonesLocateBtn');
+        var panel = document.querySelector('.zones-map-panel');
+
+        if (fullscreenBtn && !fullscreenBtn.dataset.bound) {
+            fullscreenBtn.dataset.bound = '1';
+            fullscreenBtn.addEventListener('click', function() {
+                if (!panel) return;
+                var on = panel.classList.toggle('is-fullscreen');
+                fullscreenBtn.innerHTML = on
+                    ? '<i class="fas fa-compress-arrows-alt" aria-hidden="true"></i><span>Exit fullscreen</span>'
+                    : '<i class="fas fa-expand-arrows-alt" aria-hidden="true"></i><span>Fullscreen map</span>';
+                fullscreenBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+                scheduleMapInvalidate();
+            });
+        }
+
+        if (locateBtn && !locateBtn.dataset.bound) {
+            locateBtn.dataset.bound = '1';
+            locateBtn.addEventListener('click', function() {
+                if (!navigator.geolocation || !zonesMap) {
+                    notify('Geolocation is not supported by your browser', 'error');
+                    return;
+                }
+                locateBtn.disabled = true;
+                notify('Getting your location…', 'info');
+                navigator.geolocation.getCurrentPosition(
+                    function(pos) {
+                        var lat = pos.coords.latitude;
+                        var lng = pos.coords.longitude;
+                        zonesMap.setView([lat, lng], Math.max(zonesMap.getZoom(), 13));
+                        L.marker([lat, lng]).addTo(zonesMap).bindPopup('Your location').openPopup();
+                        locateBtn.disabled = false;
+                        notify('Location acquired', 'success');
+                    },
+                    function() {
+                        locateBtn.disabled = false;
+                        notify('Unable to get your location', 'error');
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            });
+        }
     }
 
     // ─── Zones Module ─────────────────────────────────────────────────
@@ -1119,9 +1206,7 @@
                 var panel = document.getElementById(tab + 'Tab');
                 if (panel) panel.style.display = '';
                 if (tab === 'zones' && zonesMap) {
-                    [100, 400].forEach(function(ms) {
-                        setTimeout(function() { if (zonesMap) zonesMap.invalidateSize(); }, ms);
-                    });
+                    scheduleMapInvalidate();
                 }
                 var modMap = {
                     zones: zonesMod, providers: providersMod, orders: ordersMod,
@@ -1176,9 +1261,10 @@
                     return;
                 }
                 initZonesMap();
-                [100, 300, 700, 1500, 3000].forEach(function (ms) {
-                    setTimeout(function () { if (zonesMap) zonesMap.invalidateSize(); }, ms);
-                });
+                if (!zonesMap) {
+                    [100, 300, 700, 1200].forEach(function(ms) { setTimeout(initZonesMap, ms); });
+                }
+                scheduleMapInvalidate();
             });
         });
 
@@ -1196,6 +1282,10 @@
             zonesMap = null;
             drawnItems = null;
             zoneLayerMap.clear();
+        }
+        if (mapResizeObserver) {
+            try { mapResizeObserver.disconnect(); } catch(e) {}
+            mapResizeObserver = null;
         }
         if (coordPickerMap) {
             try { coordPickerMap.off(); coordPickerMap.remove(); } catch(e) {}

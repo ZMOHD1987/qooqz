@@ -236,7 +236,19 @@ if (!function_exists('__t')) {
         </aside>
 
         <div class="zones-map-panel">
-            <div id="zonesMap" class="delivery-map" style="height:540px;width:100%"></div>
+            <div class="zones-map-toolbar">
+                <button type="button" id="zonesLocateBtn" class="btn btn-sm btn-outline" title="<?= __t('delivery.location.use_gps','Use my location') ?>" aria-label="<?= __t('delivery.location.use_gps','Use my location') ?>">
+                    <i class="fas fa-crosshairs" aria-hidden="true"></i>
+                    <span><?= __t('delivery.location.use_gps','Use my location') ?></span>
+                </button>
+                <button type="button" id="zonesFullscreenBtn" class="btn btn-sm btn-outline" title="<?= __t('delivery.map.fullscreen','Fullscreen map') ?>" aria-label="<?= __t('delivery.map.fullscreen','Fullscreen map') ?>">
+                    <i class="fas fa-expand-arrows-alt" aria-hidden="true"></i>
+                    <span><?= __t('delivery.map.fullscreen','Fullscreen map') ?></span>
+                </button>
+            </div>
+            <div class="zones-map-canvas">
+                <div id="zonesMap" class="delivery-map"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -312,7 +324,7 @@ if (!function_exists('__t')) {
     <div class="card filter-card">
         <div class="card-body">
             <div class="filters-grid">
-                <div class="filter-group"><label><?= __t('common.search','Search') ?></label><input type="text" id="providersSearch" class="form-control"></div>
+                <div class="filter-group filter-group--search"><label><?= __t('common.search','Search') ?></label><input type="text" id="providersSearch" class="form-control"></div>
                 <div class="filter-group"><label><?= __t('delivery.provider.type','Type') ?></label>
                     <select id="providersTypeFilter" class="form-control">
                         <option value=""><?= __t('common.all','All') ?></option>
@@ -833,21 +845,6 @@ window.PAGE_PERMISSIONS = <?= json_encode(['canCreate'=>$canCreate, 'canEdit'=>$
 <!-- delivery.js self-loads Leaflet JS + CSS (same pattern as test_map.php / DeliveryZone.js) -->
 <?php if ($isFragment): ?>
 <script src="/admin/assets/js/pages/delivery.js?v=<?= $deliveryJsVer ?>"></script>
-<script>(function(){
-    // If delivery.js was already loaded on a prior navigation, Delivery.reinit() resets maps
-    // and re-runs init() on the fresh DOM.  On the very first load delivery.js auto-inits.
-    if (window.Delivery && typeof window.Delivery.reinit === 'function') {
-        window.Delivery.reinit();
-        return;
-    }
-    // delivery.js not yet loaded — it will self-init via its own IIFE.
-    // Just watch for load timeout as a safety net.
-    var i = 0;
-    var iv = setInterval(function(){
-        if (window.Delivery) { clearInterval(iv); }
-        else if (++i > 120) { clearInterval(iv); console.error('Delivery init timeout'); }
-    }, 100);
-})();</script>
 <?php else: ?>
 <script src="/admin/assets/js/pages/delivery.js?v=<?= $deliveryJsVer ?>"></script>
 <?php endif; ?>
