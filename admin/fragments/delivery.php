@@ -237,11 +237,11 @@ if (!function_exists('__t')) {
 
         <div class="zones-map-panel">
             <div class="zones-map-toolbar">
-                <button type="button" id="zonesLocateBtn" class="btn btn-sm btn-outline" title="<?= __t('delivery.location.use_gps','Use my location') ?>" aria-label="<?= __t('delivery.location.use_gps','Use my location') ?>">
+                <button type="button" id="zonesLocateBtn" class="btn btn-sm btn-outline" aria-label="<?= __t('delivery.location.use_gps','Use my location') ?>">
                     <i class="fas fa-crosshairs" aria-hidden="true"></i>
                     <span><?= __t('delivery.location.use_gps','Use my location') ?></span>
                 </button>
-                <button type="button" id="zonesFullscreenBtn" class="btn btn-sm btn-outline" title="<?= __t('delivery.map.fullscreen','Fullscreen map') ?>" aria-label="<?= __t('delivery.map.fullscreen','Fullscreen map') ?>">
+                <button type="button" id="zonesFullscreenBtn" class="btn btn-sm btn-outline" aria-label="<?= __t('delivery.map.fullscreen','Fullscreen map') ?>">
                     <i class="fas fa-expand-arrows-alt" aria-hidden="true"></i>
                     <span><?= __t('delivery.map.fullscreen','Fullscreen map') ?></span>
                 </button>
@@ -820,6 +820,15 @@ window.DELIVERY_CONFIG = {
     userId: <?= (int)$userId ?>,
     mapCenter: [24.7136, 46.6753],
     mapZoom: 5,
+    i18n: {
+        mapFullscreen: '<?= addslashes(__t('delivery.map.fullscreen','Fullscreen map')) ?>',
+        mapExitFullscreen: '<?= addslashes(__t('delivery.map.exit_fullscreen','Exit fullscreen')) ?>',
+        mapYourLocation: '<?= addslashes(__t('delivery.map.your_location','Your location')) ?>',
+        mapLocationAcquired: '<?= addslashes(__t('delivery.map.location_acquired','Location acquired')) ?>',
+        mapLocationUnavailable: '<?= addslashes(__t('delivery.map.location_unavailable','Unable to get your location')) ?>',
+        mapGeolocationUnsupported: '<?= addslashes(__t('delivery.map.geolocation_unsupported','Geolocation is not supported by your browser')) ?>',
+        mapGettingLocation: '<?= addslashes(__t('delivery.map.getting_location','Getting your location…')) ?>'
+    },
     canCreate: <?= $canCreate ? 'true' : 'false' ?>,
     canEdit: <?= $canEdit ? 'true' : 'false' ?>,
     canDelete: <?= $canDelete ? 'true' : 'false' ?>,
@@ -843,10 +852,6 @@ window.PAGE_PERMISSIONS = <?= json_encode(['canCreate'=>$canCreate, 'canEdit'=>$
 </script>
 
 <!-- delivery.js self-loads Leaflet JS + CSS (same pattern as test_map.php / DeliveryZone.js) -->
-<?php if ($isFragment): ?>
 <script src="/admin/assets/js/pages/delivery.js?v=<?= $deliveryJsVer ?>"></script>
-<?php else: ?>
-<script src="/admin/assets/js/pages/delivery.js?v=<?= $deliveryJsVer ?>"></script>
-<?php endif; ?>
 
 <?php if (!$isFragment): require_once __DIR__ . '/../includes/footer.php'; endif; ?>

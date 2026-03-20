@@ -197,7 +197,7 @@
 /* ── Filters ──────────────────────────────────────────────── */
 .filters-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 0.8rem;
     align-items: flex-end;
 }
@@ -208,7 +208,8 @@
     min-width: 0;
 }
 .filter-group--search {
-    grid-column: span 2;
+    --search-filter-span: 2;
+    grid-column: span var(--search-filter-span);
 }
 .filter-group label { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary, #94a3b8); }
 .filter-actions {

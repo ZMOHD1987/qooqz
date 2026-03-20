@@ -641,6 +641,10 @@
         mapResizeObserver.observe(mapEl);
     }
 
+    function cfgText(key, fallback) {
+        return (CFG.i18n && CFG.i18n[key]) ? CFG.i18n[key] : fallback;
+    }
+
     function bindZonesMapControls() {
         var fullscreenBtn = $('zonesFullscreenBtn');
         var locateBtn = $('zonesLocateBtn');
@@ -652,8 +656,8 @@
                 if (!panel) return;
                 var on = panel.classList.toggle('is-fullscreen');
                 fullscreenBtn.innerHTML = on
-                    ? '<i class="fas fa-compress-arrows-alt" aria-hidden="true"></i><span>Exit fullscreen</span>'
-                    : '<i class="fas fa-expand-arrows-alt" aria-hidden="true"></i><span>Fullscreen map</span>';
+                    ? '<i class="fas fa-compress-arrows-alt" aria-hidden="true"></i><span>' + esc(cfgText('mapExitFullscreen', 'Exit fullscreen')) + '</span>'
+                    : '<i class="fas fa-expand-arrows-alt" aria-hidden="true"></i><span>' + esc(cfgText('mapFullscreen', 'Fullscreen map')) + '</span>';
                 fullscreenBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
                 scheduleMapInvalidate();
             });
@@ -663,23 +667,23 @@
             locateBtn.dataset.bound = '1';
             locateBtn.addEventListener('click', function() {
                 if (!navigator.geolocation || !zonesMap) {
-                    notify('Geolocation is not supported by your browser', 'error');
+                    notify(cfgText('mapGeolocationUnsupported', 'Geolocation is not supported by your browser'), 'error');
                     return;
                 }
                 locateBtn.disabled = true;
-                notify('Getting your location…', 'info');
+                notify(cfgText('mapGettingLocation', 'Getting your location…'), 'info');
                 navigator.geolocation.getCurrentPosition(
                     function(pos) {
                         var lat = pos.coords.latitude;
                         var lng = pos.coords.longitude;
                         zonesMap.setView([lat, lng], Math.max(zonesMap.getZoom(), 13));
-                        L.marker([lat, lng]).addTo(zonesMap).bindPopup('Your location').openPopup();
+                        L.marker([lat, lng]).addTo(zonesMap).bindPopup(esc(cfgText('mapYourLocation', 'Your location'))).openPopup();
                         locateBtn.disabled = false;
-                        notify('Location acquired', 'success');
+                        notify(cfgText('mapLocationAcquired', 'Location acquired'), 'success');
                     },
                     function() {
                         locateBtn.disabled = false;
-                        notify('Unable to get your location', 'error');
+                        notify(cfgText('mapLocationUnavailable', 'Unable to get your location'), 'error');
                     },
                     { enableHighAccuracy: true, timeout: 10000 }
                 );
