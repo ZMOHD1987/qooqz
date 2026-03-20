@@ -165,6 +165,7 @@
 .zones-map-panel.is-fullscreen .zones-map-canvas,
 .zones-map-panel.is-fullscreen .delivery-map {
     min-height: 0;
+    /* 56px ≈ zones map toolbar height in fullscreen mode */
     height: calc(100vh - 56px);
 }
 
@@ -208,6 +209,7 @@
     min-width: 0;
 }
 .filter-group--search {
+    /* Search field spans 2 columns on wide layouts, then collapses in media queries */
     --search-filter-span: 2;
     grid-column: span var(--search-filter-span);
 }

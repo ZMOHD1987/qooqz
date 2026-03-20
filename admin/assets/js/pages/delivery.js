@@ -8,12 +8,15 @@
 
     const AF  = window.AdminFramework;
     const CFG = window.DELIVERY_CONFIG || {};
+    const APP = window.APP_CONFIG || {};
+    const MIN_MAP_RENDER_HEIGHT = 260;
+    const MAP_FALLBACK_MIN_HEIGHT = 320;
 
     // ─── State ───────────────────────────────────────────────────────
     const state = {
         lang:   window.USER_LANGUAGE || CFG.lang || 'ar',
-        tenant: (window.APP_CONFIG && window.APP_CONFIG.TENANT_ID) || CFG.tenantId || 1,
-        csrf:   (window.APP_CONFIG && window.APP_CONFIG.CSRF_TOKEN) || CFG.csrfToken || '',
+        tenant: APP.TENANT_ID || CFG.tenantId || 1,
+        csrf:   APP.CSRF_TOKEN || CFG.csrfToken || '',
         perms:  window.PAGE_PERMISSIONS || {},
         initialized: false,
         zones:          { page: 1, items: [], filters: {}, loaded: false, total: 0, saving: false },
@@ -97,6 +100,7 @@
     let coordPickerMap    = null;
     let coordPickerMarker = null;
     let coordPickerTarget = null; // { latId, lngId }
+    let zonesLocateMarker = null;
     let mapResizeObserver = null;
 
     // ─── Helpers ─────────────────────────────────────────────────────
@@ -135,7 +139,7 @@
         var mapEl = $('zonesMap');
         if (!mapEl) return;
         var current = mapEl.getBoundingClientRect().height;
-        if (current < 260) mapEl.style.minHeight = '320px';
+        if (current < MIN_MAP_RENDER_HEIGHT) mapEl.style.minHeight = MAP_FALLBACK_MIN_HEIGHT + 'px';
     }
 
     function isElementVisible(el) {
@@ -677,7 +681,9 @@
                         var lat = pos.coords.latitude;
                         var lng = pos.coords.longitude;
                         zonesMap.setView([lat, lng], Math.max(zonesMap.getZoom(), 13));
-                        L.marker([lat, lng]).addTo(zonesMap).bindPopup(esc(cfgText('mapYourLocation', 'Your location'))).openPopup();
+                        if (zonesLocateMarker && zonesMap) zonesMap.removeLayer(zonesLocateMarker);
+                        zonesLocateMarker = L.marker([lat, lng]).addTo(zonesMap).bindPopup(esc(cfgText('mapYourLocation', 'Your location')));
+                        zonesLocateMarker.openPopup();
                         locateBtn.disabled = false;
                         notify(cfgText('mapLocationAcquired', 'Location acquired'), 'success');
                     },
@@ -1285,6 +1291,7 @@
             try { zonesMap.off(); zonesMap.remove(); } catch(e) {}
             zonesMap = null;
             drawnItems = null;
+            zonesLocateMarker = null;
             zoneLayerMap.clear();
         }
         if (mapResizeObserver) {
