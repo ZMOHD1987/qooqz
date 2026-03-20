@@ -321,12 +321,12 @@ if (!function_exists('pub_load_theme')) {
                 $designs = $st->fetchAll(PDO::FETCH_ASSOC);
 
                 // button_styles
-                $st = $pdo->prepare('SELECT slug, button_type, background_color, text_color, border_color, border_width, border_radius, padding, font_size, font_weight, hover_background_color, hover_text_color FROM button_styles WHERE tenant_id = ? AND is_active = 1' . $thIdCond . ' ORDER BY button_type');
+                $st = $pdo->prepare('SELECT slug, button_type, background_color, text_color, border_color, border_width, border_radius, padding, font_size, font_weight, hover_background_color, hover_text_color, hover_border_color FROM button_styles WHERE tenant_id = ? AND is_active = 1' . $thIdCond . ' ORDER BY button_type');
                 $st->execute($thP([$tenantId]));
                 $buttons = $st->fetchAll(PDO::FETCH_ASSOC);
 
                 // card_styles
-                $st = $pdo->prepare('SELECT slug, card_type, background_color, border_color, border_width, border_radius, shadow_style, padding, hover_effect, text_align, image_aspect_ratio FROM card_styles WHERE tenant_id = ? AND is_active = 1' . $thIdCond . ' ORDER BY card_type');
+                $st = $pdo->prepare('SELECT slug, card_type, background_color, text_color, border_color, border_width, border_radius, shadow_style, padding, hover_effect, text_align, image_aspect_ratio FROM card_styles WHERE tenant_id = ? AND is_active = 1' . $thIdCond . ' ORDER BY card_type');
                 $st->execute($thP([$tenantId]));
                 $cards = $st->fetchAll(PDO::FETCH_ASSOC);
 
@@ -487,6 +487,7 @@ if (!function_exists('pub_load_theme')) {
                         if (!empty($f['font_family'])) $css .= '  --' . $sk . '-family: ' . $cssEsc((string)$f['font_family']) . ";\n";
                         if (!empty($f['font_size']))   $css .= '  --' . $sk . '-size: '   . $cssEsc((string)$f['font_size'])   . ";\n";
                         if (!empty($f['font_weight'])) $css .= '  --' . $sk . '-weight: ' . $cssEsc((string)$f['font_weight']) . ";\n";
+                        if (!empty($f['line_height'])) $css .= '  --' . $sk . '-line-height: ' . $cssEsc((string)$f['line_height']) . ";\n";
                     }
                     // design_settings → raw CSS vars + --pub-* aliases for color and layout keys
                     $dColorToCssVar = [
@@ -541,6 +542,32 @@ if (!function_exists('pub_load_theme')) {
                     // card_styles DB entry. pub_card_inline_style() uses the DB background_color
                     // directly so per-card colours from the database are applied correctly.
                     $css .= "  --pub-card-bg: var(--pub-surface);\n";
+                    // Card styles → :root CSS variables (--card-{slug}-*) + POS card type aliases
+                    $_pubPosTypes = ['product', 'category'];
+                    $_pubPosSeen  = [];
+                    foreach ($cards as $_pc) {
+                        if (empty($_pc['slug'])) continue;
+                        $_pSlug = preg_replace('/[^a-z0-9-]/', '-', strtolower((string)$_pc['slug']));
+                        if (!empty($_pc['background_color'])) $css .= "  --card-{$_pSlug}-bg: "          . $cssEsc((string)$_pc['background_color']) . ";\n";
+                        if (!empty($_pc['border_color']))     $css .= "  --card-{$_pSlug}-border: "       . $cssEsc((string)$_pc['border_color']) . ";\n";
+                        if (!empty($_pc['border_radius']))    $css .= "  --card-{$_pSlug}-radius: "       . (int)$_pc['border_radius'] . "px;\n";
+                        if (!empty($_pc['shadow_style']))     $css .= "  --card-{$_pSlug}-shadow: "       . $cssEsc((string)$_pc['shadow_style']) . ";\n";
+                        if (!empty($_pc['padding']))          $css .= "  --card-{$_pSlug}-padding: "      . $cssEsc((string)$_pc['padding']) . ";\n";
+                        if (!empty($_pc['text_color']))       $css .= "  --card-{$_pSlug}-text: "         . $cssEsc((string)$_pc['text_color']) . ";\n";
+                        if (!empty($_pc['border_width']))     $css .= "  --card-{$_pSlug}-border-width: " . (int)$_pc['border_width'] . "px;\n";
+                        $_pType = $_pc['card_type'] ?? '';
+                        if (in_array($_pType, $_pubPosTypes, true) && !isset($_pubPosSeen[$_pType])) {
+                            $_pubPosSeen[$_pType] = true;
+                            $_tp = "--card-{$_pType}";
+                            if (!empty($_pc['background_color'])) $css .= "  {$_tp}-bg: "          . $cssEsc((string)$_pc['background_color']) . ";\n";
+                            if (!empty($_pc['text_color']))       $css .= "  {$_tp}-text: "         . $cssEsc((string)$_pc['text_color']) . ";\n";
+                            if (!empty($_pc['border_color']))     $css .= "  {$_tp}-border: "       . $cssEsc((string)$_pc['border_color']) . ";\n";
+                            if (!empty($_pc['border_width']))     $css .= "  {$_tp}-border-width: " . (int)$_pc['border_width'] . "px;\n";
+                            if (!empty($_pc['border_radius']))    $css .= "  {$_tp}-radius: "       . (int)$_pc['border_radius'] . "px;\n";
+                            if (!empty($_pc['shadow_style']))     $css .= "  {$_tp}-shadow: "       . $cssEsc((string)$_pc['shadow_style']) . ";\n";
+                            if (!empty($_pc['padding']))          $css .= "  {$_tp}-padding: "      . $cssEsc((string)$_pc['padding']) . ";\n";
+                        }
+                    }
                     $css .= "}\n";
                     // Apply font_settings variables to relevant UI elements
                     $fontSelMap = [
@@ -584,14 +611,20 @@ if (!function_exists('pub_load_theme')) {
                         if (!empty($b['padding']))          $css .= '  padding: '          . $cssEsc((string)$b['padding'])          . ";\n";
                         if (!empty($b['font_size']))        $css .= '  font-size: '        . $cssEsc((string)$b['font_size'])        . ";\n";
                         if (!empty($b['font_weight']))      $css .= '  font-weight: '      . $cssEsc((string)$b['font_weight'])      . ";\n";
+                        $css .= "  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;\n";
                         $css .= "}\n";
-                        if (!empty($b['hover_background_color'])) {
+                        $hasHover = !empty($b['hover_background_color'])
+                                 || !empty($b['hover_text_color'])
+                                 || !empty($b['hover_border_color']);
+                        if ($hasHover) {
                             $hoverSel = ".btn-{$slugB}:hover";
                             if (!$isDisabled && $pubClass && preg_match('/^[a-z][a-z0-9\-]*$/', $pubClass)) {
                                 $hoverSel .= ", .pub-btn--{$pubClass}:hover";
                             }
-                            $css .= "{$hoverSel} {\n  background-color: " . $cssEsc((string)$b['hover_background_color']) . ";\n";
-                            if (!empty($b['hover_text_color'])) $css .= '  color: ' . $cssEsc((string)$b['hover_text_color']) . ";\n";
+                            $css .= "{$hoverSel} {\n";
+                            if (!empty($b['hover_background_color'])) $css .= '  background-color: ' . $cssEsc((string)$b['hover_background_color']) . ";\n";
+                            if (!empty($b['hover_text_color']))       $css .= '  color: '             . $cssEsc((string)$b['hover_text_color']) . ";\n";
+                            if (!empty($b['hover_border_color']))     $css .= '  border-color: '      . $cssEsc((string)$b['hover_border_color']) . ";\n";
                             $css .= "}\n";
                         }
                     }
@@ -608,7 +641,7 @@ if (!function_exists('pub_load_theme')) {
                         if (!empty($c['text_align']))       $css .= '  text-align: '       . $cssEsc((string)$c['text_align'])       . ";\n";
                         // Only add transition when a hover effect is configured
                         if ($hoverEffect && $hoverEffect !== 'none') {
-                            $css .= "  transition: transform .2s ease, box-shadow .2s ease;\n";
+                            $css .= "  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, filter 0.2s ease;\n";
                         }
                         $css .= "}\n";
                         // Image wrapper aspect ratio (e.g. "1:1" stored in DB → CSS "1/1")
@@ -617,16 +650,14 @@ if (!function_exists('pub_load_theme')) {
                             $ratio = str_replace(':', '/', $ratio);
                             if ($ratio) $css .= ".card-{$slugC} .pub-cat-img-wrap { aspect-ratio: {$ratio}; }\n";
                         }
-                        // Hover effect — translate/scale/shadow values match standard UX conventions
+                        // Hover effect — matches AdminUiThemeLoader::generateCss() hoverEffectMap
                         if ($hoverEffect && $hoverEffect !== 'none') {
                             $css .= ".card-{$slugC}:hover {\n";
-                            if ($hoverEffect === 'lift')   $css .= "  transform: translateY(-4px);\n  box-shadow: 0 8px 24px rgba(0,0,0,0.18);\n";
-                            if ($hoverEffect === 'zoom')   $css .= "  transform: scale(1.03);\n";
-                            if ($hoverEffect === 'shadow') $css .= "  box-shadow: 0 8px 28px rgba(0,0,0,0.22);\n";
-                            if ($hoverEffect === 'border' && !empty($c['border_color'])) {
-                                // Increase border by 1px on hover to create a highlight effect
-                                $css .= "  border-width: " . (max(1, (int)$c['border_width']) + 1) . "px;\n";
-                            }
+                            if ($hoverEffect === 'lift')       $css .= "  transform: translateY(-4px);\n  box-shadow: 0 8px 24px rgba(0,0,0,0.15);\n";
+                            if ($hoverEffect === 'zoom')       $css .= "  transform: scale(1.03);\n";
+                            if ($hoverEffect === 'shadow')     $css .= "  box-shadow: 0 8px 24px rgba(0,0,0,0.2);\n";
+                            if ($hoverEffect === 'border')     $css .= "  border-color: var(--primary-color, #3B82F6);\n";
+                            if ($hoverEffect === 'brightness') $css .= "  filter: brightness(1.08);\n";
                             $css .= "}\n";
                         }
                     }
