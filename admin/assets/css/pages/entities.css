@@ -12,18 +12,20 @@
    DESIGN TOKENS — single source of truth (mirrors tenant.css)
    ══════════════════════════════════════════════════════════ */
 #entitiesPageContainer {
-    --_bg-main   : var(--background-main,      var(--background_main,      #0a0a0a));
-    --_bg-sec    : var(--background-secondary, var(--background_secondary, #1e293b));
-    --_bg-ter    : var(--background-tertiary,  var(--background_tertiary,  #263348));
-    --_text      : var(--text-primary,         var(--text_primary,         #f1f5f9));
-    --_text-muted: var(--text-secondary,       var(--text_secondary,       #94a3b8));
-    --_border    : var(--border-color,         var(--border_color,         #334155));
-    --_primary   : var(--primary-color,        var(--primary_color,        #3b82f6));
-    --_danger    : var(--danger-color,         var(--danger_color,         var(--error-color, var(--error_color, #ef4444))));
-    --_success   : var(--success-color,        var(--success_color,        #22c55e));
-    --_warning   : var(--warning-color,        var(--warning_color,        #f59e0b));
-    --_radius    : var(--border-radius,        var(--border_radius,        8px));
-    --_radius-sm : var(--border-radius-sm,     var(--border_radius_sm,     4px));
+    --_bg-main      : var(--background-main,      var(--background_main,      #0a0a0a));
+    --_bg-sec       : var(--background-secondary, var(--background_secondary, #1e293b));
+    --_bg-ter       : var(--background-tertiary,  var(--background_tertiary,  #263348));
+    --_text         : var(--text-primary,         var(--text_primary,         #f1f5f9));
+    --_text-muted   : var(--text-secondary,       var(--text_secondary,       #94a3b8));
+    --_border       : var(--border-color,         var(--border_color,         #334155));
+    --_primary      : var(--primary-color,        var(--primary_color,        #3b82f6));
+    /* DB key: primary_hover — used as the hover background for primary buttons */
+    --_primary-hover: var(--primary-hover,        var(--primary_hover,        color-mix(in srgb, var(--_primary) 80%, #000)));
+    --_danger       : var(--danger-color,         var(--danger_color,         var(--error-color, var(--error_color, #ef4444))));
+    --_success      : var(--success-color,        var(--success_color,        #22c55e));
+    --_warning      : var(--warning-color,        var(--warning_color,        #f59e0b));
+    --_radius       : var(--border-radius,        var(--border_radius,        8px));
+    --_radius-sm    : var(--border-radius-sm,     var(--border_radius_sm,     4px));
 }
 
 /* Container */
@@ -346,7 +348,7 @@ textarea.form-control {
 }
 
 .btn-primary:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--_primary, var(--primary-color, #3b82f6)) 80%, #000);
+    background: var(--_primary-hover, color-mix(in srgb, var(--_primary, var(--primary-color, #3b82f6)) 80%, #000));
 }
 
 .btn-secondary {
