@@ -186,6 +186,7 @@ foreach ($theme['design_settings'] ?? [] as $d) {
 <!-- Admin Framework -->
     <script src="/admin/assets/js/admin_framework.js?v=<?= assetVer('/admin/assets/js/admin_framework.js') ?>"></script>
     <link rel="stylesheet" href="/admin/assets/css/admin_framework.css?v=<?= assetVer('/admin/assets/css/admin_framework.css') ?>">
+    <link rel="stylesheet" href="/admin/assets/css/dashboard.css?v=<?= assetVer('/admin/assets/css/dashboard.css') ?>">
     <!-- Dynamic Theme CSS -->
     <?php if (!empty($theme['generated_css'])): ?>
     <style id="dynamic-theme-db">
