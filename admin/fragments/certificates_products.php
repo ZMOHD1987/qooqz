@@ -149,7 +149,6 @@ $apiBase = '/api';
 ?>
 <!-- Force load CSS if embedded -->
 <?php if ($isFragment): ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/certificates_products.css?v=<?= time() ?>">
 <?php endif; ?>
 
 <!-- Page Meta – ✅ المسار الصحيح لملفات الترجمة -->

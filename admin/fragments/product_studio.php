@@ -11,7 +11,6 @@ if (is_readable($langBase . '/' . $locale . '.json')) $I18N = json_decode(file_g
 function t_local($k, $def='') { global $I18N; $flat = []; $f = function($a,&$out,$p=''){ foreach($a as $k=>$v){ $key = $p===''?$k:($p.'.'.$k); if(is_array($v)) $f($v,$out,$key); else {$out[$key]=$v; $parts=explode('.',$key); $s=end($parts); if(!isset($out[$s])) $out[$s]=$v;} } }; $f($I18N,$flat); return $flat[$k] ?? $def ?? $k; }
 
 ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/banners.css">
 <div id="productStudio" style="max-width:1000px;margin:12px auto;">
   <h3><?php echo htmlspecialchars(t_local('studio.title','Image Studio')); ?></h3>
   <p><?php echo htmlspecialchars(t_local('studio.desc','Upload, crop and manage product images')); ?></p>

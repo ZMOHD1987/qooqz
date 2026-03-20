@@ -113,5 +113,4 @@ declare(strict_types=1);
   </div>
 </div>
 
-<link rel="stylesheet" href="/admin/assets/css/pages/resource_permissions.css">
 <script src="/admin/assets/js/pages/resource_permissions.js"></script>

@@ -101,7 +101,6 @@ $imageTypeId = 12; // brand image type (from image_types table)
 ?>
 <!-- Force load CSS if embedded -->
 <?php if ($isFragment): ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/brands.css?v=<?= time() ?>">
 <?php endif; ?>
 
 <!-- Page Meta -->

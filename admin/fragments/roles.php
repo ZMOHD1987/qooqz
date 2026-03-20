@@ -122,7 +122,6 @@ $apiPath = '/api/roles';
 
 <!-- Force load CSS if embedded -->
 <?php if ($isFragment): ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/roles.css?v=<?= time() ?>">
 <?php endif; ?>
 
 <!-- Page Meta -->

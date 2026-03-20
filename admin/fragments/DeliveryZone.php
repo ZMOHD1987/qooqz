@@ -246,7 +246,6 @@ if ($shouldRenderFull && !$parentHasHeader) {
 // Leaflet CSS is loaded into <head> by DeliveryZone.js (ensureLeafletCss) to guarantee
 // tile panes are positioned correctly even when the fragment is AJAX-injected.
 ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/DeliveryZone.css">
 
 <div id="adminDeliveryZone" class="dz-page-container" dir="<?php echo htmlspecialchars($langDirection, ENT_QUOTES | ENT_SUBSTITUTE); ?>" data-lang="<?php echo htmlspecialchars($preferredLang, ENT_QUOTES | ENT_SUBSTITUTE); ?>">
 

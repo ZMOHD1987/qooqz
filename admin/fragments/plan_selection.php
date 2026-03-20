@@ -108,7 +108,6 @@ function _ps(string $key, string $fallback = ''): string {
     </div>
 </div>
 
-<link rel="stylesheet" href="assets/css/pages/plan_selection.css?v=<?= time() ?>">
 <script>
 window.PLAN_SELECTION_CONFIG = {
     apiBase: '/api',

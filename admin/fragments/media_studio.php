@@ -167,7 +167,6 @@ if (!function_exists('renderFragmentThemeVars')) {
 <link rel="stylesheet" href="/admin/assets/css/admin_framework.css?v=<?= time() ?>">
 <?php endif; ?>
 <!-- Page CSS -->
-<link rel="stylesheet" href="/admin/assets/css/pages/media_studio.css?v=<?= time() ?>">
 
 <div id="notificationsContainer" class="notifications-container"></div>
 

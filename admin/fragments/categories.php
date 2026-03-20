@@ -216,7 +216,6 @@ if (!function_exists('renderFragmentThemeVars')) {
 <?php endif; ?>
 </style>
 <!-- Structural layout CSS (uses only var() for all visual properties) -->
-<link rel="stylesheet" href="/admin/assets/css/pages/categories.css?v=<?= time() ?>">
 
 <!-- Page Meta -->
 <meta data-page="categories"

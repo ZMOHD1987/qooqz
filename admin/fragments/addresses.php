@@ -124,7 +124,6 @@ $apiBase = '/api';
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="/admin/assets/css/pages/addresses.css?v=<?= time() ?>">
 </head>
 <body dir="<?= htmlspecialchars($dir) ?>" style="margin:0;padding:0;">
 <?php endif; ?>

@@ -98,7 +98,6 @@ $apiBase = '/api';
 ?>
 <!-- Force load CSS if embedded -->
 <?php if ($isFragment): ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/carts.css?v=<?= time() ?>">
 <?php endif; ?>
 
 <div class="page-container" id="cartsPageContainer" dir="<?= htmlspecialchars($dir) ?>">

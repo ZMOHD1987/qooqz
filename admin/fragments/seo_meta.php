@@ -84,7 +84,6 @@ if (!function_exists('_st')) {
 }
 ?>
 
-<link rel="stylesheet" href="/admin/assets/css/pages/seo_meta.css?v=<?= time() ?>">
 <meta data-page="seo_meta"
       data-i18n-files="/languages/SeoMeta/<?= rawurlencode($lang) ?>.json">
 

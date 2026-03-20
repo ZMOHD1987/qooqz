@@ -228,7 +228,6 @@ if (!function_exists('_entRenderThemeVars')) {
 <link rel="stylesheet" href="/admin/assets/css/admin_framework.css?v=<?= time() ?>">
 <?php endif; ?>
 <!-- Page CSS -->
-<link rel="stylesheet" href="/admin/assets/css/pages/entities.css?v=<?= time() ?>">
 
 <!-- Page Meta -->
 <meta data-page="entities"

@@ -46,7 +46,6 @@ function _fst(string $key, string $fallback = ''): string {
     return is_string($val) ? $val : ($fallback ?: $key);
 }
 ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/flash_sales.css?v=<?= time() ?>">
 
 <div class="page-container" dir="<?= $dir ?>">
   <div class="page-header">

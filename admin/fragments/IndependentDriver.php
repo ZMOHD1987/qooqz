@@ -178,7 +178,6 @@ if ($shouldRenderFull) {
    ------------------------- */
 ?>
 <meta data-page="independent_driver" data-assets-js="<?php echo htmlspecialchars($jsUrl, ENT_QUOTES, 'UTF-8'); ?>" data-assets-css="<?php echo htmlspecialchars($cssUrl, ENT_QUOTES, 'UTF-8'); ?>">
-<link rel="stylesheet" href="<?php echo htmlspecialchars($cssUrl, ENT_QUOTES, 'UTF-8'); ?>">
 
 <script>
   // Expose ADMIN_UI to the client; include session_user copy and api_base

@@ -97,7 +97,6 @@ $apiBase = '/api';
 
 ?>
 <?php if ($isFragment): ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/auctions.css?v=<?= time() ?>">
 <?php endif; ?>
 
 <meta data-page="auctions">

@@ -62,7 +62,6 @@ if (!function_exists('__t')) {
 }
 ?>
 <?php if ($isFragment): ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/delivery.css?v=<?= time() ?>">
 <?php endif; ?>
 <meta data-page="delivery" data-i18n-files="/languages/Delivery/<?= rawurlencode($lang) ?>.json">
 

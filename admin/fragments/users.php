@@ -40,7 +40,6 @@ $username = admin_username();
 
 <!-- Force load CSS if embedded -->
 <?php if ($isFragment): ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/users.css?v=<?= time() ?>">
 <?php endif; ?>
 
 <!-- Page Meta -->

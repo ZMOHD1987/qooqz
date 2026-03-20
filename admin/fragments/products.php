@@ -192,7 +192,6 @@ if (!function_exists('prodAssetVer')) {
     }
 }
 ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/products.css?v=<?= prodAssetVer('/admin/assets/css/pages/products.css') ?>">
 
 <!-- Page Meta -->
 <meta data-page="products"

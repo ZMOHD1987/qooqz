@@ -114,7 +114,6 @@ $apiBase = '/api';
 ?>
 <!-- Force load CSS if embedded -->
 <?php if ($isFragment): ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/job_categories.css?v=<?= time() ?>">
 <?php endif; ?>
 
 <!-- Set User Language for JavaScript -->

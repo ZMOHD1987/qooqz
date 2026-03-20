@@ -94,7 +94,6 @@ $apiPath = '/api/Role_permissions';
   }
   </style>
   
-  <link rel="stylesheet" href="/admin/assets/css/pages/role_permissions.css">
 </head>
 <body>
   <div id="adminRolePermissions" style="max-width:1200px;margin:16px auto;padding:12px;">

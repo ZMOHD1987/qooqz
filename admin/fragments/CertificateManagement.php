@@ -39,7 +39,6 @@ function __cm_t($key, $fallback = '') {
 }
 ?>
 <?php if ($isFragment): ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/CertificateManagement.css?v=<?= time() ?>">
 <?php endif; ?>
 
 <!-- ══ PERFORMANCE: Inline critical CSS for instant skeleton rendering ══ -->
