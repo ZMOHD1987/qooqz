@@ -228,6 +228,69 @@
         width: 42px !important;
         height: 42px !important;
     }
+
+    /* iOS zoom prevention — inputs below 16px cause iOS Safari to auto-zoom on focus */
+    input,
+    select,
+    textarea,
+    .form-control {
+        font-size: 16px !important;
+    }
+
+    /* Card containers — allow content to overflow/scroll instead of being clipped */
+    .card {
+        overflow: visible !important;
+    }
+
+    /* Card header — wrap title and action buttons onto separate lines on narrow screens */
+    .card-header {
+        flex-wrap: wrap !important;
+        gap: 0.75rem !important;
+        padding: 0.875rem 1rem !important;
+    }
+
+    /* Card body — horizontal scroll for bare data-tables not inside .table-responsive */
+    .card-body {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding: 1rem !important;
+    }
+
+    /* Data table — make the table itself a scroll container when it has no wrapper */
+    .data-table {
+        display: block !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        white-space: nowrap !important;
+    }
+
+    /* Data table cells — restore wrapping for content cells so text wraps */
+    .data-table td {
+        white-space: normal !important;
+    }
+
+    /* Tab navigation — horizontal scrolling for all tab bar patterns */
+    .form-tabs,
+    .tabs-nav,
+    .tabs-wrapper,
+    .workspace-tabs,
+    .tab-list,
+    .tab-header,
+    .nav-tabs {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        flex-wrap: nowrap !important;
+        white-space: nowrap !important;
+    }
+
+    /* Tab buttons inside scrollable bars — never shrink or wrap */
+    .form-tabs .tab-btn,
+    .tabs-nav .tab-btn,
+    .workspace-tabs .tab-btn,
+    .nav-tabs .nav-link {
+        flex-shrink: 0 !important;
+        white-space: nowrap !important;
+    }
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -303,6 +366,15 @@
     .admin-footer {
         padding: 1rem !important;
         font-size: 0.8125rem !important;
+    }
+
+    /* Even tighter card-body on very small screens */
+    .card-body {
+        padding: 0.75rem !important;
+    }
+
+    .card-header {
+        padding: 0.75rem !important;
     }
 }
 
