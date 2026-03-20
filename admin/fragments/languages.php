@@ -77,6 +77,7 @@ $apiPath = $ADMIN_UI_PAYLOAD['api']['languages'] ?? '/api/routes/languages.php';
     <meta charset="utf-8">
     <title><?= htmlspecialchars(gs('languages.page_title',$flat,'Languages'),ENT_QUOTES) ?></title>
     <link rel="stylesheet" href="/admin/assets/css/admin-theme.css">
+    <link rel="stylesheet" href="/admin/assets/css/pages/languages.css">
     
     <!-- Dynamic theme from tables + original theme backgrounds -->
     <style>

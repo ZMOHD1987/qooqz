@@ -185,6 +185,7 @@ if (!function_exists('renderFragmentThemeVars')) {
 </style>
 
 <?php if ($isFragment): ?>
+<link rel="stylesheet" href="/admin/assets/css/pages/pos.css">
 <?php endif; ?>
 
 <!-- Page Meta (fragment loader uses these) -->

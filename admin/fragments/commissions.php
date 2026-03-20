@@ -51,6 +51,7 @@ function _dt(string $key, string $fallback = ''): string {
     return is_string($val) ? $val : ($fallback ?: $key);
 }
 ?>
+<link rel="stylesheet" href="/admin/assets/css/pages/commissions.css?v=<?= time() ?>">
 
 <div class="page-container" dir="<?= $dir ?>">
   <div class="page-header">

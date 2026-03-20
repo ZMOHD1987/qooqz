@@ -32,6 +32,7 @@ $csrf     = admin_csrf();
 ?>
 
 <?php if ($isFragment): ?>
+<link rel="stylesheet" href="/admin/assets/css/pages/tenant_certificates.css?v=<?= time() ?>">
 <?php endif; ?>
 
 <div class="tp-page" id="tenantCertificatesRoot" dir="<?= htmlspecialchars($dir) ?>" data-lang="<?= htmlspecialchars($lang) ?>" data-tenant-id="<?= (int)$tenantId ?>" data-csrf="<?= htmlspecialchars($csrf) ?>">

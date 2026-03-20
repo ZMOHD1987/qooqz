@@ -118,6 +118,7 @@ function e(string $text): string {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     
     <!-- Custom Styles -->
+    <link rel="stylesheet" href="/admin/assets/css/pages/AdminUiThemeLoader.css?v=<?= filemtime(__DIR__ . '/../../assets/css/pages/AdminUiThemeLoader.css') ?>">
     
     <!-- Preload Critical Resources -->
     <link rel="preload" href="/admin/assets/js/pages/AdminUiThemeLoader.js" as="script">

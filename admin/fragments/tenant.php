@@ -100,6 +100,7 @@ if (!function_exists('__t')) {
 
 ?>
 <?php if ($isFragment): ?>
+<link rel="stylesheet" href="/admin/assets/css/pages/tenant.css?v=<?= time() ?>">
 <?php endif; ?>
 
 <meta data-page="tenants"

@@ -182,6 +182,7 @@ $username = htmlspecialchars($safeUser['username'] ?? 'guest', ENT_QUOTES);
 $is_admin = (($safeUser['role_id'] ?? 0) === 1);
 ?>
 
+<link rel="stylesheet" href="<?= htmlspecialchars($projectBaseUrl, ENT_QUOTES) ?>/admin/assets/css/pages/DeliveryCompany.css">
 
 <script>
 (function(){

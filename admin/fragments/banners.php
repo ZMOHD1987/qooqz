@@ -153,6 +153,7 @@ if (!function_exists('renderBannerThemeVars')) {
 <?= $GLOBALS['ADMIN_UI']['theme']['generated_css'] ?>
 <?php endif; ?>
 </style>
+<link rel="stylesheet" href="/admin/assets/css/pages/banners.css?v=<?= time() ?>">
 
 <!-- Page Meta -->
 <meta data-page="banners"

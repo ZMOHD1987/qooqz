@@ -66,6 +66,7 @@ function __t($key, $fallback = '') {
 $apiBase = '/api';
 ?>
 <?php if ($isFragment): ?>
+<link rel="stylesheet" href="/admin/assets/css/pages/notification.css?v=<?= time() ?>">
 <?php endif; ?>
 
 <meta data-page="notifications"

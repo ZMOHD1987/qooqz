@@ -66,6 +66,7 @@ $apiPath = '/api/permissions';
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title><?php echo htmlspecialchars(gs('permissions.title',$flat,'Permissions'), ENT_QUOTES); ?></title>
+  <link rel="stylesheet" href="/admin/assets/css/pages/permissions.css">
 </head>
 <body>
   <div id="adminPermissions" style="max-width:1200px;margin:16px auto;padding:12px;">

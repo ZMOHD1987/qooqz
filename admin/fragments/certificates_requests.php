@@ -51,6 +51,7 @@ $colCount     = $isSuperAdmin ? 16 : 15; // for skeleton colspan
 ?>
 
 <?php if ($isFragment): ?>
+<link rel="stylesheet" href="/admin/assets/css/pages/certificates_requests.css?v=<?= time() ?>">
 <?php endif; ?>
 
 <!-- ══ PERFORMANCE: Inline critical CSS for instant skeleton ══ -->

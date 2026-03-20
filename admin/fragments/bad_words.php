@@ -87,6 +87,7 @@ if (!function_exists('_bwt')) {
 }
 ?>
 
+<link rel="stylesheet" href="/admin/assets/css/pages/bad_words.css?v=<?= time() ?>">
 <meta data-page="bad_words"
       data-i18n-files="/languages/BadWords/<?= rawurlencode($lang) ?>.json">
 

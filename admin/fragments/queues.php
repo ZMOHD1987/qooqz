@@ -74,6 +74,7 @@ if (!function_exists('_qt')) {
 }
 ?>
 
+<link rel="stylesheet" href="/admin/assets/css/pages/queues.css?v=<?= time() ?>">
 
 <div class="page-container" id="queuesPageContainer" dir="<?= htmlspecialchars($dir) ?>">
 

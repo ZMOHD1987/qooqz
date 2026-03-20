@@ -182,8 +182,6 @@ foreach ($theme['design_settings'] ?? [] as $d) {
     <link rel="stylesheet" href="/admin/assets/css/modal.css?v=<?= assetVer('/admin/assets/css/modal.css') ?>">
     <link rel="stylesheet" href="/admin/assets/css/color-slider.css?v=<?= assetVer('/admin/assets/css/color-slider.css') ?>">
     <link rel="stylesheet" href="/admin/assets/css/mobile-responsive.css?v=<?= assetVer('/admin/assets/css/mobile-responsive.css') ?>">
-    <!-- All page-specific styles in one file — colors use CSS vars from dynamic-theme-vars below -->
-    <link rel="stylesheet" href="/admin/assets/css/admin-pages-all.css?v=<?= assetVer('/admin/assets/css/admin-pages-all.css') ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 <!-- Admin Framework -->
     <script src="/admin/assets/js/admin_framework.js?v=<?= assetVer('/admin/assets/js/admin_framework.js') ?>"></script>

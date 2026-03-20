@@ -98,6 +98,7 @@ function _pt($key, $fallback = '') {
 }
 ?>
 
+<link rel="stylesheet" href="/admin/assets/css/pages/entities_payment.css?v=<?= time() ?>">
 <meta data-page="entities_payment"
       data-i18n-files="/languages/EntitiesPayment/<?= rawurlencode($lang) ?>.json">
 

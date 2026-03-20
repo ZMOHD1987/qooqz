@@ -43,6 +43,7 @@ function __t(string $key, string $fallback = ''): string {
 }
 ?>
 <?php if ($isFragment): ?>
+<link rel="stylesheet" href="/admin/assets/css/pages/jobs.css?v=<?= time() ?>">
 <?php endif; ?>
 <meta data-page="jobs" data-i18n-files="/languages/Jobs/<?= rawurlencode($lang) ?>.json">
 
