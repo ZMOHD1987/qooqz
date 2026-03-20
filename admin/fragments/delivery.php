@@ -62,7 +62,7 @@ if (!function_exists('__t')) {
 }
 ?>
 <?php if ($isFragment): ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/delivery.css?v=<?= time() ?>">
+<link rel="stylesheet" href="/admin/assets/css/pages/delivery.css?v=3">
 <?php endif; ?>
 <meta data-page="delivery" data-i18n-files="/languages/Delivery/<?= rawurlencode($lang) ?>.json">
 
@@ -797,14 +797,14 @@ if (!function_exists('__t')) {
 <script type="text/javascript">
 window.APP_CONFIG = window.APP_CONFIG || {};
 window.APP_CONFIG.TENANT_ID = <?= (int)$tenantId ?>;
-window.APP_CONFIG.CSRF_TOKEN = '<?= addslashes($csrf) ?>';
-window.USER_LANGUAGE = '<?= addslashes($lang) ?>';
+window.APP_CONFIG.CSRF_TOKEN = <?= json_encode($csrf) ?>;
+window.USER_LANGUAGE = <?= json_encode($lang) ?>;
 
 window.DELIVERY_CONFIG = {
-    lang: '<?= addslashes($lang) ?>',
-    dir: '<?= addslashes($dir) ?>',
+    lang: <?= json_encode($lang) ?>,
+    dir: <?= json_encode($dir) ?>,
     tenantId: <?= (int)$tenantId ?>,
-    csrfToken: '<?= addslashes($csrf) ?>',
+    csrfToken: <?= json_encode($csrf) ?>,
     userId: <?= (int)$userId ?>,
     mapCenter: [24.7136, 46.6753],
     mapZoom: 5,
@@ -833,21 +833,13 @@ window.PAGE_PERMISSIONS = <?= json_encode(['canCreate'=>$canCreate, 'canEdit'=>$
 <!-- delivery.js self-loads Leaflet JS + CSS (same pattern as test_map.php / DeliveryZone.js) -->
 <?php if ($isFragment): ?>
 <script src="/admin/assets/js/pages/delivery.js?v=<?= $deliveryJsVer ?>"></script>
-<script>(function(){
+<script>
     // If delivery.js was already loaded on a prior navigation, Delivery.reinit() resets maps
-    // and re-runs init() on the fresh DOM.  On the very first load delivery.js auto-inits.
+    // and re-runs init() on the fresh DOM. On the very first load delivery.js auto-inits.
     if (window.Delivery && typeof window.Delivery.reinit === 'function') {
         window.Delivery.reinit();
-        return;
     }
-    // delivery.js not yet loaded — it will self-init via its own IIFE.
-    // Just watch for load timeout as a safety net.
-    var i = 0;
-    var iv = setInterval(function(){
-        if (window.Delivery) { clearInterval(iv); }
-        else if (++i > 120) { clearInterval(iv); console.error('Delivery init timeout'); }
-    }, 100);
-})();</script>
+</script>
 <?php else: ?>
 <script src="/admin/assets/js/pages/delivery.js?v=<?= $deliveryJsVer ?>"></script>
 <?php endif; ?>

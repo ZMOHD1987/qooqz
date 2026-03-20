@@ -887,12 +887,6 @@
         }
     );
 
-    var orderStatusEl = $('orderStatus');
-    if (orderStatusEl) orderStatusEl.addEventListener('change', function() {
-        var cf = $('cancelFields');
-        if (cf) cf.style.display = this.value === 'cancelled' ? '' : 'none';
-    });
-
     // ─── Locations Module ─────────────────────────────────────────────
     var locationsMod = Object.assign(
         createModule('locations', CFG.urls.locations, {
@@ -1069,43 +1063,54 @@
 
     // ─── Dropdown Loaders ─────────────────────────────────────────────
     async function loadDrops() {
-        // Zones dropdown (for pzone form and filter bars)
-        try {
-            var rz = await api(CFG.urls.zones + '?limit=500&tenant_id=' + state.tenant);
-            var zitems = extractItems(rz);
-            var zhtml = '<option value="">–</option>' + zitems.map(function(z) {
-                return '<option value="' + esc(z.id) + '">' + esc(z.zone_name) + '</option>';
-            }).join('');
-            ['pzoneZoneId','pzonesZoneFilter','orderZoneId','ordersZoneFilter'].forEach(function(id) {
-                var el = $(id); if (el) el.innerHTML = zhtml;
-            });
-        } catch(e) { console.warn('[Delivery] zones dropdown:', e.message); }
+        // Run all independent fetches in parallel; countries→cities must stay sequential.
+        await Promise.all([
+            // Zones dropdown (for pzone form and filter bars)
+            (async function() {
+                try {
+                    var rz = await api(CFG.urls.zones + '?limit=500&tenant_id=' + state.tenant);
+                    var zitems = extractItems(rz);
+                    var zhtml = '<option value="">–</option>' + zitems.map(function(z) {
+                        return '<option value="' + esc(z.id) + '">' + esc(z.zone_name) + '</option>';
+                    }).join('');
+                    ['pzoneZoneId','pzonesZoneFilter','orderZoneId','ordersZoneFilter'].forEach(function(id) {
+                        var el = $(id); if (el) el.innerHTML = zhtml;
+                    });
+                } catch(e) { console.warn('[Delivery] zones dropdown:', e.message); }
+            })(),
 
-        // Countries + Cities cascade
-        await loadCountries();
-        await loadCitiesForCountry('');
+            // Countries + Cities cascade (must be sequential internally)
+            (async function() {
+                await loadCountries();
+                await loadCitiesForCountry('');
+            })(),
 
-        // Delivery orders for tracking dropdown
-        try {
-            var ro = await api(CFG.urls.orders + '?limit=500&tenant_id=' + state.tenant);
-            var oitems = extractItems(ro);
-            var ohtml = '<option value="">–</option>' + oitems.map(function(o) {
-                return '<option value="' + esc(o.id) + '">#' + esc(o.id) + ' (order:' + esc(o.order_id) + ')</option>';
-            }).join('');
-            ['trackingOrderId','trackingOrderFilter'].forEach(function(id) { var el = $(id); if (el) el.innerHTML = ohtml; });
-        } catch(e) { console.warn('[Delivery] orders dropdown:', e.message); }
+            // Delivery orders for tracking dropdown
+            (async function() {
+                try {
+                    var ro = await api(CFG.urls.orders + '?limit=500&tenant_id=' + state.tenant);
+                    var oitems = extractItems(ro);
+                    var ohtml = '<option value="">–</option>' + oitems.map(function(o) {
+                        return '<option value="' + esc(o.id) + '">#' + esc(o.id) + ' (order:' + esc(o.order_id) + ')</option>';
+                    }).join('');
+                    ['trackingOrderId','trackingOrderFilter'].forEach(function(id) { var el = $(id); if (el) el.innerHTML = ohtml; });
+                } catch(e) { console.warn('[Delivery] orders dropdown:', e.message); }
+            })(),
 
-        // Provider filter dropdowns (filter bars only — form fields use ID lookup)
-        try {
-            var rp = await api(CFG.urls.providers + '?limit=500&tenant_id=' + state.tenant);
-            var pitems = extractItems(rp);
-            var phtml = '<option value="">–</option>' + pitems.map(function(p) {
-                return '<option value="' + esc(p.id) + '">#' + esc(p.id) + ' ' + esc(p.provider_type) + '</option>';
-            }).join('');
-            ['ordersProviderFilter','locationsProviderFilter','pzonesProviderFilter','trackingProviderFilter'].forEach(function(id) {
-                var el = $(id); if (el) el.innerHTML = phtml;
-            });
-        } catch(e) { console.warn('[Delivery] providers filter:', e.message); }
+            // Provider filter dropdowns (filter bars only — form fields use ID lookup)
+            (async function() {
+                try {
+                    var rp = await api(CFG.urls.providers + '?limit=500&tenant_id=' + state.tenant);
+                    var pitems = extractItems(rp);
+                    var phtml = '<option value="">–</option>' + pitems.map(function(p) {
+                        return '<option value="' + esc(p.id) + '">#' + esc(p.id) + ' ' + esc(p.provider_type) + '</option>';
+                    }).join('');
+                    ['ordersProviderFilter','locationsProviderFilter','pzonesProviderFilter','trackingProviderFilter'].forEach(function(id) {
+                        var el = $(id); if (el) el.innerHTML = phtml;
+                    });
+                } catch(e) { console.warn('[Delivery] providers filter:', e.message); }
+            })()
+        ]);
     }
 
     // ─── Tabs ─────────────────────────────────────────────────────────
@@ -1165,6 +1170,13 @@
 
         [zonesMod, providersMod, ordersMod, locationsMod, trackingMod, pzonesMod].forEach(function(m) { m.bindEvents(); });
 
+        // Order status change — show/hide cancellation fields
+        var orderStatusEl = $('orderStatus');
+        if (orderStatusEl) orderStatusEl.addEventListener('change', function() {
+            var cf = $('cancelFields');
+            if (cf) cf.style.display = this.value === 'cancelled' ? '' : 'none';
+        });
+
         // Load Leaflet JS + Draw JS then CSS, then init map — same serial-chain pattern
         // used by test_map.php and DeliveryZone.js.  This guarantees window.L and
         // window.L.Draw are fully available before initZonesMap() is called, regardless
@@ -1176,7 +1188,7 @@
                     return;
                 }
                 initZonesMap();
-                [100, 300, 700, 1500, 3000].forEach(function (ms) {
+                [200, 600, 1500].forEach(function (ms) {
                     setTimeout(function () { if (zonesMap) zonesMap.invalidateSize(); }, ms);
                 });
             });
