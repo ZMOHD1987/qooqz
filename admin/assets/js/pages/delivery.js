@@ -13,6 +13,9 @@
     const FALLBACK_MIN_MAP_HEIGHT = 320;
     const MAP_INVALIDATE_DELAYS_MS = [80, 180, 350, 700, 1200];
     const MAP_INIT_RETRY_DELAYS_MS = [100, 300, 700, 1200];
+    const MAP_TAB_OPEN_FIX_DELAYS_MS = [100, 250, 450, 800, 1400, 2200];
+    const MAP_VIEWPORT_RESIZE_DEBOUNCE_MS = 250;
+    const MAP_VIEWPORT_VISUAL_FIX_DELAY_MS = 100;
     const GEOLOCATION_MIN_ZOOM_LEVEL = 13;
     const GEOLOCATION_TIMEOUT_MS = 10000;
 
@@ -106,6 +109,8 @@
     let coordPickerTarget = null; // { latId, lngId }
     let zonesLocateMarker = null;
     let mapResizeObserver = null;
+    let mapViewportListenersBound = false;
+    let mapViewportResizeTimer = null;
 
     // ─── Helpers ─────────────────────────────────────────────────────
     function $(id) { return document.getElementById(id); }
@@ -138,6 +143,22 @@
                 if (zonesMap) zonesMap.invalidateSize();
             }, ms);
         });
+    }
+
+    function isZonesTabVisible() {
+        var zonesTab = $('zonesTab');
+        return !!(zonesTab && zonesTab.style.display !== 'none');
+    }
+
+    function invalidateMapWithOptionalRefit(tryRefit) {
+        if (!zonesMap || !isZonesTabVisible()) return;
+        zonesMap.invalidateSize();
+        if (tryRefit && drawnItems && drawnItems.getBounds) {
+            try {
+                var b = drawnItems.getBounds();
+                if (b && b.isValid && b.isValid()) zonesMap.fitBounds(b, { padding:[30,30], maxZoom:14 });
+            } catch(_) {}
+        }
     }
 
     function ensureMapElementHeight() {
@@ -648,6 +669,24 @@
         }
         mapResizeObserver = new ResizeObserver(function() { scheduleMapInvalidate(); });
         mapResizeObserver.observe(mapEl);
+    }
+
+    function bindMapViewportFixes() {
+        if (mapViewportListenersBound) return;
+        mapViewportListenersBound = true;
+
+        window.addEventListener('resize', function() {
+            clearTimeout(mapViewportResizeTimer);
+            mapViewportResizeTimer = setTimeout(function() {
+                invalidateMapWithOptionalRefit(false);
+            }, MAP_VIEWPORT_RESIZE_DEBOUNCE_MS);
+        }, { passive: true });
+
+        if (window.visualViewport && typeof window.visualViewport.addEventListener === 'function') {
+            window.visualViewport.addEventListener('resize', function() {
+                setTimeout(function() { invalidateMapWithOptionalRefit(false); }, MAP_VIEWPORT_VISUAL_FIX_DELAY_MS);
+            }, { passive: true });
+        }
     }
 
     function cfgText(key, fallback) {
@@ -1222,6 +1261,9 @@
                 if (panel) panel.style.display = '';
                 if (tab === 'zones' && zonesMap) {
                     scheduleMapInvalidate();
+                    MAP_TAB_OPEN_FIX_DELAYS_MS.forEach(function(ms) {
+                        setTimeout(function() { invalidateMapWithOptionalRefit(true); }, ms);
+                    });
                 }
                 var modMap = {
                     zones: zonesMod, providers: providersMod, orders: ordersMod,
@@ -1253,6 +1295,7 @@
         initTabs();
         bindZoneTypeChange();
         bindCascade();
+        bindMapViewportFixes();
         initCoordPicker();
 
         bindProviderLookup('orderProviderId',      'orderProviderName');
