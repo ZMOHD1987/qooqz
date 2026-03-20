@@ -325,8 +325,9 @@ if (!function_exists('pub_load_theme')) {
                 $st->execute($thP([$tenantId]));
                 $buttons = $st->fetchAll(PDO::FETCH_ASSOC);
 
-                // card_styles
-                $st = $pdo->prepare('SELECT slug, card_type, background_color, text_color, border_color, border_width, border_radius, shadow_style, padding, hover_effect, text_align, image_aspect_ratio FROM card_styles WHERE tenant_id = ? AND is_active = 1' . $thIdCond . ' ORDER BY card_type');
+                // card_styles — use SELECT * to match AdminUiThemeLoader::getCardStyles() and remain
+                // safe even when optional columns (e.g. text_color) haven't been added via migration yet.
+                $st = $pdo->prepare('SELECT * FROM card_styles WHERE tenant_id = ? AND is_active = 1' . $thIdCond . ' ORDER BY card_type');
                 $st->execute($thP([$tenantId]));
                 $cards = $st->fetchAll(PDO::FETCH_ASSOC);
 

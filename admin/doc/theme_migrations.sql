@@ -24,11 +24,18 @@ ALTER TABLE button_styles
     MODIFY COLUMN hover_border_color     VARCHAR(200);
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- 3. Expand card_styles color columns.
+-- 3. Expand card_styles color columns and add text_color.
 -- ─────────────────────────────────────────────────────────────────────────────
 ALTER TABLE card_styles
     MODIFY COLUMN background_color VARCHAR(200),
     MODIFY COLUMN border_color      VARCHAR(200);
+
+-- 3b. Add text_color to card_styles (used by AdminUiThemeLoader, ui.php, and
+--     public_context.php to emit --card-{slug}-text CSS variables).
+--     Use ADD COLUMN IF NOT EXISTS to avoid errors on databases that already
+--     have this column.
+ALTER TABLE card_styles
+    ADD COLUMN IF NOT EXISTS text_color VARCHAR(200) DEFAULT NULL AFTER border_color;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 4. Replace ENUM with VARCHAR for flexibility (no schema change needed for

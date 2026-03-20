@@ -38,7 +38,7 @@ if ($first === 'ui') {
         $uiP([$tid])
     );
     $cards = $pdoList(
-        'SELECT slug, card_type, background_color, text_color, border_color, border_width, border_radius, shadow_style, padding, hover_effect, text_align, image_aspect_ratio FROM card_styles WHERE tenant_id = ? AND is_active = 1' . $uiTidCond . ' ORDER BY card_type',
+        'SELECT * FROM card_styles WHERE tenant_id = ? AND is_active = 1' . $uiTidCond . ' ORDER BY card_type',
         $uiP([$tid])
     );
 
