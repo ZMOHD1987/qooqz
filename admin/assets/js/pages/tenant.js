@@ -28,6 +28,11 @@
 
     let el = {};
 
+    // Tracks DB id of the currently loaded tenant logo (for delete / replace)
+    let _logoImageId = null;
+    // Guard: attach ImageStudio listeners only once
+    let _studioListenerAdded = false;
+
     // ─────────────────────────────────────────────
     // TRANSLATION HELPER
     // ─────────────────────────────────────────────
@@ -682,26 +687,29 @@
             if (AF.error) AF.error(t('form.media.save_first', 'Please save the tenant first before adding media'));
             return;
         }
-        const cfg     = window.TENANTS_CONFIG || {};
-        const base    = cfg.mediaStudioBase  || '/admin/fragments/media_studio.php';
-        const typeId  = TENANT_LOGO_IMAGE_TYPE_ID;
+        const cfg      = window.TENANTS_CONFIG || {};
+        const base     = cfg.mediaStudioBase || '/admin/fragments/media_studio.php';
+        const typeId   = TENANT_LOGO_IMAGE_TYPE_ID;
         const tenantId = window.APP_CONFIG?.TENANT_ID || cfg.tenantId || '';
-        const lang    = state.language;
+        const lang     = state.language;
 
         const frame = document.getElementById('tenantMediaFrame');
         const modal = document.getElementById('tenantMediaModal');
         if (!frame || !modal) return;
 
-        frame.src = `${base}?embedded=1&tenant_id=${tenantId}&lang=${lang}&owner_id=${state.currentTenantId}&image_type_id=${typeId}&owner_type=tenant`;
+        frame.src = `${base}?embedded=1&tenant_id=${tenantId}&lang=${lang}&owner_id=${state.currentTenantId}&image_type_id=${typeId}&owner_type=tenant&mode=select&limit=1`;
         modal.style.display = 'flex';
     }
 
     function closeTenantMediaStudio() {
         const modal = document.getElementById('tenantMediaModal');
         if (modal) modal.style.display = 'none';
+        const frame = document.getElementById('tenantMediaFrame');
+        if (frame) frame.src = 'about:blank';
     }
 
-    function updateTenantLogoPreview(imageUrl) {
+    function updateTenantLogoPreview(imageUrl, imageId) {
+        if (imageId !== undefined) _logoImageId = imageId || null;
         const previewEl    = document.getElementById('tenantLogoPreview');
         const urlDisplayEl = document.getElementById('tenantLogoUrlDisplay');
 
@@ -711,9 +719,19 @@
                 wrapper.style.cssText = 'position:relative; display:inline-block;';
 
                 const img = document.createElement('img');
-                img.src = imageUrl;
-                img.style.cssText = 'max-width:100%; max-height:200px; border-radius:4px;';
+                img.src   = imageUrl;
+                img.style.cssText = 'max-width:100%; max-height:200px; border-radius:4px; display:block;';
                 wrapper.appendChild(img);
+
+                if (state.permissions.canEdit) {
+                    const btn = document.createElement('button');
+                    btn.type      = 'button';
+                    btn.title     = t('form.media.delete_logo', 'Delete logo');
+                    btn.innerHTML = '<i class="fas fa-times"></i>';
+                    btn.style.cssText = 'position:absolute; top:4px; right:4px; background:rgba(220,38,38,0.9); color:#fff; border:none; border-radius:50%; width:28px; height:28px; cursor:pointer; font-size:14px;';
+                    btn.addEventListener('click', deleteTenantLogo);
+                    wrapper.appendChild(btn);
+                }
 
                 previewEl.innerHTML = '';
                 previewEl.appendChild(wrapper);
@@ -724,16 +742,58 @@
         if (urlDisplayEl) urlDisplayEl.value = imageUrl || '';
     }
 
+    async function deleteTenantLogo() {
+        const cfg    = window.TENANTS_CONFIG || {};
+        const apiUrl = cfg.imagesApiUrl || '/api/images';
+        if (_logoImageId) {
+            try {
+                await AF.delete(`${apiUrl}/${_logoImageId}`);
+            } catch (err) {
+                console.warn('[Tenants] Failed to delete logo from API:', err);
+            }
+        }
+        _logoImageId = null;
+        updateTenantLogoPreview(null);
+        _updateTableLogoCell(state.currentTenantId, null);
+    }
+
     async function loadTenantLogo(tenantId) {
         const cfg    = window.TENANTS_CONFIG || {};
         const apiUrl = cfg.imagesApiUrl || '/api/images';
         try {
-            const res = await AF.get(`${apiUrl}/by_owner?owner_id=${tenantId}&image_type_id=${TENANT_LOGO_IMAGE_TYPE_ID}`);
-            const images = res?.data?.images || res?.data || res?.images || [];
-            const main   = Array.isArray(images) ? images.find(i => i.is_main) || images[0] : null;
-            updateTenantLogoPreview(main ? (main.url || main.thumb_url || null) : null);
+            const res    = await AF.get(`${apiUrl}/by_owner?owner_id=${tenantId}&image_type_id=${TENANT_LOGO_IMAGE_TYPE_ID}`);
+            const images = res?.data?.images || (Array.isArray(res?.data) ? res.data : []) || res?.images || [];
+            const main   = Array.isArray(images) ? (images.find(i => i.is_main) || images[0]) : null;
+            const url    = main ? (main.url || main.thumb_url || null) : null;
+            const id     = main ? (main.id || null) : null;
+            updateTenantLogoPreview(url, id);
         } catch (_) {
-            updateTenantLogoPreview(null);
+            updateTenantLogoPreview(null, null);
+        }
+    }
+
+    // Async-load logo thumbnails for every row in the table
+    async function loadTableLogos(items) {
+        const cfg    = window.TENANTS_CONFIG || {};
+        const apiUrl = cfg.imagesApiUrl || '/api/images';
+        items.forEach(async item => {
+            try {
+                const res    = await AF.get(`${apiUrl}/by_owner?owner_id=${item.id}&image_type_id=${TENANT_LOGO_IMAGE_TYPE_ID}`);
+                const images = res?.data?.images || (Array.isArray(res?.data) ? res.data : []) || res?.images || [];
+                const main   = Array.isArray(images) ? (images.find(i => i.is_main) || images[0]) : null;
+                const url    = main ? (main.url || main.thumb_url || null) : null;
+                _updateTableLogoCell(item.id, url);
+            } catch (_) { /* silent */ }
+        });
+    }
+
+    function _updateTableLogoCell(tenantId, url) {
+        const cell = document.querySelector(`#tableBody tr[data-tenant-id="${tenantId}"] .logo-thumb-cell`);
+        if (!cell) return;
+        if (url) {
+            cell.innerHTML = `<img src="${esc(url)}" alt="logo" style="width:40px;height:40px;object-fit:cover;border-radius:4px;">`;
+        } else {
+            cell.innerHTML = '<span style="color:var(--text-muted,#94a3b8);">—</span>';
         }
     }
 
@@ -765,8 +825,11 @@
                 : `<span class="text-muted">—</span>`;
 
             return `
-                <tr>
+                <tr data-tenant-id="${item.id}">
                     <td>${item.id}</td>
+                    <td class="logo-thumb-cell" style="width:52px;text-align:center;">
+                        <span style="color:var(--text-muted,#94a3b8);">…</span>
+                    </td>
                     <td><strong>${esc(item.name)}</strong></td>
                     <td>${ownerDisplay}</td>
                     <td><span class="${statusCls}">${esc(statusText)}</span></td>
@@ -792,6 +855,9 @@
         if (el.container) el.container.style.display = 'block';
         if (el.empty)     el.empty.style.display     = 'none';
         if (el.error)     el.error.style.display     = 'none';
+
+        // Load logo thumbnails asynchronously for each row
+        loadTableLogos(items);
     }
 
     // ─────────────────────────────────────────────
@@ -1182,17 +1248,32 @@
             });
         }
 
-        // Listen for media-selected postMessage from media studio iframe
-        window.addEventListener('message', function onTenantMediaMessage(e) {
-            if (!e.data || e.data.type !== 'media-selected') return;
-            const images  = e.data.images || [];
-            const typeId  = e.data.imageTypeId;
-            if (typeId == TENANT_LOGO_IMAGE_TYPE_ID && images.length) {
-                const imageUrl = images[0].url || images[0].thumb_url || '';
-                if (imageUrl) updateTenantLogoPreview(imageUrl);
+        // Listen for ImageStudio:selected / ImageStudio:close CustomEvents from the media studio iframe
+        if (!_studioListenerAdded) {
+            _studioListenerAdded = true;
+            window.addEventListener('ImageStudio:selected', async function (e) {
+                const detail = e.detail;
+                const images = Array.isArray(detail) ? detail : (detail ? [detail] : []);
+                if (!images.length) return;
+                const selected = images[0];
+                const newUrl   = selected.url || selected.thumb_url || '';
+                const newId    = selected.id || null;
+
+                // Delete old logo from DB before replacing
+                if (_logoImageId && _logoImageId !== newId) {
+                    const cfg    = window.TENANTS_CONFIG || {};
+                    const apiUrl = cfg.imagesApiUrl || '/api/images';
+                    try { await AF.delete(`${apiUrl}/${_logoImageId}`); } catch (_) { /* silent */ }
+                }
+
+                updateTenantLogoPreview(newUrl, newId);
+                _updateTableLogoCell(state.currentTenantId, newUrl);
                 closeTenantMediaStudio();
-            }
-        });
+            });
+            window.addEventListener('ImageStudio:close', function () {
+                closeTenantMediaStudio();
+            });
+        }
 
         if (el.searchInput) {
             el.searchInput.addEventListener('keypress', e => {

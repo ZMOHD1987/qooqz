@@ -626,6 +626,7 @@ if (!function_exists('__t')) {
                         <thead>
                             <tr>
                                 <th data-i18n="table.headers.id"><?= __t('table.headers.id', 'ID') ?></th>
+                                <th data-i18n="table.headers.logo"><?= __t('table.headers.logo', 'Logo') ?></th>
                                 <th data-i18n="table.headers.name"><?= __t('table.headers.name', 'Name') ?></th>
                                 <th data-i18n="table.headers.owner"><?= __t('table.headers.owner', 'Owner') ?></th>
                                 <th data-i18n="table.headers.status"><?= __t('table.headers.status', 'Status') ?></th>
