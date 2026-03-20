@@ -126,6 +126,14 @@ if (!function_exists('__t')) {
                 <span data-i18n="page.add_new"><?= __t('page.add_new', 'Add Tenant') ?></span>
             </button>
             <?php endif; ?>
+            <div class="view-toggle-group" role="group" aria-label="View toggle">
+                <button id="btnGridView" class="btn btn-outline btn-sm view-toggle-btn active" title="<?= __t('page.view_grid', 'Grid View') ?>">
+                    <i class="fas fa-th-large"></i>
+                </button>
+                <button id="btnListView" class="btn btn-outline btn-sm view-toggle-btn" title="<?= __t('page.view_list', 'List View') ?>">
+                    <i class="fas fa-list"></i>
+                </button>
+            </div>
             <button id="btnRefresh" class="btn btn-outline btn-sm">
                 <i class="fas fa-sync-alt"></i>
                 <span data-i18n="page.refresh"><?= __t('page.refresh', 'Refresh') ?></span>
@@ -611,7 +619,7 @@ if (!function_exists('__t')) {
         </div>
     </div>
 
-    <!-- Table Card -->
+    <!-- Table / Grid Card -->
     <div class="card">
         <div class="card-body">
 
@@ -620,6 +628,10 @@ if (!function_exists('__t')) {
                 <p data-i18n="page.loading"><?= __t('page.loading', 'Loading tenants') ?></p>
             </div>
 
+            <!-- Grid view (card layout) -->
+            <div id="tenantsGrid" class="tenants-grid" style="display:none"></div>
+
+            <!-- List view (table) -->
             <div id="tableContainer" style="display:none">
                 <div class="table-responsive">
                     <table class="data-table">
@@ -642,6 +654,12 @@ if (!function_exists('__t')) {
                     <div id="paginationInfo" class="pagination-info"></div>
                     <div id="pagination"     class="pagination"></div>
                 </div>
+            </div>
+
+            <!-- Grid Pagination (for card view) -->
+            <div id="gridPaginationWrapper" class="table-footer" style="display:none">
+                <div id="gridPaginationInfo" class="pagination-info"></div>
+                <div id="gridPagination"     class="pagination"></div>
             </div>
 
             <div id="emptyState" class="empty-state" style="display:none">
