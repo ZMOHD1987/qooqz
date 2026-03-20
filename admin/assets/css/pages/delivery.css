@@ -389,9 +389,9 @@
 
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 900px) {
-    .zones-workspace    { flex-direction: column; }
+    .zones-workspace    { flex-direction: column; align-items: stretch; }
     .zones-sidebar      { width: 100%; min-height: auto; }
-    .zones-map-panel    { min-height: 360px; }
+    .zones-map-panel    { width: 100%; min-height: 360px; }
     .zones-map-toolbar  { justify-content: stretch; }
     .zones-map-toolbar .btn { flex: 1; justify-content: center; }
     .zones-map-canvas,
