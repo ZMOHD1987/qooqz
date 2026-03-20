@@ -818,24 +818,32 @@
         const base = cfg.mediaStudioBase || '/admin/fragments/media_studio.php';
         const lang = state.language;
 
+        // Show spinner in the container while the iframe loads in the background
         container.innerHTML = '<div class="sub-fragment-loading"><div class="spinner"></div></div>';
 
         const frame = document.createElement('iframe');
         frame.id    = 'tenantStudioInlineFrame';
         frame.src   = `${base}?embedded=1&owner_id=${tenantId}&tenant_id=${tenantId}&owner_type=tenant&lang=${encodeURIComponent(lang)}`;
 
-        frame.addEventListener('load', () => {
+        // Load offscreen (no display:none, just zero-sized and invisible) so the
+        // browser starts fetching the page, then swap it into the visible container
+        frame.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;';
+        document.body.appendChild(frame);
+
+        frame.addEventListener('load', function onLoad() {
+            frame.removeEventListener('load', onLoad);
+            // Clear inline positioning/sizing before making visible
+            frame.style.cssText = '';
             container.innerHTML = '';
             container.appendChild(frame);
         });
-
-        // Append temporarily hidden so it can start loading
-        frame.style.display = 'none';
-        container.appendChild(frame);
     }
 
     function _resetTenantStudioInline() {
         _studioInlineLoaded = false;
+        // Remove any offscreen frame that might still be loading
+        const old = document.getElementById('tenantStudioInlineFrame');
+        if (old) old.remove();
         const container = document.getElementById('tenantStudioContainer');
         if (container) {
             container.innerHTML = '<div class="sub-fragment-placeholder" id="tenantStudioPlaceholder">'

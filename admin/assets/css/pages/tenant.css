@@ -661,9 +661,19 @@
 /* ═══════════════════════════════════════════════════════════
    INLINE MEDIA STUDIO TAB
    ══════════════════════════════════════════════════════════ */
+
+/* Expand the studio tab to fill the full card-body width (remove inner padding) */
+#tab-studio {
+    margin: -1.25rem;
+}
+#tenantStudioPanel {
+    padding: 0;
+}
+#tenantStudioPanel .domains-panel-header {
+    padding: 1rem 1.25rem 0;
+}
 .studio-inline-wrap {
-    min-height: 400px;
-    border-radius: var(--radius-md, 8px);
+    width: 100%;
     overflow: hidden;
 }
 #tenantStudioInlineFrame {
