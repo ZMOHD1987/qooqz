@@ -65,83 +65,7 @@ if (!function_exists('resolveMediaStudioTheme')) {
     }
 }
 
-if (!function_exists('buildMediaStudioThemeUiMap')) {
-    /**
-     * Build role -> slug map for semantic button/card usage in markup.
-     */
-    function buildMediaStudioThemeUiMap(array $theme): array {
-        static $cachedMap = null;
-        if (is_array($cachedMap)) {
-            return $cachedMap;
-        }
-
-        $normalize = static function (string $value): string {
-            return preg_replace('/[^a-z0-9_-]/', '-', strtolower($value));
-        };
-
-        $buttonsByType = [];
-        $buttonsBySlug = [];
-        foreach ($theme['button_styles'] ?? [] as $buttonStyle) {
-            if (!is_array($buttonStyle)) continue;
-            $slug = !empty($buttonStyle['slug']) ? $normalize((string)$buttonStyle['slug']) : '';
-            if ($slug === '') continue;
-            $buttonsBySlug[$slug] = $slug;
-            $type = !empty($buttonStyle['button_type']) ? $normalize((string)$buttonStyle['button_type']) : '';
-            if ($type !== '' && !isset($buttonsByType[$type])) {
-                $buttonsByType[$type] = $slug;
-            }
-        }
-
-        $resolveButton = static function (array $candidates, string $default) use ($buttonsByType, $buttonsBySlug): string {
-            foreach ($candidates as $candidate) {
-                $key = preg_replace('/[^a-z0-9_-]/', '-', strtolower($candidate));
-                if (isset($buttonsBySlug[$key])) return $buttonsBySlug[$key];
-                if (isset($buttonsByType[$key])) return $buttonsByType[$key];
-            }
-            return $default;
-        };
-
-        $cardsByType = [];
-        $cardsBySlug = [];
-        foreach ($theme['card_styles'] ?? [] as $cardStyle) {
-            if (!is_array($cardStyle)) continue;
-            $slug = !empty($cardStyle['slug']) ? $normalize((string)$cardStyle['slug']) : '';
-            if ($slug === '') continue;
-            $cardsBySlug[$slug] = $slug;
-            $type = !empty($cardStyle['card_type']) ? $normalize((string)$cardStyle['card_type']) : '';
-            if ($type !== '' && !isset($cardsByType[$type])) {
-                $cardsByType[$type] = $slug;
-            }
-        }
-
-        $resolveCard = static function (array $candidates, string $default) use ($cardsByType, $cardsBySlug): string {
-            foreach ($candidates as $candidate) {
-                $key = preg_replace('/[^a-z0-9_-]/', '-', strtolower($candidate));
-                if (isset($cardsBySlug[$key])) return $cardsBySlug[$key];
-                if (isset($cardsByType[$key])) return $cardsByType[$key];
-            }
-            return $default;
-        };
-
-        $cachedMap = [
-            'buttons' => [
-                'primary'   => $resolveButton(['primary', 'main', 'default'], 'primary'),
-                'secondary' => $resolveButton(['secondary'], 'secondary'),
-                'success'   => $resolveButton(['success'], 'success'),
-                'danger'    => $resolveButton(['danger', 'error'], 'danger'),
-                'outline'   => $resolveButton(['ghost', 'outline', 'link'], 'ghost'),
-            ],
-            'cards' => [
-                'surface' => $resolveCard(['default', 'studio', 'media', 'product-default', 'product'], 'product-default'),
-            ],
-        ];
-
-        return $cachedMap;
-    }
-}
-
 $activeTheme = resolveMediaStudioTheme($payload);
-$themeUiMap  = buildMediaStudioThemeUiMap($activeTheme);
 
 // ════════════════════════════════════════════════════════════
 // DB-DRIVEN CSS VARS HELPER
@@ -247,119 +171,6 @@ if (!function_exists('renderFragmentThemeVars')) {
 <?= $activeTheme['generated_css'] ?>
 <?php endif; ?>
 </style>
-<style id="media-studio-dynamic-theme-bindings">
-#mediaStudioPage,
-#mediaStudioPage .page-title,
-#mediaStudioPage .page-subtitle {
-    font-family: var(--form-font-family, var(--body-font-family));
-}
-#mediaStudioPage .page-title { font-size: var(--card-font-size, var(--font-size)); font-weight: var(--card-font-weight, 700); color: var(--text-primary); }
-#mediaStudioPage .page-subtitle { font-size: var(--small-text-font-size, var(--font-size)); color: var(--text-secondary); }
-
-#mediaStudioPage .theme-card {
-    background: var(--card-<?= htmlspecialchars($themeUiMap['cards']['surface'], ENT_QUOTES) ?>-bg, var(--card-bg));
-    border-color: var(--card-<?= htmlspecialchars($themeUiMap['cards']['surface'], ENT_QUOTES) ?>-border, var(--border-color));
-    border-width: var(--card-<?= htmlspecialchars($themeUiMap['cards']['surface'], ENT_QUOTES) ?>-border-width, 1px);
-    border-style: solid;
-    border-radius: var(--card-<?= htmlspecialchars($themeUiMap['cards']['surface'], ENT_QUOTES) ?>-radius, var(--default-radius, 10px));
-    box-shadow: var(--card-<?= htmlspecialchars($themeUiMap['cards']['surface'], ENT_QUOTES) ?>-shadow, none);
-}
-#mediaStudioPage .theme-card .card-body {
-    padding: var(--card-<?= htmlspecialchars($themeUiMap['cards']['surface'], ENT_QUOTES) ?>-padding, var(--default-padding, 1.5rem));
-}
-
-#mediaStudioPage .theme-btn {
-    border-style: solid;
-    transition: all 0.2s ease;
-}
-#mediaStudioPage .theme-btn[data-theme-btn] {
-    background: var(--btn-primary-bg, var(--primary-color));
-    color: var(--btn-primary-color, var(--text-primary));
-    border-color: var(--btn-primary-border, var(--primary-color));
-    border-width: var(--btn-primary-border-width, 1px);
-    border-radius: var(--btn-primary-radius, var(--button-radius, 6px));
-    padding: var(--btn-primary-padding, var(--button-padding, 0.625rem 1rem));
-    font-size: var(--btn-primary-font-size, var(--button-font-size, var(--font-size)));
-    font-weight: var(--btn-primary-font-weight, var(--button-font-weight, 600));
-}
-#mediaStudioPage .theme-btn[data-theme-btn="primary"] {
-    background: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['primary'], ENT_QUOTES) ?>-bg, var(--primary-color));
-    color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['primary'], ENT_QUOTES) ?>-color, var(--text-primary));
-    border-color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['primary'], ENT_QUOTES) ?>-border, var(--primary-color));
-    border-width: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['primary'], ENT_QUOTES) ?>-border-width, 1px);
-    border-radius: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['primary'], ENT_QUOTES) ?>-radius, var(--button-radius, 6px));
-    padding: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['primary'], ENT_QUOTES) ?>-padding, var(--button-padding, 0.625rem 1rem));
-    font-size: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['primary'], ENT_QUOTES) ?>-font-size, var(--button-font-size, var(--font-size)));
-    font-weight: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['primary'], ENT_QUOTES) ?>-font-weight, var(--button-font-weight, 600));
-}
-#mediaStudioPage .theme-btn[data-theme-btn="secondary"] {
-    background: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['secondary'], ENT_QUOTES) ?>-bg, var(--secondary-color));
-    color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['secondary'], ENT_QUOTES) ?>-color, var(--text-primary));
-    border-color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['secondary'], ENT_QUOTES) ?>-border, var(--secondary-color));
-    border-width: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['secondary'], ENT_QUOTES) ?>-border-width, 1px);
-    border-radius: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['secondary'], ENT_QUOTES) ?>-radius, var(--button-radius, 6px));
-}
-#mediaStudioPage .theme-btn[data-theme-btn="success"] {
-    background: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['success'], ENT_QUOTES) ?>-bg, var(--success-color));
-    color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['success'], ENT_QUOTES) ?>-color, var(--text-primary));
-    border-color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['success'], ENT_QUOTES) ?>-border, var(--success-color));
-    border-width: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['success'], ENT_QUOTES) ?>-border-width, 1px);
-    border-radius: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['success'], ENT_QUOTES) ?>-radius, var(--button-radius, 6px));
-}
-#mediaStudioPage .theme-btn[data-theme-btn="danger"] {
-    background: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['danger'], ENT_QUOTES) ?>-bg, var(--danger-color));
-    color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['danger'], ENT_QUOTES) ?>-color, var(--text-primary));
-    border-color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['danger'], ENT_QUOTES) ?>-border, var(--danger-color));
-    border-width: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['danger'], ENT_QUOTES) ?>-border-width, 1px);
-    border-radius: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['danger'], ENT_QUOTES) ?>-radius, var(--button-radius, 6px));
-}
-#mediaStudioPage .theme-btn[data-theme-btn="outline"] {
-    background: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['outline'], ENT_QUOTES) ?>-bg, transparent);
-    color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['outline'], ENT_QUOTES) ?>-color, var(--text-primary));
-    border-color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['outline'], ENT_QUOTES) ?>-border, var(--border-color));
-    border-width: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['outline'], ENT_QUOTES) ?>-border-width, 1px);
-    border-radius: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['outline'], ENT_QUOTES) ?>-radius, var(--button-radius, 6px));
-}
-#mediaStudioPage .theme-btn[data-theme-btn="primary"]:hover,
-#mediaStudioPage .theme-btn[data-theme-btn="primary"]:focus-visible {
-    background: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['primary'], ENT_QUOTES) ?>-hover-bg, var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['primary'], ENT_QUOTES) ?>-bg, var(--primary-hover, var(--primary-color))));
-    color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['primary'], ENT_QUOTES) ?>-hover-color, var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['primary'], ENT_QUOTES) ?>-color, var(--text-primary)));
-    border-color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['primary'], ENT_QUOTES) ?>-hover-border, var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['primary'], ENT_QUOTES) ?>-border, var(--primary-hover, var(--primary-color))));
-}
-#mediaStudioPage .theme-btn[data-theme-btn="secondary"]:hover,
-#mediaStudioPage .theme-btn[data-theme-btn="secondary"]:focus-visible {
-    background: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['secondary'], ENT_QUOTES) ?>-hover-bg, var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['secondary'], ENT_QUOTES) ?>-bg, var(--secondary-color)));
-    color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['secondary'], ENT_QUOTES) ?>-hover-color, var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['secondary'], ENT_QUOTES) ?>-color, var(--text-primary)));
-    border-color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['secondary'], ENT_QUOTES) ?>-hover-border, var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['secondary'], ENT_QUOTES) ?>-border, var(--secondary-color)));
-}
-#mediaStudioPage .theme-btn[data-theme-btn="success"]:hover,
-#mediaStudioPage .theme-btn[data-theme-btn="success"]:focus-visible {
-    background: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['success'], ENT_QUOTES) ?>-hover-bg, var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['success'], ENT_QUOTES) ?>-bg, var(--success-color)));
-    color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['success'], ENT_QUOTES) ?>-hover-color, var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['success'], ENT_QUOTES) ?>-color, var(--text-primary)));
-    border-color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['success'], ENT_QUOTES) ?>-hover-border, var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['success'], ENT_QUOTES) ?>-border, var(--success-color)));
-}
-#mediaStudioPage .theme-btn[data-theme-btn="danger"]:hover,
-#mediaStudioPage .theme-btn[data-theme-btn="danger"]:focus-visible {
-    background: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['danger'], ENT_QUOTES) ?>-hover-bg, var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['danger'], ENT_QUOTES) ?>-bg, var(--danger-color)));
-    color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['danger'], ENT_QUOTES) ?>-hover-color, var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['danger'], ENT_QUOTES) ?>-color, var(--text-primary)));
-    border-color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['danger'], ENT_QUOTES) ?>-hover-border, var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['danger'], ENT_QUOTES) ?>-border, var(--danger-color)));
-}
-#mediaStudioPage .theme-btn[data-theme-btn="outline"]:hover,
-#mediaStudioPage .theme-btn[data-theme-btn="outline"]:focus-visible {
-    background: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['outline'], ENT_QUOTES) ?>-hover-bg, var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['outline'], ENT_QUOTES) ?>-bg, transparent));
-    color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['outline'], ENT_QUOTES) ?>-hover-color, var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['outline'], ENT_QUOTES) ?>-color, var(--text-primary)));
-    border-color: var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['outline'], ENT_QUOTES) ?>-hover-border, var(--btn-<?= htmlspecialchars($themeUiMap['buttons']['outline'], ENT_QUOTES) ?>-border, var(--border-color)));
-}
-#mediaStudioPage .theme-btn:active {
-    transform: translateY(1px);
-}
-#mediaStudioPage .theme-btn:disabled,
-#mediaStudioPage .theme-btn[aria-disabled="true"] {
-    opacity: 0.65;
-    cursor: not-allowed;
-    filter: grayscale(0.15);
-}
-</style>
 <!-- Framework CSS (only needed in embedded/fragment mode; header.php loads it in standalone mode) -->
 <?php if ($isFragment): ?>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
@@ -377,7 +188,7 @@ if (!function_exists('renderFragmentThemeVars')) {
         <span id="selectionCount">0</span>
         <span data-i18n="selected_label">selected</span>
     </div>
-    <button id="btnConfirmSelectionBar" class="btn theme-btn" data-theme-btn="success">
+    <button id="btnConfirmSelectionBar" class="btn btn-success">
         <i class="fas fa-check"></i>
         <span data-i18n="confirm_select">Confirm Selection</span>
     </button>
@@ -390,11 +201,11 @@ if (!function_exists('renderFragmentThemeVars')) {
         <span data-i18n="copy_mode_hint">Click an image below to use it</span>
     </div>
     <div class="studio-copy-actions">
-        <button id="btnConfirmCopy" class="btn theme-btn" data-theme-btn="success" disabled>
+        <button id="btnConfirmCopy" class="btn btn-success" disabled>
             <i class="fas fa-check"></i>
             <span data-i18n="use_image">Use This Image</span>
         </button>
-        <button id="btnCancelCopy" class="btn theme-btn" data-theme-btn="outline">
+        <button id="btnCancelCopy" class="btn btn-outline">
             <i class="fas fa-times"></i>
             <span data-i18n="cancel_button">Cancel</span>
         </button>
@@ -410,11 +221,11 @@ if (!function_exists('renderFragmentThemeVars')) {
             <p class="page-subtitle" data-i18n="page_subtitle">Manage images and media files</p>
         </div>
         <div class="page-header-actions">
-            <button id="btnSelectConfirm" class="btn theme-btn" data-theme-btn="success" style="display:none;" data-i18n="select_button">
+            <button id="btnSelectConfirm" class="btn btn-success" style="display:none;" data-i18n="select_button">
                 <i class="fas fa-check"></i> <span data-i18n="select_button">Select</span>
             </button>
             <?php if ($canCreate): ?>
-            <button id="btnAddImage" class="btn theme-btn" data-theme-btn="primary" data-i18n="add_button">
+            <button id="btnAddImage" class="btn btn-primary" data-i18n="add_button">
                 <i class="fas fa-plus"></i> <span data-i18n="add_button">Add Image</span>
             </button>
             <?php endif; ?>
@@ -424,12 +235,12 @@ if (!function_exists('renderFragmentThemeVars')) {
     <!-- ═══════════════════════════════════════════════
          ADD IMAGE FORM (Upload OR Select from Studio)
          ═══════════════════════════════════════════════ -->
-    <div id="addImageContainer" class="card form-card theme-card" style="display:none;">
+    <div id="addImageContainer" class="card form-card" style="display:none;">
         <div class="card-header">
             <h3 class="card-title" data-i18n="add_image_title">
                 <i class="fas fa-plus-circle"></i> Add Image
             </h3>
-            <button type="button" id="btnCloseAddForm" class="btn btn-sm theme-btn" data-theme-btn="outline">
+            <button type="button" id="btnCloseAddForm" class="btn btn-sm btn-outline">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -459,7 +270,7 @@ if (!function_exists('renderFragmentThemeVars')) {
                         <div class="upload-drop-icon"><i class="fas fa-cloud-upload-alt"></i></div>
                         <p class="upload-drop-text" data-i18n="drop_zone_text">Drag & drop images here, or click to browse</p>
                         <input type="file" id="uploadImages" name="images[]" class="upload-file-input" accept="image/*" multiple required>
-                        <button type="button" class="btn theme-btn" data-theme-btn="secondary" onclick="document.getElementById('uploadImages').click()">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('uploadImages').click()">
                             <i class="fas fa-folder-open"></i>
                             <span data-i18n="browse_files">Browse Files</span>
                         </button>
@@ -467,11 +278,11 @@ if (!function_exists('renderFragmentThemeVars')) {
                     <div id="uploadFileList" class="upload-file-list" style="display:none;"></div>
 
                     <div class="form-actions">
-                        <button type="submit" class="btn theme-btn" data-theme-btn="primary" id="btnUploadSave">
+                        <button type="submit" class="btn btn-primary" id="btnUploadSave">
                             <i class="fas fa-upload"></i>
                             <span data-i18n="upload_button">Upload</span>
                         </button>
-                        <button type="button" class="btn theme-btn" data-theme-btn="outline" id="btnCancelUploadForm">
+                        <button type="button" class="btn btn-outline" id="btnCancelUploadForm">
                             <span data-i18n="cancel_button">Cancel</span>
                         </button>
                     </div>
@@ -485,11 +296,11 @@ if (!function_exists('renderFragmentThemeVars')) {
                     <span data-i18n="from_studio_hint">Click "Select from Library" then click on any image in the gallery to use its path.</span>
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="btn theme-btn" data-theme-btn="primary" id="btnEnterStudioCopy">
+                    <button type="button" class="btn btn-primary" id="btnEnterStudioCopy">
                         <i class="fas fa-images"></i>
                         <span data-i18n="select_from_library">Select from Library</span>
                     </button>
-                    <button type="button" class="btn theme-btn" data-theme-btn="outline" id="btnCancelStudioTab">
+                    <button type="button" class="btn btn-outline" id="btnCancelStudioTab">
                         <span data-i18n="cancel_button">Cancel</span>
                     </button>
                 </div>
@@ -500,10 +311,10 @@ if (!function_exists('renderFragmentThemeVars')) {
     <!-- ═══════════════════════════════════════════════
          EDIT IMAGE FORM (full details for existing images)
          ═══════════════════════════════════════════════ -->
-    <div id="imageFormContainer" class="card form-card theme-card" style="display:none;">
+    <div id="imageFormContainer" class="card form-card" style="display:none;">
         <div class="card-header">
             <h3 class="card-title" id="formTitle" data-i18n="form_edit_title">Edit Image</h3>
-            <button type="button" id="btnCloseImageForm" class="btn btn-sm theme-btn" data-theme-btn="outline">
+            <button type="button" id="btnCloseImageForm" class="btn btn-sm btn-outline">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -573,15 +384,15 @@ if (!function_exists('renderFragmentThemeVars')) {
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn theme-btn" data-theme-btn="primary" id="btnSaveImage">
+                    <button type="submit" class="btn btn-primary" id="btnSaveImage">
                         <i class="fas fa-save"></i>
                         <span data-i18n="save_button">Save</span>
                     </button>
-                    <button type="button" class="btn theme-btn" data-theme-btn="outline" id="btnCancelImageForm">
+                    <button type="button" class="btn btn-outline" id="btnCancelImageForm">
                         <span data-i18n="cancel_button">Cancel</span>
                     </button>
                     <?php if ($canDelete): ?>
-                    <button type="button" class="btn theme-btn" data-theme-btn="danger" id="btnDeleteImage" style="display:none">
+                    <button type="button" class="btn btn-danger" id="btnDeleteImage" style="display:none">
                         <i class="fas fa-trash"></i>
                         <span data-i18n="delete_button">Delete</span>
                     </button>
@@ -592,7 +403,7 @@ if (!function_exists('renderFragmentThemeVars')) {
     </div>
 
     <!-- Filters -->
-    <div class="card filter-card theme-card">
+    <div class="card filter-card">
         <div class="card-body">
             <div class="filters-grid">
                 <div class="filter-group">
@@ -621,14 +432,14 @@ if (!function_exists('renderFragmentThemeVars')) {
                     </select>
                 </div>
                 <div class="filter-actions">
-                    <button id="btnApplyImageFilters" class="btn theme-btn" data-theme-btn="secondary" data-i18n="filter_apply">
+                    <button id="btnApplyImageFilters" class="btn btn-secondary" data-i18n="filter_apply">
                         <i class="fas fa-filter"></i> Apply
                     </button>
-                    <button id="btnResetImageFilters" class="btn theme-btn" data-theme-btn="outline" data-i18n="filter_reset">
+                    <button id="btnResetImageFilters" class="btn btn-outline" data-i18n="filter_reset">
                         <i class="fas fa-redo"></i> Reset
                     </button>
                     <?php if ($canDelete): ?>
-                    <button id="btnDeleteSelected" class="btn theme-btn" data-theme-btn="danger" style="display:none;" data-i18n="delete_selected">
+                    <button id="btnDeleteSelected" class="btn btn-danger" style="display:none;" data-i18n="delete_selected">
                         <i class="fas fa-trash"></i> Delete Selected
                     </button>
                     <?php endif; ?>
@@ -644,7 +455,7 @@ if (!function_exists('renderFragmentThemeVars')) {
     </div>
 
     <!-- Grid Container -->
-    <div class="card table-card theme-card">
+    <div class="card table-card">
         <div class="card-body">
             <!-- Loading State -->
             <div id="imageGridLoading" class="loading-state">
@@ -680,8 +491,8 @@ if (!function_exists('renderFragmentThemeVars')) {
                     <span id="imagePaginationInfo" data-i18n="showing_results">Showing 0 to 0 of 0 results</span>
                 </div>
                 <div class="pagination-buttons">
-                    <button id="btnPrevImagePage" class="btn theme-btn" data-theme-btn="outline" disabled data-i18n="previous">Previous</button>
-                    <button id="btnNextImagePage" class="btn theme-btn" data-theme-btn="outline" disabled data-i18n="next">Next</button>
+                    <button id="btnPrevImagePage" class="btn btn-outline" disabled data-i18n="previous">Previous</button>
+                    <button id="btnNextImagePage" class="btn btn-outline" disabled data-i18n="next">Next</button>
                 </div>
             </div>
 
@@ -691,7 +502,7 @@ if (!function_exists('renderFragmentThemeVars')) {
                 <h3 data-i18n="empty_title">No Images Found</h3>
                 <p data-i18n="empty_description">Start by adding images</p>
                 <?php if ($canCreate): ?>
-                <button class="btn theme-btn" data-theme-btn="primary" onclick="MediaStudio.add()" data-i18n="empty_add">
+                <button class="btn btn-primary" onclick="MediaStudio.add()" data-i18n="empty_add">
                     <i class="fas fa-plus"></i> Add First Image
                 </button>
                 <?php endif; ?>
@@ -702,7 +513,7 @@ if (!function_exists('renderFragmentThemeVars')) {
                 <div class="error-icon">⚠️</div>
                 <h3 data-i18n="error_title">Error Loading Data</h3>
                 <p id="imageErrorMessage" data-i18n="error_message"></p>
-                <button id="btnRetryImages" class="btn theme-btn" data-theme-btn="secondary" data-i18n="retry_button">
+                <button id="btnRetryImages" class="btn btn-secondary" data-i18n="retry_button">
                     <i class="fas fa-redo"></i> Retry
                 </button>
             </div>
