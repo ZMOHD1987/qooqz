@@ -764,6 +764,7 @@ textarea.form-control {
     border-radius: var(--_radius, 8px);
     width: 96vw;
     max-width: 1200px;
+    height: 90vh;
     max-height: 92vh;
     display: flex;
     flex-direction: column;

@@ -105,11 +105,130 @@ function __tr($key, $replacements = []) {
 // ════════════════════════════════════════════════════════════
 $apiBase = '/api';
 
+// ════════════════════════════════════════════════════════════
+// THEME VARS INJECTION
+//
+// Injects the same :root CSS variables as the parent page so
+// that all var(--*) references in this fragment resolve to the
+// correct DB-driven values regardless of iframe / embedded mode.
+//
+// Priority:
+//   1. generated_css  – pre-compiled full block, use as-is
+//   2. fallback       – manual build from color_settings + other
+//                       theme sub-arrays (fonts, design, buttons, cards)
+// ════════════════════════════════════════════════════════════
+$_entTheme        = $GLOBALS['ADMIN_UI']['theme'] ?? [];
+$_entGeneratedCss = $_entTheme['generated_css'] ?? '';
+
+$_entColorMap = [];
+foreach ($_entTheme['color_settings'] ?? [] as $_c) {
+    if (!empty($_c['setting_key']) && isset($_c['color_value'])) {
+        $_entColorMap[$_c['setting_key']] = $_c['color_value'];
+    }
+}
+if (!function_exists('_entThemeColor')) {
+    function _entThemeColor(array $map, string $key, string $fallback): string {
+        return htmlspecialchars($map[$key] ?? $fallback, ENT_QUOTES);
+    }
+}
+if (!function_exists('_entRenderThemeVars')) {
+    function _entRenderThemeVars(array $theme): void {
+        echo ':root {' . PHP_EOL;
+        foreach ($theme['color_settings'] ?? [] as $c) {
+            if (empty($c['setting_key']) || !isset($c['color_value'])) continue;
+            $k = htmlspecialchars($c['setting_key'], ENT_QUOTES);
+            $h = htmlspecialchars(str_replace('_', '-', $c['setting_key']), ENT_QUOTES);
+            $v = htmlspecialchars($c['color_value'], ENT_QUOTES);
+            echo "    --{$k}: {$v};" . PHP_EOL;
+            if ($h !== $k) echo "    --{$h}: {$v};" . PHP_EOL;
+        }
+        foreach ($theme['font_settings'] ?? [] as $f) {
+            if (empty($f['setting_key'])) continue;
+            $sk = htmlspecialchars($f['setting_key'], ENT_QUOTES);
+            $sh = htmlspecialchars(str_replace('_', '-', $f['setting_key']), ENT_QUOTES);
+            if (!empty($f['font_family'])) {
+                $ff = htmlspecialchars($f['font_family'], ENT_QUOTES);
+                echo "    --{$sk}-family: {$ff};" . PHP_EOL;
+                if ($sh !== $sk) echo "    --{$sh}-family: {$ff};" . PHP_EOL;
+            }
+            if (!empty($f['font_size'])) {
+                $fs = htmlspecialchars($f['font_size'], ENT_QUOTES);
+                echo "    --{$sk}-size: {$fs};" . PHP_EOL;
+                if ($sh !== $sk) echo "    --{$sh}-size: {$fs};" . PHP_EOL;
+            }
+            if (!empty($f['font_weight'])) {
+                $fw = htmlspecialchars($f['font_weight'], ENT_QUOTES);
+                echo "    --{$sk}-weight: {$fw};" . PHP_EOL;
+                if ($sh !== $sk) echo "    --{$sh}-weight: {$fw};" . PHP_EOL;
+            }
+        }
+        foreach ($theme['design_settings'] ?? [] as $d) {
+            if (empty($d['setting_key']) || !isset($d['setting_value'])) continue;
+            $dk = htmlspecialchars($d['setting_key'], ENT_QUOTES);
+            $dh = htmlspecialchars(str_replace('_', '-', $d['setting_key']), ENT_QUOTES);
+            $dv = htmlspecialchars($d['setting_value'], ENT_QUOTES);
+            echo "    --{$dk}: {$dv};" . PHP_EOL;
+            if ($dh !== $dk) echo "    --{$dh}: {$dv};" . PHP_EOL;
+        }
+        foreach ($theme['button_styles'] ?? [] as $b) {
+            if (empty($b['slug'])) continue;
+            $slug = preg_replace('/[^a-z0-9_-]/', '-', strtolower((string)$b['slug']));
+            if (!empty($b['background_color'])) echo "    --btn-{$slug}-bg: "     . htmlspecialchars($b['background_color'], ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($b['text_color']))       echo "    --btn-{$slug}-color: "  . htmlspecialchars($b['text_color'],       ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($b['border_color']))     echo "    --btn-{$slug}-border: " . htmlspecialchars($b['border_color'],     ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($b['border_radius']))    echo "    --btn-{$slug}-radius: " . htmlspecialchars((string)$b['border_radius'], ENT_QUOTES) . 'px;' . PHP_EOL;
+            if (!empty($b['hover_background'])) echo "    --btn-{$slug}-hover-bg: " . htmlspecialchars($b['hover_background'], ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($b['hover_color']))      echo "    --btn-{$slug}-hover-color: " . htmlspecialchars($b['hover_color'], ENT_QUOTES) . ';' . PHP_EOL;
+        }
+        foreach ($theme['card_styles'] ?? [] as $cs) {
+            if (empty($cs['slug'])) continue;
+            $slug = preg_replace('/[^a-z0-9_-]/', '-', strtolower((string)$cs['slug']));
+            if (!empty($cs['background_color'])) echo "    --card-{$slug}-bg: "      . htmlspecialchars($cs['background_color'], ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($cs['border_color']))     echo "    --card-{$slug}-border: "  . htmlspecialchars($cs['border_color'],     ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($cs['border_radius']))    echo "    --card-{$slug}-radius: "  . htmlspecialchars((string)$cs['border_radius'], ENT_QUOTES) . 'px;' . PHP_EOL;
+            if (!empty($cs['shadow_style']))     echo "    --card-{$slug}-shadow: "  . htmlspecialchars($cs['shadow_style'],     ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($cs['padding']))          echo "    --card-{$slug}-padding: " . htmlspecialchars($cs['padding'],          ENT_QUOTES) . ';' . PHP_EOL;
+        }
+        echo '}' . PHP_EOL;
+    }
+}
 ?>
-<!-- Force load CSS if embedded -->
-<?php if ($isFragment): ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/entities.css?v=<?= time() ?>">
+<!-- ════════════════════════════════════════════════════════
+     THEME VARS – DB-driven CSS custom properties
+     Priority: generated_css (pre-compiled) → manual fallback
+     ════════════════════════════════════════════════════════ -->
+<style id="ent-theme-vars">
+<?php if (!empty($_entGeneratedCss)): ?>
+<?= $_entGeneratedCss ?>
+<?php else: ?>
+/* Fallback: build directly from color_settings */
+:root {
+    --background-main:      <?= _entThemeColor($_entColorMap,'background_main',      '#242323') ?>;
+    --background-secondary: <?= _entThemeColor($_entColorMap,'background_secondary',  '#383f42') ?>;
+    --border-color:         <?= _entThemeColor($_entColorMap,'border_color',          '#7a7a7a') ?>;
+    --text-primary:         <?= _entThemeColor($_entColorMap,'text_primary',          '#FFFFFF') ?>;
+    --text-secondary:       <?= _entThemeColor($_entColorMap,'text_secondary',        '#94a3b8') ?>;
+    --primary-color:        <?= _entThemeColor($_entColorMap,'primary_color',         '#03874e') ?>;
+    --secondary-color:      <?= _entThemeColor($_entColorMap,'secondary_color',       '#10B981') ?>;
+    --success-color:        <?= _entThemeColor($_entColorMap,'success_color',         '#10b981') ?>;
+    --warning-color:        <?= _entThemeColor($_entColorMap,'warning_color',         '#f59e0b') ?>;
+    --danger-color:         <?= _entThemeColor($_entColorMap,'danger_color',          '#ef4444') ?>;
+    --error-color:          <?= _entThemeColor($_entColorMap,'error_color',           '#EF4444') ?>;
+    --info-color:           <?= _entThemeColor($_entColorMap,'info_color',            '#22C55E') ?>;
+    --card-bg:              <?= _entThemeColor($_entColorMap,'background_secondary',  '#383f42') ?>;
+    --input-background:     <?= _entThemeColor($_entColorMap,'background_secondary',  '#383f42') ?>;
+    --thead-bg:             <?= _entThemeColor($_entColorMap,'background_secondary',  '#383f42') ?>;
+}
+<?php _entRenderThemeVars($_entTheme); ?>
 <?php endif; ?>
+</style>
+<!-- Framework CSS (fragment/iframe mode only) -->
+<?php if ($isFragment): ?>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+<link rel="stylesheet" href="/admin/assets/css/admin_framework.css?v=<?= time() ?>">
+<?php endif; ?>
+<!-- Page CSS -->
+<link rel="stylesheet" href="/admin/assets/css/pages/entities.css?v=<?= time() ?>">
 
 <!-- Page Meta -->
 <meta data-page="entities"
@@ -846,7 +965,7 @@ $apiBase = '/api';
     <div id="mediaStudioModal" class="modal" style="display:none">
         <div class="modal-content">
             <span class="close" id="mediaStudioClose">&times;</span>
-            <iframe id="mediaStudioFrame" style="width:100%; height:500px; border:none;"></iframe>
+            <iframe id="mediaStudioFrame" style="width:100%; border:none; display:block;"></iframe>
         </div>
     </div>
 
