@@ -175,6 +175,10 @@ if (!function_exists('__t')) {
                         <i class="fas fa-image"></i>
                         <span data-i18n="tabs.media"><?= __t('tabs.media', 'Media') ?></span>
                     </button>
+                    <button type="button" class="tab-btn" data-tab="tab-studio" id="tabBtnStudio" disabled>
+                        <i class="fas fa-photo-video"></i>
+                        <span data-i18n="tabs.studio"><?= __t('tabs.studio', 'Media Studio') ?></span>
+                    </button>
                 </div>
 
                 <!-- Tab: Basic Info -->
@@ -543,6 +547,24 @@ if (!function_exists('__t')) {
                         </div>
                     </div>
                 </div><!-- /#tab-media -->
+
+                <!-- Tab: Media Studio (inline embed) -->
+                <div class="tab-content" id="tab-studio" style="display:none">
+                    <div id="tenantStudioPanel" class="domains-panel">
+                        <div class="domains-panel-header">
+                            <h4>
+                                <i class="fas fa-photo-video"></i>
+                                <span data-i18n="tabs.studio"><?= __t('tabs.studio', 'Media Studio') ?></span>
+                            </h4>
+                        </div>
+                        <div id="tenantStudioContainer" class="studio-inline-wrap">
+                            <div class="sub-fragment-placeholder" id="tenantStudioPlaceholder">
+                                <i class="fas fa-photo-video fa-2x"></i>
+                                <p data-i18n="studio.placeholder"><?= __t('studio.placeholder', 'Select a tenant to load its media studio') ?></p>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- /#tab-studio -->
 
             </form>
         </div>

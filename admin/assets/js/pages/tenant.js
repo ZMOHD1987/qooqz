@@ -99,6 +99,9 @@
         if (tabId === 'tab-media' && state.currentTenantId) {
             loadTenantLogo(state.currentTenantId);
         }
+        if (tabId === 'tab-studio' && state.currentTenantId) {
+            loadTenantMediaStudioInline(state.currentTenantId);
+        }
     }
 
     function enableSubTabs(tenantId) {
@@ -108,11 +111,13 @@
         const btnAddr        = document.getElementById('tabBtnAddresses');
         const btnCategories  = document.getElementById('tabBtnCategories');
         const btnMedia       = document.getElementById('tabBtnMedia');
+        const btnStudio      = document.getElementById('tabBtnStudio');
         if (btnDomains)    btnDomains.disabled    = false;
         if (btnUsers)      btnUsers.disabled      = false;
         if (btnAddr)       btnAddr.disabled       = false;
         if (btnCategories) btnCategories.disabled = false;
         if (btnMedia)      btnMedia.disabled      = false;
+        if (btnStudio)     btnStudio.disabled     = false;
     }
 
     async function loadSubFragment(containerId, url) {
@@ -798,6 +803,49 @@
     }
 
     // ─────────────────────────────────────────────
+    // MEDIA STUDIO – INLINE TAB
+    // ─────────────────────────────────────────────
+    let _studioInlineLoaded = false;
+
+    function loadTenantMediaStudioInline(tenantId) {
+        if (_studioInlineLoaded) return;
+        _studioInlineLoaded = true;
+
+        const container = document.getElementById('tenantStudioContainer');
+        if (!container) return;
+
+        const cfg  = window.TENANTS_CONFIG || {};
+        const base = cfg.mediaStudioBase || '/admin/fragments/media_studio.php';
+        const lang = state.language;
+
+        container.innerHTML = '<div class="sub-fragment-loading"><div class="spinner"></div></div>';
+
+        const frame = document.createElement('iframe');
+        frame.id    = 'tenantStudioInlineFrame';
+        frame.src   = `${base}?embedded=1&owner_id=${tenantId}&tenant_id=${tenantId}&owner_type=tenant&lang=${encodeURIComponent(lang)}`;
+
+        frame.addEventListener('load', () => {
+            container.innerHTML = '';
+            container.appendChild(frame);
+        });
+
+        // Append temporarily hidden so it can start loading
+        frame.style.display = 'none';
+        container.appendChild(frame);
+    }
+
+    function _resetTenantStudioInline() {
+        _studioInlineLoaded = false;
+        const container = document.getElementById('tenantStudioContainer');
+        if (container) {
+            container.innerHTML = '<div class="sub-fragment-placeholder" id="tenantStudioPlaceholder">'
+                + '<i class="fas fa-photo-video fa-2x"></i>'
+                + '<p>' + t('studio.placeholder', 'Select a tenant to load its media studio') + '</p>'
+                + '</div>';
+        }
+    }
+
+    // ─────────────────────────────────────────────
     // RENDER TABLE
     // ─────────────────────────────────────────────
     function renderTable(items) {
@@ -1034,6 +1082,9 @@
             // Enable sub-tabs
             enableSubTabs(item.id);
 
+            // Reset inline studio so it reloads for the new tenant
+            _resetTenantStudioInline();
+
             // Pre-load logo in background so it's ready when media tab is opened
             loadTenantLogo(item.id);
 
@@ -1075,11 +1126,13 @@
         const btnAddr       = document.getElementById('tabBtnAddresses');
         const btnCategories = document.getElementById('tabBtnCategories');
         const btnMedia      = document.getElementById('tabBtnMedia');
+        const btnStudio     = document.getElementById('tabBtnStudio');
         if (btnDomains)    btnDomains.disabled    = true;
         if (btnUsers)      btnUsers.disabled      = true;
         if (btnAddr)       btnAddr.disabled       = true;
         if (btnCategories) btnCategories.disabled = true;
         if (btnMedia)      btnMedia.disabled      = true;
+        if (btnStudio)     btnStudio.disabled     = true;
 
         // Reset sub-fragment containers
         const domainsList       = document.getElementById('domainsList');
@@ -1095,6 +1148,9 @@
         _catTree.checkedIds = new Set();
         _catTree.assignedMap = {};
         _setTreeStatus('');
+
+        // Reset inline studio iframe
+        _resetTenantStudioInline();
 
         activateTab('tab-basic');
 
