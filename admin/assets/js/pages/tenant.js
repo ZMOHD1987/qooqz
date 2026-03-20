@@ -23,8 +23,7 @@
         filters: {},
         permissions: {},
         language: window.USER_LANGUAGE || 'en',
-        currentTenantId: null,
-        view: 'grid'   // 'grid' | 'list'
+        currentTenantId: null
     };
 
     let el = {};
@@ -789,82 +788,38 @@
     }
 
     function _updateTableLogoCell(tenantId, url) {
-        // Update table row logo cell
         const cell = document.querySelector(`#tableBody tr[data-tenant-id="${tenantId}"] .logo-thumb-cell`);
-        if (cell) {
-            if (url) {
-                cell.innerHTML = `<img src="${esc(url)}" alt="logo" style="width:40px;height:40px;object-fit:cover;border-radius:4px;">`;
-            } else {
-                cell.innerHTML = '<span style="color:var(--text-muted,#94a3b8);">—</span>';
-            }
-        }
-        // Update card thumb
-        const cardThumb = document.querySelector(`#tenantsGrid .tenant-card[data-tenant-id="${tenantId}"] .tenant-card-thumb`);
-        if (cardThumb) {
-            if (url) {
-                const existing = cardThumb.querySelector('img');
-                if (existing) {
-                    existing.src = url;
-                } else {
-                    cardThumb.innerHTML = `<img src="${esc(url)}" alt="logo" loading="lazy">`;
-                }
-            } else {
-                cardThumb.innerHTML = '<span class="thumb-placeholder"><i class="fas fa-building"></i></span>';
-            }
-        }
-    }
-
-    // ─────────────────────────────────────────────
-    // VIEW TOGGLE
-    // ─────────────────────────────────────────────
-    function setView(view) {
-        state.view = view;
-        const gridEl  = document.getElementById('tenantsGrid');
-        const tableEl = document.getElementById('tableContainer');
-        const gridPag = document.getElementById('gridPaginationWrapper');
-        const btnGrid = document.getElementById('btnGridView');
-        const btnList = document.getElementById('btnListView');
-
-        if (view === 'grid') {
-            if (gridEl)  gridEl.style.display  = gridEl.innerHTML.trim() ? 'grid' : 'none';
-            if (tableEl) tableEl.style.display = 'none';
-            if (gridPag) gridPag.style.display = gridEl?.innerHTML.trim() ? 'flex' : 'none';
-            if (btnGrid) btnGrid.classList.add('active');
-            if (btnList) btnList.classList.remove('active');
+        if (!cell) return;
+        if (url) {
+            cell.innerHTML = `<img src="${esc(url)}" alt="logo" style="width:40px;height:40px;object-fit:cover;border-radius:4px;">`;
         } else {
-            if (gridEl)  gridEl.style.display  = 'none';
-            if (tableEl) tableEl.style.display = tableEl.dataset.hasData ? 'block' : 'none';
-            if (gridPag) gridPag.style.display = 'none';
-            if (btnGrid) btnGrid.classList.remove('active');
-            if (btnList) btnList.classList.add('active');
+            cell.innerHTML = '<span style="color:var(--text-muted,#94a3b8);">—</span>';
         }
-        try { localStorage.setItem('tenantsView', view); } catch (_) { /* ok */ }
     }
 
     // ─────────────────────────────────────────────
-    // RENDER TABLE + CARDS
+    // RENDER TABLE
     // ─────────────────────────────────────────────
     function renderTable(items) {
         if (!items || !items.length) {
             if (el.loading)    el.loading.style.display    = 'none';
             if (el.container)  el.container.style.display  = 'none';
-            const gridEl = document.getElementById('tenantsGrid');
-            if (gridEl)    gridEl.style.display  = 'none';
-            const gridPag = document.getElementById('gridPaginationWrapper');
-            if (gridPag)   gridPag.style.display = 'none';
             if (el.empty)      el.empty.style.display      = 'block';
             if (el.error)      el.error.style.display      = 'none';
             return;
         }
 
-        // ── TABLE rows ──────────────────────────────
         const rows = items.map(item => {
             const isActive   = item.status === 'active';
             const statusText = isActive ? t('table.status.active', 'Active') : t('table.status.suspended', 'Suspended');
-            const statusCls  = isActive ? 'badge-status badge-active' : 'badge-status badge-suspended';
+            const statusCls  = isActive
+                ? 'badge-status badge-active'
+                : 'badge-status badge-suspended';
+
             const ownerDisplay = item.owner_username
                 ? `${esc(item.owner_username)} <small>(ID: ${item.owner_user_id})</small>`
                 : `<span class="text-muted">ID: ${item.owner_user_id}</span>`;
+
             const updatedAtDisplay = item.updated_at
                 ? `<span class="date-display">${AF.formatDate ? AF.formatDate(item.updated_at) : esc(item.updated_at)}</span>`
                 : `<span class="text-muted">—</span>`;
@@ -873,7 +828,7 @@
                 <tr data-tenant-id="${item.id}">
                     <td>${item.id}</td>
                     <td class="logo-thumb-cell" style="width:52px;text-align:center;">
-                        <span style="color:var(--text-muted,#94a3b8);">...</span>
+                        <span style="color:var(--text-muted,#94a3b8);">…</span>
                     </td>
                     <td><strong>${esc(item.name)}</strong></td>
                     <td>${ownerDisplay}</td>
@@ -895,64 +850,13 @@
         }).join('');
 
         if (el.tbody) el.tbody.innerHTML = rows;
-        if (el.container) el.container.dataset.hasData = '1';
 
-        // ── CARD grid ───────────────────────────────
-        const cards = items.map(item => {
-            const isActive   = item.status === 'active';
-            const statusText = isActive ? t('table.status.active', 'Active') : t('table.status.suspended', 'Suspended');
-            const statusCls  = isActive ? 'badge-status badge-active' : 'badge-status badge-suspended';
-            const ownerLine  = item.owner_username ? esc(item.owner_username) : `ID: ${item.owner_user_id}`;
-            const created    = AF.formatDate ? AF.formatDate(item.created_at) : esc(item.created_at || '');
-            const editBtn    = state.permissions.canEdit
-                ? `<button class="btn btn-sm btn-outline" onclick="Tenants.edit(${item.id})" title="${t('table.actions.edit','Edit')}"><i class="fas fa-edit"></i></button>`
-                : '';
-            const deleteBtn  = state.permissions.canDelete
-                ? `<button class="btn btn-sm btn-danger" onclick="Tenants.remove(${item.id})" title="${t('table.actions.delete','Delete')}"><i class="fas fa-trash"></i></button>`
-                : '';
+        if (el.loading)   el.loading.style.display   = 'none';
+        if (el.container) el.container.style.display = 'block';
+        if (el.empty)     el.empty.style.display     = 'none';
+        if (el.error)     el.error.style.display     = 'none';
 
-            return `
-                <div class="tenant-card" data-tenant-id="${item.id}">
-                    <div class="tenant-card-thumb">
-                        <span class="thumb-placeholder"><i class="fas fa-building"></i></span>
-                        <div class="tenant-card-overlay">${editBtn}${deleteBtn}</div>
-                    </div>
-                    <div class="tenant-card-body">
-                        <div class="tenant-card-name" title="${esc(item.name)}">${esc(item.name)}</div>
-                        <div class="tenant-card-meta">
-                            <span><i class="fas fa-user"></i>${ownerLine}</span>
-                            <span><i class="fas fa-calendar-alt"></i>${created}</span>
-                        </div>
-                    </div>
-                    <div class="tenant-card-footer">
-                        <span class="tenant-card-id">#${item.id}</span>
-                        <span class="${statusCls}">${esc(statusText)}</span>
-                        <div style="display:flex;gap:0.3rem;margin-inline-start:auto;">${editBtn}${deleteBtn}</div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        const gridEl = document.getElementById('tenantsGrid');
-        if (gridEl) gridEl.innerHTML = cards;
-
-        // Show correct view
-        if (el.loading)   el.loading.style.display = 'none';
-        if (el.empty)     el.empty.style.display   = 'none';
-        if (el.error)     el.error.style.display   = 'none';
-
-        const gridPag = document.getElementById('gridPaginationWrapper');
-        if (state.view === 'grid') {
-            if (el.container) el.container.style.display = 'none';
-            if (gridEl)       gridEl.style.display       = 'grid';
-            if (gridPag)      gridPag.style.display      = 'flex';
-        } else {
-            if (el.container) el.container.style.display = 'block';
-            if (gridEl)       gridEl.style.display       = 'none';
-            if (gridPag)      gridPag.style.display      = 'none';
-        }
-
-        // Load logo thumbnails asynchronously for each row + card
+        // Load logo thumbnails asynchronously for each row
         loadTableLogos(items);
     }
 
@@ -1305,20 +1209,6 @@
         if (el.btnRetry)   el.btnRetry.onclick     = () => load(state.page);
         if (el.btnRefresh) el.btnRefresh.onclick   = () => load(state.page);
 
-        // View toggle buttons
-        const savedView = (function () { try { return localStorage.getItem('tenantsView') || 'grid'; } catch (_) { return 'grid'; } })();
-        state.view = savedView;
-        const btnGridView = document.getElementById('btnGridView');
-        const btnListView = document.getElementById('btnListView');
-        if (btnGridView) {
-            btnGridView.classList.toggle('active', savedView === 'grid');
-            btnGridView.addEventListener('click', () => setView('grid'));
-        }
-        if (btnListView) {
-            btnListView.classList.toggle('active', savedView === 'list');
-            btnListView.addEventListener('click', () => setView('list'));
-        }
-
         // Domain form events
         const btnAddDomain    = document.getElementById('btnAddDomain');
         const btnSaveDomain   = document.getElementById('btnSaveDomain');
@@ -1407,7 +1297,7 @@
     // ─────────────────────────────────────────────
     // PUBLIC API
     // ─────────────────────────────────────────────
-    window.Tenants = { init, load, edit, remove, add, verifyDomain, removeDomain, addDomain, editDomain, loadTenantCategories, saveCategoryTree, setView };
+    window.Tenants = { init, load, edit, remove, add, verifyDomain, removeDomain, addDomain, editDomain, loadTenantCategories, saveCategoryTree };
 
     // Auto-init in standalone mode
     if (document.readyState === 'loading') {
