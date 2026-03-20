@@ -351,6 +351,18 @@
     .form-group.col-4,
     .form-group.col-6   { flex: 1 1 100%; }
     .filters-grid       { flex-direction: column; }
+    /* Cap zone list height so the Leaflet map panel gets enough vertical space */
+    .zones-list         { max-height: 220px; }
+    /* Card headers: wrap title + action buttons onto separate lines */
+    .card-header        { flex-wrap: wrap; gap: 0.5rem; }
+    .card-title         { font-size: 0.95rem; }
+    /* Save/Cancel buttons: fill width and wrap gracefully */
+    .form-actions-footer { flex-wrap: wrap; }
+    .form-actions-footer .btn { flex: 1; min-width: 130px; }
+    /* Coord input: allow the map-pin / GPS buttons to wrap below the input */
+    .coord-input-wrap   { flex-wrap: wrap; }
+    /* Filter groups: release the 160px minimum so they stretch to fill the column */
+    .filter-group       { min-width: 0; }
 }
 
 @media (max-width: 600px) {
@@ -361,12 +373,21 @@
     .zones-map-panel    { min-height: 300px; }
     .coord-picker-map   { height: 240px; }
     .coord-modal-inner  { max-height: 98vh; }
+    /* Tighter spacing on small phones */
+    .page-title         { font-size: 1.2rem; }
+    .card-header        { padding: 0.65rem 0.75rem; }
+    .coord-modal        { padding: 0.5rem; }
+    .coord-modal-header { padding: 0.65rem 0.75rem; }
+    .coord-modal-search { padding: 0.5rem 0.75rem; }
+    .coord-modal-footer { padding: 0.5rem 0.75rem; }
+    .zones-list         { max-height: 180px; }
 }
 
 @media (max-width: 480px) {
     .delivery-map       { height: 260px; }
     .zones-map-panel    { min-height: 260px; }
     .coord-picker-map   { height: 200px; }
+    .zones-list         { max-height: 150px; }
 }
 
 /* ── Provider ID Lookup ───────────────────────────────────── */

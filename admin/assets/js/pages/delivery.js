@@ -342,9 +342,11 @@
             }).addTo(coordPickerMap);
             coordPickerMap.on('click', function(e) { placePickerMarker(e.latlng.lat, e.latlng.lng); });
         }
-        // 300ms gives mobile browsers time to complete the modal transition and repaint
+        // Give mobile browsers time to complete the modal transition and repaint
         // before Leaflet measures the container dimensions for tile loading.
-        setTimeout(function() { coordPickerMap.invalidateSize(); }, 300);
+        // Two calls: 400 ms covers fast devices, 900 ms covers slow iOS/Android.
+        setTimeout(function() { coordPickerMap.invalidateSize(); }, 400);
+        setTimeout(function() { coordPickerMap.invalidateSize(); }, 900);
         var latVal = parseFloat($(latId) && $(latId).value || '');
         var lngVal = parseFloat($(lngId) && $(lngId).value || '');
         if (!isNaN(latVal) && !isNaN(lngVal)) {
@@ -481,6 +483,33 @@
     function initZonesMap() {
         var mapEl = $('zonesMap');
         if (!mapEl || typeof L === 'undefined' || zonesMap) return;
+
+        // On mobile / slow connections the page-specific delivery.css may still be
+        // loading when this function is called via the AJAX reinit path (Leaflet is
+        // already in memory so ensureLeaflet* completes synchronously).  Leaflet
+        // cannot recover from being initialised on a 0×0 container — it loads no
+        // tiles and subsequent invalidateSize() calls produce a blank grey box.
+        // Defer until the div has been given an actual height by the stylesheet.
+        if (mapEl.offsetHeight === 0) {
+            if (typeof ResizeObserver !== 'undefined') {
+                var ro = new ResizeObserver(function(entries) {
+                    if (entries[0].contentRect.height > 0) {
+                        ro.disconnect();
+                        if (!zonesMap) initZonesMap();
+                    }
+                });
+                ro.observe(mapEl);
+            } else {
+                var polls = 0;
+                var iv = setInterval(function() {
+                    if (mapEl.offsetHeight > 0 || ++polls >= 60) {
+                        clearInterval(iv);
+                        if (!zonesMap) initZonesMap();
+                    }
+                }, 50);
+            }
+            return;
+        }
 
         zonesMap = L.map('zonesMap').setView(CFG.mapCenter || [24.7136, 46.6753], CFG.mapZoom || 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1127,7 +1156,7 @@
                 var panel = document.getElementById(tab + 'Tab');
                 if (panel) panel.style.display = '';
                 if (tab === 'zones' && zonesMap) {
-                    [100, 400].forEach(function(ms) {
+                    [100, 400, 800].forEach(function(ms) {
                         setTimeout(function() { if (zonesMap) zonesMap.invalidateSize(); }, ms);
                     });
                 }
@@ -1191,7 +1220,7 @@
                     return;
                 }
                 initZonesMap();
-                [200, 600, 1500].forEach(function (ms) {
+                [200, 600, 1500, 3000].forEach(function (ms) {
                     setTimeout(function () { if (zonesMap) zonesMap.invalidateSize(); }, ms);
                 });
             });
