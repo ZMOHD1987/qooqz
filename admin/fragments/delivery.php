@@ -236,7 +236,7 @@ if (!function_exists('__t')) {
         </aside>
 
         <div class="zones-map-panel">
-            <div id="zonesMap" class="delivery-map" style="height:540px;width:100%"></div>
+            <div id="zonesMap" class="delivery-map"></div>
         </div>
     </div>
 </div>
@@ -779,7 +779,7 @@ if (!function_exists('__t')) {
             <input type="text" id="coordSearchInput" class="form-control" placeholder="<?= __t('delivery.map.search_place','Search place...') ?>">
             <button type="button" id="coordSearchBtn" class="btn btn-secondary btn-sm"><i class="fas fa-search"></i></button>
         </div>
-        <div id="coordPickerMap" style="height:400px;width:100%;"></div>
+        <div id="coordPickerMap" class="coord-picker-map"></div>
         <div class="coord-modal-footer">
             <span><?= __t('delivery.map.click_to_select','Click on the map to select a location') ?></span>
             <span id="coordDisplay" class="coord-display"></span>

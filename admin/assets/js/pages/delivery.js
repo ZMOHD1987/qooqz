@@ -97,6 +97,7 @@
     let coordPickerMap    = null;
     let coordPickerMarker = null;
     let coordPickerTarget = null; // { latId, lngId }
+    let onViewportResize  = null; // resize/orientationchange handler (stored for removal in reinit)
 
     // ─── Helpers ─────────────────────────────────────────────────────
     function $(id) { return document.getElementById(id); }
@@ -341,7 +342,9 @@
             }).addTo(coordPickerMap);
             coordPickerMap.on('click', function(e) { placePickerMarker(e.latlng.lat, e.latlng.lng); });
         }
-        setTimeout(function() { coordPickerMap.invalidateSize(); }, 150);
+        // 300ms gives mobile browsers time to complete the modal transition and repaint
+        // before Leaflet measures the container dimensions for tile loading.
+        setTimeout(function() { coordPickerMap.invalidateSize(); }, 300);
         var latVal = parseFloat($(latId) && $(latId).value || '');
         var lngVal = parseFloat($(lngId) && $(lngId).value || '');
         if (!isNaN(latVal) && !isNaN(lngVal)) {
@@ -1196,6 +1199,18 @@
 
         await loadDrops();
         await zonesMod.load(1);
+
+        // Resize maps on orientation change and window resize (common on mobile)
+        var resizeTimer;
+        onViewportResize = function() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function() {
+                if (zonesMap) zonesMap.invalidateSize();
+                if (coordPickerMap) coordPickerMap.invalidateSize();
+            }, 200);
+        };
+        window.addEventListener('resize', onViewportResize);
+        window.addEventListener('orientationchange', onViewportResize);
     }
 
     // ─── Reinitialise after AJAX re-navigation ────────────────────────
@@ -1203,6 +1218,11 @@
     // Destroys existing Leaflet maps (their container divs are gone from the
     // re-injected DOM), resets state, then calls init() on the fresh DOM.
     function reinit() {
+        if (onViewportResize) {
+            window.removeEventListener('resize', onViewportResize);
+            window.removeEventListener('orientationchange', onViewportResize);
+            onViewportResize = null;
+        }
         if (zonesMap) {
             try { zonesMap.off(); zonesMap.remove(); } catch(e) {}
             zonesMap = null;

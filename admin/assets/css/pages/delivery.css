@@ -135,6 +135,12 @@
     border-radius: 10px;
 }
 
+/* ── Coordinate Picker inline map ─────────────────────────── */
+.coord-picker-map {
+    width: 100%;
+    height: 400px;
+}
+
 /* Zone GeoJSON textarea */
 .zone-geojson {
     font-family: 'Courier New', monospace;
@@ -334,10 +340,13 @@
 
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 900px) {
-    .zones-workspace    { flex-direction: column; }
+    /* min-height: 0 overrides the 540px base value that would otherwise force the
+       stacked mobile layout to be taller than the viewport, pushing the map off-screen */
+    .zones-workspace    { flex-direction: column; min-height: 0; }
     .zones-sidebar      { width: 100%; min-height: auto; }
     .zones-map-panel    { min-height: 360px; }
     .delivery-map       { height: 360px; }
+    .coord-picker-map   { height: 320px; }
     .form-group.col-3,
     .form-group.col-4,
     .form-group.col-6   { flex: 1 1 100%; }
@@ -345,9 +354,19 @@
 }
 
 @media (max-width: 600px) {
-    .workspace-tabs { gap: 0.2rem; }
-    .tab-btn        { padding: 0.5rem 0.7rem; font-size: 0.78rem; }
-    .tab-btn span   { display: none; }
+    .workspace-tabs     { gap: 0.2rem; }
+    .tab-btn            { padding: 0.5rem 0.7rem; font-size: 0.78rem; }
+    .tab-btn span       { display: none; }
+    .delivery-map       { height: 300px; }
+    .zones-map-panel    { min-height: 300px; }
+    .coord-picker-map   { height: 240px; }
+    .coord-modal-inner  { max-height: 98vh; }
+}
+
+@media (max-width: 480px) {
+    .delivery-map       { height: 260px; }
+    .zones-map-panel    { min-height: 260px; }
+    .coord-picker-map   { height: 200px; }
 }
 
 /* ── Provider ID Lookup ───────────────────────────────────── */
