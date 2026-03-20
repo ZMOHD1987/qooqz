@@ -62,7 +62,7 @@ if (!function_exists('__t')) {
 }
 ?>
 <?php if ($isFragment): ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/delivery.css?v=<?= time() ?>">
+<link rel="stylesheet" href="/admin/assets/css/pages/delivery.css?v=5">
 <?php endif; ?>
 <meta data-page="delivery" data-i18n-files="/languages/Delivery/<?= rawurlencode($lang) ?>.json">
 
@@ -236,7 +236,7 @@ if (!function_exists('__t')) {
         </aside>
 
         <div class="zones-map-panel">
-            <div id="zonesMap" class="delivery-map" style="height:540px;width:100%"></div>
+            <div id="zonesMap" class="delivery-map"></div>
         </div>
     </div>
 </div>
@@ -779,7 +779,7 @@ if (!function_exists('__t')) {
             <input type="text" id="coordSearchInput" class="form-control" placeholder="<?= __t('delivery.map.search_place','Search place...') ?>">
             <button type="button" id="coordSearchBtn" class="btn btn-secondary btn-sm"><i class="fas fa-search"></i></button>
         </div>
-        <div id="coordPickerMap" style="height:400px;width:100%;"></div>
+        <div id="coordPickerMap" class="coord-picker-map"></div>
         <div class="coord-modal-footer">
             <span><?= __t('delivery.map.click_to_select','Click on the map to select a location') ?></span>
             <span id="coordDisplay" class="coord-display"></span>
@@ -793,18 +793,18 @@ if (!function_exists('__t')) {
 
 </div><!-- /page-container -->
 
-<?php $deliveryJsVer = '3'; ?>
+<?php $deliveryJsVer = '5'; ?>
 <script type="text/javascript">
 window.APP_CONFIG = window.APP_CONFIG || {};
 window.APP_CONFIG.TENANT_ID = <?= (int)$tenantId ?>;
-window.APP_CONFIG.CSRF_TOKEN = '<?= addslashes($csrf) ?>';
-window.USER_LANGUAGE = '<?= addslashes($lang) ?>';
+window.APP_CONFIG.CSRF_TOKEN = <?= json_encode($csrf) ?>;
+window.USER_LANGUAGE = <?= json_encode($lang) ?>;
 
 window.DELIVERY_CONFIG = {
-    lang: '<?= addslashes($lang) ?>',
-    dir: '<?= addslashes($dir) ?>',
+    lang: <?= json_encode($lang) ?>,
+    dir: <?= json_encode($dir) ?>,
     tenantId: <?= (int)$tenantId ?>,
-    csrfToken: '<?= addslashes($csrf) ?>',
+    csrfToken: <?= json_encode($csrf) ?>,
     userId: <?= (int)$userId ?>,
     mapCenter: [24.7136, 46.6753],
     mapZoom: 5,
@@ -833,21 +833,13 @@ window.PAGE_PERMISSIONS = <?= json_encode(['canCreate'=>$canCreate, 'canEdit'=>$
 <!-- delivery.js self-loads Leaflet JS + CSS (same pattern as test_map.php / DeliveryZone.js) -->
 <?php if ($isFragment): ?>
 <script src="/admin/assets/js/pages/delivery.js?v=<?= $deliveryJsVer ?>"></script>
-<script>(function(){
+<script>
     // If delivery.js was already loaded on a prior navigation, Delivery.reinit() resets maps
-    // and re-runs init() on the fresh DOM.  On the very first load delivery.js auto-inits.
+    // and re-runs init() on the fresh DOM. On the very first load delivery.js auto-inits.
     if (window.Delivery && typeof window.Delivery.reinit === 'function') {
         window.Delivery.reinit();
-        return;
     }
-    // delivery.js not yet loaded — it will self-init via its own IIFE.
-    // Just watch for load timeout as a safety net.
-    var i = 0;
-    var iv = setInterval(function(){
-        if (window.Delivery) { clearInterval(iv); }
-        else if (++i > 120) { clearInterval(iv); console.error('Delivery init timeout'); }
-    }, 100);
-})();</script>
+</script>
 <?php else: ?>
 <script src="/admin/assets/js/pages/delivery.js?v=<?= $deliveryJsVer ?>"></script>
 <?php endif; ?>

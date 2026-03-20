@@ -97,6 +97,7 @@
     let coordPickerMap    = null;
     let coordPickerMarker = null;
     let coordPickerTarget = null; // { latId, lngId }
+    let onViewportResize  = null; // resize/orientationchange handler (stored for removal in reinit)
 
     // ─── Helpers ─────────────────────────────────────────────────────
     function $(id) { return document.getElementById(id); }
@@ -341,7 +342,11 @@
             }).addTo(coordPickerMap);
             coordPickerMap.on('click', function(e) { placePickerMarker(e.latlng.lat, e.latlng.lng); });
         }
-        setTimeout(function() { coordPickerMap.invalidateSize(); }, 150);
+        // Give mobile browsers time to complete the modal transition and repaint
+        // before Leaflet measures the container dimensions for tile loading.
+        // Two calls: 400 ms covers fast devices, 900 ms covers slow iOS/Android.
+        setTimeout(function() { coordPickerMap.invalidateSize(); }, 400);
+        setTimeout(function() { coordPickerMap.invalidateSize(); }, 900);
         var latVal = parseFloat($(latId) && $(latId).value || '');
         var lngVal = parseFloat($(lngId) && $(lngId).value || '');
         if (!isNaN(latVal) && !isNaN(lngVal)) {
@@ -479,6 +484,33 @@
         var mapEl = $('zonesMap');
         if (!mapEl || typeof L === 'undefined' || zonesMap) return;
 
+        // On mobile / slow connections the page-specific delivery.css may still be
+        // loading when this function is called via the AJAX reinit path (Leaflet is
+        // already in memory so ensureLeaflet* completes synchronously).  Leaflet
+        // cannot recover from being initialised on a 0×0 container — it loads no
+        // tiles and subsequent invalidateSize() calls produce a blank grey box.
+        // Defer until the div has been given an actual height by the stylesheet.
+        if (mapEl.offsetHeight === 0) {
+            if (typeof ResizeObserver !== 'undefined') {
+                var ro = new ResizeObserver(function(entries) {
+                    if (entries[0].contentRect.height > 0) {
+                        ro.disconnect();
+                        if (!zonesMap) initZonesMap();
+                    }
+                });
+                ro.observe(mapEl);
+            } else {
+                var polls = 0;
+                var iv = setInterval(function() {
+                    if (mapEl.offsetHeight > 0 || ++polls >= 60) {
+                        clearInterval(iv);
+                        if (!zonesMap) initZonesMap();
+                    }
+                }, 50);
+            }
+            return;
+        }
+
         zonesMap = L.map('zonesMap').setView(CFG.mapCenter || [24.7136, 46.6753], CFG.mapZoom || 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
@@ -499,6 +531,79 @@
                 edit: { featureGroup: drawnItems, remove: true }
             }).addTo(zonesMap);
         }
+
+        // ─── Custom map controls: fullscreen toggle + locate me ──────────
+        (function() {
+            // Fullscreen toggle — expands the map panel to cover the full viewport.
+            // Pressing Escape or clicking the button again collapses it back.
+            var FsControl = L.Control.extend({
+                options: { position: 'topright' },
+                onAdd: function() {
+                    var btn = L.DomUtil.create('button', 'leaflet-control-custom ctrl-btn-fullscreen');
+                    btn.type = 'button';
+                    btn.title = 'Toggle fullscreen';
+                    btn.setAttribute('aria-label', 'Toggle fullscreen');
+                    btn.innerHTML = '<i class="fas fa-expand" aria-hidden="true"></i>';
+                    L.DomEvent.disableClickPropagation(btn);
+                    L.DomEvent.on(btn, 'click touchend', function(e) {
+                        L.DomEvent.preventDefault(e);
+                        var panel = document.querySelector('.zones-map-panel');
+                        if (!panel) return;
+                        var isFs = panel.classList.toggle('is-fullscreen');
+                        btn.innerHTML = isFs
+                            ? '<i class="fas fa-compress" aria-hidden="true"></i>'
+                            : '<i class="fas fa-expand" aria-hidden="true"></i>';
+                        btn.title = isFs ? 'Exit fullscreen' : 'Toggle fullscreen';
+                        if (isFs) {
+                            var onEsc = function(ev) {
+                                if (ev.key === 'Escape') {
+                                    panel.classList.remove('is-fullscreen');
+                                    btn.innerHTML = '<i class="fas fa-expand" aria-hidden="true"></i>';
+                                    btn.title = 'Toggle fullscreen';
+                                    document.removeEventListener('keydown', onEsc);
+                                    setTimeout(function() { if (zonesMap) zonesMap.invalidateSize(); }, 50);
+                                }
+                            };
+                            document.addEventListener('keydown', onEsc);
+                        }
+                        setTimeout(function() { if (zonesMap) zonesMap.invalidateSize(); }, 50);
+                    });
+                    return btn;
+                }
+            });
+            new FsControl().addTo(zonesMap);
+
+            // Locate me — pans the map to the user's GPS position.
+            var LocControl = L.Control.extend({
+                options: { position: 'topright' },
+                onAdd: function() {
+                    var btn = L.DomUtil.create('button', 'leaflet-control-custom ctrl-btn-locate');
+                    btn.type = 'button';
+                    btn.title = 'My location';
+                    btn.setAttribute('aria-label', 'Go to my location');
+                    btn.innerHTML = '<i class="fas fa-crosshairs" aria-hidden="true"></i>';
+                    L.DomEvent.disableClickPropagation(btn);
+                    L.DomEvent.on(btn, 'click touchend', function(e) {
+                        L.DomEvent.preventDefault(e);
+                        if (!navigator.geolocation) { notify('Geolocation not supported', 'error'); return; }
+                        btn.classList.add('locating');
+                        navigator.geolocation.getCurrentPosition(
+                            function(pos) {
+                                btn.classList.remove('locating');
+                                zonesMap.setView([pos.coords.latitude, pos.coords.longitude], 14);
+                            },
+                            function() {
+                                btn.classList.remove('locating');
+                                notify('Location unavailable', 'error');
+                            },
+                            { enableHighAccuracy: true, timeout: 10000 }
+                        );
+                    });
+                    return btn;
+                }
+            });
+            new LocControl().addTo(zonesMap);
+        })();
 
         zonesMap.on(L.Draw.Event.CREATED, function(e) {
             drawnItems.clearLayers();
@@ -887,12 +992,6 @@
         }
     );
 
-    var orderStatusEl = $('orderStatus');
-    if (orderStatusEl) orderStatusEl.addEventListener('change', function() {
-        var cf = $('cancelFields');
-        if (cf) cf.style.display = this.value === 'cancelled' ? '' : 'none';
-    });
-
     // ─── Locations Module ─────────────────────────────────────────────
     var locationsMod = Object.assign(
         createModule('locations', CFG.urls.locations, {
@@ -1069,43 +1168,54 @@
 
     // ─── Dropdown Loaders ─────────────────────────────────────────────
     async function loadDrops() {
-        // Zones dropdown (for pzone form and filter bars)
-        try {
-            var rz = await api(CFG.urls.zones + '?limit=500&tenant_id=' + state.tenant);
-            var zitems = extractItems(rz);
-            var zhtml = '<option value="">–</option>' + zitems.map(function(z) {
-                return '<option value="' + esc(z.id) + '">' + esc(z.zone_name) + '</option>';
-            }).join('');
-            ['pzoneZoneId','pzonesZoneFilter','orderZoneId','ordersZoneFilter'].forEach(function(id) {
-                var el = $(id); if (el) el.innerHTML = zhtml;
-            });
-        } catch(e) { console.warn('[Delivery] zones dropdown:', e.message); }
+        // Run all independent fetches in parallel; countries→cities must stay sequential.
+        await Promise.all([
+            // Zones dropdown (for pzone form and filter bars)
+            (async function() {
+                try {
+                    var rz = await api(CFG.urls.zones + '?limit=500&tenant_id=' + state.tenant);
+                    var zitems = extractItems(rz);
+                    var zhtml = '<option value="">–</option>' + zitems.map(function(z) {
+                        return '<option value="' + esc(z.id) + '">' + esc(z.zone_name) + '</option>';
+                    }).join('');
+                    ['pzoneZoneId','pzonesZoneFilter','orderZoneId','ordersZoneFilter'].forEach(function(id) {
+                        var el = $(id); if (el) el.innerHTML = zhtml;
+                    });
+                } catch(e) { console.warn('[Delivery] zones dropdown:', e.message); }
+            })(),
 
-        // Countries + Cities cascade
-        await loadCountries();
-        await loadCitiesForCountry('');
+            // Countries + Cities cascade (must be sequential internally)
+            (async function() {
+                await loadCountries();
+                await loadCitiesForCountry('');
+            })(),
 
-        // Delivery orders for tracking dropdown
-        try {
-            var ro = await api(CFG.urls.orders + '?limit=500&tenant_id=' + state.tenant);
-            var oitems = extractItems(ro);
-            var ohtml = '<option value="">–</option>' + oitems.map(function(o) {
-                return '<option value="' + esc(o.id) + '">#' + esc(o.id) + ' (order:' + esc(o.order_id) + ')</option>';
-            }).join('');
-            ['trackingOrderId','trackingOrderFilter'].forEach(function(id) { var el = $(id); if (el) el.innerHTML = ohtml; });
-        } catch(e) { console.warn('[Delivery] orders dropdown:', e.message); }
+            // Delivery orders for tracking dropdown
+            (async function() {
+                try {
+                    var ro = await api(CFG.urls.orders + '?limit=500&tenant_id=' + state.tenant);
+                    var oitems = extractItems(ro);
+                    var ohtml = '<option value="">–</option>' + oitems.map(function(o) {
+                        return '<option value="' + esc(o.id) + '">#' + esc(o.id) + ' (order:' + esc(o.order_id) + ')</option>';
+                    }).join('');
+                    ['trackingOrderId','trackingOrderFilter'].forEach(function(id) { var el = $(id); if (el) el.innerHTML = ohtml; });
+                } catch(e) { console.warn('[Delivery] orders dropdown:', e.message); }
+            })(),
 
-        // Provider filter dropdowns (filter bars only — form fields use ID lookup)
-        try {
-            var rp = await api(CFG.urls.providers + '?limit=500&tenant_id=' + state.tenant);
-            var pitems = extractItems(rp);
-            var phtml = '<option value="">–</option>' + pitems.map(function(p) {
-                return '<option value="' + esc(p.id) + '">#' + esc(p.id) + ' ' + esc(p.provider_type) + '</option>';
-            }).join('');
-            ['ordersProviderFilter','locationsProviderFilter','pzonesProviderFilter','trackingProviderFilter'].forEach(function(id) {
-                var el = $(id); if (el) el.innerHTML = phtml;
-            });
-        } catch(e) { console.warn('[Delivery] providers filter:', e.message); }
+            // Provider filter dropdowns (filter bars only — form fields use ID lookup)
+            (async function() {
+                try {
+                    var rp = await api(CFG.urls.providers + '?limit=500&tenant_id=' + state.tenant);
+                    var pitems = extractItems(rp);
+                    var phtml = '<option value="">–</option>' + pitems.map(function(p) {
+                        return '<option value="' + esc(p.id) + '">#' + esc(p.id) + ' ' + esc(p.provider_type) + '</option>';
+                    }).join('');
+                    ['ordersProviderFilter','locationsProviderFilter','pzonesProviderFilter','trackingProviderFilter'].forEach(function(id) {
+                        var el = $(id); if (el) el.innerHTML = phtml;
+                    });
+                } catch(e) { console.warn('[Delivery] providers filter:', e.message); }
+            })()
+        ]);
     }
 
     // ─── Tabs ─────────────────────────────────────────────────────────
@@ -1119,7 +1229,7 @@
                 var panel = document.getElementById(tab + 'Tab');
                 if (panel) panel.style.display = '';
                 if (tab === 'zones' && zonesMap) {
-                    [100, 400].forEach(function(ms) {
+                    [100, 400, 800].forEach(function(ms) {
                         setTimeout(function() { if (zonesMap) zonesMap.invalidateSize(); }, ms);
                     });
                 }
@@ -1165,6 +1275,13 @@
 
         [zonesMod, providersMod, ordersMod, locationsMod, trackingMod, pzonesMod].forEach(function(m) { m.bindEvents(); });
 
+        // Order status change — show/hide cancellation fields
+        var orderStatusEl = $('orderStatus');
+        if (orderStatusEl) orderStatusEl.addEventListener('change', function() {
+            var cf = $('cancelFields');
+            if (cf) cf.style.display = this.value === 'cancelled' ? '' : 'none';
+        });
+
         // Load Leaflet JS + Draw JS then CSS, then init map — same serial-chain pattern
         // used by test_map.php and DeliveryZone.js.  This guarantees window.L and
         // window.L.Draw are fully available before initZonesMap() is called, regardless
@@ -1176,7 +1293,7 @@
                     return;
                 }
                 initZonesMap();
-                [100, 300, 700, 1500, 3000].forEach(function (ms) {
+                [200, 600, 1500, 3000].forEach(function (ms) {
                     setTimeout(function () { if (zonesMap) zonesMap.invalidateSize(); }, ms);
                 });
             });
@@ -1184,6 +1301,18 @@
 
         await loadDrops();
         await zonesMod.load(1);
+
+        // Resize maps on orientation change and window resize (common on mobile)
+        var resizeTimer;
+        onViewportResize = function() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function() {
+                if (zonesMap) zonesMap.invalidateSize();
+                if (coordPickerMap) coordPickerMap.invalidateSize();
+            }, 200);
+        };
+        window.addEventListener('resize', onViewportResize);
+        window.addEventListener('orientationchange', onViewportResize);
     }
 
     // ─── Reinitialise after AJAX re-navigation ────────────────────────
@@ -1191,6 +1320,11 @@
     // Destroys existing Leaflet maps (their container divs are gone from the
     // re-injected DOM), resets state, then calls init() on the fresh DOM.
     function reinit() {
+        if (onViewportResize) {
+            window.removeEventListener('resize', onViewportResize);
+            window.removeEventListener('orientationchange', onViewportResize);
+            onViewportResize = null;
+        }
         if (zonesMap) {
             try { zonesMap.off(); zonesMap.remove(); } catch(e) {}
             zonesMap = null;
