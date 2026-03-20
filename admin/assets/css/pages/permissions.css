@@ -23,4 +23,4 @@
 .form-wrap { margin-top:12px; padding:12px; border:1px solid var(--pn-border); border-radius:8px; background:var(--theme-card,#fff); }
 
 .status { margin:8px 0; color:var(--pn-primary); }
-.alert { background:#fff5f5; border:1px solid #fca5a5; padding:8px; border-radius:6px; color:#7f1d1d; }
+.alert { background: rgba(239,68,68,0.1); border:1px solid var(--danger-color, var(--error-color, #ef4444)); padding:8px; border-radius:6px; color: var(--danger-color, var(--error-color, #ef4444)); }

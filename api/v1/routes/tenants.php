@@ -19,10 +19,21 @@ require_once $baseDir . '/shared/helpers/safe_helpers.php';
 require_once $baseDir . '/shared/config/db.php';
 
 // ===== تحميل ملفات tenants =====
+require_once API_VERSION_PATH . '/models/tenants/Contracts/TenantsRepositoryInterface.php';
 require_once API_VERSION_PATH . '/models/tenants/repositories/PdoTenantsRepository.php';
 require_once API_VERSION_PATH . '/models/tenants/validators/TenantsValidator.php';
 require_once API_VERSION_PATH . '/models/tenants/services/TenantsService.php';
 require_once API_VERSION_PATH . '/models/tenants/controllers/TenantsController.php';
+
+// ===== تحميل audit_logs =====
+$auditLogsPath = API_VERSION_PATH . '/models/audit_logs';
+require_once $auditLogsPath . '/Contracts/AuditLogsRepositoryInterface.php';
+require_once $auditLogsPath . '/repositories/PdoAuditLogsRepository.php';
+
+// ===== تحميل bad_words =====
+$badWordsPath = API_VERSION_PATH . '/models/bad_words';
+require_once $badWordsPath . '/repositories/PdoBadWordsRepository.php';
+require_once $badWordsPath . '/services/BadWordsService.php';
 
 /** @var PDO $pdo */
 $pdo = $GLOBALS['ADMIN_DB'] ?? null;
@@ -31,10 +42,22 @@ if (!$pdo instanceof PDO) {
     return;
 }
 
+// ===== بدء الجلسة إن لم تكن بدأت =====
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// ===== المستخدم الحالي من الجلسة =====
+$actingUserId = $_SESSION['admin_id'] ?? $_SESSION['user_id'] ?? null;
+
+// ===== إنشاء الاعتمادات =====
+$auditRepo       = new PdoAuditLogsRepository($pdo);
+$badWordsService = new BadWordsService(new PdoBadWordsRepository($pdo));
+
 // إنشاء الاعتمادات
-$repo      = new PdoTenantsRepository($pdo);
-$validator = new TenantsValidator();
-$service   = new TenantsService($repo, $validator);
+$repo       = new PdoTenantsRepository($pdo);
+$validator  = new TenantsValidator();
+$service    = new TenantsService($repo, $validator, $auditRepo, $badWordsService);
 $controller = new TenantsController($service);
 
 // توجيه الطلب
@@ -140,7 +163,7 @@ try {
         }
 
         ResponseFormatter::success(
-            $controller->create($data),
+            $controller->create($data, $actingUserId),
             'Tenant created successfully',
             201
         );
@@ -157,7 +180,7 @@ try {
 
         $data['id'] = $id;
         ResponseFormatter::success(
-            $controller->update($data, $id),
+            $controller->update($data, $id, $actingUserId),
             'Tenant updated successfully'
         );
     }
@@ -166,7 +189,7 @@ try {
     // DELETE /tenants/{id} - حذف
     // ════════════════════════════════════════════════════════════
     elseif ($method === 'DELETE' && $id) {
-        $controller->delete(['id' => $id, 'user_id' => $queryParams['user_id'] ?? null]);
+        $controller->delete(['id' => $id, 'user_id' => $actingUserId]);
         ResponseFormatter::success(
             ['deleted' => true],
             'Tenant deleted successfully'
@@ -183,7 +206,7 @@ try {
         }
 
         ResponseFormatter::success(
-            $controller->activate($data),
+            $controller->activate($data, $actingUserId),
             'Tenants activated successfully'
         );
     }
@@ -198,7 +221,7 @@ try {
         }
 
         ResponseFormatter::success(
-            $controller->suspend($data),
+            $controller->suspend($data, $actingUserId),
             'Tenants suspended successfully'
         );
     }
@@ -213,7 +236,7 @@ try {
         }
 
         ResponseFormatter::success(
-            $controller->bulkUpdateStatus($data),
+            $controller->bulkUpdateStatus($data, $actingUserId),
             'Bulk status update completed'
         );
     }
@@ -241,7 +264,12 @@ try {
     }
 
 } catch (InvalidArgumentException $e) {
-    ResponseFormatter::error($e->getMessage(), 422);
+    $decoded = json_decode($e->getMessage(), true);
+    if (is_array($decoded)) {
+        ResponseFormatter::error('Validation failed', 422, $decoded);
+    } else {
+        ResponseFormatter::error($e->getMessage(), 422);
+    }
 } catch (RuntimeException $e) {
     ResponseFormatter::error($e->getMessage(), 404);
 } catch (Throwable $e) {

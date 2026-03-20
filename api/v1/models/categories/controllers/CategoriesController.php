@@ -13,7 +13,7 @@ final class CategoriesController
     /* ============================================================
      * LIST CATEGORIES WITH FILTERS
      * ============================================================ */
-    public function list(int $tenantId): array
+    public function list(?int $tenantId): array
     {
         $filters = [
             'parent_id' => isset($_GET['parent_id']) && $_GET['parent_id'] !== ''
@@ -35,7 +35,7 @@ final class CategoriesController
     /* ============================================================
      * GET CATEGORY TREE
      * ============================================================ */
-    public function tree(int $tenantId): array
+    public function tree(?int $tenantId): array
     {
         $lang = $_GET['lang'] ?? 'ar';
         return [
@@ -49,7 +49,7 @@ final class CategoriesController
     /* ============================================================
      * GET ACTIVE CATEGORIES
      * ============================================================ */
-    public function getActive(int $tenantId): array
+    public function getActive(?int $tenantId): array
     {
         $lang = $_GET['lang'] ?? 'ar';
         $items = $this->service->getActiveCategories($tenantId, $lang);
@@ -65,7 +65,7 @@ final class CategoriesController
     /* ============================================================
      * GET FEATURED CATEGORIES
      * ============================================================ */
-    public function getFeatured(int $tenantId): array
+    public function getFeatured(?int $tenantId): array
     {
         $lang = $_GET['lang'] ?? 'ar';
         $items = $this->service->getFeaturedCategories($tenantId, $lang);
@@ -81,7 +81,7 @@ final class CategoriesController
     /* ============================================================
      * GET BY ID (EDIT FORM)
      * ============================================================ */
-    public function getById(int $tenantId, int $id): array
+    public function getById(?int $tenantId, int $id): array
     {
         $lang = $_GET['lang'] ?? 'ar';
         $allTranslations = isset($_GET['all_translations']) &&
@@ -98,7 +98,7 @@ final class CategoriesController
     /* ============================================================
      * CREATE CATEGORY
      * ============================================================ */
-    public function create(int $tenantId, array $data): array
+    public function create(?int $tenantId, array $data): array
     {
         $userId = $_SESSION['user_id'] ?? $_GET['user_id'] ?? null;
 
@@ -110,7 +110,7 @@ final class CategoriesController
     /* ============================================================
      * UPDATE CATEGORY
      * ============================================================ */
-    public function update(int $tenantId, array $data): array
+    public function update(?int $tenantId, array $data): array
     {
         if (empty($data['id'])) {
             throw new InvalidArgumentException('ID is required for update');
@@ -124,7 +124,7 @@ final class CategoriesController
     /* ============================================================
      * DELETE CATEGORY
      * ============================================================ */
-    public function delete(int $tenantId, array $data): void
+    public function delete(?int $tenantId, array $data): void
     {
         $userId = $_SESSION['user_id'] ?? $data['user_id'] ?? null;
 
@@ -155,7 +155,7 @@ final class CategoriesController
      * DELETE SINGLE TRANSLATION
      * ============================================================ */
     public function deleteTranslation(
-        int $tenantId,
+        ?int $tenantId,
         int $categoryId,
         string $languageCode
     ): array {
@@ -183,7 +183,7 @@ final class CategoriesController
     /* ============================================================
      * BULK OPERATIONS
      * ============================================================ */
-    public function bulkUpdate(int $tenantId, array $data): array
+    public function bulkUpdate(?int $tenantId, array $data): array
     {
         $userId = $_SESSION['user_id'] ?? $_GET['user_id'] ?? null;
         $action = $data['action'] ?? '';
@@ -223,7 +223,7 @@ final class CategoriesController
     /* ============================================================
      * VALIDATE SLUG
      * ============================================================ */
-    public function validateSlug(int $tenantId, array $data): array
+    public function validateSlug(?int $tenantId, array $data): array
     {
         $slug = $data['slug'] ?? '';
         $excludeId = isset($data['exclude_id']) ? (int)$data['exclude_id'] : null;

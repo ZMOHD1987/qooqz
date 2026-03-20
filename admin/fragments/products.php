@@ -184,7 +184,15 @@ if (!function_exists('renderFragmentThemeVars')) {
 <?php endif; ?>
 </style>
 <!-- Structural layout CSS (uses only var() for all visual properties) -->
-<link rel="stylesheet" href="/admin/assets/css/pages/products.css?v=<?= time() ?>">
+<?php
+if (!function_exists('prodAssetVer')) {
+    function prodAssetVer(string $path): string {
+        $full = $_SERVER['DOCUMENT_ROOT'] . $path;
+        return file_exists($full) ? (string)filemtime($full) : '1';
+    }
+}
+?>
+<link rel="stylesheet" href="/admin/assets/css/pages/products.css?v=<?= prodAssetVer('/admin/assets/css/pages/products.css') ?>">
 
 <!-- Page Meta -->
 <meta data-page="products"
@@ -239,13 +247,9 @@ if (!function_exists('renderFragmentThemeVars')) {
                         <i class="fas fa-info-circle"></i>
                         <span data-i18n="tabs.general"><?= __t('tabs.general', 'General') ?></span>
                     </button>
-                    <button type="button" class="tab-btn" data-tab="pricing">
-                        <i class="fas fa-tag"></i>
-                        <span data-i18n="tabs.pricing"><?= __t('tabs.pricing', 'Pricing') ?></span>
-                    </button>
-                    <button type="button" class="tab-btn" data-tab="inventory">
-                        <i class="fas fa-boxes"></i>
-                        <span data-i18n="tabs.inventory"><?= __t('tabs.inventory', 'Inventory') ?></span>
+                    <button type="button" class="tab-btn" data-tab="physical">
+                        <i class="fas fa-ruler-combined"></i>
+                        <span data-i18n="tabs.physical"><?= __t('tabs.physical', 'Physical Attributes') ?></span>
                     </button>
                     <button type="button" class="tab-btn" data-tab="attributes">
                         <i class="fas fa-list-alt"></i>
@@ -258,10 +262,6 @@ if (!function_exists('renderFragmentThemeVars')) {
                     <button type="button" class="tab-btn" data-tab="images">
                         <i class="fas fa-images"></i>
                         <span data-i18n="tabs.images"><?= __t('tabs.images', 'Images') ?></span>
-                    </button>
-                    <button type="button" class="tab-btn" data-tab="categories">
-                        <i class="fas fa-folder-tree"></i>
-                        <span data-i18n="tabs.categories"><?= __t('tabs.categories', 'Categories') ?></span>
                     </button>
                     <button type="button" class="tab-btn" data-tab="translations">
                         <i class="fas fa-language"></i>
@@ -318,26 +318,6 @@ if (!function_exists('renderFragmentThemeVars')) {
                             </label>
                             <select id="prodBrand" name="brand_id" class="form-control">
                                 <option value="">Loading...</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="prodMainCategory" data-i18n="form.fields.main_category.label">
-                                <?= __t('form.fields.main_category.label', 'Main Category') ?>
-                            </label>
-                            <select id="prodMainCategory" class="form-control">
-                                <option value=""><?= __t('form.fields.main_category.select', 'Select main category') ?></option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="prodSubCategory" data-i18n="form.fields.sub_category.label">
-                                <?= __t('form.fields.sub_category.label', 'Sub Category') ?>
-                            </label>
-                            <select id="prodSubCategory" class="form-control">
-                                <option value=""><?= __t('form.fields.sub_category.select', 'Select sub category') ?></option>
                             </select>
                         </div>
                     </div>
@@ -458,10 +438,13 @@ if (!function_exists('renderFragmentThemeVars')) {
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Tab: Pricing -->
-                <div class="tab-content" id="tab-pricing" style="display:none">
+                    <!-- ═══════════════════════════════════════════════ -->
+                    <!-- Pricing (merged into General)                   -->
+                    <!-- ═══════════════════════════════════════════════ -->
+                    <h4 style="margin-top:28px; margin-bottom:15px; color:var(--text-primary,#fff); border-bottom:1px solid var(--border-color,#263044); padding-bottom:8px;" data-i18n="tabs.pricing">
+                        <i class="fas fa-tag"></i> <?= __t('tabs.pricing', 'Pricing') ?>
+                    </h4>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="prodPrice" data-i18n="form.fields.price.label">
@@ -502,10 +485,13 @@ if (!function_exists('renderFragmentThemeVars')) {
                             <input type="number" id="prodTaxRate" name="tax_rate" class="form-control" step="0.01" min="0">
                         </div>
                     </div>
-                </div>
 
-                <!-- Tab: Inventory -->
-                <div class="tab-content" id="tab-inventory" style="display:none">
+                    <!-- ═══════════════════════════════════════════════ -->
+                    <!-- Stock / Inventory (merged into General)         -->
+                    <!-- ═══════════════════════════════════════════════ -->
+                    <h4 style="margin-top:28px; margin-bottom:15px; color:var(--text-primary,#fff); border-bottom:1px solid var(--border-color,#263044); padding-bottom:8px;" data-i18n="tabs.inventory">
+                        <i class="fas fa-boxes"></i> <?= __t('tabs.inventory', 'Inventory') ?>
+                    </h4>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="prodStockQty" data-i18n="form.fields.stock_quantity.label">
@@ -526,9 +512,9 @@ if (!function_exists('renderFragmentThemeVars')) {
                                 <?= __t('form.fields.stock_status.label', 'Stock Status') ?>
                             </label>
                             <select id="prodStockStatus" name="stock_status" class="form-control">
-                                <option value="in_stock" data-i18n="form.fields.stock_status.in_stock">In Stock</option>
-                                <option value="out_of_stock" data-i18n="form.fields.stock_status.out_of_stock">Out of Stock</option>
-                                <option value="on_backorder" data-i18n="form.fields.stock_status.on_backorder">On Backorder</option>
+                                <option value="in_stock" data-i18n="form.fields.stock_status.in_stock"><?= __t('form.fields.stock_status.in_stock', 'In Stock') ?></option>
+                                <option value="out_of_stock" data-i18n="form.fields.stock_status.out_of_stock"><?= __t('form.fields.stock_status.out_of_stock', 'Out of Stock') ?></option>
+                                <option value="on_backorder" data-i18n="form.fields.stock_status.on_backorder"><?= __t('form.fields.stock_status.on_backorder', 'On Backorder') ?></option>
                             </select>
                         </div>
                     </div>
@@ -539,8 +525,8 @@ if (!function_exists('renderFragmentThemeVars')) {
                                 <?= __t('form.fields.manage_stock.label', 'Manage Stock') ?>
                             </label>
                             <select id="prodManageStock" name="manage_stock" class="form-control">
-                                <option value="1" data-i18n="form.fields.manage_stock.yes">Yes</option>
-                                <option value="0" data-i18n="form.fields.manage_stock.no">No</option>
+                                <option value="1" data-i18n="form.fields.manage_stock.yes"><?= __t('form.fields.manage_stock.yes', 'Yes') ?></option>
+                                <option value="0" data-i18n="form.fields.manage_stock.no"><?= __t('form.fields.manage_stock.no', 'No') ?></option>
                             </select>
                         </div>
 
@@ -549,48 +535,71 @@ if (!function_exists('renderFragmentThemeVars')) {
                                 <?= __t('form.fields.allow_backorder.label', 'Allow Backorder') ?>
                             </label>
                             <select id="prodAllowBackorder" name="allow_backorder" class="form-control">
-                                <option value="0" data-i18n="form.fields.allow_backorder.no">No</option>
-                                <option value="1" data-i18n="form.fields.allow_backorder.yes">Yes</option>
+                                <option value="0" data-i18n="form.fields.allow_backorder.no"><?= __t('form.fields.allow_backorder.no', 'No') ?></option>
+                                <option value="1" data-i18n="form.fields.allow_backorder.yes"><?= __t('form.fields.allow_backorder.yes', 'Yes') ?></option>
                             </select>
                         </div>
                     </div>
 
-                    <!-- Physical Attributes (Weight/Dimensions) -->
-                    <h4 style="margin-top: 30px; margin-bottom: 15px; color:var(--text-primary,#fff);" data-i18n="form.sections.physical">
-                        <?= __t('form.sections.physical', 'Physical Attributes') ?>
+                    <!-- ═══════════════════════════════════════════════ -->
+                    <!-- Categories (merged into General)                -->
+                    <!-- ═══════════════════════════════════════════════ -->
+                    <h4 style="margin-top:28px; margin-bottom:15px; color:var(--text-primary,#fff); border-bottom:1px solid var(--border-color,#263044); padding-bottom:8px;" data-i18n="tabs.categories">
+                        <i class="fas fa-folder-tree"></i> <?= __t('tabs.categories', 'Categories') ?>
                     </h4>
+                    <div class="form-group">
+                        <div id="prodCategoriesTree" class="categories-tree"></div>
+                    </div>
+                </div>
+
+                <!-- Tab: Physical Attributes -->
+                <div class="tab-content" id="tab-physical" style="display:none">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="prodWeight" data-i18n="form.fields.weight.label">Weight</label>
+                            <label for="prodWeight" data-i18n="form.fields.weight.label">
+                                <?= __t('form.fields.weight.label', 'Weight') ?>
+                            </label>
                             <input type="number" id="prodWeight" name="weight" class="form-control" step="0.001" min="0">
                         </div>
 
                         <div class="form-group">
-                            <label for="prodWeightUnit" data-i18n="form.fields.weight_unit.label">Weight Unit</label>
+                            <label for="prodWeightUnit" data-i18n="form.fields.weight_unit.label">
+                                <?= __t('form.fields.weight_unit.label', 'Weight Unit') ?>
+                            </label>
                             <select id="prodWeightUnit" name="weight_unit" class="form-control">
                                 <option value="kg">kg</option>
                                 <option value="g">g</option>
                                 <option value="lb">lb</option>
                             </select>
                         </div>
+                    </div>
 
+                    <div class="form-row">
                         <div class="form-group">
-                            <label for="prodLength" data-i18n="form.fields.length.label">Length</label>
+                            <label for="prodLength" data-i18n="form.fields.length.label">
+                                <?= __t('form.fields.length.label', 'Length') ?>
+                            </label>
                             <input type="number" id="prodLength" name="length" class="form-control" step="0.01" min="0">
                         </div>
 
                         <div class="form-group">
-                            <label for="prodWidth" data-i18n="form.fields.width.label">Width</label>
+                            <label for="prodWidth" data-i18n="form.fields.width.label">
+                                <?= __t('form.fields.width.label', 'Width') ?>
+                            </label>
                             <input type="number" id="prodWidth" name="width" class="form-control" step="0.01" min="0">
                         </div>
 
                         <div class="form-group">
-                            <label for="prodHeight" data-i18n="form.fields.height.label">Height</label>
+                            <label for="prodHeight" data-i18n="form.fields.height.label">
+                                <?= __t('form.fields.height.label', 'Height') ?>
+                            </label>
                             <input type="number" id="prodHeight" name="height" class="form-control" step="0.01" min="0">
                         </div>
 
                         <div class="form-group">
-                            <label for="prodDimensionUnit" data-i18n="form.fields.dimension_unit.label">Dimension Unit</label>
+                            <label for="prodDimensionUnit" data-i18n="form.fields.dimension_unit.label">
+                                <?= __t('form.fields.dimension_unit.label', 'Dimension Unit') ?>
+                            </label>
                             <select id="prodDimensionUnit" name="dimension_unit" class="form-control">
                                 <option value="cm">cm</option>
                                 <option value="mm">mm</option>
@@ -636,16 +645,6 @@ if (!function_exists('renderFragmentThemeVars')) {
                             </button>
                             <div id="prodImagesPreview" class="images-grid"></div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Tab: Categories -->
-                <div class="tab-content" id="tab-categories" style="display:none">
-                    <div class="form-group">
-                        <label data-i18n="form.fields.categories.label">
-                            <?= __t('form.fields.categories.label', 'Product Categories') ?>
-                        </label>
-                        <div id="prodCategoriesTree" class="categories-tree"></div>
                     </div>
                 </div>
 
@@ -1024,8 +1023,8 @@ window.PRODUCTS_CONFIG = {
 
 <!-- Load AdminFramework + Page module when embedded; otherwise load normally -->
 <?php if ($isFragment): ?>
-<script src="/admin/assets/js/admin_framework.js?v=<?= time() ?>"></script>
-<script src="/admin/assets/js/pages/products.js?v=<?= time() ?>"></script>
+<script src="/admin/assets/js/admin_framework.js?v=<?= prodAssetVer('/admin/assets/js/admin_framework.js') ?>"></script>
+<script src="/admin/assets/js/pages/products.js?v=<?= prodAssetVer('/admin/assets/js/pages/products.js') ?>"></script>
 
 <script>
 (function(){
@@ -1056,7 +1055,7 @@ window.PRODUCTS_CONFIG = {
 })();
 </script>
 <?php else: ?>
-<script src="/admin/assets/js/pages/products.js?v=<?= time() ?>"></script>
+<script src="/admin/assets/js/pages/products.js?v=<?= prodAssetVer('/admin/assets/js/pages/products.js') ?>"></script>
 <script>
 // Standalone mode init
 (function(){

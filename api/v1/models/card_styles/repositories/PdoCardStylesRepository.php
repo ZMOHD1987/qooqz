@@ -16,7 +16,7 @@ final class PdoCardStylesRepository
     {
         $sql = "
             SELECT id, tenant_id, theme_id, name, slug, card_type,
-                   background_color, border_color, border_width, border_radius,
+                   background_color, text_color, border_color, border_width, border_radius,
                    shadow_style, padding, hover_effect, text_align, image_aspect_ratio,
                    is_active, created_at
             FROM card_styles
@@ -90,6 +90,7 @@ final class PdoCardStylesRepository
                     slug              = :slug,
                     card_type         = :card_type,
                     background_color  = :background_color,
+                    text_color        = :text_color,
                     border_color      = :border_color,
                     border_width      = :border_width,
                     border_radius     = :border_radius,
@@ -109,6 +110,7 @@ final class PdoCardStylesRepository
                 ':slug'               => $data['slug'],
                 ':card_type'          => $data['card_type'],
                 ':background_color'   => $data['background_color'] ?? '#FFFFFF',
+                ':text_color'         => $data['text_color'] ?? null,
                 ':border_color'       => $data['border_color'] ?? '#E0E0E0',
                 ':border_width'       => (int)($data['border_width'] ?? 1),
                 ':border_radius'      => (int)($data['border_radius'] ?? 8),
@@ -128,12 +130,12 @@ final class PdoCardStylesRepository
         $stmt = $this->pdo->prepare("
             INSERT INTO card_styles
                 (tenant_id, theme_id, name, slug, card_type,
-                 background_color, border_color, border_width, border_radius,
+                 background_color, text_color, border_color, border_width, border_radius,
                  shadow_style, padding, hover_effect, text_align, image_aspect_ratio,
                  is_active, created_at)
             VALUES
                 (:tenantId, :theme_id, :name, :slug, :card_type,
-                 :background_color, :border_color, :border_width, :border_radius,
+                 :background_color, :text_color, :border_color, :border_width, :border_radius,
                  :shadow_style, :padding, :hover_effect, :text_align, :image_aspect_ratio,
                  :is_active, NOW())
         ");
@@ -145,6 +147,7 @@ final class PdoCardStylesRepository
             ':slug'               => $data['slug'],
             ':card_type'          => $data['card_type'],
             ':background_color'   => $data['background_color'] ?? '#FFFFFF',
+            ':text_color'         => $data['text_color'] ?? null,
             ':border_color'       => $data['border_color'] ?? '#E0E0E0',
             ':border_width'       => (int)($data['border_width'] ?? 1),
             ':border_radius'      => (int)($data['border_radius'] ?? 8),
@@ -203,7 +206,7 @@ final class PdoCardStylesRepository
     public function getActiveStyles(int $tenantId, ?int $themeId = null): array
     {
         $sql = "
-            SELECT slug, card_type, background_color, border_color, border_width,
+            SELECT slug, card_type, background_color, text_color, border_color, border_width,
                    border_radius, shadow_style, padding, hover_effect, text_align, image_aspect_ratio
             FROM card_styles
             WHERE tenant_id = :tenantId AND is_active = 1

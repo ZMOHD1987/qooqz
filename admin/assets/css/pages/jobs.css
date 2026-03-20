@@ -452,7 +452,7 @@ select.form-control {
 }
 
 .btn-success:hover:not(:disabled) {
-    background: #22c55e;
+    background: var(--success-color, #22c55e);
     color: #fff;
 }
 
@@ -474,7 +474,7 @@ select.form-control {
 }
 
 .btn-danger:hover:not(:disabled) {
-    background: #ef4444;
+    background: var(--danger-color, var(--error-color, #ef4444));
     color: #fff;
 }
 

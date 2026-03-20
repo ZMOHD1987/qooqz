@@ -270,23 +270,23 @@
 }
 
 .priority-low {
-    background: #eee;
-    color: #777;
+    background: rgba(255,255,255,0.1);
+    color: var(--text-secondary, #94a3b8);
 }
 
 .priority-normal {
-    background: #e1f5fe;
-    color: #039be5;
+    background: rgba(3, 155, 229, 0.15);
+    color: var(--info-color, #039be5);
 }
 
 .priority-high {
-    background: #fff3e0;
-    color: #fb8c00;
+    background: rgba(251, 140, 0, 0.15);
+    color: var(--warning-color, #fb8c00);
 }
 
 .priority-urgent {
-    background: #ffebee;
-    color: #e53935;
+    background: rgba(229, 57, 53, 0.15);
+    color: var(--danger-color, var(--error-color, #e53935));
     animation: blink 1.5s infinite;
 }
 

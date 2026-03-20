@@ -37,98 +37,131 @@ $autoFill = [
 ];
 
 // ════════════════════════════════════════════════════════════
-// DB-DRIVEN CSS VARS HELPER
+// THEME VARS INJECTION
+//
+// Problem: CSS variables on :root are NOT inherited across
+// iframe boundaries. The parent page sets them but the child
+// document (this fragment) gets only the fallback values
+// defined in admin_framework.css — which may differ from
+// the real theme.
+//
+// Solution: The theme system already compiles every CSS variable
+// into $GLOBALS['ADMIN_UI']['theme']['generated_css'].  We simply
+// output that block verbatim inside this document so the iframe
+// has the exact same :root as the parent page.
+//
+// If generated_css is missing we fall back to building vars
+// directly from color_settings so the page is never broken.
+// ════════════════════════════════════════════════════════════
+$theme        = $GLOBALS['ADMIN_UI']['theme'] ?? [];
+$generatedCss = $theme['generated_css'] ?? '';
+
+// Build a color map from color_settings for the manual fallback
+$colorMap = [];
+foreach ($theme['color_settings'] ?? [] as $c) {
+    if (!empty($c['setting_key']) && isset($c['color_value'])) {
+        $colorMap[$c['setting_key']] = $c['color_value'];
+    }
+}
+function msThemeColor(array $map, string $key, string $fallback): string {
+    return htmlspecialchars($map[$key] ?? $fallback, ENT_QUOTES);
+}
+
+// ════════════════════════════════════════════════════════════
+// DB-DRIVEN CSS VARS HELPER (kept for forward-compat)
 // ════════════════════════════════════════════════════════════
 if (!function_exists('renderFragmentThemeVars')) {
     function renderFragmentThemeVars(array $theme): void {
-        $emitted = [];
-        $lines   = [':root {'];
-
-        $emit = function(string $k, string $v) use (&$emitted, &$lines): void {
-            $ke = htmlspecialchars($k, ENT_QUOTES);
-            $ve = htmlspecialchars($v, ENT_QUOTES);
-            $lines[]           = "    --{$ke}: {$ve};";
-            $emitted["--{$k}"] = $v;
-        };
-
+        echo ':root {' . PHP_EOL;
         foreach ($theme['color_settings'] ?? [] as $c) {
             if (empty($c['setting_key']) || !isset($c['color_value'])) continue;
-            $k = $c['setting_key'];
-            $h = str_replace('_', '-', $k);
-            $v = $c['color_value'];
-            $emit($k, $v);
-            if ($h !== $k) $emit($h, $v);
+            $k = htmlspecialchars($c['setting_key'], ENT_QUOTES);
+            $h = htmlspecialchars(str_replace('_', '-', $c['setting_key']), ENT_QUOTES);
+            $v = htmlspecialchars($c['color_value'], ENT_QUOTES);
+            echo "    --{$k}: {$v};" . PHP_EOL;
+            if ($h !== $k) echo "    --{$h}: {$v};" . PHP_EOL;
         }
         foreach ($theme['font_settings'] ?? [] as $f) {
             if (empty($f['setting_key'])) continue;
-            $sk = $f['setting_key'];
-            $sh = str_replace('_', '-', $sk);
+            $sk = htmlspecialchars($f['setting_key'], ENT_QUOTES);
+            $sh = htmlspecialchars(str_replace('_', '-', $f['setting_key']), ENT_QUOTES);
             if (!empty($f['font_family'])) {
-                $emit("{$sk}-family", $f['font_family']);
-                if ($sh !== $sk) $emit("{$sh}-family", $f['font_family']);
+                $ff = htmlspecialchars($f['font_family'], ENT_QUOTES);
+                echo "    --{$sk}-family: {$ff};" . PHP_EOL;
+                if ($sh !== $sk) echo "    --{$sh}-family: {$ff};" . PHP_EOL;
             }
             if (!empty($f['font_size'])) {
-                $emit("{$sk}-size", $f['font_size']);
-                if ($sh !== $sk) $emit("{$sh}-size", $f['font_size']);
+                $fs = htmlspecialchars($f['font_size'], ENT_QUOTES);
+                echo "    --{$sk}-size: {$fs};" . PHP_EOL;
+                if ($sh !== $sk) echo "    --{$sh}-size: {$fs};" . PHP_EOL;
             }
             if (!empty($f['font_weight'])) {
-                $emit("{$sk}-weight", $f['font_weight']);
-                if ($sh !== $sk) $emit("{$sh}-weight", $f['font_weight']);
+                $fw = htmlspecialchars($f['font_weight'], ENT_QUOTES);
+                echo "    --{$sk}-weight: {$fw};" . PHP_EOL;
+                if ($sh !== $sk) echo "    --{$sh}-weight: {$fw};" . PHP_EOL;
             }
         }
         foreach ($theme['design_settings'] ?? [] as $d) {
             if (empty($d['setting_key']) || !isset($d['setting_value'])) continue;
-            $dk = $d['setting_key'];
-            $dh = str_replace('_', '-', $dk);
-            $emit($dk, $d['setting_value']);
-            if ($dh !== $dk) $emit($dh, $d['setting_value']);
+            $dk = htmlspecialchars($d['setting_key'], ENT_QUOTES);
+            $dh = htmlspecialchars(str_replace('_', '-', $d['setting_key']), ENT_QUOTES);
+            $dv = htmlspecialchars($d['setting_value'], ENT_QUOTES);
+            echo "    --{$dk}: {$dv};" . PHP_EOL;
+            if ($dh !== $dk) echo "    --{$dh}: {$dv};" . PHP_EOL;
         }
         foreach ($theme['button_styles'] ?? [] as $b) {
             if (empty($b['slug'])) continue;
             $slug = preg_replace('/[^a-z0-9_-]/', '-', strtolower((string)$b['slug']));
-            if (!empty($b['background_color'])) $emit("btn-{$slug}-bg",     $b['background_color']);
-            if (!empty($b['text_color']))        $emit("btn-{$slug}-color",  $b['text_color']);
-            if (!empty($b['border_color']))      $emit("btn-{$slug}-border", $b['border_color']);
-            if (!empty($b['border_radius']))     $emit("btn-{$slug}-radius", $b['border_radius'] . 'px');
+            if (!empty($b['background_color'])) echo "    --btn-{$slug}-bg: "     . htmlspecialchars($b['background_color'], ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($b['text_color']))       echo "    --btn-{$slug}-color: "  . htmlspecialchars($b['text_color'],       ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($b['border_color']))     echo "    --btn-{$slug}-border: " . htmlspecialchars($b['border_color'],     ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($b['border_radius']))    echo "    --btn-{$slug}-radius: " . htmlspecialchars((string)$b['border_radius'], ENT_QUOTES) . 'px;' . PHP_EOL;
         }
         foreach ($theme['card_styles'] ?? [] as $cs) {
             if (empty($cs['slug'])) continue;
             $slug = preg_replace('/[^a-z0-9_-]/', '-', strtolower((string)$cs['slug']));
-            if (!empty($cs['background_color'])) $emit("card-{$slug}-bg",      $cs['background_color']);
-            if (!empty($cs['border_color']))      $emit("card-{$slug}-border",  $cs['border_color']);
-            if (!empty($cs['border_radius']))     $emit("card-{$slug}-radius",  $cs['border_radius'] . 'px');
-            if (!empty($cs['shadow_style']))      $emit("card-{$slug}-shadow",  $cs['shadow_style']);
-            if (!empty($cs['padding']))           $emit("card-{$slug}-padding", $cs['padding']);
+            if (!empty($cs['background_color'])) echo "    --card-{$slug}-bg: "      . htmlspecialchars($cs['background_color'], ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($cs['border_color']))     echo "    --card-{$slug}-border: "  . htmlspecialchars($cs['border_color'],     ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($cs['border_radius']))    echo "    --card-{$slug}-radius: "  . htmlspecialchars((string)$cs['border_radius'], ENT_QUOTES) . 'px;' . PHP_EOL;
+            if (!empty($cs['shadow_style']))     echo "    --card-{$slug}-shadow: "  . htmlspecialchars($cs['shadow_style'],     ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($cs['padding']))          echo "    --card-{$slug}-padding: " . htmlspecialchars($cs['padding'],          ENT_QUOTES) . ';' . PHP_EOL;
         }
-
-        $bgSec = $emitted['--background-secondary'] ?? $emitted['--background_secondary'] ?? null;
-        $aliasDefaults = [
-            '--card-bg'       => $emitted['--card-bg']      ?? $emitted['--card_bg']      ?? $bgSec ?? '#081127',
-            '--input-bg'      => $emitted['--input-bg']     ?? $emitted['--input_bg']     ?? $bgSec ?? '#0b1220',
-            '--thead-bg'      => $emitted['--thead-bg']     ?? $emitted['--thead_bg']     ?? $bgSec ?? '#061021',
-            '--danger-color'  => $emitted['--danger-color'] ?? $emitted['--danger_color'] ?? $emitted['--error-color'] ?? '#ef4444',
-            '--success-color' => $emitted['--success-color'] ?? $emitted['--success_color'] ?? '#22c55e',
-        ];
-        foreach ($aliasDefaults as $cssVar => $val) {
-            if (!isset($emitted[$cssVar])) {
-                $lines[]          = '    ' . htmlspecialchars($cssVar, ENT_QUOTES) . ': ' . htmlspecialchars($val, ENT_QUOTES) . ';';
-                $emitted[$cssVar] = $val;
-            }
-        }
-
-        $lines[] = '}';
-        echo implode(PHP_EOL, $lines) . PHP_EOL;
+        echo '}' . PHP_EOL;
     }
 }
 ?>
-<!-- DB-driven CSS vars (colors, fonts, buttons from database) -->
-<style id="db-theme-vars-media-studio">
-<?php renderFragmentThemeVars($GLOBALS['ADMIN_UI']['theme'] ?? []); ?>
-<?php if (!empty($GLOBALS['ADMIN_UI']['theme']['generated_css'])): ?>
-<?= $GLOBALS['ADMIN_UI']['theme']['generated_css'] ?>
+<!-- ═══════════════════════════════════════════════════════
+     THEME VARS — injected so iframe :root matches parent
+     Priority: generated_css (pre-compiled, complete)
+               ↓ fallback: manual build from color_settings
+     ═══════════════════════════════════════════════════════ -->
+<style id="ms-theme-vars">
+<?php if (!empty($generatedCss)): ?>
+<?= $generatedCss ?>
+<?php else: ?>
+/* Fallback: build from color_settings directly */
+:root {
+    --background-main:      <?= msThemeColor($colorMap,'background_main',      '#242323') ?>;
+    --background-secondary: <?= msThemeColor($colorMap,'background_secondary',  '#383f42') ?>;
+    --border-color:         <?= msThemeColor($colorMap,'border_color',          '#7a7a7a') ?>;
+    --text-primary:         <?= msThemeColor($colorMap,'text_primary',          '#FFFFFF') ?>;
+    --text-secondary:       <?= msThemeColor($colorMap,'text_secondary',        '#94a3b8') ?>;
+    --primary-color:        <?= msThemeColor($colorMap,'primary_color',         '#03874e') ?>;
+    --secondary-color:      <?= msThemeColor($colorMap,'secondary_color',       '#10B981') ?>;
+    --success-color:        <?= msThemeColor($colorMap,'success_color',         '#10b981') ?>;
+    --warning-color:        <?= msThemeColor($colorMap,'warning_color',         '#f59e0b') ?>;
+    --danger-color:         <?= msThemeColor($colorMap,'danger_color',          '#ef4444') ?>;
+    --error-color:          <?= msThemeColor($colorMap,'error_color',           '#EF4444') ?>;
+    --info-color:           <?= msThemeColor($colorMap,'info_color',            '#22C55E') ?>;
+    --card-bg:              <?= msThemeColor($colorMap,'background_secondary',  '#383f42') ?>;
+    --input-background:     <?= msThemeColor($colorMap,'background_secondary',  '#383f42') ?>;
+    --thead-bg:             <?= msThemeColor($colorMap,'background_secondary',  '#383f42') ?>;
+}
+<?php renderFragmentThemeVars($theme); ?>
 <?php endif; ?>
 </style>
-<!-- Framework CSS (only needed in embedded/fragment mode; header.php loads it in standalone mode) -->
+
+<!-- Framework CSS (only in fragment/iframe mode) -->
 <?php if ($isFragment): ?>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 <link rel="stylesheet" href="/admin/assets/css/admin_framework.css?v=<?= time() ?>">
@@ -151,7 +184,7 @@ if (!function_exists('renderFragmentThemeVars')) {
     </button>
 </div>
 
-<!-- Studio Copy Mode Bar (select-from-library inside Add form) -->
+<!-- Studio Copy Mode Bar -->
 <div id="studioCopyBar" class="studio-copy-bar" style="display:none;">
     <div class="studio-copy-info">
         <i class="fas fa-hand-pointer"></i>
@@ -178,31 +211,31 @@ if (!function_exists('renderFragmentThemeVars')) {
             <p class="page-subtitle" data-i18n="page_subtitle">Manage images and media files</p>
         </div>
         <div class="page-header-actions">
-            <button id="btnSelectConfirm" class="btn btn-success" style="display:none;" data-i18n="select_button">
-                <i class="fas fa-check"></i> <span data-i18n="select_button">Select</span>
+            <button id="btnSelectConfirm" class="btn btn-success" style="display:none;">
+                <i class="fas fa-check"></i>
+                <span data-i18n="select_button">Select</span>
             </button>
             <?php if ($canCreate): ?>
-            <button id="btnAddImage" class="btn btn-primary" data-i18n="add_button">
-                <i class="fas fa-plus"></i> <span data-i18n="add_button">Add Image</span>
+            <button id="btnAddImage" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                <span data-i18n="add_button">Add Image</span>
             </button>
             <?php endif; ?>
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════
-         ADD IMAGE FORM (Upload OR Select from Studio)
-         ═══════════════════════════════════════════════ -->
+    <!-- ADD IMAGE FORM -->
     <div id="addImageContainer" class="card form-card" style="display:none;">
         <div class="card-header">
-            <h3 class="card-title" data-i18n="add_image_title">
-                <i class="fas fa-plus-circle"></i> Add Image
+            <h3 class="card-title">
+                <i class="fas fa-plus-circle"></i>
+                <span data-i18n="add_image_title">Add Image</span>
             </h3>
             <button type="button" id="btnCloseAddForm" class="btn btn-sm btn-outline">
                 <i class="fas fa-times"></i>
             </button>
         </div>
         <div class="card-body">
-            <!-- Tab Buttons -->
             <div class="add-image-tabs">
                 <button type="button" class="add-tab-btn active" id="tabBtnUpload" data-tab="upload">
                     <i class="fas fa-upload"></i>
@@ -217,11 +250,11 @@ if (!function_exists('renderFragmentThemeVars')) {
             <!-- Tab: Upload -->
             <div id="addTabUpload" class="add-tab-content active">
                 <form id="uploadForm" novalidate enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
-                    <input type="hidden" id="uploadOwnerId"        name="owner_id"      value="<?= (int)($autoFill['owner_id'] ?? 0) ?>">
+                    <input type="hidden" name="csrf_token"    value="<?= htmlspecialchars($csrf) ?>">
+                    <input type="hidden" id="uploadOwnerId"           name="owner_id"      value="<?= (int)($autoFill['owner_id'] ?? 0) ?>">
                     <input type="hidden" id="uploadImageTypeIdHidden" name="image_type_id" value="<?= (int)($autoFill['image_type_id'] ?? 0) ?>">
-                    <input type="hidden" id="uploadTenantId"       name="tenant_id"     value="<?= $autoFill['tenant_id'] ?? $tenantId ?>">
-                    <input type="hidden" id="uploadUserId"         name="user_id"       value="<?= (int)($autoFill['user_id'] ?? 0) ?>">
+                    <input type="hidden" id="uploadTenantId"          name="tenant_id"     value="<?= $autoFill['tenant_id'] ?? $tenantId ?>">
+                    <input type="hidden" id="uploadUserId"            name="user_id"       value="<?= (int)($autoFill['user_id'] ?? 0) ?>">
 
                     <div class="upload-drop-zone" id="uploadDropZone">
                         <div class="upload-drop-icon"><i class="fas fa-cloud-upload-alt"></i></div>
@@ -246,7 +279,7 @@ if (!function_exists('renderFragmentThemeVars')) {
                 </form>
             </div>
 
-            <!-- Tab: From Studio (select existing image) -->
+            <!-- Tab: From Studio -->
             <div id="addTabStudio" class="add-tab-content" style="display:none;">
                 <div class="from-studio-hint">
                     <i class="fas fa-info-circle"></i>
@@ -265,9 +298,7 @@ if (!function_exists('renderFragmentThemeVars')) {
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════
-         EDIT IMAGE FORM (full details for existing images)
-         ═══════════════════════════════════════════════ -->
+    <!-- EDIT IMAGE FORM -->
     <div id="imageFormContainer" class="card form-card" style="display:none;">
         <div class="card-header">
             <h3 class="card-title" id="formTitle" data-i18n="form_edit_title">Edit Image</h3>
@@ -277,7 +308,7 @@ if (!function_exists('renderFragmentThemeVars')) {
         </div>
         <div class="card-body">
             <form id="imageForm" novalidate>
-                <input type="hidden" name="id" id="imageId">
+                <input type="hidden" name="id"         id="imageId">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
 
                 <div class="form-row">
@@ -287,8 +318,8 @@ if (!function_exists('renderFragmentThemeVars')) {
                     </div>
                     <div class="form-group">
                         <label for="imageTypeId" class="required" data-i18n="label_image_type">Image Type</label>
-                        <input type="text" id="imageTypeId" name="image_type_display"
-                               class="form-control" list="imageTypesList" data-i18n-placeholder="placeholder_image_type" placeholder="Select or search type" autocomplete="off" required>
+                        <input type="text" id="imageTypeId" name="image_type_display" class="form-control"
+                               list="imageTypesList" placeholder="Select or search type" autocomplete="off" required>
                         <datalist id="imageTypesList"></datalist>
                         <input type="hidden" name="image_type_id" id="imageTypeIdHidden" value="<?= $autoFill['image_type_id'] ?? '' ?>">
                     </div>
@@ -324,7 +355,7 @@ if (!function_exists('renderFragmentThemeVars')) {
                         <label for="imageVisibility" data-i18n="label_visibility">Visibility</label>
                         <select id="imageVisibility" name="visibility" class="form-control">
                             <option value="private" data-i18n="private_option">Private</option>
-                            <option value="public" data-i18n="public_option">Public</option>
+                            <option value="public"  data-i18n="public_option">Public</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -349,7 +380,7 @@ if (!function_exists('renderFragmentThemeVars')) {
                         <span data-i18n="cancel_button">Cancel</span>
                     </button>
                     <?php if ($canDelete): ?>
-                    <button type="button" class="btn btn-danger" id="btnDeleteImage" style="display:none">
+                    <button type="button" class="btn btn-danger" id="btnDeleteImage" style="display:none;">
                         <i class="fas fa-trash"></i>
                         <span data-i18n="delete_button">Delete</span>
                     </button>
@@ -365,39 +396,41 @@ if (!function_exists('renderFragmentThemeVars')) {
             <div class="filters-grid">
                 <div class="filter-group">
                     <label for="imageFilterFilename" data-i18n="filter_filename_label">Filename</label>
-                    <input type="text" id="imageFilterFilename" class="form-control" 
-                           data-i18n-placeholder="placeholder_filter_filename" placeholder="Search by filename" autocomplete="off">
+                    <input type="text" id="imageFilterFilename" class="form-control"
+                           placeholder="Search by filename" autocomplete="off">
                 </div>
                 <div class="filter-group">
                     <label for="imageFilterType" data-i18n="filter_type_label">Image Type</label>
-                    <input type="text" id="imageFilterType" class="form-control" 
-                           list="filterImageTypesList" data-i18n-placeholder="placeholder_filter_type" placeholder="All Types" autocomplete="off">
+                    <input type="text" id="imageFilterType" class="form-control"
+                           list="filterImageTypesList" placeholder="All Types" autocomplete="off">
                     <datalist id="filterImageTypesList"></datalist>
                     <input type="hidden" id="imageFilterTypeHidden">
                 </div>
                 <div class="filter-group">
                     <label for="imageFilterOwnerId" data-i18n="filter_owner_label">Owner ID</label>
-                    <input type="number" id="imageFilterOwnerId" class="form-control" 
-                           placeholder="Owner ID">
+                    <input type="number" id="imageFilterOwnerId" class="form-control" placeholder="Owner ID">
                 </div>
                 <div class="filter-group">
                     <label for="imageFilterVisibility" data-i18n="filter_visibility_label">Visibility</label>
                     <select id="imageFilterVisibility" class="form-control">
-                        <option value="" data-i18n="all_visibility">All Visibility</option>
-                        <option value="public" data-i18n="public_option">Public</option>
+                        <option value=""        data-i18n="all_visibility">All Visibility</option>
+                        <option value="public"  data-i18n="public_option">Public</option>
                         <option value="private" data-i18n="private_option">Private</option>
                     </select>
                 </div>
                 <div class="filter-actions">
-                    <button id="btnApplyImageFilters" class="btn btn-secondary" data-i18n="filter_apply">
-                        <i class="fas fa-filter"></i> Apply
+                    <button id="btnApplyImageFilters" class="btn btn-secondary">
+                        <i class="fas fa-filter"></i>
+                        <span data-i18n="filter_apply">Apply</span>
                     </button>
-                    <button id="btnResetImageFilters" class="btn btn-outline" data-i18n="filter_reset">
-                        <i class="fas fa-redo"></i> Reset
+                    <button id="btnResetImageFilters" class="btn btn-outline">
+                        <i class="fas fa-redo"></i>
+                        <span data-i18n="filter_reset">Reset</span>
                     </button>
                     <?php if ($canDelete): ?>
-                    <button id="btnDeleteSelected" class="btn btn-danger" style="display:none;" data-i18n="delete_selected">
-                        <i class="fas fa-trash"></i> Delete Selected
+                    <button id="btnDeleteSelected" class="btn btn-danger" style="display:none;">
+                        <i class="fas fa-trash"></i>
+                        <span data-i18n="delete_selected">Delete Selected</span>
                     </button>
                     <?php endif; ?>
                 </div>
@@ -407,39 +440,39 @@ if (!function_exists('renderFragmentThemeVars')) {
 
     <!-- Results Count -->
     <div id="imageResultsCount" class="results-count" style="display:none;">
-        <i class="fas fa-images"></i> 
+        <i class="fas fa-images"></i>
         <span id="imageResultsCountText"></span>
     </div>
 
-    <!-- Grid Container -->
+    <!-- Table -->
     <div class="card table-card">
         <div class="card-body">
-            <!-- Loading State -->
             <div id="imageGridLoading" class="loading-state">
                 <div class="spinner"></div>
                 <p data-i18n="loading">Loading images...</p>
             </div>
 
-            <!-- Grid -->
             <div id="imageGridContainer" style="display:none;">
-                <table class="data-table" id="imagesTable">
-                    <thead>
-                        <tr>
-                            <th><input type="checkbox" id="selectAllImages"></th>
-                            <th data-i18n="table_image">Image</th>
-                            <th data-i18n="table_id">ID</th>
-                            <th data-i18n="table_filename">Filename</th>
-                            <th data-i18n="table_owner">Owner ID</th>
-                            <th data-i18n="table_type">Type</th>
-                            <th data-i18n="table_visibility">Visibility</th>
-                            <th data-i18n="table_main">Main</th>
-                            <th data-i18n="table_sort_order">Sort Order</th>
-                            <th data-i18n="table_created_at">Created At</th>
-                            <th data-i18n="table_actions">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="imageTableBody"></tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="data-table" id="imagesTable">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="selectAllImages"></th>
+                                <th data-i18n="table_image">Image</th>
+                                <th data-i18n="table_id">ID</th>
+                                <th data-i18n="table_filename">Filename</th>
+                                <th data-i18n="table_owner">Owner ID</th>
+                                <th data-i18n="table_type">Type</th>
+                                <th data-i18n="table_visibility">Visibility</th>
+                                <th data-i18n="table_main">Main</th>
+                                <th data-i18n="table_sort_order">Sort Order</th>
+                                <th data-i18n="table_created_at">Created At</th>
+                                <th data-i18n="table_actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="imageTableBody"></tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Pagination -->
@@ -453,57 +486,57 @@ if (!function_exists('renderFragmentThemeVars')) {
                 </div>
             </div>
 
-            <!-- Empty State -->
+            <!-- Empty -->
             <div id="imageEmptyState" class="empty-state" style="display:none;">
                 <div class="empty-icon">🖼️</div>
                 <h3 data-i18n="empty_title">No Images Found</h3>
                 <p data-i18n="empty_description">Start by adding images</p>
                 <?php if ($canCreate): ?>
-                <button class="btn btn-primary" onclick="MediaStudio.add()" data-i18n="empty_add">
-                    <i class="fas fa-plus"></i> Add First Image
+                <button class="btn btn-primary" onclick="MediaStudio.add()">
+                    <i class="fas fa-plus"></i>
+                    <span data-i18n="empty_add">Add First Image</span>
                 </button>
                 <?php endif; ?>
             </div>
 
-            <!-- Error State -->
+            <!-- Error -->
             <div id="imageErrorState" class="error-state" style="display:none;">
                 <div class="error-icon">⚠️</div>
                 <h3 data-i18n="error_title">Error Loading Data</h3>
-                <p id="imageErrorMessage" data-i18n="error_message"></p>
-                <button id="btnRetryImages" class="btn btn-secondary" data-i18n="retry_button">
-                    <i class="fas fa-redo"></i> Retry
+                <p id="imageErrorMessage"></p>
+                <button id="btnRetryImages" class="btn btn-secondary">
+                    <i class="fas fa-redo"></i>
+                    <span data-i18n="retry_button">Retry</span>
                 </button>
             </div>
         </div>
     </div>
-</div>
+</div><!-- /page-container -->
 
 <script>
 window.MEDIA_STUDIO_CONFIG = {
-    apiUrl: '<?= $apiBase ?>/images',
+    apiUrl:          '<?= $apiBase ?>/images',
     translationsUrl: '/languages/Media_studio/<?= addslashes($lang) ?>.json',
-    csrfToken: '<?= addslashes($csrf) ?>',
-    tenantId: <?= $tenantId ?>,
-    lang: '<?= addslashes($lang) ?>',
-    isSuperAdmin: <?= $isSuperAdmin ? 'true' : 'false' ?>,
-    autoFill: <?= json_encode($autoFill) ?>,
-    embedded: <?= isset($_GET['embedded']) ? 'true' : 'false' ?>,
-    mode: '<?= $_GET['mode'] ?? 'manage' ?>',
-    action: '<?= $_GET['action'] ?? '' ?>',
-    selectionLimit: <?= (int)($_GET['limit'] ?? 1) ?>, // 0 or >1 for multi
+    csrfToken:       '<?= addslashes($csrf) ?>',
+    tenantId:        <?= $tenantId ?>,
+    lang:            '<?= addslashes($lang) ?>',
+    isSuperAdmin:    <?= $isSuperAdmin ? 'true' : 'false' ?>,
+    autoFill:        <?= json_encode($autoFill) ?>,
+    embedded:        <?= isset($_GET['embedded']) ? 'true' : 'false' ?>,
+    mode:            '<?= $_GET['mode']   ?? 'manage' ?>',
+    action:          '<?= $_GET['action'] ?? '' ?>',
+    selectionLimit:  <?= (int)($_GET['limit'] ?? 1) ?>,
     permissions: {
         canCreate: <?= $canCreate ? 'true' : 'false' ?>,
-        canEdit: <?= $canEdit ? 'true' : 'false' ?>,
+        canEdit:   <?= $canEdit   ? 'true' : 'false' ?>,
         canDelete: <?= $canDelete ? 'true' : 'false' ?>
     }
 };
 </script>
 
-<!-- Load AdminFramework if embedded -->
 <?php if ($isFragment): ?>
 <script src="/admin/assets/js/admin_framework.js"></script>
 <?php endif; ?>
-
 <script src="/admin/assets/js/pages/media_studio.js?v=<?= time() ?>"></script>
 
 <?php if (!$isFragment) require_once __DIR__ . '/../includes/footer.php'; ?>

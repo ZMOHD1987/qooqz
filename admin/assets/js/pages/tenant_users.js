@@ -383,7 +383,7 @@
 
         if (startPage > 1) {
             html += `<button class="btn btn-sm btn-outline" onclick="TenantUsers.load(1)">1</button>`;
-            if (startPage > 2) html += `<span style="margin:0 5px">...</span>`;
+            if (startPage > 2) html += `<span class="page-ellipsis">...</span>`;
         }
 
         for (let i = startPage; i <= endPage; i++) {
@@ -392,7 +392,7 @@
         }
 
         if (endPage < pages) {
-            if (endPage < pages - 1) html += `<span style="margin:0 5px">...</span>`;
+            if (endPage < pages - 1) html += `<span class="page-ellipsis">...</span>`;
             html += `<button class="btn btn-sm btn-outline" onclick="TenantUsers.load(${pages})">${pages}</button>`;
         }
 
@@ -445,32 +445,31 @@
                     <td>${item.id}</td>
                     <td>
                         <strong>${escapeHtml(username)}</strong>
-                        <br><small style="color:#94a3b8">${t('table.headers.id')}: ${item.user_id}</small>
+                        <small>${t('table.headers.id')}: ${item.user_id}</small>
                     </td>
                     <td>${escapeHtml(email)}</td>
                     <td>
                         <strong>${escapeHtml(tenantName)}</strong>
-                        <br><small style="color:#94a3b8">${t('table.headers.id')}: ${item.tenant_id}</small>
+                        <small>${t('table.headers.id')}: ${item.tenant_id}</small>
                     </td>
                     <td>
-                        ${item.entity_id ? `<strong>${escapeHtml(entityName)}</strong><br><small style="color:#94a3b8">${t('table.headers.id')}: ${item.entity_id}</small>` : `<span style="color:#94a3b8">${t('table.empty.no_entity', 'N/A')}</span>`}
+                        ${item.entity_id ? `<strong>${escapeHtml(entityName)}</strong><small>${t('table.headers.id')}: ${item.entity_id}</small>` : `<span class="text-muted">${t('table.empty.no_entity', 'N/A')}</span>`}
                     </td>
                     <td>
-                        <span class="badge badge-info" style="background-color: #3b82f6; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                        <span class="badge badge-info">
                             ${escapeHtml(roleName)}
                         </span>
                     </td>
                     <td>${joinedAt}</td>
                     <td>
-                        <span class="badge ${statusClass}"
-                              style="background-color: ${item.is_active ? '#10b981' : '#ef4444'}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                        <span class="badge ${statusClass}">
                             ${statusText}
                         </span>
                     </td>
                     <td>
-                        <div class="table-actions" style="display: flex; gap: 8px;">
-                            ${state.permissions.canEdit ? `<button class="btn btn-sm btn-outline" onclick="TenantUsers.edit(${item.id})" style="padding: 4px 8px; border: 1px solid #d1d5db; background: white; color: #374151; border-radius: 4px; font-size: 12px;">${t('table.actions.edit')}</button>` : ''}
-                            ${state.permissions.canDelete ? `<button class="btn btn-sm btn-danger" onclick="TenantUsers.remove(${item.id})" style="padding: 4px 8px; background-color: #ef4444; color: white; border: none; border-radius: 4px; font-size: 12px;">${t('table.actions.delete')}</button>` : ''}
+                        <div class="table-actions">
+                            ${state.permissions.canEdit ? `<button class="btn btn-sm btn-outline" onclick="TenantUsers.edit(${item.id})">${t('table.actions.edit')}</button>` : ''}
+                            ${state.permissions.canDelete ? `<button class="btn btn-sm btn-danger" onclick="TenantUsers.remove(${item.id})">${t('table.actions.delete')}</button>` : ''}
                         </div>
                     </td>
                 </tr>

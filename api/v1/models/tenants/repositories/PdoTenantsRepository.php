@@ -1,7 +1,9 @@
 <?php
 declare(strict_types=1);
 
-final class PdoTenantsRepository
+require_once __DIR__ . '/../Contracts/TenantsRepositoryInterface.php';
+
+final class PdoTenantsRepository implements TenantsRepositoryInterface
 {
     private PDO $pdo;
 
@@ -20,7 +22,7 @@ final class PdoTenantsRepository
 
         // Add filters
         if (!empty($filters['search'])) {
-            $where .= " AND (t.name LIKE :search OR t.domain LIKE :search)";
+            $where .= " AND (t.name LIKE :search OR pd.domain LIKE :search)";
             $params[':search'] = '%' . $filters['search'] . '%';
         }
 
@@ -35,11 +37,13 @@ final class PdoTenantsRepository
         }
 
         $stmt = $this->pdo->prepare("
-            SELECT t.*, 
-                   u.username AS owner_username, 
-                   u.email AS owner_email
+            SELECT t.id, t.name, t.owner_user_id, t.status, t.created_at, t.updated_at,
+                   u.username AS owner_username,
+                   u.email    AS owner_email,
+                   pd.domain  AS primary_domain
             FROM tenants t
-            JOIN users u ON t.owner_user_id = u.id
+            LEFT JOIN users          u  ON t.owner_user_id = u.id
+            LEFT JOIN tenant_domains pd ON pd.tenant_id    = t.id AND pd.type = 'primary'
             {$where}
             ORDER BY t.created_at DESC
             LIMIT :limit OFFSET :offset
@@ -66,7 +70,7 @@ final class PdoTenantsRepository
 
         // Add filters
         if (!empty($filters['search'])) {
-            $where .= " AND (t.name LIKE :search OR t.domain LIKE :search)";
+            $where .= " AND (t.name LIKE :search OR pd.domain LIKE :search)";
             $params[':search'] = '%' . $filters['search'] . '%';
         }
 
@@ -83,7 +87,8 @@ final class PdoTenantsRepository
         $stmt = $this->pdo->prepare("
             SELECT COUNT(*) as total
             FROM tenants t
-            JOIN users u ON t.owner_user_id = u.id
+            LEFT JOIN users          u  ON t.owner_user_id = u.id
+            LEFT JOIN tenant_domains pd ON pd.tenant_id    = t.id AND pd.type = 'primary'
             {$where}
         ");
         
@@ -102,11 +107,13 @@ final class PdoTenantsRepository
     public function find(int $id): ?array
     {
         $stmt = $this->pdo->prepare("
-            SELECT t.*, 
-                   u.username AS owner_username, 
-                   u.email AS owner_email
+            SELECT t.id, t.name, t.owner_user_id, t.status, t.created_at, t.updated_at,
+                   u.username AS owner_username,
+                   u.email    AS owner_email,
+                   pd.domain  AS primary_domain
             FROM tenants t
-            JOIN users u ON t.owner_user_id = u.id
+            LEFT JOIN users          u  ON t.owner_user_id = u.id
+            LEFT JOIN tenant_domains pd ON pd.tenant_id    = t.id AND pd.type = 'primary'
             WHERE t.id = :id
             LIMIT 1
         ");
@@ -116,19 +123,60 @@ final class PdoTenantsRepository
     }
 
     /**
-     * Check if domain exists
+     * Find tenant by primary domain (looked up in tenant_domains)
+     */
+    public function findByDomain(string $domain): ?array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT t.id, t.name, t.owner_user_id, t.status, t.created_at, t.updated_at,
+                   u.username AS owner_username,
+                   u.email    AS owner_email,
+                   pd.domain  AS primary_domain
+            FROM tenants t
+            LEFT JOIN users          u  ON t.owner_user_id = u.id
+            LEFT JOIN tenant_domains pd ON pd.tenant_id    = t.id AND pd.type = 'primary'
+            WHERE pd.domain = :domain
+            LIMIT 1
+        ");
+        $stmt->execute([':domain' => $domain]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
+    /**
+     * Return all active tenants (no pagination)
+     */
+    public function findActive(): array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT t.id, t.name, t.owner_user_id, t.status, t.created_at, t.updated_at,
+                   u.username AS owner_username,
+                   u.email    AS owner_email,
+                   pd.domain  AS primary_domain
+            FROM tenants t
+            LEFT JOIN users          u  ON t.owner_user_id = u.id
+            LEFT JOIN tenant_domains pd ON pd.tenant_id    = t.id AND pd.type = 'primary'
+            WHERE t.status = 'active'
+            ORDER BY t.name ASC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Check if domain exists (checks tenant_domains table only – tenants.domain is dropped)
      */
     public function domainExists(string $domain, ?int $excludeId = null): bool
     {
-        $where = "WHERE domain = :domain";
+        $where  = "WHERE domain = :domain";
         $params = [':domain' => $domain];
 
         if ($excludeId) {
-            $where .= " AND id != :exclude_id";
-            $params[':exclude_id'] = $excludeId;
+            $where .= " AND tenant_id != :exclude_tenant_id";
+            $params[':exclude_tenant_id'] = $excludeId;
         }
 
-        $stmt = $this->pdo->prepare("SELECT COUNT(*) as count FROM tenants {$where}");
+        $stmt = $this->pdo->prepare("SELECT COUNT(*) as count FROM tenant_domains {$where}");
         $stmt->execute($params);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return (int)$result['count'] > 0;
@@ -156,28 +204,26 @@ final class PdoTenantsRepository
         if ($isUpdate) {
             $stmt = $this->pdo->prepare("
                 UPDATE tenants
-                SET name = :name, domain = :domain, owner_user_id = :owner_user_id, 
+                SET name = :name, owner_user_id = :owner_user_id,
                     status = :status, updated_at = NOW()
                 WHERE id = :id
             ");
             $stmt->execute([
-                ':name' => $data['name'],
-                ':domain' => $data['domain'],
+                ':name'          => $data['name'],
                 ':owner_user_id' => $data['owner_user_id'],
-                ':status' => $data['status'] ?? 'active',
-                ':id' => (int)$data['id']
+                ':status'        => $data['status'] ?? 'active',
+                ':id'            => (int)$data['id'],
             ]);
             $id = (int)$data['id'];
         } else {
             $stmt = $this->pdo->prepare("
-                INSERT INTO tenants (name, domain, owner_user_id, status, created_at, updated_at)
-                VALUES (:name, :domain, :owner_user_id, :status, NOW(), NOW())
+                INSERT INTO tenants (name, owner_user_id, status, created_at, updated_at)
+                VALUES (:name, :owner_user_id, :status, NOW(), NOW())
             ");
             $stmt->execute([
-                ':name' => $data['name'],
-                ':domain' => $data['domain'],
+                ':name'          => $data['name'],
                 ':owner_user_id' => $data['owner_user_id'],
-                ':status' => $data['status'] ?? 'active'
+                ':status'        => $data['status'] ?? 'active',
             ]);
             $id = (int)$this->pdo->lastInsertId();
         }

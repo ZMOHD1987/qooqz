@@ -58,6 +58,11 @@ final class PdoEntitiesRepository
             }
         }
 
+        if (!empty($filters['search'])) {
+            $sql .= " AND (e.store_name LIKE :search OR COALESCE(et.store_name, e.store_name) LIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
+
         $orderBy = in_array($orderBy, self::ALLOWED_ORDER_BY, true) ? $orderBy : 'id';
         $orderDir = strtoupper($orderDir) === 'ASC' ? 'ASC' : 'DESC';
         $sql .= " ORDER BY e.{$orderBy} {$orderDir}";
@@ -87,6 +92,11 @@ final class PdoEntitiesRepository
                 $sql .= " AND {$col} = :{$col}";
                 $params[":{$col}"] = $filters[$col];
             }
+        }
+
+        if (!empty($filters['search'])) {
+            $sql .= " AND store_name LIKE :search";
+            $params[':search'] = '%' . $filters['search'] . '%';
         }
 
         $stmt = $this->pdo->prepare($sql);

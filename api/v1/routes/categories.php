@@ -11,7 +11,14 @@ require_once $baseDir . '/shared/helpers/safe_helpers.php';
 require_once $baseDir . '/shared/helpers/SeoAutoManager.php';
 require_once $baseDir . '/shared/config/db.php';
 
+// ===== تحميل ملفات audit_logs (لتمكين AuditLogsService في المستودع) =====
+$auditPath = API_VERSION_PATH . '/models/audit_logs';
+require_once $auditPath . '/Contracts/AuditLogsRepositoryInterface.php';
+require_once $auditPath . '/repositories/PdoAuditLogsRepository.php';
+require_once $auditPath . '/services/AuditLogsService.php';
+
 // ===== تحميل ملفات categories =====
+require_once API_VERSION_PATH . '/models/categories/Contracts/CategoriesRepositoryInterface.php';
 require_once API_VERSION_PATH . '/models/categories/repositories/PdoCategoriesRepository.php';
 require_once API_VERSION_PATH . '/models/categories/validators/CategoriesValidator.php';
 require_once API_VERSION_PATH . '/models/categories/services/CategoriesService.php';
@@ -42,10 +49,29 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// ─────────────────────────────────────────────────────────────
+// Super-admin detection (same pattern used across other routes)
+// ─────────────────────────────────────────────────────────────
+$_saUser  = $_SESSION['user'] ?? [];
+$_saRoles = $_saUser['roles'] ?? ($_SESSION['roles'] ?? []);
+$isSuperAdmin = in_array('super_admin', $_saRoles, true);
+
+// Tenant resolution:
+//  - Explicit ?tenant_id GET param → always honoured (allows super-admin to
+//    scope reads/writes to a specific tenant).
+//  - Super admin with NO tenant_id param → null  (bypass all tenant filters).
+//  - Regular user with NO tenant_id param → their session tenant or default.
+$_sessionTenantId = isset($_SESSION['tenant_id']) ? (int)$_SESSION['tenant_id'] : null;
+
 try {
     $uri = $_SERVER['REQUEST_URI'] ?? '';
     $method = $_SERVER['REQUEST_METHOD'];
-    $tenantId = isset($_GET['tenant_id']) ? (int)$_GET['tenant_id'] : $defaultTenantId;
+
+    // Resolve tenant_id for this request
+    $tenantId = isset($_GET['tenant_id']) && is_numeric($_GET['tenant_id'])
+        ? (int)$_GET['tenant_id']
+        : ($isSuperAdmin ? null : ($_sessionTenantId ?? $defaultTenantId));
+
     $format = strtolower($_GET['format'] ?? 'json');
     $lang = $_GET['lang'] ?? 'ar';
 
@@ -103,13 +129,7 @@ try {
 
     /* ===================== GET LIST ===================== */
     if ($method === 'GET' && str_contains($uri, '/categories')) {
-        $listLimit    = clampLimit((int)($_GET['limit'] ?? 500));
-        $listOffset   = max(0, (int)($_GET['offset'] ?? 0));
-        $listLang     = $lang;
-        $listEntityId = isset($_GET['entity_id']) && is_numeric($_GET['entity_id'])
-                        ? (int)$_GET['entity_id'] : null;
-        $listIsActive = isset($_GET['is_active']) ? (int)$_GET['is_active'] : null;
-        $data = $controller->list($tenantId, $listLimit, $listOffset, $listLang, $listEntityId, $listIsActive);
+        $data = $controller->list($tenantId);
         
         if ($format === 'csv') {
             header('Content-Type: text/csv; charset=utf-8');

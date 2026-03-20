@@ -5,9 +5,9 @@
   max-width: 1200px;
   margin: 20px auto;
   padding: 20px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  background: var(--surface-color, var(--card-bg, #1e1e2e));
+  border-radius: var(--border-radius, 8px);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
 
 .filters {
@@ -17,28 +17,30 @@
   align-items: center;
   margin-bottom: 20px;
   padding: 15px;
-  background: #f8f9fa;
+  background: var(--background-secondary, #1a1a2e);
   border-radius: 6px;
 }
 
 .filters input, .filters select {
   padding: 8px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color, #2d2d3a);
   border-radius: 4px;
   font-size: 14px;
+  background: var(--input-bg, var(--surface-color, #1e1e2e));
+  color: var(--text-primary, #fff);
 }
 
 .filters .btn {
   padding: 8px 16px;
-  background: #007bff;
-  color: white;
+  background: var(--primary-color, #007bff);
+  color: #fff;
   border: none;
   border-radius: 4px;
   cursor: pointer;
 }
 
 .filters .btn:hover {
-  background: #0056b3;
+  background: var(--primary-hover, #0056b3);
 }
 
 .table-wrap {
@@ -55,11 +57,12 @@
 .delivery-companies-table th, .delivery-companies-table td {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-color, #2d2d3a);
+  color: var(--text-primary, #fff);
 }
 
 .delivery-companies-table th {
-  background: #f8f9fa;
+  background: var(--thead-bg, var(--background-secondary, #1a1a2e));
   font-weight: 600;
 }
 
@@ -73,26 +76,26 @@
 }
 
 .delivery-companies-table .btn.edit {
-  background: #28a745;
-  color: white;
+  background: var(--success-color, #28a745);
+  color: #fff;
 }
 
 .delivery-companies-table .btn.del {
-  background: #dc3545;
-  color: white;
+  background: var(--danger-color, var(--error-color, #dc3545));
+  color: #fff;
 }
 
 .delivery-companies-table .btn.toggle-active {
-  background: #ffc107;
-  color: black;
+  background: var(--warning-color, #ffc107);
+  color: var(--text-primary, #000);
 }
 
 .embedded-form {
-  background: #fff;
-  border: 1px solid #ddd;
+  background: var(--surface-color, var(--card-bg, #1e1e2e));
+  border: 1px solid var(--border-color, #2d2d3a);
   padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  border-radius: var(--border-radius, 8px);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
 
 .form-grid {
@@ -106,14 +109,17 @@
   display: flex;
   flex-direction: column;
   font-weight: 500;
+  color: var(--text-primary, #fff);
 }
 
 .form-grid input, .form-grid select, .form-grid textarea {
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color, #2d2d3a);
   border-radius: 4px;
   margin-top: 5px;
   font-size: 14px;
+  background: var(--input-bg, var(--surface-color, #1e1e2e));
+  color: var(--text-primary, #fff);
 }
 
 .form-grid input[type="file"] {
@@ -139,8 +145,8 @@
 
 .btn {
   padding: 10px 20px;
-  background: #007bff;
-  color: white;
+  background: var(--primary-color, #007bff);
+  color: #fff;
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -148,15 +154,15 @@
 }
 
 .btn:hover {
-  background: #0056b3;
+  background: var(--primary-hover, #0056b3);
 }
 
 .btn.primary {
-  background: #007bff;
+  background: var(--primary-color, #007bff);
 }
 
 .btn.danger {
-  background: #dc3545;
+  background: var(--danger-color, var(--error-color, #dc3545));
 }
 
 .btn.small {
@@ -165,18 +171,20 @@
 }
 
 .errors {
-  background: #f8d7da;
-  color: #721c24;
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger-color, var(--error-color, #ef4444));
   padding: 10px;
   border-radius: 4px;
   margin-bottom: 15px;
+  border: 1px solid var(--danger-color, var(--error-color, #ef4444));
 }
 
 .tr-lang-panel {
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color, #2d2d3a);
   padding: 10px;
   margin-bottom: 10px;
   border-radius: 4px;
+  background: var(--background-secondary, #1a1a2e);
 }
 
 .tr-lang-panel .body {
@@ -186,9 +194,11 @@
 .tr-lang-panel textarea {
   width: 100%;
   padding: 8px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color, #2d2d3a);
   border-radius: 4px;
   margin-top: 5px;
+  background: var(--input-bg, var(--surface-color, #1e1e2e));
+  color: var(--text-primary, #fff);
 }
 
 /* Responsive */

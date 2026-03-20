@@ -248,21 +248,21 @@ textarea.form-control {
     color: #ef4444;
     border-color: rgba(239, 68, 68, 0.2);
 }
-.btn-danger:hover:not(:disabled) { background: #ef4444; color: #fff; }
+.btn-danger:hover:not(:disabled) { background: var(--danger-color, var(--error-color, #ef4444)); color: #fff; }
 
 .btn-success {
     background: rgba(16, 185, 129, 0.1);
     color: #10b981;
     border-color: rgba(16, 185, 129, 0.2);
 }
-.btn-success:hover:not(:disabled) { background: #10b981; color: #fff; }
+.btn-success:hover:not(:disabled) { background: var(--success-color, #10b981); color: #fff; }
 
 .btn-warning {
     background: rgba(245, 158, 11, 0.1);
     color: #f59e0b;
     border-color: rgba(245, 158, 11, 0.2);
 }
-.btn-warning:hover:not(:disabled) { background: #f59e0b; color: #fff; }
+.btn-warning:hover:not(:disabled) { background: var(--warning-color, #f59e0b); color: #fff; }
 
 .btn-sm { padding: 6px 10px; font-size: 0.85rem; }
 

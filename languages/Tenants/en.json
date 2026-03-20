@@ -1,0 +1,214 @@
+{
+    "direction": "ltr",
+    "page": {
+        "title": "Tenants",
+        "subtitle": "Manage multi-tenant organisations and their configurations",
+        "add_new": "Add Tenant",
+        "refresh": "Refresh",
+        "loading": "Loading tenants…",
+        "retry": "Retry"
+    },
+    "tabs": {
+        "basic": "Basic Info",
+        "domains": "Domains",
+        "users": "Users",
+        "addresses": "Addresses",
+        "categories": "Categories",
+        "media": "Media"
+    },
+    "filters": {
+        "search": "Search",
+        "search_placeholder": "Search by name or domain…",
+        "status": "Status",
+        "all_statuses": "All Statuses",
+        "owner": "Owner User ID",
+        "owner_placeholder": "Filter by owner ID",
+        "apply": "Apply",
+        "reset": "Reset"
+    },
+    "table": {
+        "headers": {
+            "id": "ID",
+            "name": "Name",
+            "primary_domain": "Primary Domain",
+            "owner": "Owner",
+            "status": "Status",
+            "created": "Created",
+            "updated": "Updated",
+            "actions": "Actions"
+        },
+        "actions": {
+            "edit": "Edit",
+            "delete": "Delete",
+            "view_users": "Users",
+            "view_addresses": "Addresses",
+            "activate": "Activate",
+            "suspend": "Suspend",
+            "confirm_delete": "Are you sure you want to delete this tenant? This action cannot be undone.",
+            "confirm_suspend": "Suspend this tenant?"
+        },
+        "status": {
+            "active": "Active",
+            "suspended": "Suspended"
+        },
+        "empty": {
+            "title": "No Tenants Found",
+            "message": "No tenants match your current filters",
+            "add_first": "Create First Tenant"
+        },
+        "no_domain": "No domain",
+        "owner_label": "ID: "
+    },
+    "form": {
+        "add_title": "Add Tenant",
+        "edit_title": "Edit Tenant",
+        "fields": {
+            "name": {
+                "label": "Tenant Name",
+                "placeholder": "Enter tenant name…",
+                "hint": "Minimum 3 characters, maximum 150"
+            },
+            "domain": {
+                "label": "Domain",
+                "placeholder": "e.g. acme-corp.example.com",
+                "hint": "Lowercase letters, numbers, dots and hyphens only"
+            },
+            "owner_user_id": {
+                "label": "Owner User ID",
+                "placeholder": "Enter owner user ID…",
+                "hint": "The user who owns this tenant"
+            },
+            "status": {
+                "label": "Status",
+                "active": "Active",
+                "suspended": "Suspended"
+            }
+        },
+        "validation": {
+            "name_required": "Please enter a valid tenant name",
+            "domain_invalid": "Please enter a valid domain",
+            "owner_required": "Please enter a valid user ID"
+        },
+        "buttons": {
+            "save": "Save Tenant",
+            "saving": "Saving…",
+            "update": "Update Tenant",
+            "updating": "Updating…",
+            "cancel": "Cancel"
+        },
+        "sections": {
+            "logo": "Tenant Logo"
+        },
+        "media": {
+            "select_logo": "Select Logo from Studio",
+            "no_logo": "No logo selected",
+            "logo_url": "Logo URL will appear here",
+            "save_first": "Please save the tenant first before adding media"
+        }
+    },
+    "domains": {
+        "tab_title": "Domain Management",
+        "add": "Add Domain",
+        "no_domains": "No domains registered yet",
+        "primary": "Primary",
+        "custom": "Custom",
+        "subdomain": "Subdomain",
+        "alias": "Alias",
+        "verified": "Verified",
+        "unverified": "Unverified",
+        "ssl_none": "No SSL",
+        "ssl_pending": "SSL Pending",
+        "ssl_active": "SSL Active",
+        "ssl_failed": "SSL Failed",
+        "delete_confirm": "Are you sure you want to remove this domain?",
+        "cannot_delete_primary": "Cannot delete the primary domain. Promote another domain first.",
+        "buttons": {
+            "save": "Save Domain",
+            "cancel": "Cancel"
+        },
+        "messages": {
+            "added": "Domain added successfully",
+            "updated": "Domain updated successfully",
+            "add_failed": "Failed to save domain"
+        },
+        "fields": {
+            "domain": {
+                "label": "Domain",
+                "placeholder": "e.g. acme-corp.example.com",
+                "hint": "Lowercase letters, numbers, dots and hyphens only",
+                "required": "Please enter a domain"
+            },
+            "type": {
+                "label": "Type"
+            },
+            "ssl_status": {
+                "label": "SSL Status"
+            },
+            "ssl_expires_at": {
+                "label": "SSL Expires At",
+                "hint": "Leave blank if SSL has no expiry or is not active"
+            },
+            "verification_token": {
+                "label": "Verification Token",
+                "placeholder": "Auto-generated or enter manually",
+                "hint": "Used for DNS TXT-record or HTTP-file domain verification"
+            },
+            "verified_at": {
+                "label": "Verified At",
+                "hint": "Date and time the domain ownership was confirmed"
+            },
+            "is_verified": {
+                "label": "Verified",
+                "hint": "Mark domain as already verified"
+            },
+            "redirect_to_primary": {
+                "label": "Redirect to Primary",
+                "hint": "Redirect all traffic on this domain to the primary domain"
+            },
+            "meta": {
+                "label": "Meta (JSON)",
+                "placeholder": "{\"key\":\"value\"} — optional extra data",
+                "hint": "Optional JSON object for additional domain metadata",
+                "invalid_json": "Meta must be valid JSON"
+            }
+        }
+    },
+    "categories": {
+        "tab_title": "Category Management",
+        "add": "Add Category",
+        "no_categories": "No categories assigned yet",
+        "active": "Active",
+        "inactive": "Inactive",
+        "sort_order_label": "Order",
+        "confirm_delete": "Remove this category assignment?",
+        "saved": "Category saved successfully",
+        "deleted": "Category removed",
+        "save_failed": "Failed to save category",
+        "delete_failed": "Failed to remove category",
+        "buttons": {
+            "save": "Save Category",
+            "cancel": "Cancel"
+        },
+        "fields": {
+            "category": "Category",
+            "category_placeholder": "-- Select Category --",
+            "category_required": "Please select a category",
+            "sort_order": "Sort Order"
+        }
+    },
+    "messages": {
+        "success": {
+            "created": "Tenant created successfully",
+            "updated": "Tenant updated successfully",
+            "deleted": "Tenant deleted successfully",
+            "activated": "Tenant activated",
+            "suspended": "Tenant suspended"
+        },
+        "error": {
+            "load_failed": "Failed to load tenants",
+            "save_failed": "Failed to save tenant",
+            "delete_failed": "Failed to delete tenant",
+            "not_found": "Tenant not found"
+        }
+    }
+}

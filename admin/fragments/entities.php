@@ -105,11 +105,130 @@ function __tr($key, $replacements = []) {
 // ════════════════════════════════════════════════════════════
 $apiBase = '/api';
 
+// ════════════════════════════════════════════════════════════
+// THEME VARS INJECTION
+//
+// Injects the same :root CSS variables as the parent page so
+// that all var(--*) references in this fragment resolve to the
+// correct DB-driven values regardless of iframe / embedded mode.
+//
+// Priority:
+//   1. generated_css  – pre-compiled full block, use as-is
+//   2. fallback       – manual build from color_settings + other
+//                       theme sub-arrays (fonts, design, buttons, cards)
+// ════════════════════════════════════════════════════════════
+$_entTheme        = $GLOBALS['ADMIN_UI']['theme'] ?? [];
+$_entGeneratedCss = $_entTheme['generated_css'] ?? '';
+
+$_entColorMap = [];
+foreach ($_entTheme['color_settings'] ?? [] as $_c) {
+    if (!empty($_c['setting_key']) && isset($_c['color_value'])) {
+        $_entColorMap[$_c['setting_key']] = $_c['color_value'];
+    }
+}
+if (!function_exists('_entThemeColor')) {
+    function _entThemeColor(array $map, string $key, string $fallback): string {
+        return htmlspecialchars($map[$key] ?? $fallback, ENT_QUOTES);
+    }
+}
+if (!function_exists('_entRenderThemeVars')) {
+    function _entRenderThemeVars(array $theme): void {
+        echo ':root {' . PHP_EOL;
+        foreach ($theme['color_settings'] ?? [] as $c) {
+            if (empty($c['setting_key']) || !isset($c['color_value'])) continue;
+            $k = htmlspecialchars($c['setting_key'], ENT_QUOTES);
+            $h = htmlspecialchars(str_replace('_', '-', $c['setting_key']), ENT_QUOTES);
+            $v = htmlspecialchars($c['color_value'], ENT_QUOTES);
+            echo "    --{$k}: {$v};" . PHP_EOL;
+            if ($h !== $k) echo "    --{$h}: {$v};" . PHP_EOL;
+        }
+        foreach ($theme['font_settings'] ?? [] as $f) {
+            if (empty($f['setting_key'])) continue;
+            $sk = htmlspecialchars($f['setting_key'], ENT_QUOTES);
+            $sh = htmlspecialchars(str_replace('_', '-', $f['setting_key']), ENT_QUOTES);
+            if (!empty($f['font_family'])) {
+                $ff = htmlspecialchars($f['font_family'], ENT_QUOTES);
+                echo "    --{$sk}-family: {$ff};" . PHP_EOL;
+                if ($sh !== $sk) echo "    --{$sh}-family: {$ff};" . PHP_EOL;
+            }
+            if (!empty($f['font_size'])) {
+                $fs = htmlspecialchars($f['font_size'], ENT_QUOTES);
+                echo "    --{$sk}-size: {$fs};" . PHP_EOL;
+                if ($sh !== $sk) echo "    --{$sh}-size: {$fs};" . PHP_EOL;
+            }
+            if (!empty($f['font_weight'])) {
+                $fw = htmlspecialchars($f['font_weight'], ENT_QUOTES);
+                echo "    --{$sk}-weight: {$fw};" . PHP_EOL;
+                if ($sh !== $sk) echo "    --{$sh}-weight: {$fw};" . PHP_EOL;
+            }
+        }
+        foreach ($theme['design_settings'] ?? [] as $d) {
+            if (empty($d['setting_key']) || !isset($d['setting_value'])) continue;
+            $dk = htmlspecialchars($d['setting_key'], ENT_QUOTES);
+            $dh = htmlspecialchars(str_replace('_', '-', $d['setting_key']), ENT_QUOTES);
+            $dv = htmlspecialchars($d['setting_value'], ENT_QUOTES);
+            echo "    --{$dk}: {$dv};" . PHP_EOL;
+            if ($dh !== $dk) echo "    --{$dh}: {$dv};" . PHP_EOL;
+        }
+        foreach ($theme['button_styles'] ?? [] as $b) {
+            if (empty($b['slug'])) continue;
+            $slug = preg_replace('/[^a-z0-9_-]/', '-', strtolower((string)$b['slug']));
+            if (!empty($b['background_color'])) echo "    --btn-{$slug}-bg: "     . htmlspecialchars($b['background_color'], ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($b['text_color']))       echo "    --btn-{$slug}-color: "  . htmlspecialchars($b['text_color'],       ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($b['border_color']))     echo "    --btn-{$slug}-border: " . htmlspecialchars($b['border_color'],     ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($b['border_radius']))    echo "    --btn-{$slug}-radius: " . htmlspecialchars((string)$b['border_radius'], ENT_QUOTES) . 'px;' . PHP_EOL;
+            if (!empty($b['hover_background'])) echo "    --btn-{$slug}-hover-bg: " . htmlspecialchars($b['hover_background'], ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($b['hover_color']))      echo "    --btn-{$slug}-hover-color: " . htmlspecialchars($b['hover_color'], ENT_QUOTES) . ';' . PHP_EOL;
+        }
+        foreach ($theme['card_styles'] ?? [] as $cs) {
+            if (empty($cs['slug'])) continue;
+            $slug = preg_replace('/[^a-z0-9_-]/', '-', strtolower((string)$cs['slug']));
+            if (!empty($cs['background_color'])) echo "    --card-{$slug}-bg: "      . htmlspecialchars($cs['background_color'], ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($cs['border_color']))     echo "    --card-{$slug}-border: "  . htmlspecialchars($cs['border_color'],     ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($cs['border_radius']))    echo "    --card-{$slug}-radius: "  . htmlspecialchars((string)$cs['border_radius'], ENT_QUOTES) . 'px;' . PHP_EOL;
+            if (!empty($cs['shadow_style']))     echo "    --card-{$slug}-shadow: "  . htmlspecialchars($cs['shadow_style'],     ENT_QUOTES) . ';' . PHP_EOL;
+            if (!empty($cs['padding']))          echo "    --card-{$slug}-padding: " . htmlspecialchars($cs['padding'],          ENT_QUOTES) . ';' . PHP_EOL;
+        }
+        echo '}' . PHP_EOL;
+    }
+}
 ?>
-<!-- Force load CSS if embedded -->
-<?php if ($isFragment): ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/entities.css?v=<?= time() ?>">
+<!-- ════════════════════════════════════════════════════════
+     THEME VARS – DB-driven CSS custom properties
+     Priority: generated_css (pre-compiled) → manual fallback
+     ════════════════════════════════════════════════════════ -->
+<style id="ent-theme-vars">
+<?php if (!empty($_entGeneratedCss)): ?>
+<?= $_entGeneratedCss ?>
+<?php else: ?>
+/* Fallback: build directly from color_settings */
+:root {
+    --background-main:      <?= _entThemeColor($_entColorMap,'background_main',      '#242323') ?>;
+    --background-secondary: <?= _entThemeColor($_entColorMap,'background_secondary',  '#383f42') ?>;
+    --border-color:         <?= _entThemeColor($_entColorMap,'border_color',          '#7a7a7a') ?>;
+    --text-primary:         <?= _entThemeColor($_entColorMap,'text_primary',          '#FFFFFF') ?>;
+    --text-secondary:       <?= _entThemeColor($_entColorMap,'text_secondary',        '#94a3b8') ?>;
+    --primary-color:        <?= _entThemeColor($_entColorMap,'primary_color',         '#03874e') ?>;
+    --secondary-color:      <?= _entThemeColor($_entColorMap,'secondary_color',       '#10B981') ?>;
+    --success-color:        <?= _entThemeColor($_entColorMap,'success_color',         '#10b981') ?>;
+    --warning-color:        <?= _entThemeColor($_entColorMap,'warning_color',         '#f59e0b') ?>;
+    --danger-color:         <?= _entThemeColor($_entColorMap,'danger_color',          '#ef4444') ?>;
+    --error-color:          <?= _entThemeColor($_entColorMap,'error_color',           '#EF4444') ?>;
+    --info-color:           <?= _entThemeColor($_entColorMap,'info_color',            '#22C55E') ?>;
+    --card-bg:              <?= _entThemeColor($_entColorMap,'background_secondary',  '#383f42') ?>;
+    --input-background:     <?= _entThemeColor($_entColorMap,'background_secondary',  '#383f42') ?>;
+    --thead-bg:             <?= _entThemeColor($_entColorMap,'background_secondary',  '#383f42') ?>;
+}
+<?php _entRenderThemeVars($_entTheme); ?>
 <?php endif; ?>
+</style>
+<!-- Framework CSS (fragment/iframe mode only) -->
+<?php if ($isFragment): ?>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+<link rel="stylesheet" href="/admin/assets/css/admin_framework.css?v=<?= time() ?>">
+<?php endif; ?>
+<!-- Page CSS -->
+<link rel="stylesheet" href="/admin/assets/css/pages/entities.css?v=<?= time() ?>">
 
 <!-- Page Meta -->
 <meta data-page="entities"
@@ -240,10 +359,9 @@ $apiBase = '/api';
                                     <?= __t('form.fields.parent_entity.label', 'Search Parent Entity') ?>
                                 </label>
                                 <input type="text" id="entityParentSearch" class="form-control"
-                                       style="margin-bottom:6px;"
                                        data-i18n-placeholder="form.fields.parent_entity.search_placeholder"
                                        placeholder="<?= __t('form.fields.parent_entity.search_placeholder', 'Type to filter entities...') ?>">
-                                <select id="entityParentSelect" class="form-control" size="5" style="height:auto;">
+                                <select id="entityParentSelect" class="form-control select-size-list" size="5">
                                     <option value=""><?= __t('form.fields.parent_entity.placeholder', '— Select parent entity —') ?></option>
                                 </select>
                             </div>
@@ -253,9 +371,9 @@ $apiBase = '/api';
                                 <label for="entityParentId" data-i18n="form.fields.parent_id.label">
                                     <?= __t('form.fields.parent_id.label', 'Parent Entity ID') ?>
                                 </label>
-                                <div style="display:flex; gap:8px; align-items:flex-start;">
-                                    <input type="number" id="entityParentId" name="parent_id" class="form-control"
-                                           min="1" style="max-width:200px;"
+                                <div class="parent-id-input-wrapper">
+                                    <input type="number" id="entityParentId" name="parent_id" class="form-control input-narrow"
+                                           min="1"
                                            data-i18n-placeholder="form.fields.parent_id.placeholder"
                                            placeholder="<?= __t('form.fields.parent_id.placeholder', 'Enter parent entity ID') ?>">
                                     <button type="button" id="btnValidateParent" class="btn btn-outline">
@@ -263,7 +381,7 @@ $apiBase = '/api';
                                         <?= __t('form.fields.parent_id.validate', 'Validate') ?>
                                     </button>
                                 </div>
-                                <div id="parentValidationResult" style="display:none; margin-top:6px; font-size:0.875rem; padding:6px 10px; border-radius:4px;"></div>
+                                <div id="parentValidationResult" class="parent-validation-result" style="display:none;">
                             </div>
                         </div>
                     </div>
@@ -350,15 +468,15 @@ $apiBase = '/api';
                     </div>
 
                     <!-- English Content (primary language) -->
-                    <div class="english-content-section" style="margin-top:28px;padding-top:20px;border-top:2px solid var(--primary-color,#3b82f6);">
-                        <h4 style="margin-bottom:16px;color:var(--text-primary,#fff);display:flex;align-items:center;gap:10px;">
-                            <span style="background:var(--primary-color,#3b82f6);color:#fff;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;">EN</span>
+                    <div class="english-content-section">
+                        <h4>
+                            <span class="lang-tag">EN</span>
                             <?= __t('form.sections.english_content', 'English Content') ?>
-                            <span style="color:var(--text-secondary,#94a3b8);font-size:0.8rem;font-weight:400;margin-left:6px;">(<?= __t('form.sections.english_required', 'Default language — required') ?>)</span>
+                            <span class="lang-tag-note">(<?= __t('form.sections.english_required', 'Default language — required') ?>)</span>
                         </h4>
 
                         <div class="form-row">
-                            <div class="form-group" style="flex:1;">
+                            <div class="form-group">
                                 <label for="enEntityName" class="required"><?= __t('form.fields.en_store_name.label', 'Store Name (English)') ?></label>
                                 <input type="text" id="enEntityName" name="en_store_name" class="form-control" required
                                        placeholder="<?= __t('form.fields.en_store_name.placeholder', 'Enter store name in English') ?>">
@@ -367,7 +485,7 @@ $apiBase = '/api';
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group" style="flex:1;">
+                            <div class="form-group">
                                 <label for="enEntityDescription"><?= __t('form.fields.en_description.label', 'Description (English)') ?></label>
                                 <textarea id="enEntityDescription" name="en_description" class="form-control" rows="3"
                                           placeholder="<?= __t('form.fields.en_description.placeholder', 'Enter entity description in English') ?>"></textarea>
@@ -375,7 +493,7 @@ $apiBase = '/api';
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group" style="flex:1;">
+                            <div class="form-group">
                                 <label for="enEntityMetaTitle"><?= __t('form.fields.en_meta_title.label', 'Meta Title (English)') ?></label>
                                 <input type="text" id="enEntityMetaTitle" name="en_meta_title" class="form-control"
                                        placeholder="<?= __t('form.fields.en_meta_title.placeholder', 'SEO meta title in English') ?>">
@@ -383,7 +501,7 @@ $apiBase = '/api';
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group" style="flex:1;">
+                            <div class="form-group">
                                 <label for="enEntityMetaDescription"><?= __t('form.fields.en_meta_description.label', 'Meta Description (English)') ?></label>
                                 <textarea id="enEntityMetaDescription" name="en_meta_description" class="form-control" rows="2"
                                           placeholder="<?= __t('form.fields.en_meta_description.placeholder', 'SEO meta description in English') ?>"></textarea>
@@ -539,7 +657,7 @@ $apiBase = '/api';
                 <!-- Tab: Working Hours -->
                 <div class="tab-content" id="tab-working_hours" style="display:none">
                     <div class="working-hours-container">
-                        <h4 style="margin-bottom: 15px; color: var(--text-primary);" data-i18n="form.sections.working_hours">
+                        <h4 class="section-heading" data-i18n="form.sections.working_hours">
                             <?= __t('form.sections.working_hours', 'Working Hours') ?>
                         </h4>
                         
@@ -547,7 +665,7 @@ $apiBase = '/api';
                             <!-- Days will be generated by JavaScript -->
                         </div>
                         
-                        <div class="form-actions" style="margin-top: 20px;">
+                        <div class="form-actions">
                             <button type="button" id="btnApplyToAll" class="btn btn-secondary" data-i18n="form.buttons.apply_to_all">
                                 <?= __t('form.buttons.apply_to_all', 'Apply to All Days') ?>
                             </button>
@@ -560,8 +678,8 @@ $apiBase = '/api';
 
                 <!-- Tab: Attributes -->
                 <div class="tab-content" id="tab-attributes" style="display:none">
-                    <div style="display:flex; gap:10px; margin-bottom:15px;">
-                        <select id="entityAttrSelect" class="form-control" style="flex:1;"></select>
+                    <div class="attrs-controls">
+                        <select id="entityAttrSelect" class="form-control"></select>
                         <button type="button" id="btnAddEntityAttribute" class="btn btn-primary" data-i18n="form.buttons.add_attribute">
                             <?= __t('form.buttons.add_attribute', 'Add Attribute') ?>
                         </button>
@@ -572,12 +690,12 @@ $apiBase = '/api';
                 <!-- Tab: Media -->
                 <div class="tab-content" id="tab-media" style="display:none">
                     <!-- Logo -->
-                    <div class="media-section" style="margin-bottom: 30px;">
-                        <h5 style="margin-bottom: 15px; color: var(--text-primary);" data-i18n="form.sections.logo">
+                    <div class="media-section">
+                        <h5 class="section-heading" data-i18n="form.sections.logo">
                             <?= __t('form.sections.logo', 'Entity Logo') ?>
                         </h5>
                         <div class="image-upload-section">
-                            <button type="button" data-image-type="4" class="btnSelectMedia btn btn-secondary" style="margin-bottom: 15px;" data-i18n="common.select_image">
+                            <button type="button" data-image-type="4" class="btnSelectMedia btn btn-secondary" data-i18n="common.select_image">
                                 <?= __t('common.select_image', 'Select Logo from Studio') ?>
                             </button>
                             <div id="logoPreview" class="single-image-preview">
@@ -591,12 +709,12 @@ $apiBase = '/api';
                     </div>
 
                     <!-- Cover -->
-                    <div class="media-section" style="margin-bottom: 30px;">
-                        <h5 style="margin-bottom: 15px; color: var(--text-primary);" data-i18n="form.sections.cover">
+                    <div class="media-section">
+                        <h5 class="section-heading" data-i18n="form.sections.cover">
                             <?= __t('form.sections.cover', 'Entity Cover Image') ?>
                         </h5>
                         <div class="image-upload-section">
-                            <button type="button" data-image-type="5" class="btnSelectMedia btn btn-secondary" style="margin-bottom: 15px;" data-i18n="common.select_image">
+                            <button type="button" data-image-type="5" class="btnSelectMedia btn btn-secondary" data-i18n="common.select_image">
                                 <?= __t('common.select_image', 'Select Cover from Studio') ?>
                             </button>
                             <div id="coverPreview" class="single-image-preview">
@@ -611,11 +729,11 @@ $apiBase = '/api';
 
                     <!-- License -->
                     <div class="media-section">
-                        <h5 style="margin-bottom: 15px; color: var(--text-primary);" data-i18n="form.sections.license">
+                        <h5 class="section-heading" data-i18n="form.sections.license">
                             <?= __t('form.sections.license', 'Entity License') ?>
                         </h5>
                         <div class="image-upload-section">
-                            <button type="button" data-image-type="6" class="btnSelectMedia btn btn-secondary" style="margin-bottom: 15px;" data-i18n="common.select_image">
+                            <button type="button" data-image-type="6" class="btnSelectMedia btn btn-secondary" data-i18n="common.select_image">
                                 <?= __t('common.select_image', 'Select License from Studio') ?>
                             </button>
                             <div id="licensePreview" class="single-image-preview">
@@ -632,10 +750,10 @@ $apiBase = '/api';
                 <!-- Tab: Address -->
                 <div class="tab-content" id="tab-address" style="display:none">
                     <div class="address-section">
-                        <h4 style="margin-bottom: 15px; color: var(--text-primary);" data-i18n="form.sections.address">
+                        <h4 class="section-heading" data-i18n="form.sections.address">
                             <?= __t('form.sections.address', 'Entity Address') ?>
                         </h4>
-                        <div id="addressEmbeddedContainer" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; background: var(--card-bg);">
+                        <div id="addressEmbeddedContainer">
                             <div class="loading-state" id="addressLoading">
                                 <div class="spinner"></div>
                                 <p data-i18n="common.loading"><?= __t('common.loading', 'Loading address form...') ?></p>
@@ -649,22 +767,22 @@ $apiBase = '/api';
                 <!-- Tab: Translations -->
                 <div class="tab-content" id="tab-translations" style="display:none">
                     <div class="translations-section">
-                        <h4 style="margin-bottom:12px; color:var(--text-primary,#fff); border-bottom:1px solid var(--border-color,#263044); padding-bottom:8px;">
+                        <h4 class="section-heading-border">
                             <i class="fas fa-language"></i> <?= __t('form.sections.translations', 'Translations') ?>
                         </h4>
-                        <p style="font-size:0.88rem;color:var(--text-secondary,#94a3b8);margin-bottom:16px;padding:10px 14px;background:var(--card-bg,#081127);border-radius:6px;border:1px solid var(--border-color,#263044);">
-                            <i class="fas fa-info-circle" style="color:var(--primary-color,#3b82f6);margin-<?= $dir === 'rtl' ? 'left' : 'right' ?>:6px;"></i>
+                        <p class="info-box">
+                            <i class="fas fa-info-circle info-box-icon"></i>
                             <?= __t('form.translations.english_note', 'The') ?>
-                            <strong style="color:var(--text-primary,#fff);">English</strong>
+                            <strong>English</strong>
                             <?= __t('form.translations.english_in_basic', 'translation fields are in the') ?>
-                            <strong style="color:var(--text-primary,#fff);"><?= __t('tabs.basic', 'Basic Info') ?></strong>
+                            <strong><?= __t('tabs.basic', 'Basic Info') ?></strong>
                             <?= __t('form.translations.tab_hint', 'tab. Use this tab to add translations for other languages (Arabic, French, etc.).') ?>
                         </p>
                         <div id="entityTranslations" class="translation-panels"></div>
-                        <div class="form-group" style="margin-top:12px;">
+                        <div class="lang-form-group">
                             <label for="entityLangSelect" data-i18n="form.translations.select_lang">Select Language</label>
-                            <div style="display:flex; gap:8px; align-items:flex-end;">
-                                <select id="entityLangSelect" class="form-control" style="flex:1;">
+                            <div class="lang-add-row">
+                                <select id="entityLangSelect" class="form-control">
                                     <option value=""><?= __t('form.translations.choose_lang', 'Choose language') ?></option>
                                 </select>
                                 <button type="button" id="entityAddLangBtn" class="btn btn-primary">
@@ -773,8 +891,8 @@ $apiBase = '/api';
     </div>
 
     <!-- Results Count -->
-    <div id="resultsCount" class="results-count" style="padding:12px 16px; margin-bottom:12px; background:var(--card-bg,#081127); border:1px solid var(--border-color,#263044); border-radius:8px; display:none;">
-        <span style="color:var(--text-secondary,#94a3b8); font-size:0.9rem;">
+    <div id="resultsCount" class="results-count" style="display:none;">
+        <span>
             <i class="fas fa-building"></i> 
             <span id="resultsCountText"></span>
         </span>
@@ -846,7 +964,7 @@ $apiBase = '/api';
     <div id="mediaStudioModal" class="modal" style="display:none">
         <div class="modal-content">
             <span class="close" id="mediaStudioClose">&times;</span>
-            <iframe id="mediaStudioFrame" style="width:100%; height:500px; border:none;"></iframe>
+            <iframe id="mediaStudioFrame"></iframe>
         </div>
     </div>
 

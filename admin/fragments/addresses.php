@@ -48,13 +48,20 @@ $tenantId  = (int)($_GET['tenant_id'] ?? (function_exists('admin_tenant_id') ? a
 
 // owner context with fallback to current user (unless super admin viewing all)
 // Super Admin can view all addresses without owner filter, or filter by specific owner
+$tenantMode = false;
 if ($isSuperAdmin && !isset($_GET['owner_type']) && !isset($_GET['owner_id'])) {
     // Super Admin viewing all addresses
     $ownerType = null;
     $ownerId   = null;
     $showAllAddresses = true;
+} elseif (isset($_GET['owner_type']) && $_GET['owner_type'] === 'entity' && !isset($_GET['owner_id'])) {
+    // Tenant-wide entity mode: show ALL entity addresses for this tenant (no single owner_id)
+    $ownerType = 'entity';
+    $ownerId   = null;
+    $showAllAddresses = false;
+    $tenantMode = true; // use filter_tenant_id in API, show entity picker in form
 } else {
-    // Normal user or Super Admin filtering by owner
+    // Normal user or Super Admin filtering by a specific owner
     $ownerType = $_GET['owner_type'] ?? 'user';
     $ownerId   = isset($_GET['owner_id']) ? (int)$_GET['owner_id'] : (int)($user['id'] ?? 1);
     $showAllAddresses = false;
@@ -156,10 +163,20 @@ $apiBase = '/api';
                 <input type="hidden" name="tenant_id" value="<?= $tenantId ?>">
                 <?php if (!$canEditAllFields): ?>
                 <input type="hidden" name="owner_type" id="ownerTypeHidden" value="<?= htmlspecialchars($ownerType ?? 'user') ?>">
+                <?php if ($tenantMode): ?>
+                <!-- Tenant Mode: entity picker (owner_id is selected from dropdown) -->
+                <div class="form-group">
+                    <label><?= __t('entity', 'Entity / Branch') ?> <span class="required">*</span></label>
+                    <select name="owner_id" id="entitySelect" class="form-control" required>
+                        <option value=""><?= __t('select', 'Select...') ?></option>
+                    </select>
+                </div>
+                <?php else: ?>
                 <input type="hidden" name="owner_id" id="ownerIdHidden" value="<?= $ownerId ?? '' ?>">
+                <?php endif; ?>
                 <?php else: ?>
                 <!-- Super Admin Fields -->
-                <div class="alert-info" style="padding: 12px; background: #dbeafe; border: 1px solid #3b82f6; border-radius: 6px; margin-bottom: 16px;">
+                <div class="super-admin-notice">
                     <i class="fas fa-crown"></i> <?= __t('super_admin_mode', 'Super Admin Mode - Full Control') ?>
                 </div>
 
@@ -288,9 +305,11 @@ window.ADDRESSES_CONFIG = {
     apiUrl: '<?= $apiBase ?>/addresses',
     countriesApi: '<?= $apiBase ?>/countries',
     citiesApi: '<?= $apiBase ?>/cities',
+    entitiesApi: '<?= $apiBase ?>/entities',
     tenantId: <?= $tenantId ?>,
     ownerType: <?= $ownerType !== null ? "'".addslashes($ownerType)."'" : 'null' ?>,
     ownerId: <?= $ownerId ?? 'null' ?>,
+    tenantMode: <?= json_encode($tenantMode) ?>,
     lang: '<?= addslashes($lang) ?>',
     csrf: '<?= addslashes($csrf) ?>',
     isSuperAdmin: <?= json_encode($isSuperAdmin) ?>,

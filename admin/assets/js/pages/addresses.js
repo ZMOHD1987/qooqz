@@ -22,7 +22,8 @@
         language: CFG.lang || 'ar',
         items: [],
         countries: [],
-        cities: []
+        cities: [],
+        entities: []
     };
 
     let el = {};
@@ -217,6 +218,53 @@
     }
 
     // ═══════════════════════════════════════════════════════════
+    // LOAD ENTITIES (for tenant mode: pick which entity/branch)
+    // ═══════════════════════════════════════════════════════════
+
+    async function loadEntities(selectedId = null) {
+        if (!el.entitySelect) return;
+        const ENTITIES_API = CFG.entitiesApi || '/api/entities';
+        try {
+            const url = `${ENTITIES_API}?tenant_id=${encodeURIComponent(CFG.tenantId)}&per_page=200`;
+            console.log('📡 Loading entities from:', url);
+            const result = await apiFetch(url);
+            console.log('📦 Entities response:', result);
+
+            let entities = [];
+            if (result.data) {
+                if (Array.isArray(result.data.data)) entities = result.data.data;
+                else if (Array.isArray(result.data)) entities = result.data;
+                else if (result.data.entities && Array.isArray(result.data.entities)) entities = result.data.entities;
+            } else if (result.entities && Array.isArray(result.entities)) {
+                entities = result.entities;
+            } else if (Array.isArray(result)) {
+                entities = result;
+            }
+            state.entities = entities;
+
+            el.entitySelect.innerHTML = '<option value="">' + t('select_entity', 'Select Entity / Branch') + '</option>';
+            entities.forEach(entity => {
+                const option = document.createElement('option');
+                option.value = entity.id;
+                option.textContent = entity.store_name || entity.name || ('Entity #' + entity.id);
+                if (selectedId && String(selectedId) === String(entity.id)) {
+                    option.selected = true;
+                }
+                el.entitySelect.appendChild(option);
+            });
+
+            // Auto-select if only one entity
+            if (entities.length === 1 && !selectedId) {
+                el.entitySelect.value = entities[0].id;
+            }
+
+            console.log('✓ Entities loaded:', entities.length);
+        } catch (e) {
+            console.error('❌ loadEntities error:', e);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
     // LOAD ADDRESSES
     // ═══════════════════════════════════════════════════════════
     
@@ -231,12 +279,17 @@
                 language: state.language
             });
 
-            // Add owner filters only if provided (for non-super-admin or filtered view)
-            if (CFG.ownerType) {
-                params.append('owner_type', CFG.ownerType);
-            }
-            if (CFG.ownerId) {
-                params.append('owner_id', CFG.ownerId);
+            if (CFG.tenantMode) {
+                // Tenant mode: fetch addresses for ALL entities of this tenant
+                params.append('filter_tenant_id', CFG.tenantId);
+            } else {
+                // Add owner filters only if provided (for non-super-admin or filtered view)
+                if (CFG.ownerType) {
+                    params.append('owner_type', CFG.ownerType);
+                }
+                if (CFG.ownerId) {
+                    params.append('owner_id', CFG.ownerId);
+                }
             }
 
             const url = `${API}?${params}`;
@@ -458,6 +511,11 @@
                     if (ownerTypeSelect) ownerTypeSelect.value = addr.owner_type || 'user';
                     if (ownerIdInput) ownerIdInput.value = addr.owner_id || '';
                 }
+
+                // In tenant mode, populate entity dropdown with this address's owner_id
+                if (CFG.tenantMode && el.entitySelect) {
+                    await loadEntities(addr.owner_id);
+                }
             }
 
             // Load countries and cities
@@ -483,8 +541,16 @@
         // Add required fields
         data.tenant_id = CFG.tenantId;
         
-        // For non-super-admin, use config owner values
-        if (!CFG.canEditAllFields) {
+        if (CFG.tenantMode) {
+            // Tenant mode: owner_type is always 'entity', owner_id comes from entity dropdown
+            data.owner_type = 'entity';
+            // owner_id is already in data from the entitySelect <select name="owner_id">
+            if (!data.owner_id) {
+                showMessage(t('select_entity_required', 'Please select an entity / branch'), 'error');
+                return;
+            }
+        } else if (!CFG.canEditAllFields) {
+            // For non-super-admin fixed context, use config owner values
             data.owner_type = CFG.ownerType || 'user';
             data.owner_id = CFG.ownerId || 1;
         }
@@ -562,6 +628,7 @@
             formTitle: document.getElementById('addressFormTitle'),
             country: document.getElementById('countrySelect'),
             city: document.getElementById('citySelect'),
+            entitySelect: document.getElementById('entitySelect'),
             latitude: document.getElementById('latitude'),
             longitude: document.getElementById('longitude'),
             btnAdd: document.getElementById('btnAddAddress'),
@@ -605,6 +672,9 @@
 
         // Initial load
         await loadCountries();
+        if (CFG.tenantMode) {
+            await loadEntities();
+        }
         await loadAddresses();
 
         console.log('✓ Addresses module initialized');

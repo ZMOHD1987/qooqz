@@ -67,7 +67,10 @@ try {
         'vendor_type'   => $_GET['vendor_type'] ?? null,
         'store_type'    => $_GET['store_type'] ?? null,
         'is_verified'   => isset($_GET['is_verified']) ? (int)$_GET['is_verified'] : null,
-        'parent_id'     => isset($_GET['parent_id']) ? (int)$_GET['parent_id'] : null
+        'parent_id'     => isset($_GET['parent_id']) ? (int)$_GET['parent_id'] : null,
+        'search'        => isset($_GET['search']) && strlen(trim($_GET['search'])) >= 2
+                               ? trim($_GET['search'])
+                               : null,
     ];
 
     switch ($method) {

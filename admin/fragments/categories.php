@@ -604,7 +604,7 @@ if (!function_exists('renderFragmentThemeVars')) {
     <div id="catMediaStudioModal" class="modal" style="display:none">
         <div class="modal-content">
             <span class="close" id="catMediaStudioClose">&times;</span>
-            <iframe id="catMediaStudioFrame" src="/admin/fragments/media_studio.php?embedded=1&tenant_id=<?= $tenantId ?>&lang=<?= $lang ?>" style="width:100%; height:500px; border:none;"></iframe>
+            <iframe id="catMediaStudioFrame" src="/admin/fragments/media_studio.php?embedded=1&tenant_id=<?= $tenantId ?>&lang=<?= $lang ?>" style="width:100%; height:80vh; border:none; display:block;"></iframe>
         </div>
     </div>
 

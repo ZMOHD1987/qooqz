@@ -18,7 +18,7 @@ final class CategoriesService
      * LIST CATEGORIES WITH PAGINATION AND FILTERS
      * ============================================================ */
     public function list(
-        int $tenantId,
+        ?int $tenantId,
         array $filters = [],
         string $lang = 'ar'
     ): array {
@@ -64,7 +64,7 @@ final class CategoriesService
      * GET BY ID WITH TRANSLATIONS
      * ============================================================ */
     public function getById(
-        int $tenantId,
+        ?int $tenantId,
         int $id,
         string $lang = 'ar',
         bool $allTranslations = false
@@ -106,7 +106,7 @@ final class CategoriesService
      * CREATE / UPDATE CATEGORY
      * ============================================================ */
     public function save(
-        int $tenantId,
+        ?int $tenantId,
         array $data,
         ?int $userId = null
     ): array {
@@ -163,7 +163,7 @@ final class CategoriesService
      * DELETE CATEGORY
      * ============================================================ */
     public function deleteById(
-        int $tenantId,
+        ?int $tenantId,
         int $id,
         ?int $userId = null
     ): void {
@@ -188,7 +188,7 @@ final class CategoriesService
      * DELETE CATEGORY BY SLUG
      * ============================================================ */
     public function deleteBySlug(
-        int $tenantId,
+        ?int $tenantId,
         string $slug,
         ?int $userId = null
     ): void {
@@ -204,7 +204,7 @@ final class CategoriesService
      * DELETE SINGLE TRANSLATION
      * ============================================================ */
     public function deleteTranslation(
-        int $tenantId,
+        ?int $tenantId,
         int $categoryId,
         string $languageCode,
         ?int $userId = null
@@ -231,7 +231,7 @@ final class CategoriesService
      * GET ACTIVE CATEGORIES
      * ============================================================ */
     public function getActiveCategories(
-        int $tenantId,
+        ?int $tenantId,
         string $lang = 'ar'
     ): array {
         return $this->repo->getActiveCategories($tenantId, $lang);
@@ -241,7 +241,7 @@ final class CategoriesService
      * GET FEATURED CATEGORIES
      * ============================================================ */
     public function getFeaturedCategories(
-        int $tenantId,
+        ?int $tenantId,
         string $lang = 'ar'
     ): array {
         return $this->repo->getFeaturedCategories($tenantId, $lang);
@@ -251,7 +251,7 @@ final class CategoriesService
      * BULK OPERATIONS
      * ============================================================ */
     public function bulkUpdateStatus(
-        int $tenantId,
+        ?int $tenantId,
         array $ids,
         bool $isActive,
         ?int $userId = null
@@ -261,13 +261,19 @@ final class CategoriesService
         }
 
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $params = array_merge([$isActive ? 1 : 0], $ids);
-        array_unshift($params, $tenantId);
-
-        $sql = "UPDATE categories SET is_active = ?, updated_at = NOW() 
-                WHERE tenant_id = ? AND id IN ($placeholders)";
-
         $pdo = $this->repo->getPdo();
+
+        if ($tenantId === null) {
+            // Super admin: update across all tenants
+            $params = array_merge([$isActive ? 1 : 0], $ids);
+            $sql = "UPDATE categories SET is_active = ?, updated_at = NOW()
+                    WHERE id IN ($placeholders)";
+        } else {
+            $params = array_merge([$isActive ? 1 : 0, $tenantId], $ids);
+            $sql = "UPDATE categories SET is_active = ?, updated_at = NOW()
+                    WHERE tenant_id = ? AND id IN ($placeholders)";
+        }
+
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
 
@@ -275,7 +281,7 @@ final class CategoriesService
     }
 
     public function bulkDelete(
-        int $tenantId,
+        ?int $tenantId,
         array $ids,
         ?int $userId = null
     ): int {
@@ -300,12 +306,12 @@ final class CategoriesService
     /* ============================================================
      * VALIDATION HELPERS
      * ============================================================ */
-    public function validateSlug(int $tenantId, string $slug, ?int $excludeId = null): bool
+    public function validateSlug(?int $tenantId, string $slug, ?int $excludeId = null): bool
     {
         return !$this->repo->slugExists($tenantId, $slug, $excludeId);
     }
 
-    public function getCategoryTree(int $tenantId, string $lang = 'ar'): array
+    public function getCategoryTree(?int $tenantId, string $lang = 'ar'): array
     {
         // جلب كل الفئات بدون ترقيم
         $categories = $this->repo->all($tenantId, null, false, $lang, null, null, 0, 0);

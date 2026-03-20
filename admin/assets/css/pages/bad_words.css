@@ -311,7 +311,7 @@
 }
 
 .btn-danger:hover:not(:disabled) {
-    background: #ef4444;
+    background: var(--danger-color, var(--error-color, #ef4444));
     color: #fff;
 }
 

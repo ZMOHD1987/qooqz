@@ -1,0 +1,214 @@
+{
+    "direction": "rtl",
+    "page": {
+        "title": "المستأجرون",
+        "subtitle": "إدارة المؤسسات متعددة المستأجرين وإعداداتها",
+        "add_new": "إضافة مستأجر",
+        "refresh": "تحديث",
+        "loading": "جاري التحميل…",
+        "retry": "إعادة المحاولة"
+    },
+    "tabs": {
+        "basic": "المعلومات الأساسية",
+        "domains": "النطاقات",
+        "users": "المستخدمون",
+        "addresses": "العناوين",
+        "categories": "التصنيفات",
+        "media": "الوسائط"
+    },
+    "filters": {
+        "search": "بحث",
+        "search_placeholder": "البحث بالاسم أو النطاق…",
+        "status": "الحالة",
+        "all_statuses": "جميع الحالات",
+        "owner": "معرّف المالك",
+        "owner_placeholder": "تصفية بمعرّف المالك",
+        "apply": "تطبيق",
+        "reset": "إعادة تعيين"
+    },
+    "table": {
+        "headers": {
+            "id": "المعرّف",
+            "name": "الاسم",
+            "primary_domain": "النطاق الأساسي",
+            "owner": "المالك",
+            "status": "الحالة",
+            "created": "تاريخ الإنشاء",
+            "updated": "آخر تحديث",
+            "actions": "الإجراءات"
+        },
+        "actions": {
+            "edit": "تعديل",
+            "delete": "حذف",
+            "view_users": "المستخدمون",
+            "view_addresses": "العناوين",
+            "activate": "تفعيل",
+            "suspend": "تعليق",
+            "confirm_delete": "هل أنت متأكد من حذف هذا المستأجر؟ لا يمكن التراجع عن هذا الإجراء.",
+            "confirm_suspend": "هل تريد تعليق هذا المستأجر؟"
+        },
+        "status": {
+            "active": "نشط",
+            "suspended": "معلّق"
+        },
+        "empty": {
+            "title": "لا يوجد مستأجرون",
+            "message": "لا توجد نتائج تطابق الفلاتر الحالية",
+            "add_first": "إنشاء أول مستأجر"
+        },
+        "no_domain": "بدون نطاق",
+        "owner_label": "المعرّف: "
+    },
+    "form": {
+        "add_title": "إضافة مستأجر",
+        "edit_title": "تعديل المستأجر",
+        "fields": {
+            "name": {
+                "label": "اسم المستأجر",
+                "placeholder": "أدخل اسم المستأجر…",
+                "hint": "3 أحرف على الأقل، 150 حرفاً كحد أقصى"
+            },
+            "domain": {
+                "label": "النطاق",
+                "placeholder": "مثال: acme-corp.example.com",
+                "hint": "حروف صغيرة وأرقام ونقاط وشرطات فقط"
+            },
+            "owner_user_id": {
+                "label": "معرّف مالك المستأجر",
+                "placeholder": "أدخل معرّف المالك…",
+                "hint": "المستخدم المالك لهذا المستأجر"
+            },
+            "status": {
+                "label": "الحالة",
+                "active": "نشط",
+                "suspended": "معلّق"
+            }
+        },
+        "validation": {
+            "name_required": "يرجى إدخال اسم مستأجر صحيح",
+            "domain_invalid": "يرجى إدخال نطاق صحيح",
+            "owner_required": "يرجى إدخال معرّف مستخدم صحيح"
+        },
+        "buttons": {
+            "save": "حفظ المستأجر",
+            "saving": "جاري الحفظ…",
+            "update": "تحديث المستأجر",
+            "updating": "جاري التحديث…",
+            "cancel": "إلغاء"
+        },
+        "sections": {
+            "logo": "شعار المستأجر"
+        },
+        "media": {
+            "select_logo": "اختر الشعار من الاستوديو",
+            "no_logo": "لم يتم اختيار شعار",
+            "logo_url": "سيظهر رابط الشعار هنا",
+            "save_first": "يرجى حفظ المستأجر أولاً قبل إضافة الوسائط"
+        }
+    },
+    "categories": {
+        "tab_title": "إدارة التصنيفات",
+        "add": "إضافة تصنيف",
+        "no_categories": "لا توجد تصنيفات مخصصة بعد",
+        "active": "نشط",
+        "inactive": "غير نشط",
+        "sort_order_label": "الترتيب",
+        "confirm_delete": "هل تريد إزالة هذا التصنيف؟",
+        "saved": "تم حفظ التصنيف بنجاح",
+        "deleted": "تم حذف التصنيف",
+        "save_failed": "فشل في حفظ التصنيف",
+        "delete_failed": "فشل في حذف التصنيف",
+        "buttons": {
+            "save": "حفظ التصنيف",
+            "cancel": "إلغاء"
+        },
+        "fields": {
+            "category": "التصنيف",
+            "category_placeholder": "-- اختر تصنيفاً --",
+            "category_required": "يرجى اختيار تصنيف",
+            "sort_order": "ترتيب العرض"
+        }
+    },
+    "messages": {
+        "success": {
+            "created": "تم إنشاء المستأجر بنجاح",
+            "updated": "تم تحديث المستأجر بنجاح",
+            "deleted": "تم حذف المستأجر بنجاح",
+            "activated": "تم تفعيل المستأجر",
+            "suspended": "تم تعليق المستأجر"
+        },
+        "error": {
+            "load_failed": "فشل تحميل المستأجرين",
+            "save_failed": "فشل حفظ المستأجر",
+            "delete_failed": "فشل حذف المستأجر",
+            "not_found": "المستأجر غير موجود"
+        }
+    },
+    "domains": {
+        "tab_title": "إدارة النطاقات",
+        "add": "إضافة نطاق",
+        "no_domains": "لا توجد نطاقات مسجلة",
+        "primary": "أساسي",
+        "custom": "مخصص",
+        "subdomain": "نطاق فرعي",
+        "alias": "بديل",
+        "verified": "موثق",
+        "unverified": "غير موثق",
+        "ssl_none": "بدون SSL",
+        "ssl_pending": "SSL معلق",
+        "ssl_active": "SSL نشط",
+        "ssl_failed": "SSL فاشل",
+        "delete_confirm": "هل أنت متأكد من حذف هذا النطاق؟",
+        "cannot_delete_primary": "لا يمكن حذف النطاق الأساسي. قم بترقية نطاق آخر أولاً.",
+        "buttons": {
+            "save": "حفظ النطاق",
+            "cancel": "إلغاء"
+        },
+        "messages": {
+            "added": "تمت إضافة النطاق بنجاح",
+            "updated": "تم تحديث النطاق بنجاح",
+            "add_failed": "فشل حفظ النطاق"
+        },
+        "fields": {
+            "domain": {
+                "label": "النطاق",
+                "placeholder": "مثال: acme-corp.example.com",
+                "hint": "حروف صغيرة وأرقام ونقاط وشرطات فقط",
+                "required": "يرجى إدخال نطاق"
+            },
+            "type": {
+                "label": "النوع"
+            },
+            "ssl_status": {
+                "label": "حالة SSL"
+            },
+            "ssl_expires_at": {
+                "label": "تاريخ انتهاء SSL",
+                "hint": "اتركه فارغاً إذا لم يكن SSL نشطاً أو ليس له تاريخ انتهاء"
+            },
+            "verification_token": {
+                "label": "رمز التحقق",
+                "placeholder": "يُنشأ تلقائياً أو أدخله يدوياً",
+                "hint": "يُستخدم للتحقق من ملكية النطاق عبر DNS TXT أو ملف HTTP"
+            },
+            "verified_at": {
+                "label": "تاريخ التحقق",
+                "hint": "تاريخ ووقت تأكيد ملكية النطاق"
+            },
+            "is_verified": {
+                "label": "موثق",
+                "hint": "تعليم النطاق بأنه تم التحقق منه"
+            },
+            "redirect_to_primary": {
+                "label": "إعادة التوجيه إلى الأساسي",
+                "hint": "إعادة توجيه جميع حركة المرور على هذا النطاق إلى النطاق الأساسي"
+            },
+            "meta": {
+                "label": "بيانات إضافية (JSON)",
+                "placeholder": "{\"key\":\"value\"} — بيانات اختيارية",
+                "hint": "كائن JSON اختياري للبيانات الوصفية الإضافية للنطاق",
+                "invalid_json": "يجب أن تكون البيانات الإضافية JSON صحيحاً"
+            }
+        }
+    }
+}

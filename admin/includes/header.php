@@ -162,16 +162,30 @@ foreach ($theme['design_settings'] ?? [] as $d) {
 
     <title data-i18n="brand">Admin Panel</title>
 
+    <!-- Preconnect hints for external resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+
+    <?php
+    // Use filemtime() for cache-busting so browsers re-download only when files change,
+    // instead of time() which forces a fresh download on every single page load.
+    function assetVer(string $path): string {
+        $full = $_SERVER['DOCUMENT_ROOT'] . $path;
+        return file_exists($full) ? (string)filemtime($full) : '1';
+    }
+    ?>
+
     <!-- Stylesheets -->
-    <link rel="stylesheet" href="/admin/assets/css/admin.css?v=<?= time() ?>">
-    <link rel="stylesheet" href="/admin/assets/css/admin-overrides.css?v=<?= time() ?>">
-    <link rel="stylesheet" href="/admin/assets/css/modal.css?v=<?= time() ?>">
-    <link rel="stylesheet" href="/admin/assets/css/color-slider.css?v=<?= time() ?>">
-    <link rel="stylesheet" href="/admin/assets/css/mobile-responsive.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="/admin/assets/css/admin.css?v=<?= assetVer('/admin/assets/css/admin.css') ?>">
+    <link rel="stylesheet" href="/admin/assets/css/admin-overrides.css?v=<?= assetVer('/admin/assets/css/admin-overrides.css') ?>">
+    <link rel="stylesheet" href="/admin/assets/css/modal.css?v=<?= assetVer('/admin/assets/css/modal.css') ?>">
+    <link rel="stylesheet" href="/admin/assets/css/color-slider.css?v=<?= assetVer('/admin/assets/css/color-slider.css') ?>">
+    <link rel="stylesheet" href="/admin/assets/css/mobile-responsive.css?v=<?= assetVer('/admin/assets/css/mobile-responsive.css') ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 <!-- Admin Framework -->
-    <script src="/admin/assets/js/admin_framework.js?v=<?= time() ?>"></script>
-    <link rel="stylesheet" href="/admin/assets/css/admin_framework.css?v=<?= time() ?>">
+    <script src="/admin/assets/js/admin_framework.js?v=<?= assetVer('/admin/assets/js/admin_framework.js') ?>"></script>
+    <link rel="stylesheet" href="/admin/assets/css/admin_framework.css?v=<?= assetVer('/admin/assets/css/admin_framework.css') ?>">
     <!-- Dynamic Theme CSS -->
     <?php if (!empty($theme['generated_css'])): ?>
     <style id="dynamic-theme-db">
@@ -227,19 +241,31 @@ foreach ($theme['color_settings'] ?? [] as $c):
 // ── Alias vars — provide the stable names used by CSS files ─────────────────
 // These map framework-level CSS var names to values from the DB so that
 // CSS var() references work before admin_core.js runs.
+// design_settings entries whose setting_key matches one of these names will
+// have already been emitted above as --setting_key / --setting-key vars and
+// will therefore appear in $_emittedVars, causing these fallback aliases to
+// be skipped — which is the correct precedence.
 $backgroundSecondary = $_emittedVars['--background-secondary'] ?? $_emittedVars['--background_secondary'] ?? null;
 $backgroundPrimary   = $_emittedVars['--background-primary']   ?? $_emittedVars['--background_primary']   ?? null;
 $backgroundMain      = $_emittedVars['--background-main']      ?? $_emittedVars['--background_main']      ?? null;
 $backgroundFallback  = $backgroundSecondary ?? $backgroundPrimary ?? $backgroundMain;
 $errorColor          = $_emittedVars['--error-color']  ?? $_emittedVars['--error_color']  ?? null;
+$successColor        = $_emittedVars['--success-color'] ?? $_emittedVars['--success_color'] ?? null;
+$warningColor        = $_emittedVars['--warning-color'] ?? $_emittedVars['--warning_color'] ?? null;
+$primaryColor        = $_emittedVars['--primary-color'] ?? $_emittedVars['--primary_color'] ?? null;
+$surfaceColor        = $_emittedVars['--surface-color'] ?? $_emittedVars['--surface_color'] ?? $backgroundFallback;
 
 // Map: CSS-var-name => resolved value (only emit if not already set from DB)
 $themeAliasVars = [
-    '--card-bg'          => $_emittedVars['--card-bg']          ?? $_emittedVars['--card_bg']          ?? $backgroundFallback,
-    '--input-bg'         => $_emittedVars['--input-bg']         ?? $_emittedVars['--input_bg']         ?? $backgroundFallback,
-    '--input-background' => $_emittedVars['--input-background'] ?? $_emittedVars['--input_background'] ?? $backgroundFallback,
-    '--thead-bg'         => $_emittedVars['--thead-bg']         ?? $_emittedVars['--thead_bg']         ?? $backgroundFallback,
-    '--danger-color'     => $_emittedVars['--danger-color']     ?? $_emittedVars['--danger_color']     ?? $errorColor,
+    '--card-bg'            => $_emittedVars['--card-bg']          ?? $_emittedVars['--card_bg']          ?? $surfaceColor,
+    '--input-bg'           => $_emittedVars['--input-bg']         ?? $_emittedVars['--input_bg']         ?? $surfaceColor,
+    '--input-background'   => $_emittedVars['--input-background'] ?? $_emittedVars['--input_background'] ?? $surfaceColor,
+    '--thead-bg'           => $_emittedVars['--thead-bg']         ?? $_emittedVars['--thead_bg']         ?? $backgroundFallback,
+    '--surface-color'      => $surfaceColor,
+    '--danger-color'       => $_emittedVars['--danger-color']     ?? $_emittedVars['--danger_color']     ?? $errorColor,
+    '--success-color'      => $successColor,
+    '--warning-color'      => $warningColor,
+    '--info-color'         => $_emittedVars['--info-color']       ?? $_emittedVars['--info_color']       ?? $primaryColor,
 ];
 foreach ($themeAliasVars as $varName => $varValue):
     if (!$varValue || !empty($_emittedVars[$varName])) continue; // skip if already emitted or no value
@@ -281,9 +307,11 @@ body {
         $loadedFonts[] = $primaryFont;
     ?>
     <?php if (!empty($f['font_url'])): ?>
-    <link rel="stylesheet" href="<?= htmlspecialchars($f['font_url']) ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars($f['font_url']) ?>" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="<?= htmlspecialchars($f['font_url']) ?>"></noscript>
     <?php else: ?>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=<?= urlencode($primaryFont) ?>&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=<?= urlencode($primaryFont) ?>&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=<?= urlencode($primaryFont) ?>&display=swap"></noscript>
     <?php endif; ?>
     <?php endforeach; ?>
 
@@ -314,9 +342,9 @@ body {
     </script>
 
     <!-- Core JS -->
-    <script src="/admin/assets/js/admin_core.js" defer></script>
-    <script src="/admin/assets/js/sidebar-toggle.js" defer></script>
-    <script src="/admin/assets/js/modal.js" defer></script>
+    <script src="/admin/assets/js/admin_core.js?v=<?= assetVer('/admin/assets/js/admin_core.js') ?>" defer></script>
+    <script src="/admin/assets/js/sidebar-toggle.js?v=<?= assetVer('/admin/assets/js/sidebar-toggle.js') ?>" defer></script>
+    <script src="/admin/assets/js/modal.js?v=<?= assetVer('/admin/assets/js/modal.js') ?>" defer></script>
 </head>
 <body class="admin">
 
