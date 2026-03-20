@@ -161,6 +161,7 @@
     z-index: 10020;
     border-radius: 0;
     border: none;
+    /* Kept in sync with current toolbar vertical footprint in fullscreen mode */
     --zones-map-toolbar-height: 56px;
 }
 .zones-map-panel.is-fullscreen .zones-map-canvas,

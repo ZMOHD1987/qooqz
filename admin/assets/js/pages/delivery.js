@@ -11,6 +11,8 @@
     const APP = window.APP_CONFIG || {};
     const MIN_VISIBLE_MAP_HEIGHT = 260;
     const FALLBACK_MIN_MAP_HEIGHT = 320;
+    const MAP_INVALIDATE_DELAYS_MS = [80, 180, 350, 700, 1200];
+    const MAP_INIT_RETRY_DELAYS_MS = [100, 300, 700, 1200];
 
     // ─── State ───────────────────────────────────────────────────────
     const state = {
@@ -128,8 +130,8 @@
 
     function scheduleMapInvalidate() {
         if (!zonesMap) return;
-        // Progressive delays help after tab switches/mobile reflow where layout settles in phases.
-        [80, 180, 350, 700, 1200].forEach(function(ms) {
+        // Progressive backoff covers immediate + late layout-settle phases on mobile/tab switches.
+        MAP_INVALIDATE_DELAYS_MS.forEach(function(ms) {
             setTimeout(function() {
                 if (zonesMap) zonesMap.invalidateSize();
             }, ms);
@@ -1273,7 +1275,8 @@
                 }
                 initZonesMap();
                 if (!zonesMap) {
-                    [100, 300, 700, 1200].forEach(function(ms) { setTimeout(initZonesMap, ms); });
+                    // Retry map bootstrap after delayed CSS/layout availability.
+                    MAP_INIT_RETRY_DELAYS_MS.forEach(function(ms) { setTimeout(initZonesMap, ms); });
                 }
                 scheduleMapInvalidate();
             });
