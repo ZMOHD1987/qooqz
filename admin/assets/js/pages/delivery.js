@@ -13,6 +13,8 @@
     const FALLBACK_MIN_MAP_HEIGHT = 320;
     const MAP_INVALIDATE_DELAYS_MS = [80, 180, 350, 700, 1200];
     const MAP_INIT_RETRY_DELAYS_MS = [100, 300, 700, 1200];
+    const GEOLOCATION_MIN_ZOOM_LEVEL = 13;
+    const GEOLOCATION_TIMEOUT_MS = 10000;
 
     // ─── State ───────────────────────────────────────────────────────
     const state = {
@@ -683,7 +685,7 @@
                     function(pos) {
                         var lat = pos.coords.latitude;
                         var lng = pos.coords.longitude;
-                        zonesMap.setView([lat, lng], Math.max(zonesMap.getZoom(), 13));
+                        zonesMap.setView([lat, lng], Math.max(zonesMap.getZoom(), GEOLOCATION_MIN_ZOOM_LEVEL));
                         if (zonesLocateMarker && zonesMap) zonesMap.removeLayer(zonesLocateMarker);
                         zonesLocateMarker = L.marker([lat, lng]).addTo(zonesMap).bindPopup(esc(cfgText('mapYourLocation', 'Your location')));
                         zonesLocateMarker.openPopup();
@@ -694,7 +696,7 @@
                         locateBtn.disabled = false;
                         notify(cfgText('mapLocationUnavailable', 'Unable to get your location'), 'error');
                     },
-                    { enableHighAccuracy: true, timeout: 10000 }
+                    { enableHighAccuracy: true, timeout: GEOLOCATION_TIMEOUT_MS }
                 );
             });
         }
