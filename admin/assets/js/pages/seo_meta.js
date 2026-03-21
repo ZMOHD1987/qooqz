@@ -6,6 +6,8 @@
     var PER_PAGE = 25;
     var currentPage = 1;
     var currentFilters = {};
+    var translationsCache = {};   // keyed by translation id
+    var langsLoaded = false;
 
     function reloadConfig() {
         CFG        = window.SEO_META_CONFIG || {};
@@ -72,16 +74,14 @@
     function hideFormCard() {
         var card = document.getElementById('seoMetaFormCard');
         if (card) card.style.display = 'none';
-        // reset to general tab when closing
         switchTab('sm-general');
+        hideAddTransPanel();
     }
 
     /* ── Tab switching ────────────────────────────────── */
     function switchTab(tabName) {
-        // deactivate all tabs & contents inside the form card
         var card = document.getElementById('seoMetaFormCard');
         if (!card) return;
-
         card.querySelectorAll('.tab-btn').forEach(function (btn) {
             btn.classList.remove('active');
         });
@@ -89,22 +89,19 @@
             pane.classList.remove('active');
             pane.style.display = 'none';
         });
-
-        // activate the requested tab
         var activeBtn  = card.querySelector('.tab-btn[data-tab="' + tabName + '"]');
         var activePane = document.getElementById('tab-' + tabName);
         if (activeBtn)  activeBtn.classList.add('active');
         if (activePane) { activePane.classList.add('active'); activePane.style.display = ''; }
     }
 
-    /* ── Open Add form (General tab only, no Translations tab) */
+    /* ── Open Add form ────────────────────────────────── */
     function openAddForm() {
         var form = document.getElementById('seoMetaForm');
         if (form) form.reset();
         var idEl = document.getElementById('seoMetaId');
         if (idEl) idEl.value = '';
 
-        // hide Translations tab for new records
         var transTabBtn = document.getElementById('tabTranslationsBtn');
         if (transTabBtn) transTabBtn.style.display = 'none';
 
@@ -139,23 +136,21 @@
                     var sm = document.getElementById('smSchemaMarkup');
                     if (sm) sm.value = rec.schema_markup || '';
 
-                    // show Translations tab for existing records
                     var transTabBtn = document.getElementById('tabTranslationsBtn');
                     if (transTabBtn) transTabBtn.style.display = '';
 
                     var title = document.getElementById('seoMetaFormTitle');
                     if (title) title.textContent = t('modal.edit_title', 'Edit SEO Record');
 
-                    // store id for translations tab
                     var transIdEl = document.getElementById('transSeoMetaId');
                     if (transIdEl) transIdEl.value = rec.id;
 
+                    hideAddTransPanel();
                     switchTab(activeTab);
                     showFormCard();
                     var card = document.getElementById('seoMetaFormCard');
                     if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-                    // if opening on translations tab, load them
                     if (activeTab === 'sm-translations') {
                         loadTranslations(rec.id);
                     }
@@ -168,7 +163,7 @@
             });
     }
 
-    /* ── Save SEO Meta ────────────────────────────────── */
+    /* ── Save SEO Meta (General tab) ─────────────────── */
     function saveSeoMeta(formData) {
         var editId = document.getElementById('seoMetaId').value;
         var method = editId ? 'PUT' : 'POST';
@@ -352,28 +347,28 @@
         loadSeoMeta({ page: 1 });
     }
 
-    /* ── Translations (inside tab) ────────────────────── */
+    /* ══════════════════════════════════════════════════════
+       TRANSLATIONS – editable rows + add panel
+    ══════════════════════════════════════════════════════ */
+
+    /* ── Load & render all translations ──────────────── */
     function loadTranslations(seoMetaId) {
         fetch('/api/seo_meta/translations?seo_meta_id=' + encodeURIComponent(seoMetaId))
             .then(function (r) { return r.json(); })
             .then(function (d) {
+                translationsCache = {};
                 var tbody = document.getElementById('translationsBody');
                 if (!tbody) return;
                 tbody.innerHTML = '';
+
                 var items = [];
-                if (d.data && d.data.items)     items = d.data.items;
-                else if (Array.isArray(d.data))  items = d.data;
+                if (d.data && d.data.items)    items = d.data.items;
+                else if (Array.isArray(d.data)) items = d.data;
 
                 if (items.length > 0) {
                     items.forEach(function (item) {
-                        var tr = document.createElement('tr');
-                        tr.innerHTML =
-                            '<td>' + esc(item.language_code) + '</td>' +
-                            '<td>' + esc(item.meta_title  || '') + '</td>' +
-                            '<td>' + esc(item.og_title    || '') + '</td>' +
-                            '<td><button class="btn btn-sm btn-danger delete-translation-btn" data-id="' + esc(item.id) + '">' +
-                                '<i class="fas fa-trash"></i> ' + t('table.delete', 'Delete') + '</button></td>';
-                        tbody.appendChild(tr);
+                        translationsCache[item.id] = item;
+                        tbody.appendChild(buildTransSummaryRow(item));
                     });
                 } else {
                     var tr = document.createElement('tr');
@@ -384,10 +379,171 @@
                     tr.appendChild(td);
                     tbody.appendChild(tr);
                 }
+            })
+            .catch(function () {
+                showNotification(t('unknown_error', 'Unknown error'), 'error');
             });
     }
 
-    function saveTranslation() {
+    /* ── Build a summary (read-only) translation row ── */
+    function buildTransSummaryRow(item) {
+        var tr = document.createElement('tr');
+        tr.id = 'trans-row-' + item.id;
+        tr.innerHTML =
+            '<td><span class="lang-badge">' + esc(item.language_code) + '</span></td>' +
+            '<td>' + esc(item.meta_title || '') + '</td>' +
+            '<td>' + esc(item.og_title || '') + '</td>' +
+            '<td>' +
+                '<button type="button" class="btn btn-sm btn-info edit-trans-btn" data-id="' + esc(item.id) + '">' +
+                    '<i class="fas fa-edit"></i> ' + t('table.edit', 'Edit') + '</button> ' +
+                '<button type="button" class="btn btn-sm btn-danger delete-translation-btn" data-id="' + esc(item.id) + '">' +
+                    '<i class="fas fa-trash"></i> ' + t('table.delete', 'Delete') + '</button>' +
+            '</td>';
+        return tr;
+    }
+
+    /* ── Toggle inline-edit detail row ───────────────── */
+    function toggleTransDetailRow(id) {
+        var existing = document.getElementById('trans-detail-' + id);
+        if (existing) {
+            existing.remove();
+            return;
+        }
+        var item = translationsCache[id];
+        if (!item) return;
+        var summaryRow = document.getElementById('trans-row-' + id);
+        if (!summaryRow) return;
+
+        var detailTr = document.createElement('tr');
+        detailTr.id = 'trans-detail-' + id;
+        detailTr.className = 'trans-detail-row';
+        detailTr.innerHTML =
+            '<td colspan="4">' +
+            '<div class="trans-edit-form">' +
+                '<div class="form-row">' +
+                    '<div class="form-group">' +
+                        '<label>' + t('translations.meta_title', 'Meta Title') + '</label>' +
+                        '<input type="text" class="form-control tei-meta-title" value="' + esc(item.meta_title || '') + '">' +
+                    '</div>' +
+                    '<div class="form-group">' +
+                        '<label>' + t('translations.og_title', 'OG Title') + '</label>' +
+                        '<input type="text" class="form-control tei-og-title" value="' + esc(item.og_title || '') + '">' +
+                    '</div>' +
+                '</div>' +
+                '<div class="form-group">' +
+                    '<label>' + t('translations.meta_description', 'Meta Description') + '</label>' +
+                    '<textarea class="form-control tei-meta-desc" rows="2">' + esc(item.meta_description || '') + '</textarea>' +
+                '</div>' +
+                '<div class="form-row">' +
+                    '<div class="form-group">' +
+                        '<label>' + t('translations.meta_keywords', 'Meta Keywords') + '</label>' +
+                        '<input type="text" class="form-control tei-meta-keywords" value="' + esc(item.meta_keywords || '') + '">' +
+                    '</div>' +
+                    '<div class="form-group">' +
+                        '<label>' + t('translations.og_image', 'OG Image') + '</label>' +
+                        '<input type="text" class="form-control tei-og-image" value="' + esc(item.og_image || '') + '">' +
+                    '</div>' +
+                '</div>' +
+                '<div class="form-group">' +
+                    '<label>' + t('translations.og_description', 'OG Description') + '</label>' +
+                    '<textarea class="form-control tei-og-desc" rows="2">' + esc(item.og_description || '') + '</textarea>' +
+                '</div>' +
+                '<div class="form-actions">' +
+                    '<button type="button" class="btn btn-sm btn-primary save-trans-edit-btn" data-id="' + esc(id) + '">' +
+                        '<i class="fas fa-save"></i> ' + t('form.save', 'Save') + '</button> ' +
+                    '<button type="button" class="btn btn-sm btn-secondary cancel-trans-edit-btn" data-id="' + esc(id) + '">' +
+                        t('form.cancel', 'Cancel') + '</button>' +
+                '</div>' +
+            '</div>' +
+            '</td>';
+        summaryRow.after(detailTr);
+    }
+
+    /* ── Update an existing translation ──────────────── */
+    function updateTranslation(id) {
+        var detailRow = document.getElementById('trans-detail-' + id);
+        if (!detailRow) return;
+        var item = translationsCache[id];
+        var transIdEl = document.getElementById('transSeoMetaId');
+        var seoMetaId = transIdEl ? transIdEl.value : '';
+
+        function gvc(cls) {
+            var el = detailRow.querySelector('.' + cls);
+            return el ? el.value : '';
+        }
+
+        fetch('/api/seo_meta/translations', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+            body:    JSON.stringify({
+                seo_meta_id:      seoMetaId,
+                language_code:    item.language_code,
+                meta_title:       gvc('tei-meta-title'),
+                meta_description: gvc('tei-meta-desc'),
+                meta_keywords:    gvc('tei-meta-keywords'),
+                og_title:         gvc('tei-og-title'),
+                og_description:   gvc('tei-og-desc'),
+                og_image:         gvc('tei-og-image')
+            })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            if (d.success) {
+                showNotification(t('saved', 'Saved successfully'), 'success');
+                loadTranslations(seoMetaId);
+            } else {
+                showNotification(d.message || t('unknown_error', 'Unknown error'), 'error');
+            }
+        })
+        .catch(function () {
+            showNotification(t('unknown_error', 'Unknown error'), 'error');
+        });
+    }
+
+    /* ── Delete an existing translation ──────────────── */
+    function deleteTranslation(id) {
+        if (!confirm(t('confirm_delete_translation', 'Are you sure you want to delete this translation?'))) return;
+        var transIdEl = document.getElementById('transSeoMetaId');
+        var seoMetaId = transIdEl ? transIdEl.value : '';
+
+        fetch('/api/seo_meta/translations?id=' + encodeURIComponent(id), {
+            method:  'DELETE',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF }
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            if (d.success) {
+                showNotification(t('deleted', 'Deleted successfully'), 'success');
+                if (seoMetaId) loadTranslations(seoMetaId);
+            } else {
+                showNotification(d.message || t('delete_failed', 'Delete failed'), 'error');
+            }
+        });
+    }
+
+    /* ── Show / hide "Add Translation" panel ─────────── */
+    function showAddTransPanel() {
+        var panel = document.getElementById('addTransPanel');
+        if (!panel) return;
+        panel.style.display = '';
+        // Load languages lazily
+        var select = document.getElementById('transLangCode');
+        if (select && !langsLoaded) loadLanguages();
+    }
+
+    function hideAddTransPanel() {
+        var panel = document.getElementById('addTransPanel');
+        if (panel) panel.style.display = 'none';
+        clearAddTransForm();
+    }
+
+    function clearAddTransForm() {
+        ['transMetaTitle','transOgTitle','transMetaKeywords','transMetaDescription','transOgDescription','transOgImage']
+            .forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
+    }
+
+    /* ── Save a new translation ───────────────────────── */
+    function saveNewTranslation() {
         var transIdEl = document.getElementById('transSeoMetaId');
         var seoMetaId = transIdEl ? transIdEl.value : '';
         if (!seoMetaId) {
@@ -415,37 +571,18 @@
         .then(function (d) {
             if (d.success) {
                 showNotification(t('saved', 'Saved successfully'), 'success');
-                ['transMetaTitle','transMetaDescription','transMetaKeywords',
-                 'transOgTitle','transOgDescription','transOgImage']
-                    .forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
+                hideAddTransPanel();
                 loadTranslations(seoMetaId);
             } else {
                 showNotification(d.message || t('unknown_error', 'Unknown error'), 'error');
             }
-        });
-    }
-
-    function deleteTranslation(id) {
-        if (!confirm(t('confirm_delete_translation', 'Are you sure you want to delete this translation?'))) return;
-        var transIdEl  = document.getElementById('transSeoMetaId');
-        var seoMetaId  = transIdEl ? transIdEl.value : '';
-
-        fetch('/api/seo_meta/translations?id=' + encodeURIComponent(id), {
-            method:  'DELETE',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF }
         })
-        .then(function (r) { return r.json(); })
-        .then(function (d) {
-            if (d.success) {
-                showNotification(t('deleted', 'Deleted successfully'), 'success');
-                if (seoMetaId) loadTranslations(seoMetaId);
-            } else {
-                showNotification(d.message || t('delete_failed', 'Delete failed'), 'error');
-            }
+        .catch(function () {
+            showNotification(t('unknown_error', 'Unknown error'), 'error');
         });
     }
 
-    /* ── Load languages for translations tab ──────────── */
+    /* ── Load languages list (lazy) ───────────────────── */
     function loadLanguages() {
         var select = document.getElementById('transLangCode');
         if (!select) return;
@@ -466,6 +603,7 @@
                     opt.textContent = lang.native_name || lang.name || lang.code || lang.id;
                     select.appendChild(opt);
                 });
+                langsLoaded = true;
             })
             .catch(function () {
                 select.innerHTML = '';
@@ -474,6 +612,7 @@
                     opt.value = opt.textContent = code;
                     select.appendChild(opt);
                 });
+                langsLoaded = true;
             });
     }
 
@@ -481,23 +620,20 @@
     function init() {
         reloadConfig();
 
-        // Initialise tab-content visibility to match active states declared in PHP
+        // Hide all non-active tab-content panes on load
         var card = document.getElementById('seoMetaFormCard');
         if (card) {
             card.querySelectorAll('.tab-content').forEach(function (pane) {
                 if (!pane.classList.contains('active')) pane.style.display = 'none';
             });
-        }
 
-        /* Tab buttons (delegated inside form-card) */
-        if (card) {
+            // Tab button clicks
             card.addEventListener('click', function (e) {
                 var tabBtn = e.target.closest('.tab-btn');
                 if (!tabBtn) return;
                 var tabName = tabBtn.dataset.tab;
                 if (!tabName) return;
                 switchTab(tabName);
-                // when switching to translations tab, refresh the list
                 if (tabName === 'sm-translations') {
                     var transIdEl = document.getElementById('transSeoMetaId');
                     if (transIdEl && transIdEl.value) loadTranslations(transIdEl.value);
@@ -516,7 +652,7 @@
         var btnCancel = document.getElementById('btnCancelForm');
         if (btnCancel) btnCancel.addEventListener('click', function () { hideFormCard(); });
 
-        /* Form submit */
+        /* Form submit (General tab) */
         var form = document.getElementById('seoMetaForm');
         if (form) form.addEventListener('submit', function (e) {
             e.preventDefault();
@@ -535,12 +671,19 @@
             if (e.key === 'Enter') { e.preventDefault(); filterSeoMeta(); }
         });
 
-        /* Add Translation button */
-        var btnAddTrans = document.getElementById('btnAddTranslation');
-        if (btnAddTrans) btnAddTrans.addEventListener('click', function () { saveTranslation(); });
+        /* "Add Translation" panel buttons */
+        var btnShowAdd = document.getElementById('btnShowAddTransForm');
+        if (btnShowAdd) btnShowAdd.addEventListener('click', function () { showAddTransPanel(); });
+
+        var btnSaveNew = document.getElementById('btnSaveNewTrans');
+        if (btnSaveNew) btnSaveNew.addEventListener('click', function () { saveNewTranslation(); });
+
+        var btnCancelAdd = document.getElementById('btnCancelAddTrans');
+        if (btnCancelAdd) btnCancelAdd.addEventListener('click', function () { hideAddTransPanel(); });
 
         /* Delegated table-row events */
         document.addEventListener('click', function (e) {
+            // Main table
             var editBtn = e.target.closest('.edit-btn');
             if (editBtn) { editSeoMeta(editBtn.dataset.id, 'sm-general'); return; }
 
@@ -550,11 +693,24 @@
             var deleteBtn = e.target.closest('.delete-btn');
             if (deleteBtn) { deleteSeoMeta(deleteBtn.dataset.id); return; }
 
+            // Translations table – Edit/Save/Cancel/Delete
+            var editTransBtn = e.target.closest('.edit-trans-btn');
+            if (editTransBtn) { toggleTransDetailRow(editTransBtn.dataset.id); return; }
+
+            var saveTransBtn = e.target.closest('.save-trans-edit-btn');
+            if (saveTransBtn) { updateTranslation(saveTransBtn.dataset.id); return; }
+
+            var cancelTransBtn = e.target.closest('.cancel-trans-edit-btn');
+            if (cancelTransBtn) {
+                var detRow = document.getElementById('trans-detail-' + cancelTransBtn.dataset.id);
+                if (detRow) detRow.remove();
+                return;
+            }
+
             var delTransBtn = e.target.closest('.delete-translation-btn');
             if (delTransBtn) { deleteTranslation(delTransBtn.dataset.id); return; }
         });
 
-        loadLanguages();
         loadSeoMeta();
     }
 

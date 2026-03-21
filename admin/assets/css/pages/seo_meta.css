@@ -539,3 +539,46 @@ textarea.form-control {
     .pagination-wrapper,
     .sm-notifications { display: none !important; }
 }
+
+/* ─── Translations tab UI ──────────────────────────────── */
+
+/* Toolbar row above the table */
+.trans-toolbar {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+/* Add-translation panel (hidden by default) */
+.trans-add-panel {
+    background: var(--background-secondary, #1a2535);
+    border: 1px solid var(--border-color, #263044);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+/* Inline edit row that expands below a summary row */
+.trans-detail-row > td {
+    padding: 0 !important;
+}
+
+.trans-edit-form {
+    background: var(--background-secondary, #1a2535);
+    border-top: 2px solid var(--primary-color, #3b82f6);
+    padding: 14px 16px;
+}
+
+/* Small language badge in table cell */
+.lang-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: color-mix(in srgb, var(--primary-color, #3b82f6) 15%, transparent);
+    color: var(--primary-color, #3b82f6);
+    border: 1px solid color-mix(in srgb, var(--primary-color, #3b82f6) 35%, transparent);
+}
