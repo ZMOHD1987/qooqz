@@ -1592,7 +1592,7 @@
                         onclick="Products.removeImage(${idx})">
                     <i class="fas fa-times"></i>
                 </button>
-                ${idx === 0 ? '<span style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.7);color:white;padding:2px 6px;border-radius:4px;font-size:10px;">Main</span>' : ''}
+                ${idx === 0 ? '<span class="image-main-badge">Main</span>' : ''}
             </div>
         `).join('');
     }
@@ -2547,7 +2547,7 @@
         function logLine(msg, ok = true) {
             const span = document.createElement('span');
             span.textContent = msg + '\n';
-            span.style.color = ok ? '#4ade80' : '#f87171';
+            span.className = ok ? 'csv-count-success' : 'csv-count-fail';
             progressLog.appendChild(span);
             progressLog.scrollTop = progressLog.scrollHeight;
         }
@@ -2659,13 +2659,13 @@
 
         const ok = failCount === 0;
         resultDiv.style.display = 'block';
-        resultDiv.style.background = ok ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)';
-        resultDiv.style.border = `1px solid ${ok ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)'}`;
-        resultDiv.style.color = 'var(--text-primary,#fff)';
+        resultDiv.className = ok ? 'csv-result-success' : 'csv-result-partial';
+        resultDiv.style.padding = '12px';
+        resultDiv.style.borderRadius = 'var(--border-radius, 8px)';
         resultDiv.innerHTML = `
             <strong>${ok ? '✅' : '⚠️'} ${t('csv.import_complete', 'Import Finished')}</strong><br>
-            <span style="color:#4ade80;">✓ ${t('csv.created', 'Created')}: ${successCount}</span>
-            ${failCount > 0 ? `  <span style="color:#f87171;">✗ ${t('csv.failed', 'Failed')}: ${failCount}</span>` : ''}
+            <span class="csv-count-success">✓ ${t('csv.created', 'Created')}: ${successCount}</span>
+            ${failCount > 0 ? `  <span class="csv-count-fail">✗ ${t('csv.failed', 'Failed')}: ${failCount}</span>` : ''}
         `;
 
         cancelBtn.disabled = false;
