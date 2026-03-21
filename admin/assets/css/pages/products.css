@@ -550,6 +550,12 @@ textarea.form-control {
     border-bottom: 1px solid var(--border-color, #263044);
 }
 
+.english-content-section {
+    margin-top: clamp(20px, 3vw, 28px);
+    padding-top: clamp(14px, 2vw, 20px);
+    border-top: 2px solid var(--primary-color, #3b82f6);
+}
+
 .english-content-section h4 {
     margin-bottom: clamp(12px, 2vw, 16px);
     color: var(--text-primary, #fff);
@@ -600,6 +606,10 @@ textarea.form-control {
     margin-top: 12px;
 }
 
+.lang-add-row select {
+    flex: 1;
+}
+
 /* ════════════════════════════════════════════════════════════
    ATTR / VARIANT CONTROLS (inside tabs)
    ════════════════════════════════════════════════════════════ */
@@ -608,6 +618,10 @@ textarea.form-control {
     display: flex;
     gap: 10px;
     margin-bottom: 15px;
+}
+
+.attrs-controls select {
+    flex: 1;
 }
 
 .variant-controls {
@@ -771,10 +785,10 @@ textarea.form-control {
 }
 
 /* ════════════════════════════════════════════════════════════
-   IMAGE SELECT BUTTON (full width in images tab)
+   FULL-WIDTH BUTTON (images tab, CSV download, etc.)
    ════════════════════════════════════════════════════════════ */
 
-.btn-select-image {
+.btn-full-width {
     width: 100%;
     margin-bottom: 15px;
 }

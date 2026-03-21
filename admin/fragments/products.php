@@ -571,7 +571,7 @@ if (!function_exists('prodAssetVer')) {
                             <?= __t('form.fields.images.label', 'Product Images') ?>
                         </label>
                         <div class="image-upload-section">
-                            <button type="button" id="prodSelectImageBtn" class="btn btn-secondary btn-select-image" data-i18n="common.select_image">
+                            <button type="button" id="prodSelectImageBtn" class="btn btn-secondary btn-full-width" data-i18n="common.select_image">
                                 <?= __t('common.select_image', 'Select Images from Studio') ?>
                             </button>
                             <div id="prodImagesPreview" class="images-grid"></div>
@@ -590,7 +590,7 @@ if (!function_exists('prodAssetVer')) {
                             <strong>English</strong> translation fields are in the <strong>General tab</strong>. Use this tab to add translations for other languages (Arabic, French, etc.).
                         </div>
                         <div id="prodTranslations" class="translation-panels"></div>
-                        <div class="form-group lang-add-row">
+                        <div class="form-group">
                             <label for="prodLangSelect" data-i18n="form.translations.select_lang">Select Language</label>
                             <div class="lang-add-row">
                                 <select id="prodLangSelect" class="form-control">
@@ -785,7 +785,7 @@ if (!function_exists('prodAssetVer')) {
 
             <!-- Download Sample -->
             <div class="csv-download-section">
-                <button type="button" id="btnDownloadSample" class="btn btn-outline btn-select-image">
+                <button type="button" id="btnDownloadSample" class="btn btn-outline btn-full-width">
                     <i class="fas fa-download"></i>
                     <span data-i18n="csv.download_sample"><?= __t('csv.download_sample', 'Download Sample CSV Template') ?></span>
                 </button>
