@@ -123,6 +123,7 @@ $apiBase = '/api';
 <!-- Page Meta -->
 <meta data-page="categories"
       data-assets-css="/admin/assets/css/pages/categories.css"
+      data-assets-js="/admin/assets/js/pages/categories.js"
       data-i18n-files="/languages/Categories/<?= rawurlencode($lang) ?>.json">
 
 <!-- Page Container -->
@@ -696,42 +697,8 @@ window.CATEGORIES_CONFIG = {
 <?= json_encode(['items' => [], 'meta' => ['page' => 1, 'per_page' => 25, 'total' => 0]]) ?>
 </script>
 
-<!-- Load AdminFramework + Page module when embedded; otherwise load normally -->
-<?php if ($isFragment): ?>
-<script src="/admin/assets/js/admin_framework.js?v=<?= time() ?>"></script>
+<!-- Page JS -->
 <script src="/admin/assets/js/pages/categories.js?v=<?= time() ?>"></script>
-
-<script>
-(function(){
-    console.log('[Categories] Embedded mode - waiting for framework & module...');
-    let attempts = 0, maxAttempts = 50;
-    const interval = setInterval(function(){
-        attempts++;
-        if (window.AdminFramework && window.Categories && typeof window.Categories.init === 'function') {
-            clearInterval(interval);
-            console.log('[Categories] Module ready - initializing...');
-            try {
-                const maybePromise = window.Categories.init();
-                if (maybePromise && typeof maybePromise.then === 'function') {
-                    maybePromise.then(()=>console.log('[Categories] Initialized')).catch(e=>console.error('[Categories] Init failed', e));
-                } else {
-                    console.log('[Categories] Initialized (sync)');
-                }
-            } catch (e) {
-                console.error('[Categories] Init threw', e);
-            }
-        } else if (attempts > maxAttempts) {
-            clearInterval(interval);
-            console.error('[Categories] Timeout waiting for module. Framework present:', !!window.AdminFramework, 'Module present:', !!window.Categories);
-        } else if (attempts % 10 === 0) {
-            console.log('[Categories] waiting...', attempts, '/', maxAttempts);
-        }
-    }, 100);
-})();
-</script>
-<?php else: ?>
-<script src="/admin/assets/js/pages/categories.js?v=<?= time() ?>"></script>
-<?php endif; ?>
 
 <?php
 // Load footer if standalone

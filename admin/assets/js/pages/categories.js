@@ -1248,109 +1248,9 @@
         const btnImport = AF.$('btnImportExcel');
         if (btnImport) btnImport.onclick = openExcelImport;
 
-        // Inject DB theme CSS vars (all colors, fonts, cards, buttons from database)
-        injectThemeCss();
-
         // تحميل البيانات
         load();
         console.log('[Categories] Initialized successfully!');
-    }
-
-    // ════════════════════════════════════════════════════════════
-    // THEME CSS INJECTION FROM DATABASE
-    // Uses window.ADMIN_UI.theme (injected by PHP from DB) to
-    // apply all colors, fonts, button styles and card styles.
-    // ════════════════════════════════════════════════════════════
-    function injectThemeCss() {
-        try {
-            const themeData = window.ADMIN_UI && window.ADMIN_UI.theme;
-            if (!themeData) return;
-
-            const root = document.documentElement;
-
-            // Apply color settings
-            if (Array.isArray(themeData.color_settings)) {
-                themeData.color_settings.forEach(c => {
-                    if (!c || !c.setting_key || !c.color_value) return;
-                    const key = c.setting_key.replace(/_/g, '-');
-                    root.style.setProperty('--' + c.setting_key, c.color_value);
-                    root.style.setProperty('--' + key, c.color_value);
-                });
-
-                // Create stable aliases used throughout CSS and inline styles
-                // Only set alias if the target isn't already provided directly by the DB
-                const alias = (target, ...sources) => {
-                    if (root.style.getPropertyValue(target).trim()) return;
-                    for (const src of sources) {
-                        const v = root.style.getPropertyValue(src).trim();
-                        if (v) { root.style.setProperty(target, v); return; }
-                    }
-                };
-                alias('--danger-color', '--error-color', '--error_color');
-                alias('--card-bg', '--background-secondary', '--background_secondary');
-                const secBg = root.style.getPropertyValue('--background-secondary').trim();
-                if (secBg && !root.style.getPropertyValue('--background-tertiary').trim()) {
-                    root.style.setProperty('--background-tertiary', secBg);
-                }
-                // --thead-bg: table header rows use DB background-tertiary/secondary.
-                // Both hyphen and underscore forms are checked because the DB may store
-                // the key as either background-tertiary or background_tertiary.
-                alias('--thead-bg', '--background-tertiary', '--background_tertiary', '--background-secondary', '--background_secondary');
-                // Inputs/search fields/filter selects use the surface/secondary background
-                alias('--input-background', '--background-secondary', '--background_secondary', '--background-primary', '--background_primary');
-                // Border color aliases
-                alias('--border-color', '--border', '--divider-color', '--divider_color');
-                // Text muted/tertiary for placeholders
-                alias('--text-secondary', '--text-muted', '--text_muted', '--text-light');
-                alias('--text-tertiary', '--text-secondary', '--text_secondary', '--text-muted');
-            }
-
-            // Apply font settings
-            if (Array.isArray(themeData.font_settings)) {
-                themeData.font_settings.forEach(f => {
-                    if (!f || !f.setting_key) return;
-                    const base = f.setting_key;
-                    const baseH = base.replace(/_/g, '-');
-                    if (f.font_family) {
-                        root.style.setProperty('--' + base + '-family', f.font_family);
-                        root.style.setProperty('--' + baseH + '-family', f.font_family);
-                    }
-                    if (f.font_size) {
-                        root.style.setProperty('--' + base + '-size', f.font_size);
-                        root.style.setProperty('--' + baseH + '-size', f.font_size);
-                    }
-                    if (f.font_weight) {
-                        root.style.setProperty('--' + base + '-weight', f.font_weight);
-                        root.style.setProperty('--' + baseH + '-weight', f.font_weight);
-                    }
-                });
-            }
-
-            // Apply design settings (border-radius, padding, spacing…)
-            if (Array.isArray(themeData.design_settings)) {
-                themeData.design_settings.forEach(d => {
-                    if (!d || !d.setting_key || !d.setting_value) return;
-                    const key = d.setting_key.replace(/_/g, '-');
-                    root.style.setProperty('--' + d.setting_key, d.setting_value);
-                    root.style.setProperty('--' + key, d.setting_value);
-                });
-            }
-
-            // Apply generated_css if present
-            if (themeData.generated_css) {
-                let genStyle = document.getElementById('__categories_theme_generated__');
-                if (!genStyle) {
-                    genStyle = document.createElement('style');
-                    genStyle.id = '__categories_theme_generated__';
-                    document.head.appendChild(genStyle);
-                }
-                genStyle.textContent = themeData.generated_css;
-            }
-
-            console.log('[Categories] DB theme CSS applied from window.ADMIN_UI');
-        } catch (err) {
-            console.warn('[Categories] Could not apply theme CSS:', err);
-        }
     }
 
     // ════════════════════════════════════════════════════════════
@@ -1726,15 +1626,16 @@
         }
     };
 
-    // fragment support
+    // Register for fragment navigation so init() is called on re-navigation
     window.page = { run: init };
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.AdminFramework && !window.page.__fragment_init) init();
-        });
-    } else {
-        if (window.AdminFramework && !window.page.__fragment_init) init();
+    if (window.Admin && Admin.page && typeof Admin.page.register === 'function') {
+        Admin.page.register('categories', init);
     }
-    window.page.__fragment_init = false;
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
 
 })();
