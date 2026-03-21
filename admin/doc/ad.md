@@ -728,7 +728,7 @@ CTR% = (total_clicks / total_views) × 100
 ```
 
 - If `views = 0`, CTR is `0%`.
-- Displayed to one decimal place (e.g., `3.7%`).
+- Displayed to two decimal places (e.g., `3.70%`).
 
 ---
 

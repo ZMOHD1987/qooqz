@@ -481,7 +481,7 @@
         if (filters.search)      url += '&search='      + encodeURIComponent(filters.search);
 
         var tbody = document.getElementById('adsTableBody');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="10" class="text-center">...</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="11" class="text-center">...</td></tr>';
 
         fetch(url, { credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
@@ -494,7 +494,7 @@
             })
             .catch(function () {
                 showNotification(t('error_load', 'Failed to load ads'), 'error');
-                if (tbody) tbody.innerHTML = '<tr><td colspan="10" class="text-center">' + esc(t('table.no_records', 'No ads found')) + '</td></tr>';
+                if (tbody) tbody.innerHTML = '<tr><td colspan="11" class="text-center">' + esc(t('table.no_records', 'No ads found')) + '</td></tr>';
             });
     }
 
@@ -502,7 +502,7 @@
         var tbody = document.getElementById('adsTableBody');
         if (!tbody) return;
         if (!items || items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center">' + esc(t('table.no_records', 'No ads found')) + '</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="11" class="text-center">' + esc(t('table.no_records', 'No ads found')) + '</td></tr>';
             return;
         }
         var html = '';
@@ -520,7 +520,7 @@
             html += '<td>' + statusBadge(ad.status) + '</td>';
             var adViews  = (ad.views_total  != null) ? parseInt(ad.views_total,  10) : 0;
             var adClicks = (ad.clicks_total != null) ? parseInt(ad.clicks_total, 10) : 0;
-            var adCtr    = adViews > 0 ? (adClicks / adViews * 100).toFixed(1) + '%' : '0%';
+            var adCtr    = adViews > 0 ? (adClicks / adViews * 100).toFixed(2) + '%' : '0%';
             html += '<td>' + esc(adViews)  + '</td>';
             html += '<td>' + esc(adClicks) + '</td>';
             html += '<td>' + esc(adCtr)    + '</td>';
