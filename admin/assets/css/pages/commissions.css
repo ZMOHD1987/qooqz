@@ -726,11 +726,6 @@
         font-size: 1.4em;
     }
 
-    .btn {
-        padding: 8px 12px;
-        font-size: 0.85rem;
-    }
-
     .form-actions {
         flex-direction: column;
     }

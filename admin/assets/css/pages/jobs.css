@@ -650,11 +650,6 @@ select.form-control {
         font-size: 1.25rem;
     }
     
-    .btn {
-        padding: 8px 12px;
-        font-size: 0.85rem;
-    }
-    
     .form-tabs {
         gap: 2px;
     }

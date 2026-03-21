@@ -1028,17 +1028,6 @@
         padding: 12px;
     }
 
-    /* Buttons */
-    .themes-page .btn {
-        padding: 7px 12px;
-        font-size: 0.85rem;
-    }
-
-    .themes-page .btn-sm {
-        padding: 5px 9px;
-        font-size: 0.78rem;
-    }
-
     /* Inline form */
     .themes-page .inline-form {
         padding: 10px;
@@ -1225,17 +1214,6 @@
 
     .themes-page .data-table {
         min-width: 480px;
-    }
-
-    .themes-page .btn {
-        padding: 6px 10px;
-        font-size: 0.8rem;
-        gap: 4px;
-    }
-
-    .themes-page .btn-sm {
-        padding: 4px 8px;
-        font-size: 0.75rem;
     }
 
     .themes-page .form-row {

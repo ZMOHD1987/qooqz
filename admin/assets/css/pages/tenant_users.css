@@ -740,9 +740,6 @@
         white-space: nowrap;
     }
 
-    #tenantUsersPageContainer .btn { padding: 8px 10px; font-size: 0.82rem; }
-    #tenantUsersPageContainer .btn-sm { padding: 5px 8px; font-size: 0.75rem; }
-
     #tenantUsersPageContainer .form-group label { font-size: 0.78rem; }
 
     #tenantUsersPageContainer .form-control,
