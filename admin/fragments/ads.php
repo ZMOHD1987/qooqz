@@ -261,13 +261,14 @@ $apiBase = '/api';
                             <th data-i18n="table.status"><?= htmlspecialchars(_adst('table.status', 'Status'), ENT_QUOTES, 'UTF-8') ?></th>
                             <th data-i18n="table.views"><?= htmlspecialchars(_adst('table.views', 'Views'), ENT_QUOTES, 'UTF-8') ?></th>
                             <th data-i18n="table.clicks"><?= htmlspecialchars(_adst('table.clicks', 'Clicks'), ENT_QUOTES, 'UTF-8') ?></th>
+                            <th data-i18n="table.ctr"><?= htmlspecialchars(_adst('table.ctr', 'CTR'), ENT_QUOTES, 'UTF-8') ?></th>
                             <th data-i18n="table.created_at"><?= htmlspecialchars(_adst('table.created_at', 'Created At'), ENT_QUOTES, 'UTF-8') ?></th>
                             <th data-i18n="table.actions"><?= htmlspecialchars(_adst('table.actions', 'Actions'), ENT_QUOTES, 'UTF-8') ?></th>
                         </tr>
                     </thead>
                     <tbody id="adsTableBody">
                         <tr>
-                            <td colspan="10" class="text-center">
+                            <td colspan="11" class="text-center">
                                 <?= htmlspecialchars(_adst('table.no_records', 'No ads found'), ENT_QUOTES, 'UTF-8') ?>
                             </td>
                         </tr>
@@ -563,24 +564,7 @@ $apiBase = '/api';
                         </select>
                     </div>
 
-                    <!-- Views / Clicks Count (super admin only) -->
-                    <?php if (is_super_admin()): ?>
-                    <div class="form-group">
-                        <label for="adViewsCount" data-i18n="form.views_count">
-                            <?= htmlspecialchars(_adst('form.views_count', 'Views Count'), ENT_QUOTES, 'UTF-8') ?>
-                        </label>
-                        <input type="number" id="adViewsCount" name="views_count" class="form-control" value="0" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label for="adClicksCount" data-i18n="form.clicks_count">
-                            <?= htmlspecialchars(_adst('form.clicks_count', 'Clicks Count'), ENT_QUOTES, 'UTF-8') ?>
-                        </label>
-                        <input type="number" id="adClicksCount" name="clicks_count" class="form-control" value="0" min="0">
-                    </div>
-                    <?php else: ?>
-                    <input type="hidden" id="adViewsCount"  name="views_count"  value="0">
-                    <input type="hidden" id="adClicksCount" name="clicks_count" value="0">
-                    <?php endif; ?>
+
 
                     <!-- English Translation (Required) -->
                     <div class="form-group">
@@ -906,6 +890,9 @@ window.ADS_CONFIG = {
     translationsApi:   <?= json_encode($apiBase . '/ad_translations') ?>,
     placementsApi:     <?= json_encode($apiBase . '/ad_placements') ?>,
     placementItemsApi: <?= json_encode($apiBase . '/ad_placement_items') ?>,
+    statsApi:          '/api/get_ad_stats.php',
+    trackViewApi:      '/api/track_view.php',
+    trackClickApi:     '/api/track_click.php',
     adImageTypeId:     20
 };
 </script>

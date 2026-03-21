@@ -481,7 +481,7 @@
         if (filters.search)      url += '&search='      + encodeURIComponent(filters.search);
 
         var tbody = document.getElementById('adsTableBody');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="9" class="text-center">...</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="10" class="text-center">...</td></tr>';
 
         fetch(url, { credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
@@ -494,7 +494,7 @@
             })
             .catch(function () {
                 showNotification(t('error_load', 'Failed to load ads'), 'error');
-                if (tbody) tbody.innerHTML = '<tr><td colspan="9" class="text-center">' + esc(t('table.no_records', 'No ads found')) + '</td></tr>';
+                if (tbody) tbody.innerHTML = '<tr><td colspan="10" class="text-center">' + esc(t('table.no_records', 'No ads found')) + '</td></tr>';
             });
     }
 
@@ -502,7 +502,7 @@
         var tbody = document.getElementById('adsTableBody');
         if (!tbody) return;
         if (!items || items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center">' + esc(t('table.no_records', 'No ads found')) + '</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center">' + esc(t('table.no_records', 'No ads found')) + '</td></tr>';
             return;
         }
         var html = '';
@@ -518,8 +518,12 @@
             html += '<td>' + esc(t('target_type.' + ad.target_type, ad.target_type)) + '</td>';
             html += '<td><span class="truncate" title="' + esc(ad.target_value) + '">' + esc(ad.target_value || '-') + '</span></td>';
             html += '<td>' + statusBadge(ad.status) + '</td>';
-            html += '<td>' + esc(ad.views_count || 0) + '</td>';
-            html += '<td>' + esc(ad.clicks_count || 0) + '</td>';
+            var adViews  = (ad.views_total  != null) ? parseInt(ad.views_total,  10) : 0;
+            var adClicks = (ad.clicks_total != null) ? parseInt(ad.clicks_total, 10) : 0;
+            var adCtr    = adViews > 0 ? (adClicks / adViews * 100).toFixed(1) + '%' : '0%';
+            html += '<td>' + esc(adViews)  + '</td>';
+            html += '<td>' + esc(adClicks) + '</td>';
+            html += '<td>' + esc(adCtr)    + '</td>';
             html += '<td>' + esc((ad.created_at || '').replace('T', ' ').substring(0, 16)) + '</td>';
             html += '<td><div class="row-actions">';
             if (CAN_EDIT) {
@@ -632,8 +636,6 @@
                 setVal('adTargetType',  ad.target_type);
                 setVal('adTargetValue', ad.target_value);
                 setVal('adStatus',      ad.status);
-                setVal('adViewsCount',  ad.views_count);
-                setVal('adClicksCount', ad.clicks_count);
 
                 // Reset then load images & translations
                 adSelectedImages = [];
@@ -688,8 +690,6 @@
             target_type:  getVal('adTargetType'),
             target_value: getVal('adTargetValue'),
             status:       getVal('adStatus'),
-            views_count:  parseInt(getVal('adViewsCount'), 10)  || 0,
-            clicks_count: parseInt(getVal('adClicksCount'), 10) || 0,
         };
 
         if (id > 0) data.id = id;
