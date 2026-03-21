@@ -1,26 +1,98 @@
-/* admin/assets/css/pages/permissions.css
-   Minimal styling for Permissions admin page - leverages same CSS vars as theme
-*/
-:root {
-  --pn-bg: var(--theme-background, #fff);
-  --pn-text: var(--theme-text-primary, #111);
-  --pn-border: var(--theme-border, #e5e7eb);
-  --pn-primary: var(--theme-primary, #3b82f6);
+/*!
+ * /admin/assets/css/pages/permissions.css
+ * Permissions Management — page-specific styles only.
+ *
+ * Rules (per PAGE_TEMPLATE.css):
+ * ✅ Only page-specific styles here
+ * ✅ All colors via var(--xxx) with fallbacks
+ * ✅ color-mix() instead of rgba()
+ * ✅ clamp() instead of fixed px on layout
+ * ❌ No .btn / .card / .form-control / .badge / .data-table redefined here
+ */
+
+#adminPermissions {
+    width: 100%;
+    padding: clamp(10px, 2vw, 24px);
+    box-sizing: border-box;
+    font-family: var(--body-font-family, system-ui, sans-serif);
+    color: var(--text-primary, #fff);
 }
 
-#adminPermissions { max-width:1200px; margin:16px auto; padding:12px; font-family:var(--theme-font-primary, Inter, system-ui); color:var(--pn-text); background:var(--pn-bg); }
+.tools {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
 
-.tools { display:flex; gap:8px; align-items:center; margin-bottom:10px; }
-.tools input[type="search"] { padding:8px; border:1px solid var(--pn-border); border-radius:6px; width:300px; }
-.btn { padding:8px 12px; border-radius:6px; border:1px solid var(--pn-border); background:transparent; cursor:pointer; }
-.btn.primary { background:var(--pn-primary); color:#fff; border-color:transparent; }
+.tools input[type="search"] {
+    padding: 8px;
+    border: 1px solid var(--border-color, #334155);
+    border-radius: 6px;
+    width: 300px;
+    background: var(--input-bg, #0f172a);
+    color: var(--text-primary, #fff);
+    font-family: var(--body-font-family, inherit);
+}
 
-.table-wrap { border:1px solid var(--pn-border); border-radius:8px; overflow:auto; margin-top:8px; }
-#permTable { width:100%; border-collapse:collapse; font-size:14px; }
-#permTable thead th { padding:10px; background:var(--theme-card, #f8fafc); text-align:left; border-bottom:1px solid var(--pn-border); }
-#permTable tbody td { padding:10px; border-bottom:1px solid var(--pn-border); }
+.table-wrap {
+    border: 1px solid var(--border-color, #334155);
+    border-radius: var(--border-radius, 8px);
+    overflow: auto;
+    margin-top: 8px;
+}
 
-.form-wrap { margin-top:12px; padding:12px; border:1px solid var(--pn-border); border-radius:8px; background:var(--theme-card,#fff); }
+#permTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: clamp(0.8rem, 1.1vw, 0.875rem);
+}
 
-.status { margin:8px 0; color:var(--pn-primary); }
-.alert { background:#fff5f5; border:1px solid #fca5a5; padding:8px; border-radius:6px; color:#7f1d1d; }
+#permTable thead th {
+    padding: 10px;
+    background: var(--thead-bg, var(--surface-color, #0f172a));
+    text-align: start;
+    border-bottom: 1px solid var(--border-color, #334155);
+    color: var(--text-secondary, #94a3b8);
+    font-weight: 600;
+}
+
+#permTable tbody td {
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color, #334155);
+    color: var(--text-primary, #fff);
+}
+
+.form-wrap {
+    margin-top: 12px;
+    padding: clamp(10px, 1.5vw, 14px);
+    border: 1px solid var(--border-color, #334155);
+    border-radius: var(--border-radius, 8px);
+    background: var(--card-bg, var(--background-secondary, #1e293b));
+}
+
+.status {
+    margin: 8px 0;
+    color: var(--primary-color, #3b82f6);
+}
+
+.alert {
+    background: color-mix(in srgb, var(--danger-color, #ef4444) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--danger-color, #ef4444) 35%, transparent);
+    padding: 8px;
+    border-radius: 6px;
+    color: var(--danger-color, #ef4444);
+}
+
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+    .tools input[type="search"] { width: 100%; }
+    .tools { flex-direction: column; align-items: stretch; }
+    #permTable { font-size: 0.8rem; }
+    #permTable thead th,
+    #permTable tbody td { padding: 8px 6px; }
+}

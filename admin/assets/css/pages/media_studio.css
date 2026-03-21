@@ -32,7 +32,7 @@
     padding: 1rem 1.5rem;
     border-radius: 8px;
     color: #fff;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 12px color-mix(in srgb, #000 30%, transparent);
     animation: ms-slideIn 0.3s ease;
     font-size: 0.9375rem;
     cursor: pointer;
@@ -62,7 +62,7 @@
     z-index: 1000;
     transform: translateY(100%);
     transition: transform 0.3s ease;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+    box-shadow: 0 -4px 20px color-mix(in srgb, #000 30%, transparent);
 }
 .selection-bar.visible { transform: translateY(0); }
 .selection-info { display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; color: var(--text-primary, #fff); font-weight: 600; }
@@ -158,7 +158,7 @@
     background: var(--primary-color, #3b82f6);
     color: #fff;
     gap: 1rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 12px color-mix(in srgb, #000 30%, transparent);
     animation: ms-slideDown 0.25s ease;
     margin-bottom: 1rem;
 }
