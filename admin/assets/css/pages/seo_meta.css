@@ -9,15 +9,15 @@
  * ✅ clamp() instead of fixed px on layout
  * ❌ No .btn / .card / .modal / .form-group / .form-control
  *    .data-table / .badge-* redefined here
- *    (.pagination-wrapper / .pagination-info / .pagination in admin_framework.css)
  */
 
 /* ════════════════════════════════════════════════════════════
-   PAGE CONTAINER — no max-width; admin-layout controls width
+   PAGE CONTAINER — full width, no max-width
    ════════════════════════════════════════════════════════════ */
 .page-container {
     width: 100%;
-    padding: clamp(10px, 2vw, 24px);
+    padding: clamp(10px, 2vw, 20px);
+    margin: 0;
     box-sizing: border-box;
     color: var(--text-primary, #fff);
     font-family: var(--body-font-family, system-ui, sans-serif);
@@ -64,7 +64,135 @@
 }
 
 /* ════════════════════════════════════════════════════════════
-   FILTER BAR  (page-specific layout)
+   SEO LAYOUT — 2-column grid (form left, table right)
+   ════════════════════════════════════════════════════════════ */
+.seo-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(10px, 2vw, 20px);
+    align-items: start;
+}
+
+/* Form panel: sticky so it stays in view while scrolling the table */
+.seo-form-panel {
+    position: sticky;
+    top: clamp(10px, 2vw, 20px);
+}
+
+/* Table panel: allow its cards to stack naturally */
+.seo-table-panel {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 2vw, 16px);
+    min-width: 0;
+}
+
+/* Table card body: no extra padding so table uses full width */
+.seo-table-body {
+    padding: 0 !important;
+    overflow-x: auto;
+}
+
+/* ════════════════════════════════════════════════════════════
+   FORM CARD HEADER  (title + mode badge)
+   ════════════════════════════════════════════════════════════ */
+.seo-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: clamp(6px, 1vw, 10px);
+    flex-wrap: wrap;
+}
+
+.seo-form-title {
+    font-size: clamp(0.9rem, 1.5vw, 1.05rem);
+    font-weight: 600;
+    color: var(--text-primary, #fff);
+    font-family: var(--heading-font-family, inherit);
+}
+
+.seo-form-mode {
+    font-size: clamp(0.7rem, 1vw, 0.75rem);
+    padding: 2px clamp(6px, 1vw, 10px);
+    border-radius: 99px;
+    background: color-mix(in srgb, var(--primary-color, #3b82f6) 15%, transparent);
+    color: var(--primary-color, #3b82f6);
+    border: 1px solid color-mix(in srgb, var(--primary-color, #3b82f6) 30%, transparent);
+    white-space: nowrap;
+}
+
+.seo-form-mode.is-editing {
+    background: color-mix(in srgb, var(--warning-color, #f59e0b) 15%, transparent);
+    color: var(--warning-color, #f59e0b);
+    border-color: color-mix(in srgb, var(--warning-color, #f59e0b) 30%, transparent);
+}
+
+/* ════════════════════════════════════════════════════════════
+   FORM BODY — scrollable on tall viewports
+   ════════════════════════════════════════════════════════════ */
+.seo-form-body {
+    max-height: calc(100vh - 180px);
+    max-height: calc(100dvh - 180px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color, #334155) transparent;
+}
+
+.seo-form-body::-webkit-scrollbar { width: 5px; }
+.seo-form-body::-webkit-scrollbar-thumb {
+    background: var(--border-color, #334155);
+    border-radius: 99px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   FORM SECTIONS
+   ════════════════════════════════════════════════════════════ */
+.seo-section {
+    margin-bottom: clamp(12px, 2vw, 18px);
+}
+
+.seo-section + .seo-section {
+    padding-top: clamp(12px, 2vw, 18px);
+    border-top: 1px solid var(--border-color, #334155);
+}
+
+.seo-section-title {
+    margin: 0 0 clamp(8px, 1.2vw, 12px) 0;
+    font-size: clamp(0.7rem, 1vw, 0.78rem);
+    font-weight: 700;
+    color: var(--text-secondary, #94a3b8);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* ════════════════════════════════════════════════════════════
+   2-COLUMN FIELDS GRID (inside form sections)
+   ════════════════════════════════════════════════════════════ */
+.seo-fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(8px, 1.2vw, 14px);
+}
+
+.seo-lang-row {
+    margin-bottom: clamp(8px, 1.2vw, 12px);
+}
+
+/* ════════════════════════════════════════════════════════════
+   FORM ACTIONS (inside form panel)
+   ════════════════════════════════════════════════════════════ */
+.seo-form-actions {
+    display: flex;
+    gap: clamp(6px, 1vw, 10px);
+    padding-top: clamp(12px, 2vw, 16px);
+    border-top: 1px solid var(--border-color, #334155);
+    margin-top: clamp(12px, 2vw, 16px);
+    flex-wrap: wrap;
+}
+
+/* ════════════════════════════════════════════════════════════
+   FILTER BAR
    ════════════════════════════════════════════════════════════ */
 .filter-bar {
     display: flex;
@@ -76,23 +204,54 @@
 .filter-bar input,
 .filter-bar select {
     flex: 1;
-    min-width: clamp(120px, 14vw, 160px);
+    min-width: clamp(100px, 12vw, 140px);
 }
 
 /* ════════════════════════════════════════════════════════════
-   PAGINATION BUTTONS  (page-specific .pagination-btn class;
-   framework uses .pagination button — not the same selector)
+   TRANSLATIONS MODAL — page-specific sizing & header
+   ════════════════════════════════════════════════════════════ */
+.seo-trans-modal {
+    width: min(92vw, 680px);
+    max-height: 88vh;
+    overflow-y: auto;
+}
+
+.seo-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: clamp(12px, 2vw, 18px);
+    padding-bottom: clamp(10px, 1.5vw, 14px);
+    border-bottom: 1px solid var(--border-color, #334155);
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.seo-modal-header h3 {
+    margin: 0;
+    font-size: clamp(0.95rem, 1.5vw, 1.1rem);
+    font-weight: 600;
+    color: var(--text-primary, #fff);
+    font-family: var(--heading-font-family, inherit);
+}
+
+.seo-trans-add {
+    margin-bottom: clamp(12px, 2vw, 18px);
+}
+
+/* ════════════════════════════════════════════════════════════
+   PAGINATION BUTTONS
    ════════════════════════════════════════════════════════════ */
 .pagination-btn {
-    padding: clamp(5px, 0.8vw, 6px) clamp(9px, 1.2vw, 12px);
+    padding: clamp(4px, 0.7vw, 6px) clamp(8px, 1.1vw, 12px);
     background: transparent;
     border: 1px solid var(--border-color, #334155);
     border-radius: var(--border-radius, 6px);
     color: var(--text-primary, #fff);
-    font-size: clamp(0.78rem, 1.1vw, 0.9rem);
+    font-size: clamp(0.75rem, 1vw, 0.875rem);
     font-family: var(--body-font-family, inherit);
     cursor: pointer;
-    transition: background 0.2s, border-color 0.2s, color 0.2s;
+    transition: background 0.2s, border-color 0.2s;
 }
 
 .pagination-btn:hover:not(:disabled):not(.active) {
@@ -107,17 +266,17 @@
 }
 
 .pagination-btn:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
 }
 
 .pagination-ellipsis {
-    padding: clamp(5px, 0.8vw, 6px);
+    padding: clamp(4px, 0.7vw, 6px);
     color: var(--text-secondary, #94a3b8);
 }
 
 /* ════════════════════════════════════════════════════════════
-   TOAST NOTIFICATIONS  (page-level; .sm-* prefix)
+   TOAST NOTIFICATIONS
    ════════════════════════════════════════════════════════════ */
 .sm-notifications {
     position: fixed;
@@ -127,7 +286,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-width: clamp(260px, 35vw, 380px);
+    max-width: clamp(240px, 30vw, 360px);
 }
 
 .sm-toast {
@@ -146,30 +305,20 @@
     padding: clamp(10px, 1.4vw, 12px) clamp(12px, 1.5vw, 16px) clamp(10px, 1.4vw, 12px) clamp(32px, 3vw, 36px);
 }
 
-.sm-toast-success {
-    background: color-mix(in srgb, var(--success-color, #10b981) 90%, #000);
-}
-.sm-toast-error {
-    background: color-mix(in srgb, var(--danger-color, #ef4444) 90%, #000);
-}
-.sm-toast-warning {
-    background: color-mix(in srgb, var(--warning-color, #f59e0b) 90%, #000);
-    color: var(--text-primary, #fff);
-}
-.sm-toast-info {
-    background: color-mix(in srgb, var(--info-color, #3b82f6) 90%, #000);
-}
+.sm-toast-success { background: color-mix(in srgb, var(--success-color, #10b981) 90%, #000); }
+.sm-toast-error   { background: color-mix(in srgb, var(--danger-color,  #ef4444) 90%, #000); }
+.sm-toast-warning { background: color-mix(in srgb, var(--warning-color, #f59e0b) 90%, #000); color: var(--text-primary, #fff); }
+.sm-toast-info    { background: color-mix(in srgb, var(--info-color,    #3b82f6) 90%, #000); }
 
 .sm-toast-close {
     position: absolute;
     top: 8px;
     inset-inline-end: 10px;
     cursor: pointer;
-    font-size: 1.1rem;
+    font-size: 1rem;
     line-height: 1;
     opacity: 0.7;
 }
-
 .sm-toast-close:hover { opacity: 1; }
 
 @keyframes smToastIn {
@@ -182,28 +331,40 @@
    ════════════════════════════════════════════════════════════ */
 [dir="rtl"] .page-header         { flex-direction: row-reverse; }
 [dir="rtl"] .page-header-actions { flex-direction: row-reverse; }
+[dir="rtl"] .seo-card-header     { flex-direction: row-reverse; }
+[dir="rtl"] .seo-modal-header    { flex-direction: row-reverse; }
 [dir="rtl"] .filter-bar          { flex-direction: row-reverse; }
+[dir="rtl"] .seo-form-actions    { flex-direction: row-reverse; }
 [dir="rtl"] .pagination          { flex-direction: row-reverse; }
+[dir="rtl"] .seo-fields-grid     { direction: rtl; }
 
 /* ════════════════════════════════════════════════════════════
    RESPONSIVE
    ════════════════════════════════════════════════════════════ */
-@media (max-width: 1024px) {
-    .filter-bar input,
-    .filter-bar select { min-width: clamp(100px, 18vw, 140px); }
+
+/* Tablet — narrow the form column slightly */
+@media (max-width: 1100px) {
+    .seo-layout { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
 }
 
+/* Mobile — stack vertically: form first, table below */
 @media (max-width: 768px) {
-    .page-header          { flex-direction: column; align-items: stretch; }
-    .page-header-actions  { width: 100%; }
+    .seo-layout             { grid-template-columns: 1fr; }
+    .seo-form-panel         { position: static; }
+    .seo-form-body          { max-height: none; overflow: visible; }
+    .page-header            { flex-direction: column; align-items: stretch; }
+    .page-header-actions    { width: 100%; }
     .page-header-actions .btn { flex: 1; justify-content: center; }
-    .filter-bar           { flex-direction: column; }
+    .filter-bar             { flex-direction: column; }
     .filter-bar input,
-    .filter-bar select    { width: 100%; min-width: unset; }
+    .filter-bar select      { width: 100%; min-width: unset; }
+    .seo-fields-grid        { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 480px) {
     .page-container { padding: 8px; }
+    .seo-form-actions { flex-direction: column; }
+    .seo-form-actions .btn { width: 100%; justify-content: center; }
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -212,8 +373,9 @@
 @media print {
     .page-header-actions,
     .filter-bar,
-    .form-actions,
+    .seo-form-actions,
     .pagination-wrapper,
     .sm-notifications { display: none !important; }
-    .page-container   { padding: 0; }
+    .seo-layout         { grid-template-columns: 1fr; }
+    .page-container     { padding: 0; }
 }
