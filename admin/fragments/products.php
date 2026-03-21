@@ -833,7 +833,7 @@ if (!function_exists('prodAssetVer')) {
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- CSV Import Modal -->
     <!-- ═══════════════════════════════════════════════════════════ -->
-    <div id="csvImportModal" class="modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.7); align-items:center; justify-content:center;">
+    <div id="csvImportModal" class="modal" style="display:none; position:fixed; inset:0; z-index:9999; background:color-mix(in srgb, var(--background-main,#000) 70%, transparent); align-items:center; justify-content:center;">
         <div class="modal-content" style="background:var(--card-bg,#0d1b2e); border:1px solid var(--border-color,#263044); border-radius:12px; padding:28px; width:min(640px,95vw); max-height:85vh; overflow-y:auto; position:relative;">
             <!-- Header -->
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
@@ -868,7 +868,7 @@ if (!function_exists('prodAssetVer')) {
             </div>
 
             <!-- Preview Info -->
-            <div id="csvPreviewInfo" style="display:none; margin-bottom:16px; background:rgba(0,0,0,0.2); border-radius:8px; padding:12px;">
+            <div id="csvPreviewInfo" style="display:none; margin-bottom:16px; background:color-mix(in srgb, var(--background-main,#000) 20%, transparent); border-radius:8px; padding:12px;">
                 <span id="csvRowCount" style="color:var(--text-primary,#fff); font-size:0.9rem;"></span>
             </div>
 
@@ -878,7 +878,7 @@ if (!function_exists('prodAssetVer')) {
                     <span id="csvProgressLabel" data-i18n="csv.importing" style="color:var(--text-secondary,#94a3b8); font-size:0.85rem;"><?= __t('csv.importing', 'Importing…') ?></span>
                     <span id="csvProgressPct" style="color:var(--text-primary,#fff); font-size:0.85rem; font-weight:600;">0%</span>
                 </div>
-                <div style="background:rgba(255,255,255,0.1); border-radius:20px; height:8px; overflow:hidden;">
+                <div style="background:color-mix(in srgb, var(--text-primary,#fff) 10%, transparent); border-radius:20px; height:8px; overflow:hidden;">
                     <div id="csvProgressBar" style="background:var(--primary-color,#3b82f6); height:100%; width:0%; transition:width 0.3s ease; border-radius:20px;"></div>
                 </div>
                 <div id="csvProgressLog" style="margin-top:10px; max-height:150px; overflow-y:auto; font-size:0.78rem; color:var(--text-secondary,#94a3b8); font-family:monospace;"></div>
