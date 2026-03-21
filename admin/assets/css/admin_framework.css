@@ -122,8 +122,10 @@
 }
 
 /* ════════════════════════════════════════════════════════════
-   BUTTONS — base class only; colours & hover are generated
-   dynamically from button_styles + color_settings
+   BUTTONS — base + CSS-variable fallback colours.
+   AdminUiThemeLoader::generateCss() overrides these with
+   concrete DB-driven .btn-* rules when button_styles exist.
+   Page CSS must NOT redefine .btn / .btn-* variants.
    ════════════════════════════════════════════════════════════ */
 
 .btn {
@@ -143,9 +145,122 @@
     line-height: 1;
 }
 
+.btn:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
 .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Variant fallbacks — overridden by DB-generated CSS */
+.btn-primary {
+    background-color: var(--primary-color, #3b82f6);
+    color: #fff;
+    border-color: var(--primary-color, #3b82f6);
+}
+.btn-primary:hover:not(:disabled) {
+    background-color: var(--primary-hover, color-mix(in srgb, var(--primary-color, #3b82f6) 85%, #000));
+    border-color: var(--primary-hover, color-mix(in srgb, var(--primary-color, #3b82f6) 85%, #000));
+    filter: none;
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color, #64748b);
+    color: #fff;
+    border-color: var(--secondary-color, #64748b);
+}
+.btn-secondary:hover:not(:disabled) {
+    opacity: 0.88;
+    filter: none;
+}
+
+.btn-danger {
+    background-color: var(--danger-color, var(--error-color, #ef4444));
+    color: #fff;
+    border-color: var(--danger-color, var(--error-color, #ef4444));
+}
+.btn-danger:hover:not(:disabled) {
+    opacity: 0.88;
+    filter: none;
+}
+
+.btn-success {
+    background-color: var(--success-color, #22c55e);
+    color: #fff;
+    border-color: var(--success-color, #22c55e);
+}
+.btn-success:hover:not(:disabled) {
+    opacity: 0.88;
+    filter: none;
+}
+
+.btn-warning {
+    background-color: var(--warning-color, #f59e0b);
+    color: #fff;
+    border-color: var(--warning-color, #f59e0b);
+}
+.btn-warning:hover:not(:disabled) {
+    opacity: 0.88;
+    filter: none;
+}
+
+.btn-info {
+    background-color: var(--info-color, #06b6d4);
+    color: #fff;
+    border-color: var(--info-color, #06b6d4);
+}
+.btn-info:hover:not(:disabled) {
+    opacity: 0.88;
+    filter: none;
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--text-primary, #fff);
+    border-color: var(--border-color, #334155);
+}
+.btn-outline:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--primary-color, #3b82f6) 10%, transparent);
+    border-color: var(--primary-color, #3b82f6);
+    color: var(--primary-color, #3b82f6);
+    filter: none;
+}
+
+.btn-outline-danger {
+    background: transparent;
+    color: var(--danger-color, var(--error-color, #ef4444));
+    border-color: var(--danger-color, var(--error-color, #ef4444));
+}
+.btn-outline-danger:hover:not(:disabled) {
+    background: var(--danger-color, var(--error-color, #ef4444));
+    color: #fff;
+    filter: none;
+}
+
+/* Size variants */
+.btn-sm {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8125rem;
+    border-radius: calc(var(--border-radius, 8px) * 0.75);
+}
+
+.btn-xs {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: calc(var(--border-radius, 8px) * 0.6);
+}
+
+.btn-lg {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+}
+
+/* Full-width button */
+.btn-full-width {
+    width: 100%;
+    justify-content: center;
 }
 
 /* Icon button (used in header, not part of dynamic button system) */
@@ -559,6 +674,35 @@
 [dir="rtl"] .table-actions   { justify-content: flex-start; }
 [dir="rtl"] .form-actions    { justify-content: flex-start; }
 [dir="rtl"] .af-notification { right: auto; left: 20px; }
+
+/* ════════════════════════════════════════════════════════════
+   INFO HINT BOX
+   Reusable info/notice box with tinted background
+   ════════════════════════════════════════════════════════════ */
+
+.info-hint-box {
+    background: color-mix(in srgb, var(--info-color, #3b82f6) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--info-color, #3b82f6) 25%, transparent);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #94a3b8);
+}
+
+.info-hint-box .fa-info-circle {
+    color: var(--info-color);
+}
+
+.success-hint-box {
+    background: color-mix(in srgb, var(--success-color, #10b981) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--success-color, #10b981) 30%, transparent);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 12px;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #94a3b8);
+}
 
 /* ════════════════════════════════════════════════════════════
    RESPONSIVE

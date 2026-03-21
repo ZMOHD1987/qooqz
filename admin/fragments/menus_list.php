@@ -188,7 +188,7 @@ try {
                     <div class="form-group" style="width:220px">
                         <label data-i18n="categories.form.image">Image</label>
                         <div style="display:flex;align-items:center;gap:8px;">
-                            <img id="catImagePreview" src="/assets/images/no-image.png" alt="Preview" style="width:80px;height:80px;object-fit:cover;border:1px solid #ccc;border-radius:6px;">
+                            <img id="catImagePreview" src="/assets/images/no-image.png" alt="Preview" style="width:80px;height:80px;object-fit:cover;border:1px solid var(--border-color);border-radius:6px;">
                             <div>
                                 <button type="button" id="catSelectImageBtn" class="btn btn-secondary">Change</button>
                                 <input type="hidden" id="catImageId" name="image_id" value="">
@@ -198,7 +198,7 @@ try {
                 </div>
 
                 <!-- Translations -->
-                <div style="margin-top:12px;border-top:1px solid #eee;padding-top:12px;">
+                <div style="margin-top:12px;border-top:1px solid var(--border-color);padding-top:12px;">
                     <h4 data-i18n="categories.form.translations">Translations</h4>
                     <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
                         <select id="catLangSelect" class="form-control" style="min-width:200px;"></select>

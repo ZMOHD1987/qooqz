@@ -275,15 +275,12 @@
   // THEME APPLICATION
   // ════════════════════════════════════════════════════════════
   
-  function ensureThemeStyleContainer() {
-    let style = document.getElementById('theme-component-styles');
-    if (!style) {
-      style = document.createElement('style');
-      style.id = 'theme-component-styles';
-      document.head.appendChild(style);
-    }
-    return style;
-  }
+  // ensureThemeStyleContainer() – removed.
+  // Button/card CSS is now the sole responsibility of AdminUiThemeLoader::generateCss()
+  // which is injected by header.php via <style id="dynamic-theme-db"> and applied by
+  // syncThemeVarsFromAdminUI() step 1 (themeData.generated_css).
+  // The old JS-side generateComponentStyles() duplicated those rules with !important
+  // flags, causing inconsistent button colors across pages.
 
   function syncThemeVarsFromAdminUI() {
     try {
@@ -411,8 +408,8 @@
         Admin.log('📐 Direction:', window.ADMIN_UI.direction);
       }
 
-      // 6. Generate component styles
-      generateComponentStyles();
+      // 6. Component styles — handled by generated_css above
+      // (generateComponentStyles removed — it duplicated DB rules with !important)
 
       Admin.log('✅ Theme applied');
     } catch (e) {
@@ -420,98 +417,14 @@
     }
   }
 
+  // generateComponentStyles() – removed.
+  // Button/card CSS comes solely from AdminUiThemeLoader::generateCss() (DB-driven).
+  // The old implementation wrote .btn-* / .card-* rules with !important, which
+  // conflicted with the authoritative generated_css and caused each page to
+  // display different button colors depending on CSS load order.
   function generateComponentStyles() {
-    try {
-      const themeData = window.ADMIN_UI?.theme;
-      if (!themeData) return;
-
-      const styleEl = ensureThemeStyleContainer();
-      const rules = [];
-
-      // Buttons
-      if (Array.isArray(themeData.button_styles)) {
-        themeData.button_styles.forEach(b => {
-          if (!b?.slug) return;
-
-          const slug = safeSlug(b.slug);
-          const sel = `.btn-${slug}, .btn.${slug}`;
-
-          let css = `${sel} {`;
-          if (b.background_color) css += `background-color: ${b.background_color} !important;`;
-          if (b.text_color) css += `color: ${b.text_color} !important;`;
-          if (b.border_color && b.border_width)
-            css += `border: ${b.border_width}px solid ${b.border_color} !important;`;
-          if (b.border_radius) css += `border-radius: ${b.border_radius}px !important;`;
-          if (b.padding) css += `padding: ${b.padding} !important;`;
-          if (b.font_size) css += `font-size: ${b.font_size} !important;`;
-          if (b.font_weight) css += `font-weight: ${b.font_weight} !important;`;
-          css += 'cursor: pointer; display: inline-block; transition: all 0.2s;}';
-
-          rules.push(css);
-
-          // Hover
-          if (b.hover_background_color || b.hover_text_color) {
-            let hcss = `${sel}:hover {`;
-            if (b.hover_background_color)
-              hcss += `background-color: ${b.hover_background_color} !important;`;
-            if (b.hover_text_color) hcss += `color: ${b.hover_text_color} !important;`;
-            hcss += '}';
-            rules.push(hcss);
-          }
-        });
-      }
-
-      // Cards
-      if (Array.isArray(themeData.card_styles)) {
-        themeData.card_styles.forEach(c => {
-          if (!c?.slug) return;
-
-          const slug = safeSlug(c.slug);
-          const sel = `.card-${slug}, .card.${slug}`;
-
-          let css = `${sel} {`;
-          if (c.background_color) css += `background-color: ${c.background_color} !important;`;
-          if (c.border_color && c.border_width)
-            css += `border: ${c.border_width}px solid ${c.border_color} !important;`;
-          if (c.border_radius) css += `border-radius: ${c.border_radius}px !important;`;
-          if (c.padding) css += `padding: ${c.padding} !important;`;
-          if (c.shadow_style) css += `box-shadow: ${c.shadow_style} !important;`;
-          if (c.text_align) css += `text-align: ${c.text_align} !important;`;
-          css += 'transition: all 0.2s;}';
-
-          rules.push(css);
-
-          // Hover
-          if (c.hover_effect && c.hover_effect !== 'none') {
-            let hcss = `${sel}:hover {`;
-            switch (c.hover_effect) {
-              case 'lift':
-                hcss += 'transform: translateY(-6px); box-shadow: 0 10px 30px rgba(0,0,0,0.15);';
-                break;
-              case 'zoom':
-                hcss += 'transform: scale(1.03);';
-                break;
-              case 'shadow':
-                hcss += 'box-shadow: 0 12px 36px rgba(0,0,0,0.2);';
-                break;
-              case 'border':
-                hcss += 'border-color: var(--primary-color, #6366f1);';
-                break;
-              case 'bright':
-                hcss += 'filter: brightness(1.05);';
-                break;
-            }
-            hcss += '}';
-            rules.push(hcss);
-          }
-        });
-      }
-
-      styleEl.textContent = rules.join('\n');
-      Admin.log(`✓ Generated ${rules.length} component rules`);
-    } catch (e) {
-      Admin.error('generateComponentStyles failed', e);
-    }
+    // No-op — kept as stub so external callers don't throw.
+    Admin.log('generateComponentStyles: skipped (handled by generated_css)');
   }
 
   // ════════════════════════════════════════════════════════════

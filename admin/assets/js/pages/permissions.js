@@ -183,9 +183,9 @@
       var actions = '';
       
       if (CAN_MANAGE) {
-        actions = '<button class="btn editBtn" data-id="' + esc(p.id) + '">' + 
+        actions = '<button class="btn btn-outline editBtn" data-id="' + esc(p.id) + '">' + 
                   esc(t('permissions.btn_edit','Edit')) + '</button> ' +
-                  '<button class="btn danger delBtn" data-id="' + esc(p.id) + '">' + 
+                  '<button class="btn btn-danger delBtn" data-id="' + esc(p.id) + '">' + 
                   esc(t('permissions.btn_delete','Delete')) + '</button>';
       }
       

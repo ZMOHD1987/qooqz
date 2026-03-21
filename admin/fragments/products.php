@@ -111,79 +111,10 @@ function __tr($key, $replacements = []) {
 // ════════════════════════════════════════════════════════════
 $apiBase = '/api';
 
-// ════════════════════════════════════════════════════════════
-// DB-DRIVEN CSS VARS HELPER (Products)
-// All settings, colors, fonts, cards, buttons from database only.
-// ════════════════════════════════════════════════════════════
-if (!function_exists('renderFragmentThemeVars')) {
-    function renderFragmentThemeVars(array $theme): void {
-        echo ':root {' . PHP_EOL;
-        foreach ($theme['color_settings'] ?? [] as $c) {
-            if (empty($c['setting_key']) || !isset($c['color_value'])) continue;
-            $k = htmlspecialchars($c['setting_key'], ENT_QUOTES);
-            $h = htmlspecialchars(str_replace('_', '-', $c['setting_key']), ENT_QUOTES);
-            $v = htmlspecialchars($c['color_value'], ENT_QUOTES);
-            echo "    --{$k}: {$v};" . PHP_EOL;
-            if ($h !== $k) echo "    --{$h}: {$v};" . PHP_EOL;
-        }
-        foreach ($theme['font_settings'] ?? [] as $f) {
-            if (empty($f['setting_key'])) continue;
-            $sk = htmlspecialchars($f['setting_key'], ENT_QUOTES);
-            $sh = htmlspecialchars(str_replace('_', '-', $f['setting_key']), ENT_QUOTES);
-            if (!empty($f['font_family'])) {
-                $ff = htmlspecialchars($f['font_family'], ENT_QUOTES);
-                echo "    --{$sk}-family: {$ff};" . PHP_EOL;
-                if ($sh !== $sk) echo "    --{$sh}-family: {$ff};" . PHP_EOL;
-            }
-            if (!empty($f['font_size'])) {
-                $fs = htmlspecialchars($f['font_size'], ENT_QUOTES);
-                echo "    --{$sk}-size: {$fs};" . PHP_EOL;
-                if ($sh !== $sk) echo "    --{$sh}-size: {$fs};" . PHP_EOL;
-            }
-            if (!empty($f['font_weight'])) {
-                $fw = htmlspecialchars($f['font_weight'], ENT_QUOTES);
-                echo "    --{$sk}-weight: {$fw};" . PHP_EOL;
-                if ($sh !== $sk) echo "    --{$sh}-weight: {$fw};" . PHP_EOL;
-            }
-        }
-        foreach ($theme['design_settings'] ?? [] as $d) {
-            if (empty($d['setting_key']) || !isset($d['setting_value'])) continue;
-            $dk = htmlspecialchars($d['setting_key'], ENT_QUOTES);
-            $dh = htmlspecialchars(str_replace('_', '-', $d['setting_key']), ENT_QUOTES);
-            $dv = htmlspecialchars($d['setting_value'], ENT_QUOTES);
-            echo "    --{$dk}: {$dv};" . PHP_EOL;
-            if ($dh !== $dk) echo "    --{$dh}: {$dv};" . PHP_EOL;
-        }
-        foreach ($theme['button_styles'] ?? [] as $b) {
-            if (empty($b['slug'])) continue;
-            $slug = preg_replace('/[^a-z0-9_-]/', '-', strtolower((string)$b['slug']));
-            if (!empty($b['background_color'])) echo "    --btn-{$slug}-bg: " . htmlspecialchars($b['background_color'], ENT_QUOTES) . ';' . PHP_EOL;
-            if (!empty($b['text_color']))       echo "    --btn-{$slug}-color: " . htmlspecialchars($b['text_color'], ENT_QUOTES) . ';' . PHP_EOL;
-            if (!empty($b['border_color']))     echo "    --btn-{$slug}-border: " . htmlspecialchars($b['border_color'], ENT_QUOTES) . ';' . PHP_EOL;
-            if (!empty($b['border_radius']))    echo "    --btn-{$slug}-radius: " . htmlspecialchars((string)$b['border_radius'], ENT_QUOTES) . 'px;' . PHP_EOL;
-        }
-        foreach ($theme['card_styles'] ?? [] as $cs) {
-            if (empty($cs['slug'])) continue;
-            $slug = preg_replace('/[^a-z0-9_-]/', '-', strtolower((string)$cs['slug']));
-            if (!empty($cs['background_color'])) echo "    --card-{$slug}-bg: " . htmlspecialchars($cs['background_color'], ENT_QUOTES) . ';' . PHP_EOL;
-            if (!empty($cs['border_color']))     echo "    --card-{$slug}-border: " . htmlspecialchars($cs['border_color'], ENT_QUOTES) . ';' . PHP_EOL;
-            if (!empty($cs['border_radius']))    echo "    --card-{$slug}-radius: " . htmlspecialchars((string)$cs['border_radius'], ENT_QUOTES) . 'px;' . PHP_EOL;
-            if (!empty($cs['shadow_style']))     echo "    --card-{$slug}-shadow: " . htmlspecialchars($cs['shadow_style'], ENT_QUOTES) . ';' . PHP_EOL;
-            if (!empty($cs['padding']))          echo "    --card-{$slug}-padding: " . htmlspecialchars($cs['padding'], ENT_QUOTES) . ';' . PHP_EOL;
-        }
-        echo '}' . PHP_EOL;
-    }
-}
-
 ?>
-<!-- DB-driven CSS vars (all settings, colors, fonts, cards, buttons from database) -->
-<style id="db-theme-vars-products">
-<?php renderFragmentThemeVars($GLOBALS['ADMIN_UI']['theme'] ?? []); ?>
-<?php if (!empty($GLOBALS['ADMIN_UI']['theme']['generated_css'])): ?>
-<?= $GLOBALS['ADMIN_UI']['theme']['generated_css'] ?>
-<?php endif; ?>
-</style>
-<!-- Structural layout CSS (uses only var() for all visual properties) -->
+<!-- Structural layout CSS (uses only var() for all visual properties)
+     Button/card/color CSS comes from AdminUiThemeLoader::generateCss()
+     injected by header.php via <style id="dynamic-theme-db">. -->
 <?php
 if (!function_exists('prodAssetVer')) {
     function prodAssetVer(string $path): string {
@@ -375,14 +306,14 @@ if (!function_exists('prodAssetVer')) {
                     <!-- ═══════════════════════════════════════════════ -->
                     <!-- English Content (Default Language) - Always Visible -->
                     <!-- ═══════════════════════════════════════════════ -->
-                    <div class="english-content-section" style="margin-top:28px; padding-top:20px; border-top:2px solid var(--primary-color,#3b82f6);">
-                        <h4 style="margin-bottom:16px; color:var(--text-primary,#fff); display:flex; align-items:center; gap:10px;">
-                            <span style="background:var(--primary-color,#3b82f6); color:#fff; padding:3px 10px; border-radius:20px; font-size:0.75rem; font-weight:700;">EN</span>
-                            English Content <span style="color:var(--text-secondary,#94a3b8); font-size:0.8rem; font-weight:400; margin-left:6px;">(Default Language — required)</span>
+                    <div class="english-content-section">
+                        <h4>
+                            <span class="lang-badge">EN</span>
+                            English Content <span class="lang-note">(Default Language — required)</span>
                         </h4>
 
                         <div class="form-row">
-                            <div class="form-group" style="flex:1;">
+                            <div class="form-group">
                                 <label for="enProdName" class="required">Product Name (English)</label>
                                 <input type="text" id="enProdName" name="en_name" class="form-control" required
                                        placeholder="Enter product name in English">
@@ -391,7 +322,7 @@ if (!function_exists('prodAssetVer')) {
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group" style="flex:1;">
+                            <div class="form-group">
                                 <label for="enProdShortDesc">Short Description (English)</label>
                                 <textarea id="enProdShortDesc" name="en_short_description" class="form-control" rows="2"
                                           placeholder="Brief product summary in English"></textarea>
@@ -399,7 +330,7 @@ if (!function_exists('prodAssetVer')) {
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group" style="flex:1;">
+                            <div class="form-group">
                                 <label for="enProdDesc">Full Description (English)</label>
                                 <textarea id="enProdDesc" name="en_description" class="form-control" rows="4"
                                           placeholder="Detailed product description in English"></textarea>
@@ -407,7 +338,7 @@ if (!function_exists('prodAssetVer')) {
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group" style="flex:1;">
+                            <div class="form-group">
                                 <label for="enProdSpecs">Specifications (English)</label>
                                 <textarea id="enProdSpecs" name="en_specifications" class="form-control" rows="3"
                                           placeholder="Technical specifications in English"></textarea>
@@ -415,7 +346,7 @@ if (!function_exists('prodAssetVer')) {
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group" style="flex:1;">
+                            <div class="form-group">
                                 <label for="enMetaTitle">Meta Title (English)</label>
                                 <input type="text" id="enMetaTitle" name="en_meta_title" class="form-control"
                                        placeholder="SEO meta title in English">
@@ -423,7 +354,7 @@ if (!function_exists('prodAssetVer')) {
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group" style="flex:1;">
+                            <div class="form-group">
                                 <label for="enMetaDescription">Meta Description (English)</label>
                                 <textarea id="enMetaDescription" name="en_meta_description" class="form-control" rows="2"
                                           placeholder="SEO meta description in English"></textarea>
@@ -431,7 +362,7 @@ if (!function_exists('prodAssetVer')) {
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group" style="flex:1;">
+                            <div class="form-group">
                                 <label for="enMetaKeywords">Meta Keywords (English)</label>
                                 <input type="text" id="enMetaKeywords" name="en_meta_keywords" class="form-control"
                                        placeholder="keyword1, keyword2, keyword3">
@@ -442,7 +373,7 @@ if (!function_exists('prodAssetVer')) {
                     <!-- ═══════════════════════════════════════════════ -->
                     <!-- Pricing (merged into General)                   -->
                     <!-- ═══════════════════════════════════════════════ -->
-                    <h4 style="margin-top:28px; margin-bottom:15px; color:var(--text-primary,#fff); border-bottom:1px solid var(--border-color,#263044); padding-bottom:8px;" data-i18n="tabs.pricing">
+                    <h4 class="section-heading" data-i18n="tabs.pricing">
                         <i class="fas fa-tag"></i> <?= __t('tabs.pricing', 'Pricing') ?>
                     </h4>
                     <div class="form-row">
@@ -489,7 +420,7 @@ if (!function_exists('prodAssetVer')) {
                     <!-- ═══════════════════════════════════════════════ -->
                     <!-- Stock / Inventory (merged into General)         -->
                     <!-- ═══════════════════════════════════════════════ -->
-                    <h4 style="margin-top:28px; margin-bottom:15px; color:var(--text-primary,#fff); border-bottom:1px solid var(--border-color,#263044); padding-bottom:8px;" data-i18n="tabs.inventory">
+                    <h4 class="section-heading" data-i18n="tabs.inventory">
                         <i class="fas fa-boxes"></i> <?= __t('tabs.inventory', 'Inventory') ?>
                     </h4>
                     <div class="form-row">
@@ -544,7 +475,7 @@ if (!function_exists('prodAssetVer')) {
                     <!-- ═══════════════════════════════════════════════ -->
                     <!-- Categories (merged into General)                -->
                     <!-- ═══════════════════════════════════════════════ -->
-                    <h4 style="margin-top:28px; margin-bottom:15px; color:var(--text-primary,#fff); border-bottom:1px solid var(--border-color,#263044); padding-bottom:8px;" data-i18n="tabs.categories">
+                    <h4 class="section-heading" data-i18n="tabs.categories">
                         <i class="fas fa-folder-tree"></i> <?= __t('tabs.categories', 'Categories') ?>
                     </h4>
                     <div class="form-group">
@@ -611,8 +542,8 @@ if (!function_exists('prodAssetVer')) {
 
                 <!-- Tab: Attributes -->
                 <div class="tab-content" id="tab-attributes" style="display:none">
-                    <div style="display:flex; gap:10px; margin-bottom:15px;">
-                        <select id="attrSelect" class="form-control" style="flex:1;"></select>
+                    <div class="attrs-controls">
+                        <select id="attrSelect" class="form-control"></select>
                         <button type="button" id="btnAddAttribute" class="btn btn-primary" data-i18n="form.buttons.add_attribute">
                             <?= __t('form.buttons.add_attribute', 'Add Attribute') ?>
                         </button>
@@ -622,7 +553,7 @@ if (!function_exists('prodAssetVer')) {
 
                 <!-- Tab: Variants -->
                 <div class="tab-content" id="tab-variants" style="display:none">
-                    <div style="margin-bottom:15px;">
+                    <div class="variant-controls">
                         <button type="button" id="btnGenerateVariants" class="btn btn-secondary" data-i18n="form.buttons.generate_variants">
                             <?= __t('form.buttons.generate_variants', 'Generate Variants from Attributes') ?>
                         </button>
@@ -640,7 +571,7 @@ if (!function_exists('prodAssetVer')) {
                             <?= __t('form.fields.images.label', 'Product Images') ?>
                         </label>
                         <div class="image-upload-section">
-                            <button type="button" id="prodSelectImageBtn" class="btn btn-secondary" style="width:100%; margin-bottom:15px;" data-i18n="common.select_image">
+                            <button type="button" id="prodSelectImageBtn" class="btn btn-secondary btn-full-width" data-i18n="common.select_image">
                                 <?= __t('common.select_image', 'Select Images from Studio') ?>
                             </button>
                             <div id="prodImagesPreview" class="images-grid"></div>
@@ -651,18 +582,18 @@ if (!function_exists('prodAssetVer')) {
                 <!-- Tab: Translations -->
                 <div class="tab-content" id="tab-translations" style="display:none">
                     <div class="translations-section">
-                        <h4 style="margin-bottom:12px; color:var(--text-primary,#fff); border-bottom:1px solid var(--border-color,#263044); padding-bottom:8px;">
+                        <h4>
                             <i class="fas fa-language"></i> Translations
                         </h4>
-                        <div style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.25); border-radius:8px; padding:12px; margin-bottom:16px; font-size:0.85rem; color:var(--text-secondary,#94a3b8);">
-                            <i class="fas fa-info-circle" style="color:#3b82f6;"></i>
-                            <strong style="color:var(--text-primary,#fff);">English</strong> translation fields are in the <strong style="color:var(--text-primary,#fff);">General tab</strong>. Use this tab to add translations for other languages (Arabic, French, etc.).
+                        <div class="info-hint-box">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>English</strong> translation fields are in the <strong>General tab</strong>. Use this tab to add translations for other languages (Arabic, French, etc.).
                         </div>
                         <div id="prodTranslations" class="translation-panels"></div>
-                        <div class="form-group" style="margin-top:12px;">
+                        <div class="form-group">
                             <label for="prodLangSelect" data-i18n="form.translations.select_lang">Select Language</label>
-                            <div style="display:flex; gap:8px; align-items:flex-end;">
-                                <select id="prodLangSelect" class="form-control" style="flex:1;">
+                            <div class="lang-add-row">
+                                <select id="prodLangSelect" class="form-control">
                                     <option value="">Choose language</option>
                                 </select>
                                 <button type="button" id="prodAddLangBtn" class="btn btn-primary">
@@ -754,8 +685,8 @@ if (!function_exists('prodAssetVer')) {
     </div>
 
     <!-- Results Count -->
-    <div id="resultsCount" class="results-count" style="padding:12px 16px; margin-bottom:12px; background:var(--card-bg,#081127); border:1px solid var(--border-color,#263044); border-radius:8px; display:none;">
-        <span style="color:var(--text-secondary,#94a3b8); font-size:0.9rem;">
+    <div id="resultsCount" class="results-count" style="display:none;">
+        <span>
             <i class="fas fa-box"></i> 
             <span id="resultsCountText"></span>
         </span>
@@ -826,69 +757,68 @@ if (!function_exists('prodAssetVer')) {
     <div id="prodMediaStudioModal" class="modal" style="display:none">
         <div class="modal-content">
             <span class="close" id="prodMediaStudioClose">&times;</span>
-            <iframe id="prodMediaStudioFrame" src="/admin/fragments/media_studio.php?embedded=1&tenant_id=<?= $tenantId ?>&lang=<?= $lang ?>" style="width:100%; height:75vh; min-height:400px; border:none; display:block;"></iframe>
+            <iframe id="prodMediaStudioFrame" class="media-studio-iframe" src="/admin/fragments/media_studio.php?embedded=1&tenant_id=<?= $tenantId ?>&lang=<?= $lang ?>"></iframe>
         </div>
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- CSV Import Modal -->
     <!-- ═══════════════════════════════════════════════════════════ -->
-    <div id="csvImportModal" class="modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.7); align-items:center; justify-content:center;">
-        <div class="modal-content" style="background:var(--card-bg,#0d1b2e); border:1px solid var(--border-color,#263044); border-radius:12px; padding:28px; width:min(640px,95vw); max-height:85vh; overflow-y:auto; position:relative;">
+    <div id="csvImportModal" class="modal" style="display:none;">
+        <div class="modal-content csv-modal-content">
             <!-- Header -->
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h3 style="color:var(--text-primary,#fff); margin:0;">
-                    <i class="fas fa-file-csv" style="color:var(--primary-color,#3b82f6);"></i>
+            <div class="csv-modal-header">
+                <h3>
+                    <i class="fas fa-file-csv"></i>
                     <span data-i18n="csv.title"><?= __t('csv.title', 'Import Products via CSV') ?></span>
                 </h3>
-                <button type="button" id="csvImportClose" style="background:none; border:none; color:var(--text-secondary,#94a3b8); font-size:1.4rem; cursor:pointer; padding:4px;">&times;</button>
+                <button type="button" id="csvImportClose" class="csv-modal-close">&times;</button>
             </div>
 
             <!-- Instructions -->
-            <div style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.25); border-radius:8px; padding:14px; margin-bottom:18px;">
-                <p style="color:var(--text-secondary,#94a3b8); margin:0; font-size:0.88rem; line-height:1.6;">
-                    <i class="fas fa-info-circle" style="color:#3b82f6;"></i>
+            <div class="info-hint-box csv-instructions">
+                <p>
+                    <i class="fas fa-info-circle"></i>
                     <span data-i18n="csv.instructions"><?= __t('csv.instructions', 'Upload a CSV file to bulk-import products with English translations. Each row = one product. Max recommended: 1000 rows per file.') ?></span>
                 </p>
             </div>
 
             <!-- Download Sample -->
-            <div style="margin-bottom:18px;">
-                <button type="button" id="btnDownloadSample" class="btn btn-outline" style="width:100%;">
+            <div class="csv-download-section">
+                <button type="button" id="btnDownloadSample" class="btn btn-outline btn-full-width">
                     <i class="fas fa-download"></i>
                     <span data-i18n="csv.download_sample"><?= __t('csv.download_sample', 'Download Sample CSV Template') ?></span>
                 </button>
             </div>
 
             <!-- File Input -->
-            <div class="form-group" style="margin-bottom:18px;">
-                <label data-i18n="csv.choose_file" style="color:var(--text-primary,#fff); margin-bottom:8px; display:block;"><?= __t('csv.choose_file', 'Select CSV File') ?></label>
-                <input type="file" id="csvFileInput" accept=".csv,text/csv" class="form-control"
-                       style="color:var(--text-secondary,#94a3b8); padding:10px;">
+            <div class="form-group csv-file-group">
+                <label data-i18n="csv.choose_file"><?= __t('csv.choose_file', 'Select CSV File') ?></label>
+                <input type="file" id="csvFileInput" accept=".csv,text/csv" class="form-control">
             </div>
 
             <!-- Preview Info -->
-            <div id="csvPreviewInfo" style="display:none; margin-bottom:16px; background:rgba(0,0,0,0.2); border-radius:8px; padding:12px;">
-                <span id="csvRowCount" style="color:var(--text-primary,#fff); font-size:0.9rem;"></span>
+            <div id="csvPreviewInfo" class="csv-preview-info" style="display:none;">
+                <span id="csvRowCount"></span>
             </div>
 
             <!-- Progress -->
-            <div id="csvProgressArea" style="display:none; margin-bottom:16px;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                    <span id="csvProgressLabel" data-i18n="csv.importing" style="color:var(--text-secondary,#94a3b8); font-size:0.85rem;"><?= __t('csv.importing', 'Importing…') ?></span>
-                    <span id="csvProgressPct" style="color:var(--text-primary,#fff); font-size:0.85rem; font-weight:600;">0%</span>
+            <div id="csvProgressArea" class="csv-progress-area" style="display:none;">
+                <div class="csv-progress-header">
+                    <span id="csvProgressLabel" class="csv-progress-label" data-i18n="csv.importing"><?= __t('csv.importing', 'Importing…') ?></span>
+                    <span id="csvProgressPct" class="csv-progress-pct">0%</span>
                 </div>
-                <div style="background:rgba(255,255,255,0.1); border-radius:20px; height:8px; overflow:hidden;">
-                    <div id="csvProgressBar" style="background:var(--primary-color,#3b82f6); height:100%; width:0%; transition:width 0.3s ease; border-radius:20px;"></div>
+                <div class="csv-progress-track">
+                    <div id="csvProgressBar" class="csv-progress-bar"></div>
                 </div>
-                <div id="csvProgressLog" style="margin-top:10px; max-height:150px; overflow-y:auto; font-size:0.78rem; color:var(--text-secondary,#94a3b8); font-family:monospace;"></div>
+                <div id="csvProgressLog" class="csv-progress-log"></div>
             </div>
 
             <!-- Result Summary -->
-            <div id="csvResultSummary" style="display:none; margin-bottom:16px; padding:12px; border-radius:8px;"></div>
+            <div id="csvResultSummary" class="csv-result-summary" style="display:none;"></div>
 
             <!-- Actions -->
-            <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <div class="csv-actions">
                 <button type="button" id="csvImportCancel" class="btn btn-outline" data-i18n="csv.cancel"><?= __t('csv.cancel', 'Cancel') ?></button>
                 <button type="button" id="csvImportStart" class="btn btn-primary" disabled>
                     <i class="fas fa-upload"></i>

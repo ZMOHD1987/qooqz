@@ -1,32 +1,37 @@
 <?php
 declare(strict_types=1);
 
-// Bootstrap UI
-$bootstrap = __DIR__ . '/../../api/bootstrap_admin_ui.php';
-if (is_readable($bootstrap)) {
-    try { require_once $bootstrap; } catch (Throwable $e) {}
+// ════════════════════════════════════════════════════════════
+// DETECT REQUEST TYPE
+// ════════════════════════════════════════════════════════════
+$isAjax     = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+$isEmbedded = isset($_GET['embedded']) || isset($_POST['embedded']);
+$isFragment = $isAjax || $isEmbedded;
+
+if ($isFragment) {
+    require_once __DIR__ . '/../includes/admin_context.php';
+} else {
+    require_once __DIR__ . '/../includes/header.php';
 }
 
-$ADMIN_UI_PAYLOAD = $ADMIN_UI_PAYLOAD ?? ($GLOBALS['ADMIN_UI'] ?? []);
-$lang = $ADMIN_UI_PAYLOAD['lang'] ?? 'ar';
-$direction = $ADMIN_UI_PAYLOAD['direction'] ?? 'rtl';
-$strings = $ADMIN_UI_PAYLOAD['strings'] ?? [];
-$theme = $ADMIN_UI_PAYLOAD['theme'] ?? [];
+if (!is_admin_logged_in()) {
+    if ($isFragment) { http_response_code(401); header('Content-Type: application/json'); echo json_encode(['error' => 'Not authenticated']); exit; }
+    else { header('Location: /admin/login.php'); exit; }
+}
+
+$lang     = admin_lang();
+$dir      = in_array($lang, ['ar','he','fa','ur']) ? 'rtl' : 'ltr';
+$csrf     = admin_csrf();
+$tenantId = admin_tenant_id();
+$userId   = admin_user_id();
+
+$strings = $GLOBALS['ADMIN_UI']['strings'] ?? [];
 
 // Translations helper
 function t($key, $fallback = '') {
-    global $strings;
+    $strings = $GLOBALS['ADMIN_UI']['strings'] ?? [];
     return $strings[$key] ?? $fallback;
 }
-
-$csrf = htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES);
-$userId = $_SESSION['user']['id'] ?? 1;
-$tenantId = $_SESSION['tenant_id'] ?? 1;
-$primaryColor = $theme['colors_map']['primary'] ?? '#007bff';
-$background = $theme['colors_map']['background'] ?? '#0a0a0a';
-$textPrimary = $theme['colors_map']['text-primary'] ?? '#ffffff';
-$borderColor = $theme['colors_map']['border'] ?? '#333333';
-$fontFamily = $theme['fonts'][0]['font_family'] ?? 'Arial, sans-serif';
 
 $ownerType = $_GET['owner_type'] ?? 'general';
 $ownerId = (int)($_GET['owner_id'] ?? 0);
@@ -84,12 +89,12 @@ try {
     error_log("Media Studio API Error: " . $e->getMessage());
 }
 
-$isStandalone = empty($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest';
+$isStandalone = !$isFragment;
 ?>
 
 <?php if ($isStandalone): ?>
 <!DOCTYPE html>
-<html lang="<?= htmlspecialchars($lang) ?>" dir="<?= htmlspecialchars($direction) ?>">
+<html lang="<?= htmlspecialchars($lang) ?>" dir="<?= htmlspecialchars($dir) ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -97,14 +102,7 @@ $isStandalone = empty($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER[
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs/dist/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        :root {
-            --primary: <?= $primaryColor ?>;
-            --background: <?= $background ?>;
-            --text-primary: <?= $textPrimary ?>;
-            --border: <?= $borderColor ?>;
-            --font-family: <?= $fontFamily ?>;
-        }
-        body { font-family: var(--font-family); background: var(--background); color: var(--text-primary); margin: 0; padding: 20px; direction: <?= $direction ?>; }
+        body { font-family: var(--font-family); background: var(--background-color); color: var(--text-primary); margin: 0; padding: 20px; direction: <?= $dir ?>; }
         .container { max-width: 1400px; margin: 0 auto; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .filters { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
@@ -118,12 +116,12 @@ $isStandalone = empty($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER[
         .item .actions button { background: rgba(0,0,0,0.7); color: white; border: none; padding: 5px; cursor: pointer; border-radius: 3px; transition: background 0.2s; }
         .item .actions button:hover { background: rgba(0,0,0,0.9); }
         .actions { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; background: var(--primary); color: white; font-size: 14px; transition: background 0.2s; }
-        .btn:hover { background: #0056b3; }
-        .btn.danger { background: #dc3545; }
-        .btn.danger:hover { background: #c82333; }
-        .btn.secondary { background: var(--border); color: var(--text-primary); }
-        .btn.secondary:hover { background: #555; }
+        .btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; background: var(--primary-color, var(--primary, #3b82f6)); color: white; font-size: 14px; transition: background 0.2s; }
+        .btn:hover { background: var(--primary-hover, color-mix(in srgb, var(--primary-color, #3b82f6) 85%, #000)); }
+        .btn-danger { background: var(--danger-color, #ef4444); }
+        .btn-danger:hover { background: color-mix(in srgb, var(--danger-color, #ef4444) 80%, #000); }
+        .btn-secondary { background: var(--secondary-color, var(--border, #64748b)); color: var(--text-primary, #fff); }
+        .btn-secondary:hover { background: var(--background-secondary, #475569); }
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; opacity: 0; transition: opacity 0.3s ease; }
         .modal.show { opacity: 1; }
         .modal-content { background: var(--background); width: 90%; max-width: 700px; padding: 20px; border-radius: 8px; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.5); transform: scale(0.9); transition: transform 0.3s ease; }
@@ -153,8 +151,8 @@ $isStandalone = empty($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER[
             .header { flex-direction: column; align-items: flex-start; }
             .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
         }
-        .item.main { border-color: #28a745; }
-        .item.main::after { content: 'رئيسي'; position: absolute; top: 5px; left: 5px; background: #28a745; color: white; padding: 2px 5px; border-radius: 3px; font-size: 10px; }
+        .item.main { border-color: var(--success-color); }
+        .item.main::after { content: 'رئيسي'; position: absolute; top: 5px; left: 5px; background: var(--success-color); color: white; padding: 2px 5px; border-radius: 3px; font-size: 10px; }
     </style>
 </head>
 <body>
@@ -163,11 +161,11 @@ $isStandalone = empty($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER[
         <h1><?= t('media_studio.title', 'Media Studio') ?></h1>
         <div class="actions">
             <button id="uploadBtn" class="btn"><?= t('media_studio.upload', 'Upload') ?></button>
-            <button id="deleteBtn" class="btn danger" style="display: none;"><?= t('media_studio.delete_selected', 'Delete Selected') ?></button>
+            <button id="deleteBtn" class="btn btn-danger" style="display: none;"><?= t('media_studio.delete_selected', 'Delete Selected') ?></button>
             <button id="cropBtn" class="btn" style="display: none;"><?= t('media_studio.crop', 'Crop') ?></button>
             <button id="downloadBtn" class="btn" style="display: none;"><?= t('media_studio.download_selected', 'Download Selected') ?></button>
             <button id="pasteBtn" class="btn"><?= t('media_studio.paste', 'Paste') ?></button>
-            <button id="useBtn" class="btn secondary" style="display: none;"><?= t('media_studio.use_selected', 'Use Selected') ?></button>
+            <button id="useBtn" class="btn btn-secondary" style="display: none;"><?= t('media_studio.use_selected', 'Use Selected') ?></button>
         </div>
     </div>
     
@@ -191,7 +189,7 @@ $isStandalone = empty($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER[
             </select>
             <button id="uploadSubmitBtn" class="btn"><?= t('media_studio.upload', 'Upload') ?></button>
         </div>
-        <p style="margin-top: 10px; font-size: 12px; color: #888;">يمكن رفع الصور بدون تحديد مالك أو نوع، ثم تحديثها لاحقاً عند الاستخدام.</p>
+        <p style="margin-top: 10px; font-size: 12px; color: var(--text-secondary);">يمكن رفع الصور بدون تحديد مالك أو نوع، ثم تحديثها لاحقاً عند الاستخدام.</p>
     </div>
     
     <!-- الفلاتر -->
@@ -291,7 +289,7 @@ $isStandalone = empty($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER[
         
         <div class="actions" style="margin-top: 10px;">
             <button id="cropSaveBtn" class="btn"><?= t('media_studio.save_crop', 'Save Cropped') ?></button>
-            <button id="cropCancelBtn" class="btn danger"><?= t('media_studio.cancel', 'Cancel') ?></button>
+            <button id="cropCancelBtn" class="btn btn-secondary"><?= t('media_studio.cancel', 'Cancel') ?></button>
         </div>
     </div>
 </div>
@@ -355,7 +353,7 @@ $isStandalone = empty($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER[
             </div>
             <div class="actions">
                 <button type="submit" class="btn">Save</button>
-                <button type="button" id="editCancelBtn" class="btn danger">Cancel</button>
+                <button type="button" id="editCancelBtn" class="btn btn-secondary">Cancel</button>
             </div>
         </form>
     </div>
@@ -363,15 +361,26 @@ $isStandalone = empty($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER[
 
 <script src="https://cdn.jsdelivr.net/npm/cropperjs/dist/cropper.min.js"></script>
 <script>
-window.CSRF = '<?= $csrf ?>';
+window.IMAGES_CONFIG = {
+    csrfToken: '<?= $csrf ?>',
+    tenantId: <?= (int)$tenantId ?>,
+    userId: <?= (int)$userId ?>,
+    apiImages: window.location.origin + '/api/images',
+    ownerType: '<?= htmlspecialchars($ownerType) ?>',
+    ownerId: <?= (int)$ownerId ?>,
+    imageTypes: <?= json_encode($imageTypes) ?>,
+    translations: <?= json_encode($strings) ?>
+};
+// Backward compatibility
+window.CSRF = window.IMAGES_CONFIG.csrfToken;
 window.LANG = '<?= $lang ?>';
-window.USER_ID = <?= $userId ?>;
-window.TENANT_ID = <?= $tenantId ?>;
-window.TRANSLATIONS = <?= json_encode($strings) ?>;
-window.API_IMAGES = window.location.origin + '/api/images';
-window.OWNER_TYPE = '<?= $ownerType ?>';
-window.OWNER_ID = <?= $ownerId ?>;
-window.IMAGE_TYPES = <?= json_encode($imageTypes) ?>;
+window.USER_ID = window.IMAGES_CONFIG.userId;
+window.TENANT_ID = window.IMAGES_CONFIG.tenantId;
+window.TRANSLATIONS = window.IMAGES_CONFIG.translations;
+window.API_IMAGES = window.IMAGES_CONFIG.apiImages;
+window.OWNER_TYPE = window.IMAGES_CONFIG.ownerType;
+window.OWNER_ID = window.IMAGES_CONFIG.ownerId;
+window.IMAGE_TYPES = window.IMAGES_CONFIG.imageTypes;
 </script>
 <script src="/admin/assets/js/pages/media_studio.js"></script>
 </body>
@@ -379,12 +388,12 @@ window.IMAGE_TYPES = <?= json_encode($imageTypes) ?>;
 <?php else: ?>
 <!-- داخل modal -->
 <div class="studio" style="height:100%;display:flex;flex-direction:column;">
-    <header style="padding:16px;background:#f8f9fa;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+    <header style="padding:16px;background:var(--surface-color);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
         <h2 style="margin:0;"><?= t('media_studio.title', 'Media Studio') ?></h2>
         <button id="studioCloseBtn" type="button" style="background:none;border:none;font-size:1.8rem;cursor:pointer;">×</button>
     </header>
     
-    <section class="upload" style="padding:16px;background:#f8f9fa;border-bottom:1px solid var(--border);">
+    <section class="upload" style="padding:16px;background:var(--surface-color);border-bottom:1px solid var(--border);">
         <form id="uploadForm">
             <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
             <input type="hidden" name="tenant_id" value="<?= $tenantId ?>">
@@ -408,7 +417,7 @@ window.IMAGE_TYPES = <?= json_encode($imageTypes) ?>;
                     <option value="public"><?= t('media_studio.public', 'Public') ?></option>
                 </select>
                 
-                <button type="submit" style="padding:10px 20px;background: var(--primary);color:white;border:none;border-radius:6px;cursor:pointer;">
+                <button type="submit" class="btn btn-primary">
                     <?= t('media_studio.upload', 'Upload') ?>
                 </button>
             </div>
@@ -417,7 +426,7 @@ window.IMAGE_TYPES = <?= json_encode($imageTypes) ?>;
     
     <section class="gallery" style="flex:1;overflow:auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px;">
         <?php if (empty($images)): ?>
-            <div style="grid-column:1/-1;text-align:center;padding:60px;color:#888;">
+            <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-secondary);">
                 <?= t('media_studio.no_images', 'No images yet') ?>
             </div>
         <?php else: foreach ($images as $img): ?>
@@ -444,7 +453,7 @@ let selectedImage = null;
 document.querySelectorAll('.item').forEach(item => {
     item.addEventListener('click', () => {
         document.querySelectorAll('.item').forEach(i => i.style.border = 'none');
-        item.style.border = '3px solid <?= $primaryColor ?>';
+        item.style.border = '3px solid var(--primary-color)';
         selectedImage = item.dataset;
         document.getElementById('selectBtn').style.display = 'block';
     });
@@ -488,10 +497,18 @@ document.getElementById('uploadForm').addEventListener('submit', async e => {
             // إغلاق النموذج مباشرة بعد الرفع الناجح
             window.dispatchEvent(new CustomEvent('ImageStudio:close'));
         } else {
-            alert(json.message || '<?= t('media_studio.upload_failed', 'Upload failed') ?>');
+            if (typeof AdminFramework !== 'undefined' && AdminFramework.notify) {
+                AdminFramework.notify(json.message || '<?= t('media_studio.upload_failed', 'Upload failed') ?>', 'error');
+            } else {
+                console.error(json.message || '<?= t('media_studio.upload_failed', 'Upload failed') ?>');
+            }
         }
     } catch (error) {
-        alert('<?= t('media_studio.upload_error', 'Upload error') ?>');
+        if (typeof AdminFramework !== 'undefined' && AdminFramework.notify) {
+            AdminFramework.notify('<?= t('media_studio.upload_error', 'Upload error') ?>', 'error');
+        } else {
+            console.error('<?= t('media_studio.upload_error', 'Upload error') ?>');
+        }
     }
 });
 
@@ -500,3 +517,4 @@ document.getElementById('studioCloseBtn').addEventListener('click', () => {
 });
 </script>
 <?php endif; ?>
+<?php if (!$isFragment) require_once __DIR__ . '/../includes/footer.php'; ?>

@@ -112,115 +112,18 @@ function __tr($key, $replacements = []) {
 $apiBase = '/api';
 
 // ════════════════════════════════════════════════════════════
-// DB-DRIVEN CSS VARS HELPER
-// Generates :root CSS vars from all DB theme settings so no
-// hardcoded fallback colors are ever used.
-// ════════════════════════════════════════════════════════════
-if (!function_exists('renderFragmentThemeVars')) {
-    function renderFragmentThemeVars(array $theme): void {
-        // Collect every emitted variable so we can fill in aliases at the end
-        $emitted = [];
-        $lines   = [':root {'];
-
-        $emit = function(string $k, string $v) use (&$emitted, &$lines): void {
-            $ke = htmlspecialchars($k, ENT_QUOTES);
-            $ve = htmlspecialchars($v, ENT_QUOTES);
-            $lines[]         = "    --{$ke}: {$ve};";
-            $emitted["--{$k}"] = $v;
-        };
-
-        // Color settings
-        foreach ($theme['color_settings'] ?? [] as $c) {
-            if (empty($c['setting_key']) || !isset($c['color_value'])) continue;
-            $k = $c['setting_key'];
-            $h = str_replace('_', '-', $k);
-            $v = $c['color_value'];
-            $emit($k, $v);
-            if ($h !== $k) $emit($h, $v);
-        }
-        // Font settings
-        foreach ($theme['font_settings'] ?? [] as $f) {
-            if (empty($f['setting_key'])) continue;
-            $sk = $f['setting_key'];
-            $sh = str_replace('_', '-', $sk);
-            if (!empty($f['font_family'])) {
-                $emit("{$sk}-family", $f['font_family']);
-                if ($sh !== $sk) $emit("{$sh}-family", $f['font_family']);
-            }
-            if (!empty($f['font_size'])) {
-                $emit("{$sk}-size", $f['font_size']);
-                if ($sh !== $sk) $emit("{$sh}-size", $f['font_size']);
-            }
-            if (!empty($f['font_weight'])) {
-                $emit("{$sk}-weight", $f['font_weight']);
-                if ($sh !== $sk) $emit("{$sh}-weight", $f['font_weight']);
-            }
-        }
-        // Design settings (border-radius, padding, spacing, shadows…)
-        foreach ($theme['design_settings'] ?? [] as $d) {
-            if (empty($d['setting_key']) || !isset($d['setting_value'])) continue;
-            $dk = $d['setting_key'];
-            $dh = str_replace('_', '-', $dk);
-            $emit($dk, $d['setting_value']);
-            if ($dh !== $dk) $emit($dh, $d['setting_value']);
-        }
-        // Button styles exposed as CSS vars
-        foreach ($theme['button_styles'] ?? [] as $b) {
-            if (empty($b['slug'])) continue;
-            $slug = preg_replace('/[^a-z0-9_-]/', '-', strtolower((string)$b['slug']));
-            if (!empty($b['background_color'])) $emit("btn-{$slug}-bg",     $b['background_color']);
-            if (!empty($b['text_color']))        $emit("btn-{$slug}-color",  $b['text_color']);
-            if (!empty($b['border_color']))      $emit("btn-{$slug}-border", $b['border_color']);
-            if (!empty($b['border_radius']))     $emit("btn-{$slug}-radius", $b['border_radius'] . 'px');
-        }
-        // Card styles exposed as CSS vars
-        foreach ($theme['card_styles'] ?? [] as $cs) {
-            if (empty($cs['slug'])) continue;
-            $slug = preg_replace('/[^a-z0-9_-]/', '-', strtolower((string)$cs['slug']));
-            if (!empty($cs['background_color'])) $emit("card-{$slug}-bg",      $cs['background_color']);
-            if (!empty($cs['border_color']))      $emit("card-{$slug}-border",  $cs['border_color']);
-            if (!empty($cs['border_radius']))     $emit("card-{$slug}-radius",  $cs['border_radius'] . 'px');
-            if (!empty($cs['shadow_style']))      $emit("card-{$slug}-shadow",  $cs['shadow_style']);
-            if (!empty($cs['padding']))           $emit("card-{$slug}-padding", $cs['padding']);
-        }
-
-        // Shorthand alias defaults — ensure that --input-bg, --card-bg and --thead-bg
-        // are always present even when the DB theme doesn't have explicit entries for
-        // them.  We derive from the nearest available variable or use a safe fallback.
-        $bgSec = $emitted['--background-secondary'] ?? $emitted['--background_secondary'] ?? null;
-        $aliasDefaults = [
-            '--card-bg'       => $emitted['--card-bg']       ?? $emitted['--card_bg']       ?? $bgSec ?? '#081127',
-            '--input-bg'      => $emitted['--input-bg']      ?? $emitted['--input_bg']       ?? $bgSec ?? '#0b1220',
-            '--thead-bg'      => $emitted['--thead-bg']      ?? $emitted['--thead_bg']       ?? $bgSec ?? '#061021',
-            '--danger-color'  => $emitted['--danger-color']  ?? $emitted['--danger_color']   ?? $emitted['--error-color']  ?? '#ef4444',
-            '--success-color' => $emitted['--success-color'] ?? $emitted['--success_color']  ?? '#22c55e',
-        ];
-        foreach ($aliasDefaults as $cssVar => $val) {
-            if (!isset($emitted[$cssVar])) {
-                $lines[]        = '    ' . htmlspecialchars($cssVar, ENT_QUOTES) . ': ' . htmlspecialchars($val, ENT_QUOTES) . ';';
-                $emitted[$cssVar] = $val;
-            }
-        }
-
-        $lines[] = '}';
-        echo implode(PHP_EOL, $lines) . PHP_EOL;
-    }
-}
+// Theme CSS vars and generated_css are provided by header.php
+// via <style id="dynamic-theme-vars"> and <style id="dynamic-theme-db">.
+// No per-fragment duplication needed.
 
 ?>
-<!-- DB-driven CSS vars (all settings, colors, fonts, cards, buttons from database) -->
-<style id="db-theme-vars-categories">
-<?php renderFragmentThemeVars($GLOBALS['ADMIN_UI']['theme'] ?? []); ?>
-<?php if (!empty($GLOBALS['ADMIN_UI']['theme']['generated_css'])): ?>
-<?= $GLOBALS['ADMIN_UI']['theme']['generated_css'] ?>
-<?php endif; ?>
-</style>
 <!-- Structural layout CSS (uses only var() for all visual properties) -->
 <link rel="stylesheet" href="/admin/assets/css/pages/categories.css?v=<?= time() ?>">
 
 <!-- Page Meta -->
 <meta data-page="categories"
       data-assets-css="/admin/assets/css/pages/categories.css"
+      data-assets-js="/admin/assets/js/pages/categories.js"
       data-i18n-files="/languages/Categories/<?= rawurlencode($lang) ?>.json">
 
 <!-- Page Container -->
@@ -613,23 +516,23 @@ if (!function_exists('renderFragmentThemeVars')) {
         <div style="background:var(--card-bg,#081127); border:1px solid var(--border-color,#263044); border-radius:12px; width:min(700px,95vw); max-height:90vh; overflow-y:auto; padding:0;">
             <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid var(--border-color,#263044);">
                 <h3 style="margin:0; color:var(--text-primary,#fff); font-size:1.1rem;">
-                    <i class="fas fa-file-excel" style="color:#22c55e; margin-right:8px;"></i>
+                    <i class="fas fa-file-excel" style="color:var(--success-color); margin-right:8px;"></i>
                     <span data-i18n="excel.title"><?= __t('excel.title', 'Import Categories from Excel / CSV') ?></span>
                 </h3>
                 <button type="button" id="catExcelImportClose" style="background:none; border:none; color:var(--text-secondary,#94a3b8); cursor:pointer; font-size:1.2rem;">&times;</button>
             </div>
             <div style="padding:20px;">
                 <!-- Instructions -->
-                <div style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.3); border-radius:8px; padding:12px; margin-bottom:16px; font-size:0.85rem; color:var(--text-secondary,#94a3b8);">
+                <div class="info-hint-box" style="background:color-mix(in srgb, var(--info-color,#3b82f6) 8%, transparent); border:1px solid color-mix(in srgb, var(--info-color,#3b82f6) 30%, transparent);">
                     <strong style="color:var(--text-primary,#fff);"><i class="fas fa-info-circle"></i> <span data-i18n="excel.columns_info_label"><?= __t('excel.columns_info_label', 'Excel Column Format:') ?></span></strong><br>
-                    <code style="color:#60a5fa;">name</code> (required) &nbsp;|&nbsp;
-                    <code style="color:#60a5fa;">parent_name</code> &nbsp;|&nbsp;
-                    <code style="color:#60a5fa;">level</code> &nbsp;|&nbsp;
-                    <code style="color:#60a5fa;">slug</code> &nbsp;|&nbsp;
-                    <code style="color:#60a5fa;">description</code> &nbsp;|&nbsp;
-                    <code style="color:#60a5fa;">sort_order</code> &nbsp;|&nbsp;
-                    <code style="color:#60a5fa;">is_active</code> &nbsp;|&nbsp;
-                    <code style="color:#60a5fa;">is_featured</code><br>
+                    <code style="color:var(--info-color);">name</code> (required) &nbsp;|&nbsp;
+                    <code style="color:var(--info-color);">parent_name</code> &nbsp;|&nbsp;
+                    <code style="color:var(--info-color);">level</code> &nbsp;|&nbsp;
+                    <code style="color:var(--info-color);">slug</code> &nbsp;|&nbsp;
+                    <code style="color:var(--info-color);">description</code> &nbsp;|&nbsp;
+                    <code style="color:var(--info-color);">sort_order</code> &nbsp;|&nbsp;
+                    <code style="color:var(--info-color);">is_active</code> &nbsp;|&nbsp;
+                    <code style="color:var(--info-color);">is_featured</code><br>
                     <small data-i18n="excel.columns_info"><?= __t('excel.columns_info', 'Supported columns: name, parent_name, level, slug, description, sort_order, is_active, is_featured — plus language columns: en_name, en_slug, en_description, en_meta_title, en_meta_description, en_meta_keywords, ar_name, ar_slug, ar_description, ar_meta_title, ar_meta_description, ar_meta_keywords') ?></small>
                 </div>
 
@@ -646,7 +549,7 @@ if (!function_exists('renderFragmentThemeVars')) {
                 </div>
 
                 <!-- Preview Info -->
-                <div id="catExcelPreviewInfo" style="display:none; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:8px; padding:10px; margin-bottom:12px; font-size:0.85rem; color:var(--text-secondary,#94a3b8);">
+                <div id="catExcelPreviewInfo" class="success-hint-box" style="display:none;">
                     <span id="catExcelPreviewText"></span>
                 </div>
 
@@ -794,42 +697,8 @@ window.CATEGORIES_CONFIG = {
 <?= json_encode(['items' => [], 'meta' => ['page' => 1, 'per_page' => 25, 'total' => 0]]) ?>
 </script>
 
-<!-- Load AdminFramework + Page module when embedded; otherwise load normally -->
-<?php if ($isFragment): ?>
-<script src="/admin/assets/js/admin_framework.js?v=<?= time() ?>"></script>
+<!-- Page JS -->
 <script src="/admin/assets/js/pages/categories.js?v=<?= time() ?>"></script>
-
-<script>
-(function(){
-    console.log('[Categories] Embedded mode - waiting for framework & module...');
-    let attempts = 0, maxAttempts = 50;
-    const interval = setInterval(function(){
-        attempts++;
-        if (window.AdminFramework && window.Categories && typeof window.Categories.init === 'function') {
-            clearInterval(interval);
-            console.log('[Categories] Module ready - initializing...');
-            try {
-                const maybePromise = window.Categories.init();
-                if (maybePromise && typeof maybePromise.then === 'function') {
-                    maybePromise.then(()=>console.log('[Categories] Initialized')).catch(e=>console.error('[Categories] Init failed', e));
-                } else {
-                    console.log('[Categories] Initialized (sync)');
-                }
-            } catch (e) {
-                console.error('[Categories] Init threw', e);
-            }
-        } else if (attempts > maxAttempts) {
-            clearInterval(interval);
-            console.error('[Categories] Timeout waiting for module. Framework present:', !!window.AdminFramework, 'Module present:', !!window.Categories);
-        } else if (attempts % 10 === 0) {
-            console.log('[Categories] waiting...', attempts, '/', maxAttempts);
-        }
-    }, 100);
-})();
-</script>
-<?php else: ?>
-<script src="/admin/assets/js/pages/categories.js?v=<?= time() ?>"></script>
-<?php endif; ?>
 
 <?php
 // Load footer if standalone

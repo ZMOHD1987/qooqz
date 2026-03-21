@@ -93,97 +93,6 @@
    BUTTONS
    ════════════════════════════════════════════════════════════ */
 
-.themes-page .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: opacity 0.2s, background 0.2s, border-color 0.2s;
-    border: 1px solid transparent;
-    white-space: nowrap;
-    text-decoration: none;
-    line-height: 1.4;
-    vertical-align: middle;
-}
-
-.themes-page .btn:hover {
-    opacity: 0.85;
-}
-
-.themes-page .btn:active {
-    transform: translateY(1px);
-}
-
-.themes-page .btn-primary {
-    background: var(--primary-color, #3b82f6);
-    color: #fff;
-    border-color: var(--primary-color, #3b82f6);
-}
-
-.themes-page .btn-secondary {
-    background: var(--secondary-color, #64748b);
-    color: #fff;
-    border-color: var(--secondary-color, #64748b);
-}
-
-.themes-page .btn-outline {
-    background: transparent;
-    color: var(--text-primary, #fff);
-    border-color: var(--border-color, #334155);
-}
-
-.themes-page .btn-danger {
-    background: var(--danger-color, #ef4444);
-    color: #fff;
-    border-color: var(--danger-color, #ef4444);
-}
-
-.themes-page .btn-success {
-    background: var(--success-color, #22c55e);
-    color: #fff;
-    border-color: var(--success-color, #22c55e);
-}
-
-.themes-page .btn-warning {
-    background: var(--warning-color, #f59e0b);
-    color: #fff;
-    border-color: var(--warning-color, #f59e0b);
-}
-
-.themes-page .btn-sm {
-    padding: 5px 10px;
-    font-size: 0.8rem;
-    border-radius: 6px;
-}
-
-.themes-page .btn-xs {
-    padding: 3px 8px;
-    font-size: 0.75rem;
-    border-radius: 4px;
-}
-
-.themes-page .btn-lg {
-    padding: 10px 20px;
-    font-size: 1rem;
-}
-
-.themes-page .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    pointer-events: none;
-}
-
-.themes-page .btn i,
-.themes-page .btn svg {
-    flex-shrink: 0;
-    font-size: 0.875em;
-}
-
 /* ════════════════════════════════════════════════════════════
    CARDS
    ════════════════════════════════════════════════════════════ */
@@ -1119,17 +1028,6 @@
         padding: 12px;
     }
 
-    /* Buttons */
-    .themes-page .btn {
-        padding: 7px 12px;
-        font-size: 0.85rem;
-    }
-
-    .themes-page .btn-sm {
-        padding: 5px 9px;
-        font-size: 0.78rem;
-    }
-
     /* Inline form */
     .themes-page .inline-form {
         padding: 10px;
@@ -1316,17 +1214,6 @@
 
     .themes-page .data-table {
         min-width: 480px;
-    }
-
-    .themes-page .btn {
-        padding: 6px 10px;
-        font-size: 0.8rem;
-        gap: 4px;
-    }
-
-    .themes-page .btn-sm {
-        padding: 4px 8px;
-        font-size: 0.75rem;
     }
 
     .themes-page .form-row {

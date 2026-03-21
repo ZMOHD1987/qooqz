@@ -30,11 +30,6 @@
 .page-subtitle { margin:0; color:var(--text-secondary,#94a3b8); }
 
 /* Buttons */
-.btn { display:inline-flex !important; align-items:center; gap:8px; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:600; }
-.btn-primary { background:var(--primary-color,#3b82f6); color:#fff; border:1px solid var(--primary-color,#3b82f6); }
-.btn-secondary { background:var(--secondary-color,#64748b); color:#fff; border:1px solid var(--secondary-color,#64748b); }
-.btn-outline { background:transparent; color:var(--text-primary,#fff); border:1px solid var(--border-color,#263044); }
-.btn-danger { background:var(--danger-color,#ef4444); color:#fff; }
 
 /* Cards / forms */
 .card { background:var(--card-bg,#081127); border:1px solid var(--border-color,#263044); border-radius:12px; margin-bottom:16px; overflow:hidden; }

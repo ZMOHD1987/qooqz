@@ -97,92 +97,10 @@ $userTenantUserId = $user['tenant_user_id'] ?? null;
 
 $canEditOrders = $isSuperAdmin || can('pos.edit_orders') || can('manage_pos');
 
-// ════════════════════════════════════════════════════════════
-// THEME VARS INJECTION (DB-driven CSS variables)
-// ════════════════════════════════════════════════════════════
-if (!function_exists('renderFragmentThemeVars')) {
-    function renderFragmentThemeVars(array $theme): void {
-        echo ':root {' . PHP_EOL;
-        foreach ($theme['color_settings'] ?? [] as $c) {
-            if (empty($c['setting_key']) || !isset($c['color_value'])) continue;
-            $k = htmlspecialchars($c['setting_key'], ENT_QUOTES);
-            $h = htmlspecialchars(str_replace('_', '-', $c['setting_key']), ENT_QUOTES);
-            $v = htmlspecialchars($c['color_value'], ENT_QUOTES);
-            echo "    --{$k}: {$v};" . PHP_EOL;
-            if ($h !== $k) echo "    --{$h}: {$v};" . PHP_EOL;
-        }
-        foreach ($theme['font_settings'] ?? [] as $f) {
-            if (empty($f['setting_key'])) continue;
-            $sk = htmlspecialchars($f['setting_key'], ENT_QUOTES);
-            $sh = htmlspecialchars(str_replace('_', '-', $f['setting_key']), ENT_QUOTES);
-            if (!empty($f['font_family'])) {
-                $ff = htmlspecialchars($f['font_family'], ENT_QUOTES);
-                echo "    --{$sk}-family: {$ff};" . PHP_EOL;
-                if ($sh !== $sk) echo "    --{$sh}-family: {$ff};" . PHP_EOL;
-            }
-            if (!empty($f['font_size'])) {
-                $fs = htmlspecialchars($f['font_size'], ENT_QUOTES);
-                echo "    --{$sk}-size: {$fs};" . PHP_EOL;
-                if ($sh !== $sk) echo "    --{$sh}-size: {$fs};" . PHP_EOL;
-            }
-            if (!empty($f['font_weight'])) {
-                $fw = htmlspecialchars($f['font_weight'], ENT_QUOTES);
-                echo "    --{$sk}-weight: {$fw};" . PHP_EOL;
-                if ($sh !== $sk) echo "    --{$sh}-weight: {$fw};" . PHP_EOL;
-            }
-        }
-        foreach ($theme['design_settings'] ?? [] as $d) {
-            if (empty($d['setting_key']) || !isset($d['setting_value'])) continue;
-            $dk = htmlspecialchars($d['setting_key'], ENT_QUOTES);
-            $dh = htmlspecialchars(str_replace('_', '-', $d['setting_key']), ENT_QUOTES);
-            $dv = htmlspecialchars($d['setting_value'], ENT_QUOTES);
-            echo "    --{$dk}: {$dv};" . PHP_EOL;
-            if ($dh !== $dk) echo "    --{$dh}: {$dv};" . PHP_EOL;
-        }
-        foreach ($theme['button_styles'] ?? [] as $b) {
-            if (empty($b['slug'])) continue;
-            $slug = preg_replace('/[^a-z0-9_-]/', '-', strtolower((string)$b['slug']));
-            if (!empty($b['background_color'])) echo "    --btn-{$slug}-bg: " . htmlspecialchars($b['background_color'], ENT_QUOTES) . ';' . PHP_EOL;
-            if (!empty($b['text_color']))       echo "    --btn-{$slug}-color: " . htmlspecialchars($b['text_color'], ENT_QUOTES) . ';' . PHP_EOL;
-            if (!empty($b['border_color']))     echo "    --btn-{$slug}-border: " . htmlspecialchars($b['border_color'], ENT_QUOTES) . ';' . PHP_EOL;
-            if (!empty($b['border_radius']))    echo "    --btn-{$slug}-radius: " . htmlspecialchars((string)$b['border_radius'], ENT_QUOTES) . 'px;' . PHP_EOL;
-        }
-        $posCardTypesSeen = [];
-        foreach ($theme['card_styles'] ?? [] as $cs) {
-            if (empty($cs['slug'])) continue;
-            $slug = preg_replace('/[^a-z0-9_-]/', '-', strtolower((string)$cs['slug']));
-            if (!empty($cs['background_color'])) echo "    --card-{$slug}-bg: "           . htmlspecialchars($cs['background_color'], ENT_QUOTES) . ';' . PHP_EOL;
-            if (!empty($cs['text_color']))       echo "    --card-{$slug}-text: "          . htmlspecialchars($cs['text_color'], ENT_QUOTES)       . ';' . PHP_EOL;
-            if (!empty($cs['border_color']))     echo "    --card-{$slug}-border: "        . htmlspecialchars($cs['border_color'], ENT_QUOTES)     . ';' . PHP_EOL;
-            if (!empty($cs['border_width']))     echo "    --card-{$slug}-border-width: "  . htmlspecialchars((string)$cs['border_width'], ENT_QUOTES) . 'px;' . PHP_EOL;
-            if (!empty($cs['border_radius']))    echo "    --card-{$slug}-radius: "        . htmlspecialchars((string)$cs['border_radius'], ENT_QUOTES) . 'px;' . PHP_EOL;
-            if (!empty($cs['shadow_style']))     echo "    --card-{$slug}-shadow: "        . htmlspecialchars($cs['shadow_style'], ENT_QUOTES)     . ';' . PHP_EOL;
-            if (!empty($cs['padding']))          echo "    --card-{$slug}-padding: "       . htmlspecialchars($cs['padding'], ENT_QUOTES)          . ';' . PHP_EOL;
-            // Emit POS card_type aliases (--card-product-*, --card-category-*) for the first active entry per type
-            $cardType = $cs['card_type'] ?? '';
-            if (in_array($cardType, ['product', 'category'], true) && !isset($posCardTypesSeen[$cardType])) {
-                $posCardTypesSeen[$cardType] = true;
-                $tp = "    --card-{$cardType}";
-                if (!empty($cs['background_color'])) echo "{$tp}-bg: "           . htmlspecialchars($cs['background_color'], ENT_QUOTES) . ';' . PHP_EOL;
-                if (!empty($cs['text_color']))       echo "{$tp}-text: "          . htmlspecialchars($cs['text_color'], ENT_QUOTES)       . ';' . PHP_EOL;
-                if (!empty($cs['border_color']))     echo "{$tp}-border: "        . htmlspecialchars($cs['border_color'], ENT_QUOTES)     . ';' . PHP_EOL;
-                if (!empty($cs['border_width']))     echo "{$tp}-border-width: "  . htmlspecialchars((string)$cs['border_width'], ENT_QUOTES) . 'px;' . PHP_EOL;
-                if (!empty($cs['border_radius']))    echo "{$tp}-radius: "        . htmlspecialchars((string)$cs['border_radius'], ENT_QUOTES) . 'px;' . PHP_EOL;
-                if (!empty($cs['shadow_style']))     echo "{$tp}-shadow: "        . htmlspecialchars($cs['shadow_style'], ENT_QUOTES)     . ';' . PHP_EOL;
-                if (!empty($cs['padding']))          echo "{$tp}-padding: "       . htmlspecialchars($cs['padding'], ENT_QUOTES)          . ';' . PHP_EOL;
-            }
-        }
-        echo '}' . PHP_EOL;
-    }
-}
+// Theme CSS vars and generated_css are provided by header.php
+// via <style id="dynamic-theme-vars"> and <style id="dynamic-theme-db">.
+// No per-fragment duplication needed.
 ?>
-<!-- DB-driven CSS vars -->
-<style id="db-theme-vars-pos">
-<?php renderFragmentThemeVars($GLOBALS['ADMIN_UI']['theme'] ?? []); ?>
-<?php if (!empty($GLOBALS['ADMIN_UI']['theme']['generated_css'])): ?>
-<?= $GLOBALS['ADMIN_UI']['theme']['generated_css'] ?>
-<?php endif; ?>
-</style>
 
 <?php if ($isFragment): ?>
 <link rel="stylesheet" href="/admin/assets/css/pages/pos.css">
@@ -549,7 +467,7 @@ window.POS_CONFIG = {
                 <button class="pos-camera-close" id="posCameraClose">✕</button>
             </div>
             <video id="posCameraVideo" autoplay playsinline muted
-                   style="width:100%;border-radius:8px;background:#000"></video>
+                   style="width:100%;border-radius:8px;background:var(--background-main,#000)"></video>
             <div class="pos-camera-guide">
                 <div class="pos-scan-line"></div>
             </div>

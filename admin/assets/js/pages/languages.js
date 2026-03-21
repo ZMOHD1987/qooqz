@@ -162,8 +162,8 @@
       var actions = '';
       if (CAN_MANAGE) {
         actions =
-          '<button class="btn edit" data-id="' + esc(l.id) + '">' + esc(t('languages.buttons.edit', 'Edit')) + '</button> ' +
-          '<button class="btn danger del" data-id="' + esc(l.id) + '">' + esc(t('languages.buttons.delete', 'Delete')) + '</button>';
+          '<button class="btn btn-outline edit" data-id="' + esc(l.id) + '">' + esc(t('languages.buttons.edit', 'Edit')) + '</button> ' +
+          '<button class="btn btn-danger del" data-id="' + esc(l.id) + '">' + esc(t('languages.buttons.delete', 'Delete')) + '</button>';
       }
 
       var tr = document.createElement('tr');

@@ -12,9 +12,6 @@
 
 .tools { display:flex; gap:8px; align-items:center; margin-bottom:10px; }
 .tools input[type="search"] { padding:8px; border:1px solid var(--pn-border); border-radius:6px; width:300px; }
-.btn { padding:8px 12px; border-radius:6px; border:1px solid var(--pn-border); background:transparent; cursor:pointer; }
-.btn.primary { background:var(--pn-primary); color:#fff; border-color:transparent; }
-
 .table-wrap { border:1px solid var(--pn-border); border-radius:8px; overflow:auto; margin-top:8px; }
 #permTable { width:100%; border-collapse:collapse; font-size:14px; }
 #permTable thead th { padding:10px; background:var(--theme-card, #f8fafc); text-align:left; border-bottom:1px solid var(--pn-border); }

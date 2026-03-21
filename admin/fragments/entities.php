@@ -352,7 +352,7 @@ $apiBase = '/api';
                     <!-- English Content (primary language) -->
                     <div class="english-content-section" style="margin-top:28px;padding-top:20px;border-top:2px solid var(--primary-color,#3b82f6);">
                         <h4 style="margin-bottom:16px;color:var(--text-primary,#fff);display:flex;align-items:center;gap:10px;">
-                            <span style="background:var(--primary-color,#3b82f6);color:#fff;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;">EN</span>
+                            <span style="background:var(--primary-color,#3b82f6);color:var(--text-primary,#fff);padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;">EN</span>
                             <?= __t('form.sections.english_content', 'English Content') ?>
                             <span style="color:var(--text-secondary,#94a3b8);font-size:0.8rem;font-weight:400;margin-left:6px;">(<?= __t('form.sections.english_required', 'Default language — required') ?>)</span>
                         </h4>

@@ -97,62 +97,10 @@ function __t($key, $fallback = '') {
 $apiBase     = '/api';
 $imageTypeId = 9; // banner image type (from image_types table)
 
-// ════════════════════════════════════════════════════════════
-// DB-DRIVEN CSS VARS
-// ════════════════════════════════════════════════════════════
-if (!function_exists('renderBannerThemeVars')) {
-    function renderBannerThemeVars(array $theme): void {
-        echo ':root {' . PHP_EOL;
-        foreach ($theme['color_settings'] ?? [] as $c) {
-            if (empty($c['setting_key']) || !isset($c['color_value'])) continue;
-            $k = htmlspecialchars($c['setting_key'], ENT_QUOTES);
-            $h = htmlspecialchars(str_replace('_', '-', $c['setting_key']), ENT_QUOTES);
-            $v = htmlspecialchars($c['color_value'], ENT_QUOTES);
-            echo "    --{$k}: {$v};" . PHP_EOL;
-            if ($h !== $k) echo "    --{$h}: {$v};" . PHP_EOL;
-        }
-        foreach ($theme['font_settings'] ?? [] as $f) {
-            if (empty($f['setting_key'])) continue;
-            $sk = htmlspecialchars($f['setting_key'], ENT_QUOTES);
-            $sh = htmlspecialchars(str_replace('_', '-', $f['setting_key']), ENT_QUOTES);
-            if (!empty($f['font_family'])) {
-                $ff = htmlspecialchars($f['font_family'], ENT_QUOTES);
-                echo "    --{$sk}-family: {$ff};" . PHP_EOL;
-                if ($sh !== $sk) echo "    --{$sh}-family: {$ff};" . PHP_EOL;
-            }
-        }
-        foreach ($theme['design_settings'] ?? [] as $d) {
-            if (empty($d['setting_key']) || !isset($d['setting_value'])) continue;
-            $dk = htmlspecialchars($d['setting_key'], ENT_QUOTES);
-            $dh = htmlspecialchars(str_replace('_', '-', $d['setting_key']), ENT_QUOTES);
-            $dv = htmlspecialchars($d['setting_value'], ENT_QUOTES);
-            echo "    --{$dk}: {$dv};" . PHP_EOL;
-            if ($dh !== $dk) echo "    --{$dh}: {$dv};" . PHP_EOL;
-        }
-        foreach ($theme['button_styles'] ?? [] as $b) {
-            if (empty($b['slug'])) continue;
-            $slug = preg_replace('/[^a-z0-9_-]/', '-', strtolower((string)$b['slug']));
-            if (!empty($b['background_color'])) echo "    --btn-{$slug}-bg: " . htmlspecialchars($b['background_color'], ENT_QUOTES) . ';' . PHP_EOL;
-            if (!empty($b['text_color']))       echo "    --btn-{$slug}-color: " . htmlspecialchars($b['text_color'], ENT_QUOTES) . ';' . PHP_EOL;
-        }
-        foreach ($theme['card_styles'] ?? [] as $cs) {
-            if (empty($cs['slug'])) continue;
-            $slug = preg_replace('/[^a-z0-9_-]/', '-', strtolower((string)$cs['slug']));
-            if (!empty($cs['background_color'])) echo "    --card-{$slug}-bg: " . htmlspecialchars($cs['background_color'], ENT_QUOTES) . ';' . PHP_EOL;
-            if (!empty($cs['border_color']))     echo "    --card-{$slug}-border: " . htmlspecialchars($cs['border_color'], ENT_QUOTES) . ';' . PHP_EOL;
-            if (!empty($cs['border_radius']))    echo "    --card-{$slug}-radius: " . htmlspecialchars((string)$cs['border_radius'], ENT_QUOTES) . 'px;' . PHP_EOL;
-        }
-        echo '}' . PHP_EOL;
-    }
-}
+// Theme CSS vars and generated_css are provided by header.php
+// via <style id="dynamic-theme-vars"> and <style id="dynamic-theme-db">.
+// No per-fragment duplication needed.
 ?>
-<!-- DB-driven CSS vars -->
-<style id="db-theme-vars-banners">
-<?php renderBannerThemeVars($GLOBALS['ADMIN_UI']['theme'] ?? []); ?>
-<?php if (!empty($GLOBALS['ADMIN_UI']['theme']['generated_css'])): ?>
-<?= $GLOBALS['ADMIN_UI']['theme']['generated_css'] ?>
-<?php endif; ?>
-</style>
 <link rel="stylesheet" href="/admin/assets/css/pages/banners.css?v=<?= time() ?>">
 
 <!-- Page Meta -->

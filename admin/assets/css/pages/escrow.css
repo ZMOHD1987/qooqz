@@ -49,22 +49,6 @@
 textarea.form-control { resize: vertical; }
 
 /* Buttons */
-.btn {
-    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-    padding: 10px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 500;
-    cursor: pointer; border: none; transition: opacity 0.2s, transform 0.1s;
-    text-decoration: none;
-}
-.btn:hover { opacity: 0.85; }
-.btn:active { transform: scale(0.98); }
-.btn-primary   { background: var(--primary-color, #3b82f6); color: #fff; }
-.btn-secondary { background: var(--secondary-color, #475569); color: #fff; }
-.btn-outline   { background: transparent; border: 1px solid var(--border-color, #263044); color: var(--text-primary); }
-.btn-outline:hover { background: rgba(255,255,255,0.05); }
-.btn-danger    { background: var(--danger-color, #ef4444); color: #fff; }
-.btn-success   { background: var(--success-color, #22c55e); color: #fff; }
-.btn-warning   { background: var(--warning-color, #f59e0b); color: #fff; }
-.btn-sm        { padding: 6px 12px; font-size: 0.82rem; }
 
 /* Badges */
 .badge {

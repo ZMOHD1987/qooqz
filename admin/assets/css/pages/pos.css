@@ -751,14 +751,6 @@
 /* ════════════════════════════════════════
    GENERAL BUTTONS
    ════════════════════════════════════════ */
-.pos-page .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all .15s; }
-.pos-page .btn-primary { background: var(--primary-color, #3b82f6); color: #fff; border-color: var(--primary-color, #3b82f6); }
-.pos-page .btn-primary:hover { opacity: .9; }
-.pos-page .btn-success { background: var(--success-color, #10b981); color: #fff; border-color: var(--success-color, #10b981); }
-.pos-page .btn-danger  { background: var(--danger-color, #ef4444); color: #fff; border-color: var(--danger-color, #ef4444); }
-.pos-page .btn-outline { background: transparent; color: var(--text-secondary, #94a3b8); border-color: var(--border-color, #334155); }
-.pos-page .btn-outline:hover { background: var(--background-secondary, #1e293b); }
-.pos-page .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
 
 .pos-page .btn-group { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 

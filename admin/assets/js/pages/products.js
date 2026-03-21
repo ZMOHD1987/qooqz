@@ -1592,7 +1592,7 @@
                         onclick="Products.removeImage(${idx})">
                     <i class="fas fa-times"></i>
                 </button>
-                ${idx === 0 ? '<span style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.7);color:white;padding:2px 6px;border-radius:4px;font-size:10px;">Main</span>' : ''}
+                ${idx === 0 ? '<span class="image-main-badge">Main</span>' : ''}
             </div>
         `).join('');
     }
@@ -2375,72 +2375,6 @@
     }
 
     // ════════════════════════════════════════════════════════════
-    // THEME CSS INJECTION FROM DATABASE
-    // ════════════════════════════════════════════════════════════
-    async function injectThemeCss() {
-        try {
-            const themeData = window.ADMIN_UI && window.ADMIN_UI.theme;
-            if (!themeData) return;
-
-            const root = document.documentElement;
-
-            // Apply color settings from DB
-            if (Array.isArray(themeData.color_settings)) {
-                themeData.color_settings.forEach(c => {
-                    if (!c || !c.setting_key || !c.color_value) return;
-                    root.style.setProperty('--' + c.setting_key, c.color_value);
-                    root.style.setProperty('--' + c.setting_key.replace(/_/g, '-'), c.color_value);
-                });
-            }
-
-            // Apply font settings from DB
-            if (Array.isArray(themeData.font_settings)) {
-                themeData.font_settings.forEach(f => {
-                    if (!f || !f.setting_key) return;
-                    const base = f.setting_key;
-                    const baseH = base.replace(/_/g, '-');
-                    if (f.font_family) {
-                        root.style.setProperty('--' + base + '-family', f.font_family);
-                        root.style.setProperty('--' + baseH + '-family', f.font_family);
-                    }
-                    if (f.font_size) {
-                        root.style.setProperty('--' + base + '-size', f.font_size);
-                        root.style.setProperty('--' + baseH + '-size', f.font_size);
-                    }
-                    if (f.font_weight) {
-                        root.style.setProperty('--' + base + '-weight', f.font_weight);
-                        root.style.setProperty('--' + baseH + '-weight', f.font_weight);
-                    }
-                });
-            }
-
-            // Apply design settings from DB
-            if (Array.isArray(themeData.design_settings)) {
-                themeData.design_settings.forEach(d => {
-                    if (!d || !d.setting_key || !d.setting_value) return;
-                    root.style.setProperty('--' + d.setting_key, d.setting_value);
-                    root.style.setProperty('--' + d.setting_key.replace(/_/g, '-'), d.setting_value);
-                });
-            }
-
-            // Inject generated_css if present
-            if (themeData.generated_css) {
-                let genStyle = document.getElementById('__products_theme_css__');
-                if (!genStyle) {
-                    genStyle = document.createElement('style');
-                    genStyle.id = '__products_theme_css__';
-                    document.head.appendChild(genStyle);
-                }
-                genStyle.textContent = themeData.generated_css;
-            }
-
-            console.log('[Products] DB theme CSS applied from window.ADMIN_UI');
-        } catch (err) {
-            console.warn('[Products] Could not apply theme CSS:', err);
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════
     // CSV IMPORT
     // ════════════════════════════════════════════════════════════
     const CSV_COLUMNS = [
@@ -2547,7 +2481,7 @@
         function logLine(msg, ok = true) {
             const span = document.createElement('span');
             span.textContent = msg + '\n';
-            span.style.color = ok ? '#4ade80' : '#f87171';
+            span.className = ok ? 'csv-count-success' : 'csv-count-fail';
             progressLog.appendChild(span);
             progressLog.scrollTop = progressLog.scrollHeight;
         }
@@ -2659,13 +2593,13 @@
 
         const ok = failCount === 0;
         resultDiv.style.display = 'block';
-        resultDiv.style.background = ok ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)';
-        resultDiv.style.border = `1px solid ${ok ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)'}`;
-        resultDiv.style.color = 'var(--text-primary,#fff)';
+        resultDiv.className = ok ? 'csv-result-success' : 'csv-result-partial';
+        resultDiv.style.padding = '12px';
+        resultDiv.style.borderRadius = 'var(--border-radius, 8px)';
         resultDiv.innerHTML = `
             <strong>${ok ? '✅' : '⚠️'} ${t('csv.import_complete', 'Import Finished')}</strong><br>
-            <span style="color:#4ade80;">✓ ${t('csv.created', 'Created')}: ${successCount}</span>
-            ${failCount > 0 ? `  <span style="color:#f87171;">✗ ${t('csv.failed', 'Failed')}: ${failCount}</span>` : ''}
+            <span class="csv-count-success">✓ ${t('csv.created', 'Created')}: ${successCount}</span>
+            ${failCount > 0 ? `  <span class="csv-count-fail">✗ ${t('csv.failed', 'Failed')}: ${failCount}</span>` : ''}
         `;
 
         cancelBtn.disabled = false;
@@ -2815,8 +2749,8 @@
         // Load translations
         await loadTranslations(state.language);
 
-        // Inject DB theme CSS (colors, buttons, cards)
-        injectThemeCss();
+        // Theme CSS (colors, buttons, cards) comes from header.php via
+        // AdminUiThemeLoader::generateCss() — no manual injection needed.
 
         // Setup event listeners (use onXxx to prevent duplicate handlers on re-init)
         if (el.form) {
