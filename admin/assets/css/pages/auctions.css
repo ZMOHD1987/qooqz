@@ -1,78 +1,21 @@
 /*!
- * auctions.css v4.0 — fluid & fully responsive
- * Requires: admin_framework.css
- * All colours via DB CSS vars.
+ * /admin/assets/css/pages/auctions.css
+ * Auctions Management — page-specific styles only.
  *
- * Sizing strategy:
- *  • clamp(min, preferred, max) for every font-size & spacing
- *  • width: 100% everywhere — no fixed max-width on inner elements
- *  • Grid with auto-fit + minmax → columns collapse naturally
- *  • 4 breakpoints: 1280 / 1024 / 768 / 480
+ * Rules (per PAGE_TEMPLATE.css):
+ * ✅ Only page-specific styles here
+ * ✅ All colors via var(--xxx) with fallbacks
+ * ✅ color-mix() instead of rgba()
+ * ✅ clamp() instead of fixed px on layout
+ * ❌ No .btn / .card / .form-control / .badge / .data-table redefined here
  */
 
 /* ════════════════════════════════════════════════════════════
-   PAGE CONTAINER — fills available width always
-   ════════════════════════════════════════════════════════════ */
-
-.page-container {
-    /* No max-width: let the admin layout control width via .admin-main */
-    width: 100%;
-    padding: clamp(10px, 2vw, 24px);
-    box-sizing: border-box;
-    color: var(--text-primary, #fff);
-    font-family: var(--body-font-family, system-ui, sans-serif);
-}
-
-/* ════════════════════════════════════════════════════════════
-   PAGE HEADER
-   ════════════════════════════════════════════════════════════ */
-
-.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: clamp(8px, 1.5vw, 16px);
-    padding: clamp(12px, 2vw, 20px);
-    margin-bottom: clamp(12px, 2vw, 20px);
-    background: var(--background-secondary, #1e293b);
-    border: 1px solid var(--border-color, #334155);
-    border-radius: var(--card-border-radius, 12px);
-    flex-wrap: wrap;               /* wraps on very small screens */
-}
-
-.page-header-content {
-    flex: 1 1 200px;               /* shrinks but never disappears */
-    min-width: 0;
-}
-
-.page-title {
-    margin: 0;
-    font-size: clamp(1.1rem, 2.5vw, 1.6rem);
-    font-weight: 700;
-    color: var(--text-primary, #fff);
-    line-height: 1.2;
-}
-
-.page-subtitle {
-    margin: 4px 0 0;
-    font-size: clamp(0.78rem, 1.2vw, 0.9rem);
-    color: var(--text-secondary, #94a3b8);
-}
-
-.page-header-actions {
-    display: flex;
-    gap: clamp(6px, 1vw, 12px);
-    flex-shrink: 0;
-    flex-wrap: wrap;
-}
-
-/* ════════════════════════════════════════════════════════════
-   FILTERS
+   FILTERS GRID
    ════════════════════════════════════════════════════════════ */
 
 .filters-grid {
     display: grid;
-    /* Each column ≥ 180px, fills available space automatically */
     grid-template-columns: repeat(auto-fit, minmax(clamp(140px, 18vw, 220px), 1fr));
     gap: clamp(8px, 1.5vw, 14px);
     align-items: end;
@@ -93,7 +36,7 @@
 }
 
 /* ════════════════════════════════════════════════════════════
-   TABS
+   FORM TABS
    ════════════════════════════════════════════════════════════ */
 
 .form-tabs {
@@ -143,17 +86,21 @@
     to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 /* ════════════════════════════════════════════════════════════
-   TYPE BADGES  (auction-specific — status badges in framework)
+   AUCTION TYPE BADGES
    ════════════════════════════════════════════════════════════ */
 
-.badge-normal    { background: color-mix(in srgb, var(--primary-color,  #3b82f6) 12%, transparent); color: var(--primary-color,  #3b82f6);  border: 1px solid color-mix(in srgb, var(--primary-color,  #3b82f6) 30%, transparent); }
-.badge-reserve   { background: color-mix(in srgb, var(--accent-color,   #8b5cf6) 12%, transparent); color: var(--accent-color,   #8b5cf6);  border: 1px solid color-mix(in srgb, var(--accent-color,   #8b5cf6) 30%, transparent); }
-.badge-buy_now   { background: color-mix(in srgb, var(--success-color,  #10b981) 12%, transparent); color: var(--success-color,  #10b981);  border: 1px solid color-mix(in srgb, var(--success-color,  #10b981) 30%, transparent); }
-.badge-dutch     { background: color-mix(in srgb, var(--warning-color,  #f59e0b) 12%, transparent); color: var(--warning-color,  #f59e0b);  border: 1px solid color-mix(in srgb, var(--warning-color,  #f59e0b) 30%, transparent); }
-.badge-sealed_bid{ background: color-mix(in srgb, var(--error-color,    #ef4444) 12%, transparent); color: var(--error-color,    #ef4444);  border: 1px solid color-mix(in srgb, var(--error-color,    #ef4444) 30%, transparent); }
-.badge-manual    { background: color-mix(in srgb, var(--primary-color,  #3b82f6) 10%, transparent); color: var(--primary-color,  #3b82f6);  border: 1px solid color-mix(in srgb, var(--primary-color,  #3b82f6) 25%, transparent); }
-.badge-auto      { background: color-mix(in srgb, var(--secondary-color,#10b981) 10%, transparent); color: var(--secondary-color,#10b981);  border: 1px solid color-mix(in srgb, var(--secondary-color,#10b981) 25%, transparent); }
+.badge-normal    { background: color-mix(in srgb, var(--primary-color,  #3b82f6) 12%, transparent); color: var(--primary-color,  #3b82f6); border: 1px solid color-mix(in srgb, var(--primary-color,  #3b82f6) 30%, transparent); }
+.badge-reserve   { background: color-mix(in srgb, var(--accent-color,   #8b5cf6) 12%, transparent); color: var(--accent-color,   #8b5cf6); border: 1px solid color-mix(in srgb, var(--accent-color,   #8b5cf6) 30%, transparent); }
+.badge-buy_now   { background: color-mix(in srgb, var(--success-color,  #10b981) 12%, transparent); color: var(--success-color,  #10b981); border: 1px solid color-mix(in srgb, var(--success-color,  #10b981) 30%, transparent); }
+.badge-dutch     { background: color-mix(in srgb, var(--warning-color,  #f59e0b) 12%, transparent); color: var(--warning-color,  #f59e0b); border: 1px solid color-mix(in srgb, var(--warning-color,  #f59e0b) 30%, transparent); }
+.badge-sealed_bid{ background: color-mix(in srgb, var(--error-color,    #ef4444) 12%, transparent); color: var(--error-color,    #ef4444); border: 1px solid color-mix(in srgb, var(--error-color,    #ef4444) 30%, transparent); }
+.badge-manual    { background: color-mix(in srgb, var(--primary-color,  #3b82f6) 10%, transparent); color: var(--primary-color,  #3b82f6); border: 1px solid color-mix(in srgb, var(--primary-color,  #3b82f6) 25%, transparent); }
+.badge-auto      { background: color-mix(in srgb, var(--secondary-color,#10b981) 10%, transparent); color: var(--secondary-color,#10b981); border: 1px solid color-mix(in srgb, var(--secondary-color,#10b981) 25%, transparent); }
 
 /* ── CONDITION BADGES ─────────────────────────────────────── */
 .badge-new        { background: color-mix(in srgb, var(--success-color,  #10b981) 12%, transparent); color: var(--success-color,  #10b981); border: 1px solid color-mix(in srgb, var(--success-color,  #10b981) 30%, transparent); }
@@ -180,17 +127,20 @@
     border: 1px solid color-mix(in srgb, var(--primary-color, #3b82f6) 20%, transparent);
     white-space: nowrap;
 }
+
 .auction-timer.ending-soon {
     background: color-mix(in srgb, var(--error-color, #ef4444) 10%, transparent);
     color: var(--error-color, #ef4444);
     border-color: color-mix(in srgb, var(--error-color, #ef4444) 30%, transparent);
     animation: pulse-warn 1.5s ease-in-out infinite;
 }
+
 .auction-timer.ended {
     background: color-mix(in srgb, var(--text-secondary, #94a3b8) 8%, transparent);
     color: var(--text-secondary, #94a3b8);
     border-color: var(--border-color, #334155);
 }
+
 @keyframes pulse-warn {
     0%, 100% { opacity: 1; }
     50%       { opacity: 0.6; }
@@ -336,40 +286,21 @@
    RTL
    ════════════════════════════════════════════════════════════ */
 
-[dir="rtl"] .page-header-actions      { flex-direction: row-reverse; }
 [dir="rtl"] .filter-actions           { flex-direction: row-reverse; }
 [dir="rtl"] .bids-panel-header        { flex-direction: row-reverse; }
 [dir="rtl"] .translation-panel-header { flex-direction: row-reverse; }
 
 /* ════════════════════════════════════════════════════════════
-   BREAKPOINTS
+   RESPONSIVE
    ════════════════════════════════════════════════════════════ */
 
-/* ── Large desktop 1280+ ────────────────────────────────── */
-/* Default styles already optimised for large screens */
-
-/* ── Tablet landscape 1024px ─────────────────────────────── */
 @media (max-width: 1024px) {
     .filters-grid {
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     }
 }
 
-/* ── Tablet portrait 768px ───────────────────────────────── */
 @media (max-width: 768px) {
-    .page-header {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .page-header-actions {
-        width: 100%;
-    }
-    .page-header-actions .btn {
-        flex: 1;
-        justify-content: center;
-    }
-
     .filters-grid {
         grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     }
@@ -380,27 +311,21 @@
     }
     .filter-actions .btn { width: 100%; justify-content: center; }
 
-    /* Tabs: icon only on very tight space */
     .tab-btn span { display: none; }
     .tab-btn { padding: 10px 14px; }
     .tab-btn.active span,
     .tab-btn:hover span { display: inline; }
 
-    /* Bids stats: 2 columns */
     .bids-stats {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
-/* ── Mobile 480px ────────────────────────────────────────── */
 @media (max-width: 480px) {
-    .page-container { padding: 8px; }
-
     .filters-grid {
         grid-template-columns: 1fr;
     }
 
-    /* Show tab text again at very small — icons + text both visible */
     .tab-btn span { display: inline; }
     .tab-btn { padding: 8px 10px; font-size: 0.75rem; }
 
@@ -413,13 +338,10 @@
     .translation-panel-body { padding: 10px; }
 }
 
-/* ── Very small 360px ────────────────────────────────────── */
 @media (max-width: 360px) {
     .bids-stats {
         grid-template-columns: 1fr 1fr;
     }
-
-    .page-title { font-size: 1rem; }
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -427,11 +349,6 @@
    ════════════════════════════════════════════════════════════ */
 
 @media print {
-    .page-header-actions,
-    .filter-card,
-    .form-actions,
-    .table-actions,
-    .pagination-wrapper { display: none !important; }
-
-    .page-container { padding: 0; }
+    .filter-actions,
+    .table-actions { display: none !important; }
 }
