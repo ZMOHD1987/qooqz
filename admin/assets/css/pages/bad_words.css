@@ -1,318 +1,259 @@
-/*!
- * /admin/assets/css/pages/bad_words.css
- * Bad Words Management – Page‑specific styles only.
- * Compliant with admin_framework.css and PAGE_TEMPLATE.
+<?php
+declare(strict_types=1);
+
+/**
+ * /admin/fragments/bad_words.php
+ * Bad Words Management – Fully dynamic, no hardcoded styles.
  */
 
-/* ════════════════════════════════════════════════════════════
-   PAGE CONTAINER — no max‑width, fills admin‑main fully
-   ════════════════════════════════════════════════════════════ */
-.page-container {
-    width: 100%;
-    padding: clamp(10px, 2vw, 24px);
-    box-sizing: border-box;
-    color: var(--text-primary, #fff);
-    font-family: var(--body-font-family, system-ui, sans-serif);
+$isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+          strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+$isEmbedded = isset($_GET['embedded']) || isset($_POST['embedded']);
+$isFragment = $isAjax || $isEmbedded;
+
+// Load context
+if ($isFragment) {
+    require_once __DIR__ . '/../includes/admin_context.php';
+} else {
+    require_once __DIR__ . '/../includes/header.php';
 }
 
-/* ════════════════════════════════════════════════════════════
-   PAGE HEADER
-   ════════════════════════════════════════════════════════════ */
-.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: clamp(8px, 1.5vw, 16px);
-    padding: clamp(12px, 2vw, 20px);
-    margin-bottom: clamp(12px, 2vw, 20px);
-    background: var(--background-secondary, #1e293b);
-    border: 1px solid var(--border-color, #334155);
-    border-radius: var(--card-border-radius, 12px);
-    flex-wrap: wrap;
-}
-.page-header-content {
-    flex: 1 1 200px;
-    min-width: 0;
-}
-.page-title {
-    margin: 0;
-    font-size: clamp(1.1rem, 2.5vw, 1.6rem);
-    font-weight: 700;
-    color: var(--text-primary, #fff);
-    line-height: 1.2;
-}
-.page-subtitle {
-    margin: 4px 0 0;
-    font-size: clamp(0.78rem, 1.2vw, 0.9rem);
-    color: var(--text-secondary, #94a3b8);
-}
-.page-header-actions {
-    display: flex;
-    gap: clamp(6px, 1vw, 12px);
-    flex-shrink: 0;
-    flex-wrap: wrap;
-}
-
-/* ════════════════════════════════════════════════════════════
-   FILTERS
-   ════════════════════════════════════════════════════════════ */
-.filters-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(clamp(140px, 18vw, 220px), 1fr));
-    gap: clamp(8px, 1.5vw, 14px);
-    align-items: end;
-}
-.filter-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-size: clamp(0.78rem, 1.1vw, 0.875rem);
-    color: var(--text-secondary, #94a3b8);
-    font-weight: 500;
-}
-.filter-actions {
-    display: flex;
-    gap: clamp(6px, 1vw, 10px);
-    flex-wrap: wrap;
-}
-
-/* ════════════════════════════════════════════════════════════
-   PAGE‑SPECIFIC COMPONENTS
-   ════════════════════════════════════════════════════════════ */
-
-/* Table wrapper – scrollable */
-.bad-words-table-wrapper {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    margin-bottom: clamp(12px, 2vw, 16px);
-}
-
-/* Check Results Panel */
-.check-results {
-    margin-top: clamp(10px, 1.5vw, 14px);
-    padding: clamp(8px, 1.5vw, 12px);
-    border: 1px solid var(--border-color, #334155);
-    border-radius: var(--border-radius, 8px);
-    background: var(--input-bg, #0b1220);
-}
-.check-found {
-    color: var(--danger-color, #ef4444);
-}
-.check-clean {
-    color: var(--success-color, #10b981);
-}
-
-/* Notification Toast */
-.bw-notifications {
-    position: fixed;
-    top: clamp(12px, 2vh, 20px);
-    right: clamp(12px, 2vw, 20px);
-    z-index: 99999;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-width: min(380px, 90vw);
-}
-.bw-toast {
-    padding: clamp(8px, 1.5vw, 12px) clamp(28px, 4vw, 36px) clamp(8px, 1.5vw, 12px) clamp(12px, 2vw, 16px);
-    border-radius: var(--border-radius, 8px);
-    color: #fff;
-    font-size: clamp(0.8rem, 1vw, 0.9rem);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--background-main, #000) 70%, transparent);
-    animation: bwToastIn 0.3s ease;
-    position: relative;
-    word-break: break-word;
-}
-.bw-toast-success {
-    background: var(--success-color, #28a745);
-}
-.bw-toast-error {
-    background: var(--danger-color, #dc3545);
-}
-.bw-toast-warning {
-    background: var(--warning-color, #ffc107);
-    color: var(--text-primary, #333);
-}
-.bw-toast-info {
-    background: var(--info-color, #17a2b8);
-}
-.bw-toast-close {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    right: 10px;
-    cursor: pointer;
-    font-size: 1.2rem;
-    line-height: 1;
-    opacity: 0.7;
-    transition: opacity 0.2s;
-}
-.bw-toast-close:hover {
-    opacity: 1;
-}
-@keyframes bwToastIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ════════════════════════════════════════════════════════════
-   MODAL – page‑specific (if framework lacks it)
-   ════════════════════════════════════════════════════════════ */
-.modal {
-    position: fixed;
-    z-index: 9999;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: color-mix(in srgb, var(--background-main, #000) 70%, transparent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    box-sizing: border-box;
-}
-.modal-content {
-    background-color: var(--card-bg, #081127);
-    padding: 0;
-    border: 1px solid var(--border-color, #334155);
-    border-radius: var(--card-border-radius, 12px);
-    width: 96vw;
-    max-width: 560px;
-    max-height: 92vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    box-sizing: border-box;
-}
-.modal-content h3 {
-    margin: 0;
-    padding: clamp(12px, 2vw, 14px) clamp(14px, 2vw, 16px);
-    font-size: clamp(1rem, 1.2vw, 1.1rem);
-    font-weight: 600;
-    border-bottom: 1px solid var(--border-color, #334155);
-    color: var(--text-primary, #fff);
-    background: var(--background-secondary, #1e293b);
-}
-.modal-body {
-    padding: clamp(12px, 2vw, 16px);
-    overflow-y: auto;
-    flex: 1;
-}
-.modal-footer {
-    display: flex;
-    gap: 10px;
-    padding: clamp(10px, 1.5vw, 14px) clamp(14px, 2vw, 16px);
-    border-top: 1px solid var(--border-color, #334155);
-    background: var(--background-secondary, #1e293b);
-}
-
-/* ════════════════════════════════════════════════════════════
-   RTL
-   ════════════════════════════════════════════════════════════ */
-[dir="rtl"] .page-header-actions {
-    flex-direction: row-reverse;
-}
-[dir="rtl"] .filter-actions {
-    flex-direction: row-reverse;
-}
-[dir="rtl"] .bw-notifications {
-    right: auto;
-    left: clamp(12px, 2vw, 20px);
-}
-[dir="rtl"] .bw-toast {
-    padding: clamp(8px, 1.5vw, 12px) clamp(12px, 2vw, 16px) clamp(8px, 1.5vw, 12px) clamp(28px, 4vw, 36px);
-}
-[dir="rtl"] .bw-toast-close {
-    right: auto;
-    left: 10px;
-}
-[dir="rtl"] .check-results {
-    text-align: right;
-}
-[dir="rtl"] .modal {
-    direction: rtl;
-}
-[dir="rtl"] .modal-content h3 {
-    text-align: start;
-}
-[dir="rtl"] .modal-footer {
-    flex-direction: row-reverse;
-}
-
-/* ════════════════════════════════════════════════════════════
-   RESPONSIVE
-   ════════════════════════════════════════════════════════════ */
-@media (max-width: 1024px) {
-    .filters-grid {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    }
-}
-@media (max-width: 768px) {
-    .page-header {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .page-header-actions {
-        width: 100%;
-    }
-    .page-header-actions .btn {
-        flex: 1;
-        justify-content: center;
-    }
-    .filters-grid {
-        grid-template-columns: 1fr;
-    }
-    .filter-actions {
-        flex-direction: column;
-    }
-    .filter-actions .btn {
-        width: 100%;
-        justify-content: center;
-    }
-    .bw-notifications {
-        top: 8px;
-        right: 8px;
-        left: 8px;
-        max-width: calc(100% - 16px);
-    }
-    [dir="rtl"] .bw-notifications {
-        right: 8px;
-        left: 8px;
-    }
-    .modal {
-        padding: 0;
-        align-items: stretch;
-    }
-    .modal-content {
-        width: 100%;
-        max-width: 100%;
-        max-height: 100vh;
-        border-radius: 0;
-        border: none;
-    }
-    .modal-body {
-        max-height: calc(100vh - 100px);
-    }
-}
-@media (max-width: 480px) {
-    .page-container {
-        padding: 8px;
+// Auth check
+if (!is_admin_logged_in()) {
+    if ($isFragment) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Not authenticated']);
+        exit;
+    } else {
+        header('Location: /admin/login.php');
+        exit;
     }
 }
 
-/* ════════════════════════════════════════════════════════════
-   PRINT
-   ════════════════════════════════════════════════════════════ */
-@media print {
-    .page-header-actions,
-    .filter-actions,
-    .form-actions,
-    .bad-words-table-wrapper,
-    .bw-notifications,
-    .modal {
-        display: none !important;
-    }
-    .page-container {
-        padding: 0;
+// User / Tenant context
+$user     = admin_user();
+$lang     = admin_lang();
+$dir      = in_array($lang, ['ar', 'he', 'fa', 'ur']) ? 'rtl' : 'ltr';
+$csrf     = admin_csrf();
+$tenantId = admin_tenant_id();
+$userId   = admin_user_id();
+
+// Permissions
+$canManageBadWords = can('manage_bad_words') || is_super_admin();
+$canCreate         = $canManageBadWords;
+$canEdit           = $canManageBadWords;
+$canDelete         = $canManageBadWords;
+
+if (!$canManageBadWords) {
+    http_response_code(403);
+    die('Access denied');
+}
+
+$entityId = 0;
+$apiBase = '/api';
+
+// ── Translation helpers for page strings ────────────────────
+$_bwStrings = [];
+$_bwAllowedLangs = ['ar', 'en', 'fr', 'tr', 'ur', 'de', 'es', 'fa', 'he', 'hi', 'zh', 'ja', 'ko', 'pt', 'ru', 'it', 'nl', 'sv', 'pl', 'th', 'vi', 'id', 'ms', 'bn', 'sw', 'tl'];
+$_bwSafeLang = in_array($lang, $_bwAllowedLangs, true) ? $lang : 'en';
+$_bwLangFile = __DIR__ . '/../../languages/BadWords/' . $_bwSafeLang . '.json';
+if (file_exists($_bwLangFile)) {
+    $_bwJson = json_decode(file_get_contents($_bwLangFile), true);
+    if (isset($_bwJson['strings'])) {
+        $_bwStrings = $_bwJson['strings'];
     }
 }
+
+function _bwt($key, $fallback = '') {
+    global $_bwStrings;
+    $keys = explode('.', $key);
+    $val = $_bwStrings;
+    foreach ($keys as $k) {
+        if (is_array($val) && isset($val[$k])) {
+            $val = $val[$k];
+        } else {
+            return $fallback ?: $key;
+        }
+    }
+    return is_string($val) ? $val : ($fallback ?: $key);
+}
+?>
+<link rel="stylesheet" href="/admin/assets/css/pages/bad_words.css?v=<?= time() ?>">
+<meta data-page="bad_words" data-i18n-files="/languages/BadWords/<?= rawurlencode($lang) ?>.json">
+
+<div class="page-container" id="badWordsPageContainer" dir="<?= htmlspecialchars($dir) ?>">
+
+    <!-- Header -->
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title" data-i18n="title"><?= htmlspecialchars(_bwt('title', 'Bad Words Management'), ENT_QUOTES, 'UTF-8') ?></h1>
+            <p class="page-subtitle" data-i18n="subtitle"><?= htmlspecialchars(_bwt('subtitle', 'Manage blocked words and phrases'), ENT_QUOTES, 'UTF-8') ?></p>
+        </div>
+        <div class="page-header-actions">
+            <?php if ($canCreate): ?>
+                <button id="btnAddWord" class="btn btn-primary" data-i18n="add_word"><?= htmlspecialchars(_bwt('add_word', 'Add Word'), ENT_QUOTES, 'UTF-8') ?></button>
+            <?php endif; ?>
+            <button id="btnOpenCheckText" class="btn btn-secondary" data-i18n="text_check.title"><?= htmlspecialchars(_bwt('text_check.title', 'Check Text'), ENT_QUOTES, 'UTF-8') ?></button>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="card">
+        <div class="card-body filter-bar">
+            <input type="text" id="filterSearch" class="form-control" placeholder="<?= htmlspecialchars(_bwt('filter.search_placeholder', 'Search words...'), ENT_QUOTES, 'UTF-8') ?>" data-i18n-placeholder="filter.search_placeholder">
+            <select id="filterSeverity" class="form-control">
+                <option value="" data-i18n="filter.all_severities"><?= htmlspecialchars(_bwt('filter.all_severities', 'All Severities'), ENT_QUOTES, 'UTF-8') ?></option>
+                <option value="low" data-i18n="severity.low"><?= htmlspecialchars(_bwt('severity.low', 'Low'), ENT_QUOTES, 'UTF-8') ?></option>
+                <option value="medium" data-i18n="severity.medium"><?= htmlspecialchars(_bwt('severity.medium', 'Medium'), ENT_QUOTES, 'UTF-8') ?></option>
+                <option value="high" data-i18n="severity.high"><?= htmlspecialchars(_bwt('severity.high', 'High'), ENT_QUOTES, 'UTF-8') ?></option>
+            </select>
+            <select id="filterStatus" class="form-control">
+                <option value="" data-i18n="filter.all_statuses"><?= htmlspecialchars(_bwt('filter.all_statuses', 'All Statuses'), ENT_QUOTES, 'UTF-8') ?></option>
+                <option value="active" data-i18n="filter.active"><?= htmlspecialchars(_bwt('filter.active', 'Active'), ENT_QUOTES, 'UTF-8') ?></option>
+                <option value="inactive" data-i18n="filter.inactive"><?= htmlspecialchars(_bwt('filter.inactive', 'Inactive'), ENT_QUOTES, 'UTF-8') ?></option>
+            </select>
+            <button id="btnFilter" class="btn btn-primary"><?= htmlspecialchars(_bwt('filter.apply', 'Filter'), ENT_QUOTES, 'UTF-8') ?></button>
+            <button id="btnClearFilters" class="btn btn-secondary"><?= htmlspecialchars(_bwt('filter.clear', 'Clear Filters'), ENT_QUOTES, 'UTF-8') ?></button>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="bad-words-table-wrapper">
+                <table class="data-table" id="badWordsTable">
+                    <thead>
+                        <tr>
+                            <th data-i18n="table.id"><?= htmlspecialchars(_bwt('table.id', 'ID'), ENT_QUOTES, 'UTF-8') ?></th>
+                            <th data-i18n="table.word"><?= htmlspecialchars(_bwt('table.word', 'Word'), ENT_QUOTES, 'UTF-8') ?></th>
+                            <th data-i18n="table.severity"><?= htmlspecialchars(_bwt('table.severity', 'Severity'), ENT_QUOTES, 'UTF-8') ?></th>
+                            <th data-i18n="table.regex"><?= htmlspecialchars(_bwt('table.regex', 'Regex'), ENT_QUOTES, 'UTF-8') ?></th>
+                            <th data-i18n="table.active"><?= htmlspecialchars(_bwt('table.active', 'Active'), ENT_QUOTES, 'UTF-8') ?></th>
+                            <th data-i18n="table.created"><?= htmlspecialchars(_bwt('table.created', 'Created'), ENT_QUOTES, 'UTF-8') ?></th>
+                            <th data-i18n="table.actions"><?= htmlspecialchars(_bwt('table.actions', 'Actions'), ENT_QUOTES, 'UTF-8') ?></th>
+                        </tr>
+                    </thead>
+                    <tbody id="badWordsBody">
+                        <tr id="emptyStateRow">
+                            <td colspan="7" class="text-center" data-i18n="table.no_records"><?= htmlspecialchars(_bwt('table.no_records', 'No records found'), ENT_QUOTES, 'UTF-8') ?></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="pagination-wrapper">
+            <div class="pagination-info">
+                <span data-i18n="pagination.showing"><?= htmlspecialchars(_bwt('pagination.showing', 'Showing'), ENT_QUOTES, 'UTF-8') ?></span>
+                <span id="paginationInfo">0-0 <?= htmlspecialchars(_bwt('pagination.of', 'of'), ENT_QUOTES, 'UTF-8') ?> 0</span>
+            </div>
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+
+    <!-- Add / Edit Word Modal -->
+    <div id="badWordModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3 id="badWordModalTitle"><?= htmlspecialchars(_bwt('modal.add_title', 'Add Bad Word'), ENT_QUOTES, 'UTF-8') ?></h3>
+            <div class="modal-body">
+                <form id="badWordForm">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+                    <input type="hidden" name="id" id="badWordId" value="">
+                    <div class="form-group">
+                        <label data-i18n="form.word"><?= htmlspecialchars(_bwt('form.word', 'Word'), ENT_QUOTES, 'UTF-8') ?> *</label>
+                        <input type="text" name="word" id="bwWord" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="form.severity"><?= htmlspecialchars(_bwt('form.severity', 'Severity'), ENT_QUOTES, 'UTF-8') ?></label>
+                        <select name="severity" id="bwSeverity" class="form-control">
+                            <option value="low"><?= htmlspecialchars(_bwt('severity.low', 'Low'), ENT_QUOTES, 'UTF-8') ?></option>
+                            <option value="medium"><?= htmlspecialchars(_bwt('severity.medium', 'Medium'), ENT_QUOTES, 'UTF-8') ?></option>
+                            <option value="high"><?= htmlspecialchars(_bwt('severity.high', 'High'), ENT_QUOTES, 'UTF-8') ?></option>
+                        </select>
+                    </div>
+                    <div class="form-group form-check">
+                        <input type="checkbox" name="is_regex" id="bwIsRegex" value="1">
+                        <label for="bwIsRegex"><?= htmlspecialchars(_bwt('form.is_regex', 'Is Regex'), ENT_QUOTES, 'UTF-8') ?></label>
+                    </div>
+                    <div class="form-group form-check">
+                        <input type="checkbox" name="is_active" id="bwIsActive" value="1" checked>
+                        <label for="bwIsActive"><?= htmlspecialchars(_bwt('form.is_active', 'Is Active'), ENT_QUOTES, 'UTF-8') ?></label>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" data-i18n="form.save"><?= htmlspecialchars(_bwt('form.save', 'Save'), ENT_QUOTES, 'UTF-8') ?></button>
+                        <button type="button" class="btn btn-secondary btn-close-modal" data-modal="badWordModal"><?= htmlspecialchars(_bwt('form.cancel', 'Cancel'), ENT_QUOTES, 'UTF-8') ?></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Translations Modal -->
+    <div id="translationsModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3 id="translationsModalTitle"><?= htmlspecialchars(_bwt('translations.title', 'Word Translations'), ENT_QUOTES, 'UTF-8') ?></h3>
+            <div class="modal-body">
+                <input type="hidden" id="transWordId" value="">
+                <div class="form-group">
+                    <label data-i18n="translations.language"><?= htmlspecialchars(_bwt('translations.language', 'Language'), ENT_QUOTES, 'UTF-8') ?></label>
+                    <select id="transLangCode" class="form-control"></select>
+                </div>
+                <div class="form-group">
+                    <label data-i18n="translations.translated_word"><?= htmlspecialchars(_bwt('translations.translated_word', 'Translated Word'), ENT_QUOTES, 'UTF-8') ?></label>
+                    <input type="text" id="transWord" class="form-control">
+                </div>
+                <div class="form-actions">
+                    <button id="btnAddTranslation" class="btn btn-primary"><?= htmlspecialchars(_bwt('translations.add', 'Add Translation'), ENT_QUOTES, 'UTF-8') ?></button>
+                    <button id="btnUpdateTranslation" class="btn btn-info" style="display:none;"><?= htmlspecialchars(_bwt('translations.update', 'Update'), ENT_QUOTES, 'UTF-8') ?></button>
+                    <button type="button" class="btn btn-secondary btn-close-modal" data-modal="translationsModal"><?= htmlspecialchars(_bwt('form.cancel', 'Cancel'), ENT_QUOTES, 'UTF-8') ?></button>
+                </div>
+                <div class="bad-words-table-wrapper" style="margin-top:16px;">
+                    <table class="data-table" id="translationsTable">
+                        <thead>
+                            <tr>
+                                <th data-i18n="translations.language"><?= htmlspecialchars(_bwt('translations.language', 'Language'), ENT_QUOTES, 'UTF-8') ?></th>
+                                <th data-i18n="translations.word"><?= htmlspecialchars(_bwt('translations.word', 'Word'), ENT_QUOTES, 'UTF-8') ?></th>
+                                <th data-i18n="table.actions"><?= htmlspecialchars(_bwt('table.actions', 'Actions'), ENT_QUOTES, 'UTF-8') ?></th>
+                            </tr>
+                        </thead>
+                        <tbody id="translationsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Text Check Modal -->
+    <div id="textCheckModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3><?= htmlspecialchars(_bwt('text_check.title', 'Check Text'), ENT_QUOTES, 'UTF-8') ?></h3>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label data-i18n="text_check.input_label"><?= htmlspecialchars(_bwt('text_check.input_label', 'Text to check'), ENT_QUOTES, 'UTF-8') ?></label>
+                    <textarea id="textCheckInput" class="form-control" rows="4"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button id="btnCheckText" class="btn btn-primary"><?= htmlspecialchars(_bwt('text_check.check', 'Check'), ENT_QUOTES, 'UTF-8') ?></button>
+                    <button type="button" class="btn btn-secondary btn-close-modal" data-modal="textCheckModal"><?= htmlspecialchars(_bwt('form.cancel', 'Cancel'), ENT_QUOTES, 'UTF-8') ?></button>
+                </div>
+                <div id="textCheckResults" class="check-results"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+window.BAD_WORDS_CONFIG = {
+    apiBase:   <?= json_encode($apiBase) ?>,
+    csrfToken: <?= json_encode($csrf) ?>,
+    entityId:  <?= $entityId ?>,
+    lang:      <?= json_encode($_bwSafeLang) ?>,
+    dir:       <?= json_encode($dir) ?>,
+    strings:   <?= json_encode($_bwStrings, JSON_UNESCAPED_UNICODE) ?>,
+    canCreate: <?= json_encode($canCreate) ?>,
+    canEdit:   <?= json_encode($canEdit) ?>,
+    canDelete: <?= json_encode($canDelete) ?>
+};
+</script>
+<script src="/admin/assets/js/pages/bad_words.js?v=<?= time() ?>"></script>
+
+<?php if (!$isFragment) require_once __DIR__ . '/../includes/footer.php'; ?>
