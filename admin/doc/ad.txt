@@ -47,14 +47,8 @@ status
 enum('active','paused','rejected')
 YES
 active
-views_count
-int(11)
-YES
-0
-clicks_count
-int(11)
-YES
-0
+[views_count — REMOVED: use ad_stats.views instead]
+[clicks_count — REMOVED: use ad_stats.clicks instead]
 created_at
 datetime
 YES

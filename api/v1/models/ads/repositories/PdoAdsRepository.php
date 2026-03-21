@@ -6,7 +6,7 @@ final class PdoAdsRepository implements AdsRepositoryInterface
     private PDO $pdo;
     private const TABLE = 'ads';
     private const ALLOWED_ORDER_BY = [
-        'id', 'campaign_id', 'target_type', 'status', 'views_count', 'clicks_count', 'created_at'
+        'id', 'campaign_id', 'target_type', 'status', 'created_at'
     ];
     private const FILTERABLE_COLUMNS = ['status', 'target_type'];
 
@@ -26,9 +26,12 @@ final class PdoAdsRepository implements AdsRepositoryInterface
         $sql = "SELECT a.*,
                     ac.name      AS campaign_name,
                     ac.status    AS campaign_status,
-                    ac.tenant_id AS campaign_tenant_id
+                    ac.tenant_id AS campaign_tenant_id,
+                    COALESCE(SUM(s.views),  0) AS views_total,
+                    COALESCE(SUM(s.clicks), 0) AS clicks_total
                 FROM " . self::TABLE . " a
                 INNER JOIN ad_campaigns ac ON a.campaign_id = ac.id
+                LEFT JOIN ad_stats s ON s.ad_id = a.id
                 WHERE ac.tenant_id = :tenant_id";
         $params = [':tenant_id' => $tenantId];
 
@@ -48,6 +51,8 @@ final class PdoAdsRepository implements AdsRepositoryInterface
             $sql .= " AND (a.target_value LIKE :search)";
             $params[':search'] = '%' . $filters['search'] . '%';
         }
+
+        $sql .= " GROUP BY a.id";
 
         $orderBy  = in_array($orderBy, self::ALLOWED_ORDER_BY, true) ? $orderBy : 'id';
         $orderDir = strtoupper($orderDir) === 'ASC' ? 'ASC' : 'DESC';
@@ -71,7 +76,7 @@ final class PdoAdsRepository implements AdsRepositoryInterface
 
     public function count(int $tenantId, array $filters = []): int
     {
-        $sql = "SELECT COUNT(*) FROM " . self::TABLE . " a
+        $sql = "SELECT COUNT(DISTINCT a.id) FROM " . self::TABLE . " a
                 INNER JOIN ad_campaigns ac ON a.campaign_id = ac.id
                 WHERE ac.tenant_id = :tenant_id";
         $params = [':tenant_id' => $tenantId];
@@ -107,10 +112,14 @@ final class PdoAdsRepository implements AdsRepositoryInterface
             "SELECT a.*,
                     ac.name      AS campaign_name,
                     ac.status    AS campaign_status,
-                    ac.tenant_id AS campaign_tenant_id
+                    ac.tenant_id AS campaign_tenant_id,
+                    COALESCE(SUM(s.views),  0) AS views_total,
+                    COALESCE(SUM(s.clicks), 0) AS clicks_total
              FROM " . self::TABLE . " a
              INNER JOIN ad_campaigns ac ON a.campaign_id = ac.id
+             LEFT JOIN ad_stats s ON s.ad_id = a.id
              WHERE ac.tenant_id = :tenant_id AND a.id = :id
+             GROUP BY a.id
              LIMIT 1"
         );
         $stmt->execute([':tenant_id' => $tenantId, ':id' => $id]);
@@ -127,8 +136,6 @@ final class PdoAdsRepository implements AdsRepositoryInterface
             ':target_type'   => $data['target_type']  ?? 'url',
             ':target_value'  => $data['target_value'] ?? null,
             ':status'        => $data['status']        ?? 'active',
-            ':views_count'   => isset($data['views_count'])  ? (int)$data['views_count']  : 0,
-            ':clicks_count'  => isset($data['clicks_count']) ? (int)$data['clicks_count'] : 0,
         ];
 
         if ($isUpdate) {
@@ -139,9 +146,7 @@ final class PdoAdsRepository implements AdsRepositoryInterface
                     a.campaign_id  = :campaign_id,
                     a.target_type  = :target_type,
                     a.target_value = :target_value,
-                    a.status       = :status,
-                    a.views_count  = :views_count,
-                    a.clicks_count = :clicks_count
+                    a.status       = :status
                 WHERE a.id = :id AND ac.tenant_id = :tenant_id
             ");
             $params[':id']        = (int)$data['id'];
@@ -161,9 +166,9 @@ final class PdoAdsRepository implements AdsRepositoryInterface
 
         $stmt = $this->pdo->prepare("
             INSERT INTO " . self::TABLE . " (
-                campaign_id, target_type, target_value, status, views_count, clicks_count
+                campaign_id, target_type, target_value, status
             ) VALUES (
-                :campaign_id, :target_type, :target_value, :status, :views_count, :clicks_count
+                :campaign_id, :target_type, :target_value, :status
             )
         ");
         $stmt->execute($params);

@@ -675,6 +675,119 @@ ad_campaigns
 
 ---
 
+## Ad Stats & Tracking
+
+### `ad_stats` Table
+
+Stores daily aggregated statistics for each ad unit.
+
+| Column   | Type                              | Notes                                          |
+|----------|-----------------------------------|------------------------------------------------|
+| `id`     | BIGINT UNSIGNED AUTO_INCREMENT PK |                                                |
+| `ad_id`  | BIGINT UNSIGNED NOT NULL          | FK → `ads.id` ON DELETE CASCADE                |
+| `views`  | INT DEFAULT 0                     | Total views recorded for this ad on this date  |
+| `clicks` | INT DEFAULT 0                     | Total clicks recorded for this ad on this date |
+| `date`   | DATE NOT NULL                     | The calendar date of the stats record          |
+
+**Unique constraint:** `(ad_id, date)` — one row per ad per day.
+
+> **Important:** The `ads` table no longer has `views_count` or `clicks_count` columns. All statistics must be sourced from `ad_stats`.
+
+---
+
+### Recording a View
+
+```sql
+INSERT INTO ad_stats (ad_id, date, views, clicks)
+VALUES (?, CURDATE(), 1, 0)
+ON DUPLICATE KEY UPDATE views = views + 1;
+```
+
+**Deduplication:** The tracking endpoint uses a session key (`adv_{ad_id}_{YYYYMMDD}`) to prevent the same user from being counted more than once per day.
+
+---
+
+### Recording a Click
+
+```sql
+INSERT INTO ad_stats (ad_id, date, views, clicks)
+VALUES (?, CURDATE(), 0, 1)
+ON DUPLICATE KEY UPDATE clicks = clicks + 1;
+```
+
+Clicks are not deduplicated — every click is counted.
+
+---
+
+### CTR Calculation
+
+CTR (Click-Through Rate) = `clicks / views × 100`
+
+```
+CTR% = (total_clicks / total_views) × 100
+```
+
+- If `views = 0`, CTR is `0%`.
+- Displayed to two decimal places (e.g., `3.70%`).
+
+---
+
+### Tracking API Endpoints
+
+| Endpoint               | Method | Description                           |
+|------------------------|--------|---------------------------------------|
+| `/api/track_view.php`  | GET    | Record a view for `?id=AD_ID`         |
+| `/api/track_click.php` | GET    | Record a click for `?id=AD_ID`        |
+| `/api/get_ad_stats.php`| GET    | Get stats for `?ad_id=X` or `?ad_ids=1,2,3`. Optional `?days=N` for date range. |
+
+**Frontend tracking pattern:**
+```javascript
+// When an ad is displayed
+fetch('/api/track_view.php?id=' + adId);
+
+// When an ad is clicked
+fetch('/api/track_click.php?id=' + adId);
+```
+
+---
+
+### Full Tracking Flow
+
+```
+User sees ad
+    │
+    └─► fetch('/api/track_view.php?id=AD_ID')
+            │
+            ├─ Check session key → already tracked today? Stop.
+            ├─ INSERT INTO ad_stats ... ON DUPLICATE KEY UPDATE views = views + 1
+            └─ Return { success: true }
+
+User clicks ad
+    │
+    └─► fetch('/api/track_click.php?id=AD_ID')
+            │
+            ├─ INSERT INTO ad_stats ... ON DUPLICATE KEY UPDATE clicks = clicks + 1
+            └─ Return { success: true }
+
+Admin views stats
+    │
+    └─► GET /api/ads?tenant_id=X
+            │
+            └─ SQL: SELECT a.*, SUM(s.views), SUM(s.clicks) FROM ads a LEFT JOIN ad_stats s ON s.ad_id = a.id GROUP BY a.id
+```
+
+---
+
+### Stats in Admin Table
+
+The `/api/ads` endpoint now returns two additional aggregated fields per ad:
+- `views_total` — lifetime total views from `ad_stats`
+- `clicks_total` — lifetime total clicks from `ad_stats`
+
+These replace the previously removed `views_count` and `clicks_count` columns on the `ads` table.
+
+---
+
 ## Important Technical Notes
 
 1. **`ads` table has no `title` column.** Titles are always in `ad_translations`. Any query that needs the ad title must `LEFT JOIN ad_translations atr ON atr.ad_id = a.id AND atr.language_code = 'en'` and use `COALESCE(atr.title, '')`.
