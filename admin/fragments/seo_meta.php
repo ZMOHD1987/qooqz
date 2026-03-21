@@ -92,8 +92,10 @@ if (!function_exists('_st')) {
 
     <!-- Page Header -->
     <div class="page-header">
-        <h1 data-i18n="title"><?= htmlspecialchars(_st('title', 'SEO Meta Management'), ENT_QUOTES, 'UTF-8') ?></h1>
-        <p data-i18n="subtitle"><?= htmlspecialchars(_st('subtitle', 'Manage SEO metadata for products, categories, entities and pages'), ENT_QUOTES, 'UTF-8') ?></p>
+        <div class="page-header-content">
+            <h1 class="page-title" data-i18n="title"><?= htmlspecialchars(_st('title', 'SEO Meta Management'), ENT_QUOTES, 'UTF-8') ?></h1>
+            <p class="page-subtitle" data-i18n="subtitle"><?= htmlspecialchars(_st('subtitle', 'Manage SEO metadata for products, categories, entities and pages'), ENT_QUOTES, 'UTF-8') ?></p>
+        </div>
         <div class="page-header-actions">
             <?php if ($canCreate): ?>
                 <button id="btnAddSeoMeta" class="btn btn-primary" data-i18n="add_new"><?= htmlspecialchars(_st('add_new', 'Add SEO Record'), ENT_QUOTES, 'UTF-8') ?></button>

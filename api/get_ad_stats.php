@@ -40,7 +40,7 @@ if (empty($rawIds)) {
 }
 
 $days = isset($_GET['days']) && ctype_digit((string)$_GET['days']) && (int)$_GET['days'] > 0
-    ? (int)$_GET['days']
+    ? min((int)$_GET['days'], 730)
     : 0;
 
 // ── DB connection ──────────────────────────────────────────────

@@ -523,7 +523,7 @@
             var adCtr    = adViews > 0 ? (adClicks / adViews * 100).toFixed(2) + '%' : '0%';
             html += '<td>' + esc(adViews)  + '</td>';
             html += '<td>' + esc(adClicks) + '</td>';
-            html += '<td>' + esc(adCtr)    + '</td>';
+            html += '<td><span class="ctr-value">' + esc(adCtr) + '</span></td>';
             html += '<td>' + esc((ad.created_at || '').replace('T', ' ').substring(0, 16)) + '</td>';
             html += '<td><div class="row-actions">';
             if (CAN_EDIT) {
