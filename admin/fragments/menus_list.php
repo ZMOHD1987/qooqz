@@ -198,7 +198,7 @@ try {
                 </div>
 
                 <!-- Translations -->
-                <div style="margin-top:12px;border-top:1px solid #eee;padding-top:12px;">
+                <div style="margin-top:12px;border-top:1px solid var(--border-color);padding-top:12px;">
                     <h4 data-i18n="categories.form.translations">Translations</h4>
                     <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
                         <select id="catLangSelect" class="form-control" style="min-width:200px;"></select>
