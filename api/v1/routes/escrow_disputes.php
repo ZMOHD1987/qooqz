@@ -8,11 +8,11 @@ require_once $baseDir . '/shared/helpers/safe_helpers.php';
 require_once $baseDir . '/shared/config/db.php';
 
 $modelsPath = API_VERSION_PATH . '/models/escrow';
-require_once $modelsPath . '/Contracts/EscrowTransactionsRepositoryInterface.php';
-require_once $modelsPath . '/repositories/PdoEscrowTransactionsRepository.php';
-require_once $modelsPath . '/validators/EscrowTransactionsValidator.php';
-require_once $modelsPath . '/services/EscrowTransactionsService.php';
-require_once $modelsPath . '/controllers/EscrowTransactionsController.php';
+require_once $modelsPath . '/Contracts/EscrowDisputesRepositoryInterface.php';
+require_once $modelsPath . '/repositories/PdoEscrowDisputesRepository.php';
+require_once $modelsPath . '/validators/EscrowDisputesValidator.php';
+require_once $modelsPath . '/services/EscrowDisputesService.php';
+require_once $modelsPath . '/controllers/EscrowDisputesController.php';
 
 header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? '*'));
 header('Access-Control-Allow-Credentials: true');
@@ -47,9 +47,9 @@ if ($tenantId === null) {
 }
 
 try {
-    $repo       = new PdoEscrowTransactionsRepository($pdo);
-    $service    = new EscrowTransactionsService($repo);
-    $controller = new EscrowTransactionsController($service);
+    $repo       = new PdoEscrowDisputesRepository($pdo);
+    $service    = new EscrowDisputesService($repo);
+    $controller = new EscrowDisputesController($service);
 
     $page     = isset($_GET['page'])  ? max(1, (int)$_GET['page'])           : 1;
     $limit    = isset($_GET['limit']) ? min(100, max(1, (int)$_GET['limit'])) : 20;
@@ -58,12 +58,12 @@ try {
     $orderDir = $_GET['order_dir'] ?? 'DESC';
 
     $filters = [
-        'status'            => $_GET['status']            ?? null,
-        'order_id'          => isset($_GET['order_id']) && is_numeric($_GET['order_id'])          ? (int)$_GET['order_id']          : null,
-        'buyer_entity_id'   => isset($_GET['buyer_entity_id']) && is_numeric($_GET['buyer_entity_id'])   ? (int)$_GET['buyer_entity_id']   : null,
-        'seller_entity_id'  => isset($_GET['seller_entity_id']) && is_numeric($_GET['seller_entity_id'])  ? (int)$_GET['seller_entity_id']  : null,
-        'currency_code'     => $_GET['currency_code']     ?? null,
-        'search'            => $_GET['search']            ?? null,
+        'escrow_id'           => isset($_GET['escrow_id']) && is_numeric($_GET['escrow_id'])           ? (int)$_GET['escrow_id']           : null,
+        'status'              => $_GET['status']              ?? null,
+        'dispute_type'        => $_GET['dispute_type']        ?? null,
+        'raised_by_entity_id' => isset($_GET['raised_by_entity_id']) && is_numeric($_GET['raised_by_entity_id']) ? (int)$_GET['raised_by_entity_id'] : null,
+        'assigned_to'         => isset($_GET['assigned_to']) && is_numeric($_GET['assigned_to'])         ? (int)$_GET['assigned_to']         : null,
+        'search'              => $_GET['search']              ?? null,
     ];
 
     switch ($method) {
@@ -88,13 +88,13 @@ try {
         case 'POST':
             $data  = json_decode(file_get_contents('php://input'), true) ?: [];
             $newId = $controller->create($tenantId, $data);
-            ResponseFormatter::success(['id' => $newId], 'Escrow transaction created successfully', 201);
+            ResponseFormatter::success(['id' => $newId], 'Escrow dispute created successfully', 201);
             break;
 
         case 'PUT':
             $data      = json_decode(file_get_contents('php://input'), true) ?: [];
             $updatedId = $controller->update($tenantId, $data);
-            ResponseFormatter::success(['id' => $updatedId], 'Escrow transaction updated successfully');
+            ResponseFormatter::success(['id' => $updatedId], 'Escrow dispute updated successfully');
             break;
 
         case 'DELETE':
@@ -105,19 +105,19 @@ try {
                 break;
             }
             $deleted = $controller->delete($tenantId, $id);
-            ResponseFormatter::success(['deleted' => $deleted], 'Escrow transaction deleted successfully');
+            ResponseFormatter::success(['deleted' => $deleted], 'Escrow dispute deleted successfully');
             break;
 
         default:
             ResponseFormatter::error('Method not allowed', 405);
     }
 } catch (\InvalidArgumentException $e) {
-    safe_log('warning', 'escrow_transactions.validation', ['error' => $e->getMessage()]);
+    safe_log('warning', 'escrow_disputes.validation', ['error' => $e->getMessage()]);
     ResponseFormatter::error($e->getMessage(), 422);
 } catch (\RuntimeException $e) {
-    safe_log('error', 'escrow_transactions.runtime', ['error' => $e->getMessage()]);
+    safe_log('error', 'escrow_disputes.runtime', ['error' => $e->getMessage()]);
     ResponseFormatter::error($e->getMessage(), 400);
 } catch (\Throwable $e) {
-    safe_log('critical', 'escrow_transactions.fatal', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+    safe_log('critical', 'escrow_disputes.fatal', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
     ResponseFormatter::error('An unexpected error occurred', 500);
 }

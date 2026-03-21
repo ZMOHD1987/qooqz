@@ -1,140 +1,115 @@
 <?php
 declare(strict_types=1);
 
-// Error handling
-ini_set('display_errors', '0');
-ini_set('log_errors', '1');
-ini_set('error_log', __DIR__ . '/../../../logs/php_errors.log');
-
-date_default_timezone_set('Asia/Riyadh');
-
-// Load dependencies
 $baseDir = dirname(__DIR__, 2);
 require_once $baseDir . '/bootstrap.php';
 require_once $baseDir . '/shared/core/ResponseFormatter.php';
 require_once $baseDir . '/shared/helpers/safe_helpers.php';
-require_once $baseDir . '/shared/helpers/AuditLogger.php';
 require_once $baseDir . '/shared/config/db.php';
 
-// Load model classes
-$modelsPath = API_VERSION_PATH . '/models/subscriptions';
-require_once $modelsPath . '/repositories/PdoEscrowPaymentsRepository.php';
-require_once $modelsPath . '/validators/EscrowPaymentsValidator.php';
-require_once $modelsPath . '/services/EscrowPaymentsService.php';
-require_once $modelsPath . '/controllers/EscrowPaymentsController.php';
+$modelsPath = API_VERSION_PATH . '/models/escrow';
+require_once $modelsPath . '/Contracts/EscrowLedgerRepositoryInterface.php';
+require_once $modelsPath . '/repositories/PdoEscrowLedgerRepository.php';
+require_once $modelsPath . '/validators/EscrowLedgerValidator.php';
+require_once $modelsPath . '/services/EscrowLedgerService.php';
+require_once $modelsPath . '/controllers/EscrowLedgerController.php';
 
-// CORS headers
 header('Access-Control-Allow-Origin: ' . ($_SERVER['HTTP_ORIGIN'] ?? '*'));
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-API-Key');
 header('Content-Type: application/json; charset=utf-8');
 
-// Session
 if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
     session_start();
 }
 
-// Database connection
 if (!isset($GLOBALS['ADMIN_DB']) || !$GLOBALS['ADMIN_DB'] instanceof PDO) {
     ResponseFormatter::error('Database connection failed', 500);
     exit;
 }
 
+$pdo    = $GLOBALS['ADMIN_DB'];
+$method = $_SERVER['REQUEST_METHOD'];
+
+if ($method === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+$tenantId = isset($_GET['tenant_id']) && is_numeric($_GET['tenant_id'])
+    ? (int)$_GET['tenant_id']
+    : (isset($_SESSION['tenant_id']) ? (int)$_SESSION['tenant_id'] : null);
+
+if ($tenantId === null) {
+    ResponseFormatter::error('Unauthorized: tenant not found', 401);
+    exit;
+}
+
 try {
-    $pdo        = $GLOBALS['ADMIN_DB'];
-    AuditLogger::init($pdo);
-    $repo       = new PdoEscrowPaymentsRepository($pdo);
-    $service    = new EscrowPaymentsService($repo);
-    $controller = new EscrowPaymentsController($service);
-    $method     = $_SERVER['REQUEST_METHOD'];
+    $repo       = new PdoEscrowLedgerRepository($pdo);
+    $service    = new EscrowLedgerService($repo);
+    $controller = new EscrowLedgerController($service);
+
+    $page     = isset($_GET['page'])  ? max(1, (int)$_GET['page'])           : 1;
+    $limit    = isset($_GET['limit']) ? min(100, max(1, (int)$_GET['limit'])) : 20;
+    $offset   = ($page - 1) * $limit;
+    $orderBy  = $_GET['order_by']  ?? 'id';
+    $orderDir = $_GET['order_dir'] ?? 'DESC';
+
+    $filters = [
+        'escrow_id'        => isset($_GET['escrow_id']) && is_numeric($_GET['escrow_id'])        ? (int)$_GET['escrow_id']        : null,
+        'entity_id'        => isset($_GET['entity_id']) && is_numeric($_GET['entity_id'])        ? (int)$_GET['entity_id']        : null,
+        'transaction_type' => $_GET['transaction_type'] ?? null,
+        'currency_code'    => $_GET['currency_code']    ?? null,
+    ];
 
     switch ($method) {
         case 'GET':
-            if (isset($_GET['stats'])) {
-                $filters = [];
-                if (isset($_GET['status']))    $filters['status']    = $_GET['status'];
-                if (isset($_GET['date_from'])) $filters['date_from'] = $_GET['date_from'];
-                if (isset($_GET['date_to']))   $filters['date_to']   = $_GET['date_to'];
-                $stats = $controller->stats($filters);
-                ResponseFormatter::success($stats);
-                break;
-            }
-            if (isset($_GET['id']) && (int)$_GET['id'] > 0) {
-                $item = $controller->find((int)$_GET['id']);
-                if (!$item) { ResponseFormatter::error('Escrow payment not found', 404); break; }
+            if (isset($_GET['id']) && is_numeric($_GET['id'])) {
+                $item = $controller->get($tenantId, (int)$_GET['id']);
                 ResponseFormatter::success($item);
             } else {
-                $filters = [];
-                if (isset($_GET['escrow_id']))  $filters['escrow_id']  = $_GET['escrow_id'];
-                if (isset($_GET['status']))     $filters['status']     = $_GET['status'];
-                if (isset($_GET['date_from']))  $filters['date_from']  = $_GET['date_from'];
-                if (isset($_GET['date_to']))    $filters['date_to']    = $_GET['date_to'];
-                if (isset($_GET['limit']))      $filters['limit']      = $_GET['limit'];
-                if (isset($_GET['offset']))     $filters['offset']     = $_GET['offset'];
-                if (isset($_GET['order_by']))   $filters['order_by']   = $_GET['order_by'];
-                if (isset($_GET['order_dir']))  $filters['order_dir']  = $_GET['order_dir'];
-
-                $result = $controller->all($filters);
-                ResponseFormatter::success($result);
+                $result = $controller->list($tenantId, $limit, $offset, $filters, $orderBy, $orderDir);
+                ResponseFormatter::success([
+                    'items' => $result['items'],
+                    'meta'  => [
+                        'total'       => $result['total'],
+                        'page'        => $page,
+                        'per_page'    => $limit,
+                        'total_pages' => $result['total'] > 0 ? (int)ceil($result['total'] / $limit) : 0,
+                    ],
+                ]);
             }
             break;
 
         case 'POST':
-            $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-            if (isset($data['mark_success']) && isset($data['id'])) {
-                $controller->markSuccess((int)$data['id'], $data['gateway_transaction_id'] ?? '');
-                AuditLogger::log('escrow_payment_marked_success', 'escrow_payment', (int)$data['id']);
-                ResponseFormatter::success(null, 'Escrow payment marked as success');
-                break;
-            }
-            if (isset($data['mark_refunded']) && isset($data['id'])) {
-                $controller->markRefunded((int)$data['id']);
-                AuditLogger::log('escrow_payment_marked_refunded', 'escrow_payment', (int)$data['id']);
-                ResponseFormatter::success(null, 'Escrow payment marked as refunded');
-                break;
-            }
-            $errors = EscrowPaymentsValidator::validateCreate($data);
-            if ($errors) { ResponseFormatter::error(implode(', ', $errors), 422); break; }
-            $id = $controller->create($data);
-            AuditLogger::log('escrow_payment_created', 'escrow_payment', $id);
-            ResponseFormatter::success(['id' => $id], 'Escrow payment created', 201);
-            break;
-
-        case 'PUT':
-            $data = json_decode(file_get_contents('php://input'), true) ?: [];
-            $id = (int)($data['id'] ?? $_GET['id'] ?? 0);
-            if ($id <= 0) { ResponseFormatter::error('ID is required', 400); break; }
-
-            if (isset($data['mark_success'])) {
-                $controller->markSuccess($id, $data['gateway_transaction_id'] ?? '');
-                AuditLogger::log('escrow_payment_marked_success', 'escrow_payment', $id);
-                ResponseFormatter::success(null, 'Escrow payment marked as success');
-                break;
-            }
-            if (isset($data['mark_refunded'])) {
-                $controller->markRefunded($id);
-                AuditLogger::log('escrow_payment_marked_refunded', 'escrow_payment', $id);
-                ResponseFormatter::success(null, 'Escrow payment marked as refunded');
-                break;
-            }
-
-            ResponseFormatter::error('No valid action specified for PUT', 400);
+            $data  = json_decode(file_get_contents('php://input'), true) ?: [];
+            $newId = $controller->create($tenantId, $data);
+            ResponseFormatter::success(['id' => $newId], 'Escrow ledger entry created successfully', 201);
             break;
 
         case 'DELETE':
-            $id = (int)($_GET['id'] ?? 0);
-            if ($id <= 0) { ResponseFormatter::error('ID is required', 400); break; }
-            $controller->delete($id);
-            AuditLogger::log('escrow_payment_deleted', 'escrow_payment', $id);
-            ResponseFormatter::success(null, 'Escrow payment deleted');
+            $data = json_decode(file_get_contents('php://input'), true) ?: [];
+            $id   = (int)($data['id'] ?? $_GET['id'] ?? 0);
+            if ($id <= 0) {
+                ResponseFormatter::error('ID is required for deletion', 400);
+                break;
+            }
+            $deleted = $controller->delete($tenantId, $id);
+            ResponseFormatter::success(['deleted' => $deleted], 'Escrow ledger entry deleted successfully');
             break;
 
         default:
             ResponseFormatter::error('Method not allowed', 405);
     }
-} catch (Throwable $e) {
+} catch (\InvalidArgumentException $e) {
+    safe_log('warning', 'escrow_payments.validation', ['error' => $e->getMessage()]);
     ResponseFormatter::error($e->getMessage(), 422);
+} catch (\RuntimeException $e) {
+    safe_log('error', 'escrow_payments.runtime', ['error' => $e->getMessage()]);
+    ResponseFormatter::error($e->getMessage(), 400);
+} catch (\Throwable $e) {
+    safe_log('critical', 'escrow_payments.fatal', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+    ResponseFormatter::error('An unexpected error occurred', 500);
 }
-
-
