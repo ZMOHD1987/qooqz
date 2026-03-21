@@ -82,6 +82,57 @@
     to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ─── Tabs (matching products.css) ─────────────────── */
+.form-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 18px;
+    border-bottom: 2px solid var(--border-color, #263044);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tab-btn {
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary, #94a3b8);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: -2px;
+    font-family: inherit;
+}
+
+.tab-btn:hover {
+    color: var(--text-primary, #fff);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn.active {
+    color: var(--primary-color, #3b82f6);
+    border-bottom-color: var(--primary-color, #3b82f6);
+}
+
+.tab-content {
+    animation: smTabFadeIn 0.25s ease;
+}
+
+.tab-content:not(.active) {
+    display: none;
+}
+
+@keyframes smTabFadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ─── Filters ───────────────────────────────────────────── */
 .filters-grid {
     display: grid;

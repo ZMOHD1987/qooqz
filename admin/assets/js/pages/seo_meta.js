@@ -63,7 +63,7 @@
         setTimeout(function () { toast.remove(); }, 4000);
     }
 
-    /* ── Form Card helpers (inline card, NOT modal) ───── */
+    /* ── Form Card helpers ────────────────────────────── */
     function showFormCard() {
         var card = document.getElementById('seoMetaFormCard');
         if (card) card.style.display = '';
@@ -72,35 +72,54 @@
     function hideFormCard() {
         var card = document.getElementById('seoMetaFormCard');
         if (card) card.style.display = 'none';
+        // reset to general tab when closing
+        switchTab('sm-general');
     }
 
-    /* ── Translations Modal helpers ───────────────────── */
-    function openTranslationsModal() {
-        var m = document.getElementById('translationsModal');
-        if (m) m.style.display = 'flex';
+    /* ── Tab switching ────────────────────────────────── */
+    function switchTab(tabName) {
+        // deactivate all tabs & contents inside the form card
+        var card = document.getElementById('seoMetaFormCard');
+        if (!card) return;
+
+        card.querySelectorAll('.tab-btn').forEach(function (btn) {
+            btn.classList.remove('active');
+        });
+        card.querySelectorAll('.tab-content').forEach(function (pane) {
+            pane.classList.remove('active');
+            pane.style.display = 'none';
+        });
+
+        // activate the requested tab
+        var activeBtn  = card.querySelector('.tab-btn[data-tab="' + tabName + '"]');
+        var activePane = document.getElementById('tab-' + tabName);
+        if (activeBtn)  activeBtn.classList.add('active');
+        if (activePane) { activePane.classList.add('active'); activePane.style.display = ''; }
     }
 
-    function closeTranslationsModal() {
-        var m = document.getElementById('translationsModal');
-        if (m) m.style.display = 'none';
-    }
-
-    /* ── Open Add form ────────────────────────────────── */
+    /* ── Open Add form (General tab only, no Translations tab) */
     function openAddForm() {
         var form = document.getElementById('seoMetaForm');
         if (form) form.reset();
         var idEl = document.getElementById('seoMetaId');
         if (idEl) idEl.value = '';
+
+        // hide Translations tab for new records
+        var transTabBtn = document.getElementById('tabTranslationsBtn');
+        if (transTabBtn) transTabBtn.style.display = 'none';
+
         var title = document.getElementById('seoMetaFormTitle');
         if (title) title.textContent = t('modal.add_title', 'Add SEO Record');
+
+        switchTab('sm-general');
         showFormCard();
-        // scroll to form
         var card = document.getElementById('seoMetaFormCard');
         if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     /* ── Open Edit form ───────────────────────────────── */
-    function editSeoMeta(id) {
+    function editSeoMeta(id, activeTab) {
+        activeTab = activeTab || 'sm-general';
         fetch('/api/seo_meta?id=' + encodeURIComponent(id))
             .then(function (r) { return r.json(); })
             .then(function (d) {
@@ -108,6 +127,7 @@
                     var rec = d.data;
                     var idEl = document.getElementById('seoMetaId');
                     if (idEl) idEl.value = rec.id;
+
                     var et = document.getElementById('smEntityType');
                     if (et) et.value = rec.entity_type || '';
                     var ei = document.getElementById('smEntityId');
@@ -118,11 +138,27 @@
                     if (rb) rb.value = rec.robots || 'index,follow';
                     var sm = document.getElementById('smSchemaMarkup');
                     if (sm) sm.value = rec.schema_markup || '';
+
+                    // show Translations tab for existing records
+                    var transTabBtn = document.getElementById('tabTranslationsBtn');
+                    if (transTabBtn) transTabBtn.style.display = '';
+
                     var title = document.getElementById('seoMetaFormTitle');
                     if (title) title.textContent = t('modal.edit_title', 'Edit SEO Record');
+
+                    // store id for translations tab
+                    var transIdEl = document.getElementById('transSeoMetaId');
+                    if (transIdEl) transIdEl.value = rec.id;
+
+                    switchTab(activeTab);
                     showFormCard();
                     var card = document.getElementById('seoMetaFormCard');
                     if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                    // if opening on translations tab, load them
+                    if (activeTab === 'sm-translations') {
+                        loadTranslations(rec.id);
+                    }
                 } else {
                     showNotification(d.message || t('unknown_error', 'Unknown error'), 'error');
                 }
@@ -216,16 +252,16 @@
                             '<td>' + esc(item.id) + '</td>' +
                             '<td><span class="badge badge-info">' + esc(item.entity_type) + '</span></td>' +
                             '<td>' + esc(item.entity_id) + '</td>' +
-                            '<td class="sm-url-cell" title="' + esc(item.canonical_url || '') + '">' + esc(item.canonical_url || '—') + '</td>' +
+                            '<td class="sm-url-cell" title="' + esc(item.canonical_url || '') + '">' + esc(item.canonical_url || '\u2014') + '</td>' +
                             '<td>' + esc(item.robots || '') + '</td>' +
                             '<td>' + esc(item.created_at || '') + '</td>' +
                             '<td>' +
-                                (CAN_EDIT   ? '<button class="btn btn-sm btn-info edit-btn" data-id="'   + esc(item.id) + '">'
-                                                + '<i class="fas fa-edit"></i> '  + esc(t('table.edit', 'Edit'))   + '</button> ' : '') +
-                                '<button class="btn btn-sm btn-secondary translations-btn" data-id="' + esc(item.id) + '">'
-                                    + '<i class="fas fa-language"></i> ' + esc(t('table.translations', 'Translations')) + '</button> ' +
+                                (CAN_EDIT ? '<button class="btn btn-sm btn-info edit-btn" data-id="' + esc(item.id) + '">'
+                                    + '<i class="fas fa-edit"></i> ' + esc(t('table.edit', 'Edit')) + '</button> ' : '') +
+                                (CAN_EDIT ? '<button class="btn btn-sm btn-secondary translations-btn" data-id="' + esc(item.id) + '">'
+                                    + '<i class="fas fa-language"></i> ' + esc(t('table.translations', 'Translations')) + '</button> ' : '') +
                                 (CAN_DELETE ? '<button class="btn btn-sm btn-danger delete-btn" data-id="' + esc(item.id) + '">'
-                                                + '<i class="fas fa-trash"></i> ' + esc(t('table.delete', 'Delete')) + '</button>'  : '') +
+                                    + '<i class="fas fa-trash"></i> ' + esc(t('table.delete', 'Delete')) + '</button>' : '') +
                             '</td>';
                         tbody.appendChild(tr);
                     });
@@ -278,7 +314,7 @@
             } else if (i === page - 3 || i === page + 3) {
                 var sp = document.createElement('span');
                 sp.className   = 'pagination-ellipsis';
-                sp.textContent = '…';
+                sp.textContent = '\u2026';
                 pagEl.appendChild(sp);
             }
         }
@@ -302,8 +338,8 @@
         var search     = document.getElementById('filterSearch');
         var entityType = document.getElementById('filterEntityType');
         loadSeoMeta({
-            search:      search      ? search.value      : '',
-            entity_type: entityType  ? entityType.value  : '',
+            search:      search     ? search.value     : '',
+            entity_type: entityType ? entityType.value : '',
             page: 1
         });
     }
@@ -316,17 +352,7 @@
         loadSeoMeta({ page: 1 });
     }
 
-    /* ── Translations (history modal) ─────────────────── */
-    var currentTranslationSeoMetaId = null;
-
-    function openTransModal(seoMetaId) {
-        currentTranslationSeoMetaId = seoMetaId;
-        var el = document.getElementById('transSeoMetaId');
-        if (el) el.value = seoMetaId;
-        loadTranslations(seoMetaId);
-        openTranslationsModal();
-    }
-
+    /* ── Translations (inside tab) ────────────────────── */
     function loadTranslations(seoMetaId) {
         fetch('/api/seo_meta/translations?seo_meta_id=' + encodeURIComponent(seoMetaId))
             .then(function (r) { return r.json(); })
@@ -335,8 +361,8 @@
                 if (!tbody) return;
                 tbody.innerHTML = '';
                 var items = [];
-                if (d.data && d.data.items)    items = d.data.items;
-                else if (Array.isArray(d.data)) items = d.data;
+                if (d.data && d.data.items)     items = d.data.items;
+                else if (Array.isArray(d.data))  items = d.data;
 
                 if (items.length > 0) {
                     items.forEach(function (item) {
@@ -362,8 +388,12 @@
     }
 
     function saveTranslation() {
-        var seoMetaId = currentTranslationSeoMetaId;
-        if (!seoMetaId) { showNotification(t('unknown_error', 'Unknown error'), 'error'); return; }
+        var transIdEl = document.getElementById('transSeoMetaId');
+        var seoMetaId = transIdEl ? transIdEl.value : '';
+        if (!seoMetaId) {
+            showNotification(t('unknown_error', 'Unknown error'), 'error');
+            return;
+        }
 
         function gv(id) { var el = document.getElementById(id); return el ? el.value : ''; }
 
@@ -385,7 +415,8 @@
         .then(function (d) {
             if (d.success) {
                 showNotification(t('saved', 'Saved successfully'), 'success');
-                ['transMetaTitle','transMetaDescription','transMetaKeywords','transOgTitle','transOgDescription','transOgImage']
+                ['transMetaTitle','transMetaDescription','transMetaKeywords',
+                 'transOgTitle','transOgDescription','transOgImage']
                     .forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
                 loadTranslations(seoMetaId);
             } else {
@@ -396,6 +427,9 @@
 
     function deleteTranslation(id) {
         if (!confirm(t('confirm_delete_translation', 'Are you sure you want to delete this translation?'))) return;
+        var transIdEl  = document.getElementById('transSeoMetaId');
+        var seoMetaId  = transIdEl ? transIdEl.value : '';
+
         fetch('/api/seo_meta/translations?id=' + encodeURIComponent(id), {
             method:  'DELETE',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF }
@@ -404,14 +438,14 @@
         .then(function (d) {
             if (d.success) {
                 showNotification(t('deleted', 'Deleted successfully'), 'success');
-                if (currentTranslationSeoMetaId) loadTranslations(currentTranslationSeoMetaId);
+                if (seoMetaId) loadTranslations(seoMetaId);
             } else {
                 showNotification(d.message || t('delete_failed', 'Delete failed'), 'error');
             }
         });
     }
 
-    /* ── Load languages for translations modal ─────────── */
+    /* ── Load languages for translations tab ──────────── */
     function loadLanguages() {
         var select = document.getElementById('transLangCode');
         if (!select) return;
@@ -447,11 +481,35 @@
     function init() {
         reloadConfig();
 
+        // Initialise tab-content visibility to match active states declared in PHP
+        var card = document.getElementById('seoMetaFormCard');
+        if (card) {
+            card.querySelectorAll('.tab-content').forEach(function (pane) {
+                if (!pane.classList.contains('active')) pane.style.display = 'none';
+            });
+        }
+
+        /* Tab buttons (delegated inside form-card) */
+        if (card) {
+            card.addEventListener('click', function (e) {
+                var tabBtn = e.target.closest('.tab-btn');
+                if (!tabBtn) return;
+                var tabName = tabBtn.dataset.tab;
+                if (!tabName) return;
+                switchTab(tabName);
+                // when switching to translations tab, refresh the list
+                if (tabName === 'sm-translations') {
+                    var transIdEl = document.getElementById('transSeoMetaId');
+                    if (transIdEl && transIdEl.value) loadTranslations(transIdEl.value);
+                }
+            });
+        }
+
         /* Add button */
         var btnAdd = document.getElementById('btnAddSeoMeta');
         if (btnAdd) btnAdd.addEventListener('click', function () { openAddForm(); });
 
-        /* Close form card */
+        /* Close / Cancel form */
         var btnClose = document.getElementById('btnCloseForm');
         if (btnClose) btnClose.addEventListener('click', function () { hideFormCard(); });
 
@@ -477,29 +535,20 @@
             if (e.key === 'Enter') { e.preventDefault(); filterSeoMeta(); }
         });
 
-        /* Translations modal buttons */
-        var btnCloseTrans = document.getElementById('btnCloseTransModal');
-        if (btnCloseTrans) btnCloseTrans.addEventListener('click', function () { closeTranslationsModal(); });
-
-        var btnCancelTrans = document.getElementById('btnCancelTransModal');
-        if (btnCancelTrans) btnCancelTrans.addEventListener('click', function () { closeTranslationsModal(); });
-
-        var transOverlay = document.getElementById('translationsModalOverlay');
-        if (transOverlay) transOverlay.addEventListener('click', function () { closeTranslationsModal(); });
-
+        /* Add Translation button */
         var btnAddTrans = document.getElementById('btnAddTranslation');
         if (btnAddTrans) btnAddTrans.addEventListener('click', function () { saveTranslation(); });
 
-        /* Delegated events */
+        /* Delegated table-row events */
         document.addEventListener('click', function (e) {
             var editBtn = e.target.closest('.edit-btn');
-            if (editBtn) { editSeoMeta(editBtn.dataset.id); return; }
+            if (editBtn) { editSeoMeta(editBtn.dataset.id, 'sm-general'); return; }
+
+            var transBtn = e.target.closest('.translations-btn');
+            if (transBtn) { editSeoMeta(transBtn.dataset.id, 'sm-translations'); return; }
 
             var deleteBtn = e.target.closest('.delete-btn');
             if (deleteBtn) { deleteSeoMeta(deleteBtn.dataset.id); return; }
-
-            var transBtn = e.target.closest('.translations-btn');
-            if (transBtn) { openTransModal(transBtn.dataset.id); return; }
 
             var delTransBtn = e.target.closest('.delete-translation-btn');
             if (delTransBtn) { deleteTranslation(delTransBtn.dataset.id); return; }

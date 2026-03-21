@@ -119,54 +119,132 @@ if (!function_exists('_st')) {
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
                 <input type="hidden" name="id" id="seoMetaId" value="">
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="required" data-i18n="form.entity_type"><?= htmlspecialchars(_st('form.entity_type', 'Entity Type'), ENT_QUOTES, 'UTF-8') ?></label>
-                        <select name="entity_type" id="smEntityType" class="form-control" required>
-                            <option value="product" data-i18n="entity_type.product"><?= htmlspecialchars(_st('entity_type.product', 'Product'), ENT_QUOTES, 'UTF-8') ?></option>
-                            <option value="category" data-i18n="entity_type.category"><?= htmlspecialchars(_st('entity_type.category', 'Category'), ENT_QUOTES, 'UTF-8') ?></option>
-                            <option value="entity" data-i18n="entity_type.entity"><?= htmlspecialchars(_st('entity_type.entity', 'Entity'), ENT_QUOTES, 'UTF-8') ?></option>
-                            <option value="page" data-i18n="entity_type.page"><?= htmlspecialchars(_st('entity_type.page', 'Page'), ENT_QUOTES, 'UTF-8') ?></option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="required" data-i18n="form.entity_id"><?= htmlspecialchars(_st('form.entity_id', 'Entity ID'), ENT_QUOTES, 'UTF-8') ?></label>
-                        <input type="number" name="entity_id" id="smEntityId" class="form-control" required>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label data-i18n="form.canonical_url"><?= htmlspecialchars(_st('form.canonical_url', 'Canonical URL'), ENT_QUOTES, 'UTF-8') ?></label>
-                        <input type="text" name="canonical_url" id="smCanonicalUrl" class="form-control"
-                               placeholder="https://example.com/page">
-                    </div>
-                    <div class="form-group">
-                        <label data-i18n="form.robots"><?= htmlspecialchars(_st('form.robots', 'Robots'), ENT_QUOTES, 'UTF-8') ?></label>
-                        <select name="robots" id="smRobots" class="form-control">
-                            <option value="index,follow">index,follow</option>
-                            <option value="noindex,nofollow">noindex,nofollow</option>
-                            <option value="index,nofollow">index,nofollow</option>
-                            <option value="noindex,follow">noindex,follow</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label data-i18n="form.schema_markup"><?= htmlspecialchars(_st('form.schema_markup', 'Schema Markup (JSON)'), ENT_QUOTES, 'UTF-8') ?></label>
-                    <textarea name="schema_markup" id="smSchemaMarkup" class="form-control" rows="4"
-                              placeholder='{"@context":"https://schema.org"}'></textarea>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary" data-i18n="form.save">
-                        <i class="fas fa-save"></i>
-                        <span><?= htmlspecialchars(_st('form.save', 'Save'), ENT_QUOTES, 'UTF-8') ?></span>
+                <!-- Tabs Navigation -->
+                <div class="form-tabs">
+                    <button type="button" class="tab-btn active" data-tab="sm-general">
+                        <i class="fas fa-info-circle"></i>
+                        <span data-i18n="tabs.general"><?= htmlspecialchars(_st('tabs.general', 'General'), ENT_QUOTES, 'UTF-8') ?></span>
                     </button>
-                    <button type="button" class="btn btn-secondary" id="btnCancelForm" data-i18n="form.cancel">
-                        <?= htmlspecialchars(_st('form.cancel', 'Cancel'), ENT_QUOTES, 'UTF-8') ?>
+                    <button type="button" class="tab-btn" data-tab="sm-translations" id="tabTranslationsBtn" style="display:none;">
+                        <i class="fas fa-language"></i>
+                        <span data-i18n="tabs.translations"><?= htmlspecialchars(_st('tabs.translations', 'Translations'), ENT_QUOTES, 'UTF-8') ?></span>
                     </button>
                 </div>
+
+                <!-- Tab: General -->
+                <div class="tab-content active" id="tab-sm-general">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="required" data-i18n="form.entity_type"><?= htmlspecialchars(_st('form.entity_type', 'Entity Type'), ENT_QUOTES, 'UTF-8') ?></label>
+                            <select name="entity_type" id="smEntityType" class="form-control" required>
+                                <option value="product" data-i18n="entity_type.product"><?= htmlspecialchars(_st('entity_type.product', 'Product'), ENT_QUOTES, 'UTF-8') ?></option>
+                                <option value="category" data-i18n="entity_type.category"><?= htmlspecialchars(_st('entity_type.category', 'Category'), ENT_QUOTES, 'UTF-8') ?></option>
+                                <option value="entity" data-i18n="entity_type.entity"><?= htmlspecialchars(_st('entity_type.entity', 'Entity'), ENT_QUOTES, 'UTF-8') ?></option>
+                                <option value="page" data-i18n="entity_type.page"><?= htmlspecialchars(_st('entity_type.page', 'Page'), ENT_QUOTES, 'UTF-8') ?></option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="required" data-i18n="form.entity_id"><?= htmlspecialchars(_st('form.entity_id', 'Entity ID'), ENT_QUOTES, 'UTF-8') ?></label>
+                            <input type="number" name="entity_id" id="smEntityId" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label data-i18n="form.canonical_url"><?= htmlspecialchars(_st('form.canonical_url', 'Canonical URL'), ENT_QUOTES, 'UTF-8') ?></label>
+                            <input type="text" name="canonical_url" id="smCanonicalUrl" class="form-control"
+                                   placeholder="https://example.com/page">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="form.robots"><?= htmlspecialchars(_st('form.robots', 'Robots'), ENT_QUOTES, 'UTF-8') ?></label>
+                            <select name="robots" id="smRobots" class="form-control">
+                                <option value="index,follow">index,follow</option>
+                                <option value="noindex,nofollow">noindex,nofollow</option>
+                                <option value="index,nofollow">index,nofollow</option>
+                                <option value="noindex,follow">noindex,follow</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="form.schema_markup"><?= htmlspecialchars(_st('form.schema_markup', 'Schema Markup (JSON)'), ENT_QUOTES, 'UTF-8') ?></label>
+                        <textarea name="schema_markup" id="smSchemaMarkup" class="form-control" rows="4"
+                                  placeholder='{"@context":"https://schema.org"}'></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" data-i18n="form.save">
+                            <i class="fas fa-save"></i>
+                            <span><?= htmlspecialchars(_st('form.save', 'Save'), ENT_QUOTES, 'UTF-8') ?></span>
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="btnCancelForm" data-i18n="form.cancel">
+                            <?= htmlspecialchars(_st('form.cancel', 'Cancel'), ENT_QUOTES, 'UTF-8') ?>
+                        </button>
+                    </div>
+                </div><!-- /tab-sm-general -->
+
+                <!-- Tab: Translations -->
+                <div class="tab-content" id="tab-sm-translations">
+                    <input type="hidden" id="transSeoMetaId" value="">
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label data-i18n="translations.language"><?= htmlspecialchars(_st('translations.language', 'Language'), ENT_QUOTES, 'UTF-8') ?></label>
+                            <select id="transLangCode" class="form-control">
+                                <!-- Languages loaded dynamically from /api/languages -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="translations.meta_title"><?= htmlspecialchars(_st('translations.meta_title', 'Meta Title'), ENT_QUOTES, 'UTF-8') ?></label>
+                            <input type="text" id="transMetaTitle" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label data-i18n="translations.og_title"><?= htmlspecialchars(_st('translations.og_title', 'OG Title'), ENT_QUOTES, 'UTF-8') ?></label>
+                            <input type="text" id="transOgTitle" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="translations.meta_keywords"><?= htmlspecialchars(_st('translations.meta_keywords', 'Meta Keywords'), ENT_QUOTES, 'UTF-8') ?></label>
+                            <input type="text" id="transMetaKeywords" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="translations.meta_description"><?= htmlspecialchars(_st('translations.meta_description', 'Meta Description'), ENT_QUOTES, 'UTF-8') ?></label>
+                        <textarea id="transMetaDescription" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label data-i18n="translations.og_description"><?= htmlspecialchars(_st('translations.og_description', 'OG Description'), ENT_QUOTES, 'UTF-8') ?></label>
+                            <textarea id="transOgDescription" class="form-control" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="translations.og_image"><?= htmlspecialchars(_st('translations.og_image', 'OG Image'), ENT_QUOTES, 'UTF-8') ?></label>
+                            <input type="text" id="transOgImage" class="form-control" placeholder="https://...">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="btnAddTranslation" class="btn btn-primary" data-i18n="translations.add">
+                            <i class="fas fa-plus"></i>
+                            <span><?= htmlspecialchars(_st('translations.add', 'Add Translation'), ENT_QUOTES, 'UTF-8') ?></span>
+                        </button>
+                    </div>
+
+                    <div class="table-responsive" style="margin-top:18px;">
+                        <table class="data-table" id="translationsTable">
+                            <thead>
+                                <tr>
+                                    <th data-i18n="translations.language"><?= htmlspecialchars(_st('translations.language', 'Language'), ENT_QUOTES, 'UTF-8') ?></th>
+                                    <th data-i18n="translations.meta_title"><?= htmlspecialchars(_st('translations.meta_title', 'Meta Title'), ENT_QUOTES, 'UTF-8') ?></th>
+                                    <th data-i18n="translations.og_title"><?= htmlspecialchars(_st('translations.og_title', 'OG Title'), ENT_QUOTES, 'UTF-8') ?></th>
+                                    <th data-i18n="table.actions"><?= htmlspecialchars(_st('table.actions', 'Actions'), ENT_QUOTES, 'UTF-8') ?></th>
+                                </tr>
+                            </thead>
+                            <tbody id="translationsBody"></tbody>
+                        </table>
+                    </div>
+                </div><!-- /tab-sm-translations -->
+
             </form>
         </div>
     </div>
@@ -239,79 +317,6 @@ if (!function_exists('_st')) {
         </div>
     </div>
 
-    <!-- Translations Modal -->
-    <div id="translationsModal" class="modal" style="display:none;">
-        <div class="modal-overlay" id="translationsModalOverlay"></div>
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="translationsModalTitle" data-i18n="translations.title"><?= htmlspecialchars(_st('translations.title', 'SEO Translations'), ENT_QUOTES, 'UTF-8') ?></h3>
-                <button type="button" class="btn btn-sm btn-outline" id="btnCloseTransModal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="transSeoMetaId" value="">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label data-i18n="translations.language"><?= htmlspecialchars(_st('translations.language', 'Language'), ENT_QUOTES, 'UTF-8') ?></label>
-                        <select id="transLangCode" class="form-control">
-                            <!-- Languages loaded dynamically from /api/languages -->
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label data-i18n="translations.meta_title"><?= htmlspecialchars(_st('translations.meta_title', 'Meta Title'), ENT_QUOTES, 'UTF-8') ?></label>
-                        <input type="text" id="transMetaTitle" class="form-control">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label data-i18n="translations.og_title"><?= htmlspecialchars(_st('translations.og_title', 'OG Title'), ENT_QUOTES, 'UTF-8') ?></label>
-                        <input type="text" id="transOgTitle" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label data-i18n="translations.meta_keywords"><?= htmlspecialchars(_st('translations.meta_keywords', 'Meta Keywords'), ENT_QUOTES, 'UTF-8') ?></label>
-                        <input type="text" id="transMetaKeywords" class="form-control">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label data-i18n="translations.meta_description"><?= htmlspecialchars(_st('translations.meta_description', 'Meta Description'), ENT_QUOTES, 'UTF-8') ?></label>
-                    <textarea id="transMetaDescription" class="form-control" rows="3"></textarea>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label data-i18n="translations.og_description"><?= htmlspecialchars(_st('translations.og_description', 'OG Description'), ENT_QUOTES, 'UTF-8') ?></label>
-                        <textarea id="transOgDescription" class="form-control" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label data-i18n="translations.og_image"><?= htmlspecialchars(_st('translations.og_image', 'OG Image'), ENT_QUOTES, 'UTF-8') ?></label>
-                        <input type="text" id="transOgImage" class="form-control" placeholder="https://...">
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <button id="btnAddTranslation" class="btn btn-primary" data-i18n="translations.add">
-                        <i class="fas fa-plus"></i>
-                        <span><?= htmlspecialchars(_st('translations.add', 'Add Translation'), ENT_QUOTES, 'UTF-8') ?></span>
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="btnCancelTransModal" data-i18n="form.cancel">
-                        <?= htmlspecialchars(_st('form.cancel', 'Cancel'), ENT_QUOTES, 'UTF-8') ?>
-                    </button>
-                </div>
-                <div class="table-responsive" style="margin-top:18px;">
-                    <table class="data-table" id="translationsTable">
-                        <thead>
-                            <tr>
-                                <th data-i18n="translations.language"><?= htmlspecialchars(_st('translations.language', 'Language'), ENT_QUOTES, 'UTF-8') ?></th>
-                                <th data-i18n="translations.meta_title"><?= htmlspecialchars(_st('translations.meta_title', 'Meta Title'), ENT_QUOTES, 'UTF-8') ?></th>
-                                <th data-i18n="translations.og_title"><?= htmlspecialchars(_st('translations.og_title', 'OG Title'), ENT_QUOTES, 'UTF-8') ?></th>
-                                <th data-i18n="table.actions"><?= htmlspecialchars(_st('table.actions', 'Actions'), ENT_QUOTES, 'UTF-8') ?></th>
-                            </tr>
-                        </thead>
-                        <tbody id="translationsBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
 
 </div>
 
