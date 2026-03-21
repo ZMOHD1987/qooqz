@@ -1,0 +1,318 @@
+/*!
+ * /admin/assets/css/pages/bad_words.css
+ * Bad Words Management – Page‑specific styles only.
+ * Compliant with admin_framework.css and PAGE_TEMPLATE.
+ */
+
+/* ════════════════════════════════════════════════════════════
+   PAGE CONTAINER — no max‑width, fills admin‑main fully
+   ════════════════════════════════════════════════════════════ */
+.page-container {
+    width: 100%;
+    padding: clamp(10px, 2vw, 24px);
+    box-sizing: border-box;
+    color: var(--text-primary, #fff);
+    font-family: var(--body-font-family, system-ui, sans-serif);
+}
+
+/* ════════════════════════════════════════════════════════════
+   PAGE HEADER
+   ════════════════════════════════════════════════════════════ */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: clamp(8px, 1.5vw, 16px);
+    padding: clamp(12px, 2vw, 20px);
+    margin-bottom: clamp(12px, 2vw, 20px);
+    background: var(--background-secondary, #1e293b);
+    border: 1px solid var(--border-color, #334155);
+    border-radius: var(--card-border-radius, 12px);
+    flex-wrap: wrap;
+}
+.page-header-content {
+    flex: 1 1 200px;
+    min-width: 0;
+}
+.page-title {
+    margin: 0;
+    font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+    font-weight: 700;
+    color: var(--text-primary, #fff);
+    line-height: 1.2;
+}
+.page-subtitle {
+    margin: 4px 0 0;
+    font-size: clamp(0.78rem, 1.2vw, 0.9rem);
+    color: var(--text-secondary, #94a3b8);
+}
+.page-header-actions {
+    display: flex;
+    gap: clamp(6px, 1vw, 12px);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+/* ════════════════════════════════════════════════════════════
+   FILTERS
+   ════════════════════════════════════════════════════════════ */
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(clamp(140px, 18vw, 220px), 1fr));
+    gap: clamp(8px, 1.5vw, 14px);
+    align-items: end;
+}
+.filter-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: clamp(0.78rem, 1.1vw, 0.875rem);
+    color: var(--text-secondary, #94a3b8);
+    font-weight: 500;
+}
+.filter-actions {
+    display: flex;
+    gap: clamp(6px, 1vw, 10px);
+    flex-wrap: wrap;
+}
+
+/* ════════════════════════════════════════════════════════════
+   PAGE‑SPECIFIC COMPONENTS
+   ════════════════════════════════════════════════════════════ */
+
+/* Table wrapper – scrollable */
+.bad-words-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: clamp(12px, 2vw, 16px);
+}
+
+/* Check Results Panel */
+.check-results {
+    margin-top: clamp(10px, 1.5vw, 14px);
+    padding: clamp(8px, 1.5vw, 12px);
+    border: 1px solid var(--border-color, #334155);
+    border-radius: var(--border-radius, 8px);
+    background: var(--input-bg, #0b1220);
+}
+.check-found {
+    color: var(--danger-color, #ef4444);
+}
+.check-clean {
+    color: var(--success-color, #10b981);
+}
+
+/* Notification Toast */
+.bw-notifications {
+    position: fixed;
+    top: clamp(12px, 2vh, 20px);
+    right: clamp(12px, 2vw, 20px);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: min(380px, 90vw);
+}
+.bw-toast {
+    padding: clamp(8px, 1.5vw, 12px) clamp(28px, 4vw, 36px) clamp(8px, 1.5vw, 12px) clamp(12px, 2vw, 16px);
+    border-radius: var(--border-radius, 8px);
+    color: #fff;
+    font-size: clamp(0.8rem, 1vw, 0.9rem);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--background-main, #000) 70%, transparent);
+    animation: bwToastIn 0.3s ease;
+    position: relative;
+    word-break: break-word;
+}
+.bw-toast-success {
+    background: var(--success-color, #28a745);
+}
+.bw-toast-error {
+    background: var(--danger-color, #dc3545);
+}
+.bw-toast-warning {
+    background: var(--warning-color, #ffc107);
+    color: var(--text-primary, #333);
+}
+.bw-toast-info {
+    background: var(--info-color, #17a2b8);
+}
+.bw-toast-close {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 10px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+.bw-toast-close:hover {
+    opacity: 1;
+}
+@keyframes bwToastIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ════════════════════════════════════════════════════════════
+   MODAL – page‑specific (if framework lacks it)
+   ════════════════════════════════════════════════════════════ */
+.modal {
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: color-mix(in srgb, var(--background-main, #000) 70%, transparent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
+}
+.modal-content {
+    background-color: var(--card-bg, #081127);
+    padding: 0;
+    border: 1px solid var(--border-color, #334155);
+    border-radius: var(--card-border-radius, 12px);
+    width: 96vw;
+    max-width: 560px;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+.modal-content h3 {
+    margin: 0;
+    padding: clamp(12px, 2vw, 14px) clamp(14px, 2vw, 16px);
+    font-size: clamp(1rem, 1.2vw, 1.1rem);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color, #334155);
+    color: var(--text-primary, #fff);
+    background: var(--background-secondary, #1e293b);
+}
+.modal-body {
+    padding: clamp(12px, 2vw, 16px);
+    overflow-y: auto;
+    flex: 1;
+}
+.modal-footer {
+    display: flex;
+    gap: 10px;
+    padding: clamp(10px, 1.5vw, 14px) clamp(14px, 2vw, 16px);
+    border-top: 1px solid var(--border-color, #334155);
+    background: var(--background-secondary, #1e293b);
+}
+
+/* ════════════════════════════════════════════════════════════
+   RTL
+   ════════════════════════════════════════════════════════════ */
+[dir="rtl"] .page-header-actions {
+    flex-direction: row-reverse;
+}
+[dir="rtl"] .filter-actions {
+    flex-direction: row-reverse;
+}
+[dir="rtl"] .bw-notifications {
+    right: auto;
+    left: clamp(12px, 2vw, 20px);
+}
+[dir="rtl"] .bw-toast {
+    padding: clamp(8px, 1.5vw, 12px) clamp(12px, 2vw, 16px) clamp(8px, 1.5vw, 12px) clamp(28px, 4vw, 36px);
+}
+[dir="rtl"] .bw-toast-close {
+    right: auto;
+    left: 10px;
+}
+[dir="rtl"] .check-results {
+    text-align: right;
+}
+[dir="rtl"] .modal {
+    direction: rtl;
+}
+[dir="rtl"] .modal-content h3 {
+    text-align: start;
+}
+[dir="rtl"] .modal-footer {
+    flex-direction: row-reverse;
+}
+
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+    .filters-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+}
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .page-header-actions {
+        width: 100%;
+    }
+    .page-header-actions .btn {
+        flex: 1;
+        justify-content: center;
+    }
+    .filters-grid {
+        grid-template-columns: 1fr;
+    }
+    .filter-actions {
+        flex-direction: column;
+    }
+    .filter-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    .bw-notifications {
+        top: 8px;
+        right: 8px;
+        left: 8px;
+        max-width: calc(100% - 16px);
+    }
+    [dir="rtl"] .bw-notifications {
+        right: 8px;
+        left: 8px;
+    }
+    .modal {
+        padding: 0;
+        align-items: stretch;
+    }
+    .modal-content {
+        width: 100%;
+        max-width: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+        border: none;
+    }
+    .modal-body {
+        max-height: calc(100vh - 100px);
+    }
+}
+@media (max-width: 480px) {
+    .page-container {
+        padding: 8px;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   PRINT
+   ════════════════════════════════════════════════════════════ */
+@media print {
+    .page-header-actions,
+    .filter-actions,
+    .form-actions,
+    .bad-words-table-wrapper,
+    .bw-notifications,
+    .modal {
+        display: none !important;
+    }
+    .page-container {
+        padding: 0;
+    }
+}
