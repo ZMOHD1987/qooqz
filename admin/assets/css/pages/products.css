@@ -238,6 +238,17 @@ textarea.form-control {
     font-size: 0.625rem;
 }
 
+/* Language badge (EN/AR/etc) */
+.lang-badge {
+    background: var(--primary-color, #3b82f6);
+    color: var(--text-primary, #fff);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-block;
+}
+
 /* ════════════════════════════════════════════════════════════
    CATEGORIES TREE
    ════════════════════════════════════════════════════════════ */

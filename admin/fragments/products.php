@@ -377,7 +377,7 @@ if (!function_exists('prodAssetVer')) {
                     <!-- ═══════════════════════════════════════════════ -->
                     <div class="english-content-section" style="margin-top:28px; padding-top:20px; border-top:2px solid var(--primary-color,#3b82f6);">
                         <h4 style="margin-bottom:16px; color:var(--text-primary,#fff); display:flex; align-items:center; gap:10px;">
-                            <span style="background:var(--primary-color,#3b82f6); color:var(--text-primary,#fff); padding:3px 10px; border-radius:20px; font-size:0.75rem; font-weight:700;">EN</span>
+                            <span class="lang-badge">EN</span>
                             English Content <span style="color:var(--text-secondary,#94a3b8); font-size:0.8rem; font-weight:400; margin-left:6px;">(Default Language — required)</span>
                         </h4>
 
