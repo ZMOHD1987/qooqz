@@ -1,17 +1,23 @@
 <?php
 // htdocs/admin/fragments/menu_form.php
 // Fragment: Category create/edit form (AJAX-ready) designed to open inside the admin side-panel.
-// - Meta for AdminLoader: data-page="menu_form", data-assets-js/css point to per-page assets.
-// - Shows all fields, language selection for translations (panels appended below), image field, meta fields.
-// - Form submits via AJAX (menu_form.js) to /admin/fragments/menus_list.php (action=save).
-// - On success JS dispatches 'menus:saved' and 'menus:refresh' then closes panel.
-//
-// Save as UTF-8 without BOM.
 
-if (session_status() === PHP_SESSION_NONE) session_start();
+$isAjax     = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+$isEmbedded = isset($_GET['embedded']) || isset($_POST['embedded']);
+$isFragment = $isAjax || $isEmbedded;
 
-require_once __DIR__ . '/../require_permission.php';
-require_login_and_permission('manage_categories');
+if ($isFragment) {
+    require_once __DIR__ . '/../includes/admin_context.php';
+} else {
+    require_once __DIR__ . '/../includes/header.php';
+}
+
+if (!is_admin_logged_in()) {
+    if ($isFragment) { http_response_code(401); echo json_encode(['error' => 'Not authenticated']); exit; }
+    else { header('Location: /admin/login.php'); exit; }
+}
+
+if (!can('manage_categories')) { http_response_code(403); exit; }
 
 require_once __DIR__ . '/../../api/config/db.php';
 $mysqli = connectDB();
@@ -35,9 +41,7 @@ function trans($key, $fallback = '') {
     return is_string($node) ? $node : $fallback;
 }
 
-// CSRF token
-if (empty($_SESSION['csrf_token'])) $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
-$CSRF = $_SESSION['csrf_token'];
+$CSRF = admin_csrf();
 
 // Load available languages (for translation tabs)
 $langs = [];
@@ -97,7 +101,11 @@ $jsSrc   = '/admin/assets/js/pages/menu_form.js';
 ?>
 <meta data-page="menu_form" data-assets-css="<?php echo htmlspecialchars($cssHref, ENT_QUOTES, 'UTF-8'); ?>" data-assets-js="<?php echo htmlspecialchars($jsSrc, ENT_QUOTES, 'UTF-8'); ?>">
 
-<div class="category-form" lang="<?php echo htmlspecialchars($langs[$_SESSION['preferred_language']]['code'] ?? ($_SESSION['preferred_language'] ?? 'ar'), ENT_QUOTES, 'UTF-8'); ?>" style="padding:14px;max-width:920px;">
+<?php
+$lang = admin_lang();
+$dir = in_array($lang, ['ar','he','fa','ur']) ? 'rtl' : 'ltr';
+?>
+<div class="category-form" lang="<?php echo htmlspecialchars($lang, ENT_QUOTES, 'UTF-8'); ?>" dir="<?php echo $dir; ?>" style="padding:14px;max-width:920px;">
   <header class="form-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
     <h2 class="form-title"><?php echo $category['id'] ? htmlspecialchars(trans('categories.form.title_edit','Edit category')) : htmlspecialchars(trans('categories.form.title_create','Create category')); ?></h2>
     <div>
@@ -138,7 +146,7 @@ $jsSrc   = '/admin/assets/js/pages/menu_form.js';
           <textarea id="description" name="description" rows="5"><?php echo htmlspecialchars($category['description'], ENT_QUOTES, 'UTF-8'); ?></textarea>
         </div>
 
-        <fieldset class="translations-fieldset" style="margin-top:8px;border:1px solid #eee;padding:10px;border-radius:6px;">
+        <fieldset class="translations-fieldset" style="margin-top:8px;border:1px solid var(--border-color);padding:10px;border-radius:6px;">
           <legend><?php echo htmlspecialchars(trans('categories.form.translations','Translations')); ?></legend>
 
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
@@ -172,15 +180,15 @@ $jsSrc   = '/admin/assets/js/pages/menu_form.js';
       </div>
 
       <aside class="col-side" style="min-width:320px;">
-        <div style="border:1px solid #f0f0f0;padding:10px;border-radius:6px;margin-bottom:12px;">
+        <div style="border:1px solid var(--border-color);padding:10px;border-radius:6px;margin-bottom:12px;">
           <h3 style="margin:0 0 8px 0;"><?php echo htmlspecialchars(trans('categories.form.image','Image')); ?></h3>
           <div style="display:flex;gap:8px;align-items:center;">
-            <div style="width:180px;height:120px;border:1px dashed #ddd;display:flex;align-items:center;justify-content:center;background:#fafafa;">
+            <div style="width:180px;height:120px;border:1px dashed var(--border-color);display:flex;align-items:center;justify-content:center;background:var(--surface-color);">
               <?php if (!empty($category['image_url'])): ?>
                 <img id="image_preview" src="<?php echo htmlspecialchars($category['image_url'], ENT_QUOTES, 'UTF-8'); ?>" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:4px" />
               <?php else: ?>
                 <img id="image_preview" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:4px" />
-                <span id="image_placeholder" style="color:#999"><?php echo htmlspecialchars(trans('categories.form.no_image','No image')); ?></span>
+                <span id="image_placeholder" style="color:var(--text-secondary)"><?php echo htmlspecialchars(trans('categories.form.no_image','No image')); ?></span>
               <?php endif; ?>
             </div>
             <div style="flex:1;">
@@ -191,7 +199,7 @@ $jsSrc   = '/admin/assets/js/pages/menu_form.js';
           </div>
         </div>
 
-        <div style="border:1px solid #f0f0f0;padding:10px;border-radius:6px;margin-bottom:12px;">
+        <div style="border:1px solid var(--border-color);padding:10px;border-radius:6px;margin-bottom:12px;">
           <h3 style="margin:0 0 8px 0;"><?php echo htmlspecialchars(trans('categories.form.options','Options')); ?></h3>
           <label><?php echo htmlspecialchars(trans('categories.form.sort_order','Sort order')); ?><input type="number" name="sort_order" value="<?php echo (int)$category['sort_order']; ?>"></label>
           <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
@@ -211,6 +219,4 @@ $jsSrc   = '/admin/assets/js/pages/menu_form.js';
 
 <script data-no-run="1"></script>
 
-<?php
-// fragment may be loaded standalone — no footer when AJAX
-?>
+<?php if (!$isFragment) require_once __DIR__ . '/../includes/footer.php'; ?>
