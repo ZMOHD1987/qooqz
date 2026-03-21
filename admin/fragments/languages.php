@@ -119,7 +119,7 @@ $apiPath = $ADMIN_UI_PAYLOAD['api']['languages'] ?? '/api/routes/languages.php';
     <div class="page-header">
         <h2><?= htmlspecialchars(gs('languages.page_title',$flat,'Languages'),ENT_QUOTES) ?></h2>
         <?php if (!$isExternal && $canManage): ?>
-            <button id="langNew" class="btn primary">
+            <button id="langNew" class="btn btn-primary">
                 <?= htmlspecialchars(gs('languages.buttons.new',$flat,'New'),ENT_QUOTES) ?>
             </button>
         <?php endif; ?>
@@ -154,10 +154,10 @@ $apiPath = $ADMIN_UI_PAYLOAD['api']['languages'] ?? '/api/routes/languages.php';
             </div>
             
             <div class="filters-right">
-                <button type="button" id="langResetFilters" class="btn outline">
+                <button type="button" id="langResetFilters" class="btn btn-outline">
                     <?= htmlspecialchars(gs('languages.buttons.clear_filters',$flat,'Clear Filters'),ENT_QUOTES) ?>
                 </button>
-                <button type="button" id="langRefresh" class="btn primary">
+                <button type="button" id="langRefresh" class="btn btn-primary">
                     <?= htmlspecialchars(gs('languages.filters.refresh',$flat,'Refresh'),ENT_QUOTES) ?>
                 </button>
             </div>
@@ -194,10 +194,10 @@ $apiPath = $ADMIN_UI_PAYLOAD['api']['languages'] ?? '/api/routes/languages.php';
             </div>
             
             <div class="pagination-controls" id="langPager">
-                <button id="langPrev" class="btn outline" disabled>Previous</button>
+                <button id="langPrev" class="btn btn-outline" disabled>Previous</button>
                 <input id="langPageInput" type="number" min="1" style="width:var(--pagination-input-width);margin:0 10px;text-align:center;" placeholder="Page">
                 <span id="langTotalPages">of 1</span>
-                <button id="langNext" class="btn outline" disabled>Next</button>
+                <button id="langNext" class="btn btn-outline" disabled>Next</button>
             </div>
         </div>
     </div>
@@ -230,10 +230,10 @@ $apiPath = $ADMIN_UI_PAYLOAD['api']['languages'] ?? '/api/routes/languages.php';
             </div>
 
             <div class="form-actions">
-                <button type="button" id="langCancel" class="btn outline">
+                <button type="button" id="langCancel" class="btn btn-outline">
                     <?= htmlspecialchars(gs('languages.buttons.cancel',$flat,'Cancel'),ENT_QUOTES) ?>
                 </button>
-                <button type="submit" class="btn primary">
+                <button type="submit" class="btn btn-primary">
                     <?= htmlspecialchars(gs('languages.buttons.save',$flat,'Save'),ENT_QUOTES) ?>
                 </button>
             </div>

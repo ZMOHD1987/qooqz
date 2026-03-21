@@ -46,7 +46,7 @@ function t_local($k, $def='') { global $I18N; $flat = []; $f = function($a,&$out
         <canvas id="studioCanvas" style="max-width:100%;border-radius:6px;"></canvas>
       </div>
       <div style="margin-top:8px;">
-        <button id="studioUploadBtn" class="btn primary">Upload</button>
+        <button id="studioUploadBtn" class="btn btn-primary">Upload</button>
         <button id="studioClearBtn" class="btn">Clear</button>
       </div>
     </div>

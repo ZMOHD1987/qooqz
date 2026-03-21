@@ -116,12 +116,12 @@ $isStandalone = !$isFragment;
         .item .actions button { background: rgba(0,0,0,0.7); color: white; border: none; padding: 5px; cursor: pointer; border-radius: 3px; transition: background 0.2s; }
         .item .actions button:hover { background: rgba(0,0,0,0.9); }
         .actions { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; background: var(--primary); color: white; font-size: 14px; transition: background 0.2s; }
-        .btn:hover { background: var(--primary-hover); }
-        .btn.danger { background: var(--danger-color); }
-        .btn.danger:hover { background: color-mix(in srgb, var(--danger-color) 80%, #000); }
-        .btn.secondary { background: var(--border); color: var(--text-primary); }
-        .btn.secondary:hover { background: var(--background-secondary); }
+        .btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; background: var(--primary-color, var(--primary, #3b82f6)); color: white; font-size: 14px; transition: background 0.2s; }
+        .btn:hover { background: var(--primary-hover, color-mix(in srgb, var(--primary-color, #3b82f6) 85%, #000)); }
+        .btn-danger { background: var(--danger-color, #ef4444); }
+        .btn-danger:hover { background: color-mix(in srgb, var(--danger-color, #ef4444) 80%, #000); }
+        .btn-secondary { background: var(--secondary-color, var(--border, #64748b)); color: var(--text-primary, #fff); }
+        .btn-secondary:hover { background: var(--background-secondary, #475569); }
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; opacity: 0; transition: opacity 0.3s ease; }
         .modal.show { opacity: 1; }
         .modal-content { background: var(--background); width: 90%; max-width: 700px; padding: 20px; border-radius: 8px; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.5); transform: scale(0.9); transition: transform 0.3s ease; }
@@ -161,11 +161,11 @@ $isStandalone = !$isFragment;
         <h1><?= t('media_studio.title', 'Media Studio') ?></h1>
         <div class="actions">
             <button id="uploadBtn" class="btn"><?= t('media_studio.upload', 'Upload') ?></button>
-            <button id="deleteBtn" class="btn danger" style="display: none;"><?= t('media_studio.delete_selected', 'Delete Selected') ?></button>
+            <button id="deleteBtn" class="btn btn-danger" style="display: none;"><?= t('media_studio.delete_selected', 'Delete Selected') ?></button>
             <button id="cropBtn" class="btn" style="display: none;"><?= t('media_studio.crop', 'Crop') ?></button>
             <button id="downloadBtn" class="btn" style="display: none;"><?= t('media_studio.download_selected', 'Download Selected') ?></button>
             <button id="pasteBtn" class="btn"><?= t('media_studio.paste', 'Paste') ?></button>
-            <button id="useBtn" class="btn secondary" style="display: none;"><?= t('media_studio.use_selected', 'Use Selected') ?></button>
+            <button id="useBtn" class="btn btn-secondary" style="display: none;"><?= t('media_studio.use_selected', 'Use Selected') ?></button>
         </div>
     </div>
     
@@ -289,7 +289,7 @@ $isStandalone = !$isFragment;
         
         <div class="actions" style="margin-top: 10px;">
             <button id="cropSaveBtn" class="btn"><?= t('media_studio.save_crop', 'Save Cropped') ?></button>
-            <button id="cropCancelBtn" class="btn danger"><?= t('media_studio.cancel', 'Cancel') ?></button>
+            <button id="cropCancelBtn" class="btn btn-secondary"><?= t('media_studio.cancel', 'Cancel') ?></button>
         </div>
     </div>
 </div>
@@ -353,7 +353,7 @@ $isStandalone = !$isFragment;
             </div>
             <div class="actions">
                 <button type="submit" class="btn">Save</button>
-                <button type="button" id="editCancelBtn" class="btn danger">Cancel</button>
+                <button type="button" id="editCancelBtn" class="btn btn-secondary">Cancel</button>
             </div>
         </form>
     </div>
@@ -417,7 +417,7 @@ window.IMAGE_TYPES = window.IMAGES_CONFIG.imageTypes;
                     <option value="public"><?= t('media_studio.public', 'Public') ?></option>
                 </select>
                 
-                <button type="submit" style="padding:10px 20px;background: var(--primary);color:white;border:none;border-radius:6px;cursor:pointer;">
+                <button type="submit" class="btn btn-primary">
                     <?= t('media_studio.upload', 'Upload') ?>
                 </button>
             </div>

@@ -349,15 +349,15 @@
                     <td>${website}</td>
                     <td>${sortOrder}</td>
                     <td>
-                        <span class="badge ${statusClass}" style="background-color: ${item.is_active ? '#10b981' : '#ef4444'}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                        <span class="badge ${statusClass}">
                             ${statusText}
                         </span>
                     </td>
                     <td>${featuredText}</td>
                     <td>
-                        <div class="table-actions" style="display: flex; gap: 8px;">
-                            ${state.permissions.canEdit ? `<button class="btn btn-sm btn-outline" onclick="Brands.edit(${item.id})" style="padding: 4px 8px; border: 1px solid #d1d5db; background: white; color: #374151; border-radius: 4px; font-size: 12px;">${t('table.actions.edit')}</button>` : ''}
-                            ${state.permissions.canDelete ? `<button class="btn btn-sm btn-danger" onclick="Brands.remove(${item.id})" style="padding: 4px 8px; background-color: #ef4444; color: white; border: none; border-radius: 4px; font-size: 12px;">${t('table.actions.delete')}</button>` : ''}
+                        <div class="table-actions">
+                            ${state.permissions.canEdit ? `<button class="btn btn-sm btn-outline" onclick="Brands.edit(${item.id})">${t('table.actions.edit')}</button>` : ''}
+                            ${state.permissions.canDelete ? `<button class="btn btn-sm btn-danger" onclick="Brands.remove(${item.id})">${t('table.actions.delete')}</button>` : ''}
                         </div>
                     </td>
                 </tr>

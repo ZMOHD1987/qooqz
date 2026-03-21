@@ -209,7 +209,7 @@ $dir = in_array($lang, ['ar','he','fa','ur']) ? 'rtl' : 'ltr';
         </div>
 
         <div style="display:flex;gap:8px;justify-content:flex-end;">
-          <button type="submit" class="btn primary" id="saveBtn"><?php echo htmlspecialchars(trans('buttons.save','Save')); ?></button>
+          <button type="submit" class="btn btn-primary" id="saveBtn"><?php echo htmlspecialchars(trans('buttons.save','Save')); ?></button>
           <button type="button" class="btn panel-close"><?php echo htmlspecialchars(trans('buttons.cancel','Cancel')); ?></button>
         </div>
       </aside>
