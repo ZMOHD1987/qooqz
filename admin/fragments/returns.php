@@ -61,27 +61,12 @@ if (!$canView) {
     die('Access denied');
 }
 
-// ════════════════════════════════════════════════════════════
-// DB-DRIVEN CSS VARS HELPER
-// ════════════════════════════════════════════════════════════
-if (!function_exists('renderReturnsFragmentThemeVars')) {
-    function renderReturnsFragmentThemeVars(array $theme): void {
-        echo ':root {' . PHP_EOL;
-        foreach ($theme['color_settings'] ?? [] as $c) {
-            if (empty($c['setting_key']) || !isset($c['color_value'])) continue;
-            $k = htmlspecialchars($c['setting_key'], ENT_QUOTES);
-            $v = htmlspecialchars($c['color_value'], ENT_QUOTES);
-            echo "    --{$k}: {$v};" . PHP_EOL;
-        }
-        echo '}' . PHP_EOL;
-    }
-}
+// Theme CSS vars and generated_css are provided by header.php
+// via <style id="dynamic-theme-vars"> and <style id="dynamic-theme-db">.
+// No per-fragment duplication needed.
 
 $apiBase = '/api';
 ?>
-<style id="db-theme-vars-returns">
-<?php renderReturnsFragmentThemeVars($GLOBALS['ADMIN_UI']['theme'] ?? []); ?>
-</style>
 <link rel="stylesheet" href="/admin/assets/css/pages/returns.css?v=<?= time() ?>">
 
 <meta data-page="returns"

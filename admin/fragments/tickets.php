@@ -81,30 +81,14 @@ function __t(string $key, string $fallback = ''): string
     return $fallback !== '' ? $fallback : $key;
 }
 
-// ════════════════════════════════════════════════════════════
-// DB-DRIVEN CSS VARS HELPER
-// ════════════════════════════════════════════════════════════
-if (!function_exists('renderFragmentThemeVars')) {
-    function renderFragmentThemeVars(array $theme): void
-    {
-        echo ':root {' . PHP_EOL;
-        foreach ($theme['color_settings'] ?? [] as $c) {
-            if (empty($c['setting_key']) || !isset($c['color_value'])) continue;
-            $k = htmlspecialchars($c['setting_key'], ENT_QUOTES);
-            $v = htmlspecialchars($c['color_value'],  ENT_QUOTES);
-            echo "    --{$k}: {$v};" . PHP_EOL;
-        }
-        echo '}' . PHP_EOL;
-    }
-}
+// Theme CSS vars and generated_css are provided by header.php
+// via <style id="dynamic-theme-vars"> and <style id="dynamic-theme-db">.
+// No per-fragment duplication needed.
 
 $apiBase  = '/api';
 $langSafe = rawurlencode($lang);
 $v        = time(); // cache-bust
 ?>
-<style id="db-theme-vars-tickets">
-<?php renderFragmentThemeVars($GLOBALS['ADMIN_UI']['theme'] ?? []); ?>
-</style>
 <link rel="stylesheet" href="/admin/assets/css/pages/tickets.css?v=<?= $v ?>">
 
 <meta data-page="tickets"
