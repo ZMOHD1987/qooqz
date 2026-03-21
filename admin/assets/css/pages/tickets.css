@@ -45,17 +45,6 @@
 .form-control:focus { outline: none; border-color: var(--primary-color, #3b82f6); }
 
 /* Buttons */
-.btn {
-    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-    padding: 10px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 500;
-    cursor: pointer; border: 1px solid transparent; transition: all 0.2s;
-}
-.btn-primary { background: var(--primary-color, #3b82f6); color: #fff; }
-.btn-primary:hover { background: var(--primary-hover, #2563eb); }
-.btn-secondary { background: rgba(148, 163, 184, 0.1); color: var(--text-secondary); border-color: var(--border-color); }
-.btn-danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2); }
-.btn-outline { background: transparent; color: var(--text-secondary); border-color: var(--border-color); }
-.btn-sm { padding: 6px 10px; font-size: 0.85rem; }
 
 /* Tabs */
 .form-tabs { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 2px solid var(--border-color); }
