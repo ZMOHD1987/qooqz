@@ -1,38 +1,19 @@
-/* /admin/assets/css/pages/notification.css */
-
-/* ── Container ─────────────────────────────── */
-#notificationPageContainer {
-    padding: 20px;
-}
-
-/* ── Page Header ─────────────────────────────── */
-#notificationPageContainer .page-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 12px;
-}
-
-#notificationPageContainer .page-header-content h1 {
-    margin: 0;
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: var(--text-primary, #fff);
-}
-
-#notificationPageContainer .page-subtitle {
-    margin: 4px 0 0;
-    font-size: 0.9rem;
-    color: var(--text-secondary, #94a3b8);
-}
+/*!
+ * /admin/assets/css/pages/notification.css
+ * Notification Management — page-specific styles only.
+ *
+ * Rules (per PAGE_TEMPLATE.css):
+ * ✅ Only page-specific styles here
+ * ✅ All colors via var(--xxx) with fallbacks
+ * ✅ color-mix() instead of rgba()
+ * ❌ No .btn / .card / .form-control / .badge / .data-table redefined here
+ */
 
 /* ── Tabs ─────────────────────────────── */
 .notif-tabs {
     display: flex;
     gap: 4px;
-    margin-bottom: 18px;
+    margin-bottom: clamp(14px, 2vw, 18px);
     overflow-x: auto;
     scrollbar-width: none;
     flex-wrap: wrap;
@@ -46,13 +27,13 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 9px 18px;
+    padding: clamp(7px, 1.2vw, 9px) clamp(12px, 2vw, 18px);
     border: 1px solid var(--border-color, #263044);
     border-radius: 8px;
     background: var(--card-bg, #081127);
     color: var(--text-secondary, #94a3b8);
     cursor: pointer;
-    font-size: 0.875rem;
+    font-size: clamp(0.8rem, 1.5vw, 0.875rem);
     font-weight: 500;
     transition: all 0.2s ease;
     white-space: nowrap;
@@ -64,44 +45,17 @@
 }
 
 .notif-tab-btn.active {
-    background: var(--primary, #3b82f6);
-    border-color: var(--primary, #3b82f6);
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+    background: var(--primary-color, #3b82f6);
+    border-color: var(--primary-color, #3b82f6);
+    color: var(--btn-primary-text, #fff);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--primary-color, #3b82f6) 35%, transparent);
 }
 
 .notif-tab-btn i {
     font-size: 0.85rem;
 }
 
-/* ── Cards ─────────────────────────────── */
-#notificationPageContainer .card {
-    background: var(--card-bg, #081127);
-    border: 1px solid var(--border-color, #263044);
-    border-radius: 10px;
-    margin-bottom: 16px;
-}
-
-#notificationPageContainer .card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--border-color, #263044);
-}
-
-#notificationPageContainer .card-title {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-primary, #fff);
-}
-
-#notificationPageContainer .card-body {
-    padding: 18px;
-}
-
-/* ── Form card ─────────────────────────────── */
+/* ── Form card (animation only) ─────────────────────────────── */
 .form-card {
     animation: slideDown 0.2s ease;
 }
@@ -118,66 +72,11 @@
     }
 }
 
-.form-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 14px;
-    margin-bottom: 14px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.form-group label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text-secondary, #94a3b8);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-}
-
-.form-group label.required::after {
-    content: ' *';
-    color: #ef4444;
-}
-
-.form-control {
-    background: var(--input-bg, #0f1e3a);
-    border: 1px solid var(--border-color, #263044);
-    border-radius: 6px;
-    color: var(--text-primary, #fff);
-    padding: 8px 12px;
-    font-size: 0.9rem;
-    transition: border-color 0.2s;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.form-control:focus {
-    outline: none;
-    border-color: var(--primary, #3b82f6);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-}
-
-select.form-control option {
-    background: #0f1e3a;
-}
-
-.form-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 18px;
-    flex-wrap: wrap;
-}
-
-/* ── Filters ─────────────────────────────── */
+/* ── Filters (page-specific flex layout) ─────────────────────────────── */
 .filters-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 14px;
+    gap: clamp(10px, 2vw, 14px);
     align-items: flex-end;
 }
 
@@ -206,117 +105,13 @@ select.form-control option {
 
 /* ── Results count ─────────────────────────────── */
 .results-count {
-    padding: 10px 16px;
+    padding: clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 16px);
     margin-bottom: 12px;
     background: var(--card-bg, #081127);
     border: 1px solid var(--border-color, #263044);
     border-radius: 8px;
     color: var(--text-secondary, #94a3b8);
     font-size: 0.88rem;
-}
-
-/* ── Table ─────────────────────────────── */
-.table-responsive {
-    overflow-x: auto;
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.875rem;
-}
-
-.data-table th {
-    padding: 10px 12px;
-    text-align: left;
-    color: var(--text-secondary, #94a3b8);
-    font-weight: 600;
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    border-bottom: 1px solid var(--border-color, #263044);
-    white-space: nowrap;
-}
-
-[dir="rtl"] .data-table th {
-    text-align: right;
-}
-
-.data-table td {
-    padding: 10px 12px;
-    color: var(--text-primary, #fff);
-    border-bottom: 1px solid var(--border-color, #1a2d4a);
-    vertical-align: middle;
-}
-
-.data-table tr:hover td {
-    background: rgba(59, 130, 246, 0.04);
-}
-
-/* ── Badges ─────────────────────────────── */
-.badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 3px 9px;
-    border-radius: 99px;
-    font-size: 0.73rem;
-    font-weight: 600;
-    white-space: nowrap;
-}
-
-.badge-success {
-    background: rgba(34, 197, 94, 0.15);
-    color: #22c55e;
-}
-
-.badge-danger {
-    background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
-}
-
-.badge-warning {
-    background: rgba(245, 158, 11, 0.15);
-    color: #f59e0b;
-}
-
-.badge-info {
-    background: rgba(59, 130, 246, 0.15);
-    color: #3b82f6;
-}
-
-.badge-urgent {
-    background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
-}
-
-.badge-high {
-    background: rgba(245, 158, 11, 0.15);
-    color: #f59e0b;
-}
-
-.badge-normal {
-    background: rgba(34, 197, 94, 0.15);
-    color: #22c55e;
-}
-
-.badge-low {
-    background: rgba(148, 163, 184, 0.15);
-    color: #94a3b8;
-}
-
-.badge-pending {
-    background: rgba(245, 158, 11, 0.12);
-    color: #f59e0b;
-}
-
-.badge-sent {
-    background: rgba(34, 197, 94, 0.12);
-    color: #22c55e;
-}
-
-.badge-failed {
-    background: rgba(239, 68, 68, 0.12);
-    color: #ef4444;
 }
 
 /* ── Action buttons in table ─────────────────────────────── */
@@ -326,133 +121,12 @@ select.form-control option {
     flex-wrap: nowrap;
 }
 
-/* ── Buttons ─────────────────────────────── */
-.btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    border: none;
-    border-radius: 7px;
-    cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: all 0.2s;
-    white-space: nowrap;
-    text-decoration: none;
-}
-
-.btn-primary {
-    background: var(--primary, #3b82f6);
-    color: #fff;
-}
-
-.btn-primary:hover {
-    background: #2563eb;
-}
-
-.btn-secondary {
-    background: var(--secondary-bg, #1e293b);
-    color: var(--text-primary, #fff);
-    border: 1px solid var(--border-color, #263044);
-}
-
-.btn-secondary:hover {
-    background: var(--hover-bg, #334155);
-}
-
-.btn-outline {
-    background: transparent;
-    color: var(--text-secondary, #94a3b8);
-    border: 1px solid var(--border-color, #263044);
-}
-
-.btn-outline:hover {
-    background: var(--hover-bg, #0f1e3a);
-    color: var(--text-primary, #fff);
-}
-
-.btn-danger {
-    background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
-    border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-.btn-danger:hover {
-    background: rgba(239, 68, 68, 0.3);
-}
-
-.btn-sm {
-    padding: 5px 10px;
-    font-size: 0.8rem;
-}
-
-.btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* ── Pagination ─────────────────────────────── */
-.pagination-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 16px;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.pagination-info {
-    color: var(--text-secondary, #94a3b8);
-    font-size: 0.85rem;
-}
-
-.pagination {
-    display: flex;
-    gap: 4px;
-}
-
-.pagination button {
-    min-width: 34px;
-    height: 34px;
-    border: 1px solid var(--border-color, #263044);
-    border-radius: 6px;
-    background: var(--card-bg, #081127);
-    color: var(--text-secondary, #94a3b8);
-    cursor: pointer;
-    font-size: 0.85rem;
-    transition: all 0.15s;
-}
-
-.pagination button:hover {
-    background: var(--hover-bg, #0f1e3a);
-    color: var(--text-primary, #fff);
-}
-
-.pagination button.active {
-    background: var(--primary, #3b82f6);
-    border-color: var(--primary, #3b82f6);
-    color: #fff;
-}
-
-/* ── Loading / empty / error states ─────────────────────────────── */
-.loading-state,
-.empty-state,
-.error-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 50px 20px;
-    gap: 14px;
-    text-align: center;
-}
-
-.spinner {
+/* ── Loading state spinner (sub-selector only) ─────────────────────────────── */
+.loading-state .spinner {
     width: 36px;
     height: 36px;
     border: 3px solid var(--border-color, #263044);
-    border-top-color: var(--primary, #3b82f6);
+    border-top-color: var(--primary-color, #3b82f6);
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
 }
@@ -463,20 +137,19 @@ select.form-control option {
     }
 }
 
+/* ── Empty / error state icons and text ─────────────────────────────── */
 .empty-icon,
 .error-icon {
     font-size: 2.5rem;
     line-height: 1;
 }
 
-.empty-state h3,
 .error-state h3 {
     margin: 0;
     color: var(--text-primary, #fff);
     font-size: 1.05rem;
 }
 
-.empty-state p,
 .error-state p {
     margin: 0;
     color: var(--text-secondary, #94a3b8);
@@ -493,30 +166,35 @@ select.form-control option {
     vertical-align: bottom;
 }
 
-/* ── Responsive ─────────────────────────────── */
-@media (max-width: 768px) {
-    .form-row {
-        grid-template-columns: 1fr;
-    }
+/* ── Notification-specific badge variants ─────────────────────────────── */
+.badge-urgent {
+    background: color-mix(in srgb, var(--danger-color, #ef4444) 15%, transparent);
+    color: var(--danger-color, #ef4444);
+}
 
-    .filters-grid {
-        flex-direction: column;
-    }
+.badge-high {
+    background: color-mix(in srgb, var(--warning-color, #f59e0b) 15%, transparent);
+    color: var(--warning-color, #f59e0b);
+}
 
-    .filter-group {
-        min-width: auto;
-        flex: none;
-        width: 100%;
-    }
+.badge-normal {
+    background: color-mix(in srgb, var(--success-color, #22c55e) 15%, transparent);
+    color: var(--success-color, #22c55e);
+}
 
-    .notif-tabs {
-        gap: 6px;
-    }
+.badge-low {
+    background: color-mix(in srgb, var(--text-secondary, #94a3b8) 15%, transparent);
+    color: var(--text-secondary, #94a3b8);
+}
 
-    .notif-tab-btn {
-        padding: 7px 12px;
-        font-size: 0.8rem;
-    }
+.badge-sent {
+    background: color-mix(in srgb, var(--success-color, #22c55e) 12%, transparent);
+    color: var(--success-color, #22c55e);
+}
+
+.badge-failed {
+    background: color-mix(in srgb, var(--danger-color, #ef4444) 12%, transparent);
+    color: var(--danger-color, #ef4444);
 }
 
 /* ── ID Lookup Hints ─────────────────────────────── */
@@ -536,7 +214,7 @@ select.form-control option {
 
 .id-lookup-hint.loading {
     color: var(--text-secondary, #94a3b8);
-    background: rgba(148, 163, 184, 0.08);
+    background: color-mix(in srgb, var(--text-secondary, #94a3b8) 8%, transparent);
 }
 
 .id-lookup-hint.loading::before {
@@ -544,7 +222,7 @@ select.form-control option {
     display: inline-block;
     width: 10px;
     height: 10px;
-    border: 2px solid #94a3b8;
+    border: 2px solid var(--text-secondary, #94a3b8);
     border-top-color: transparent;
     border-radius: 50%;
     animation: spin 0.6s linear infinite;
@@ -553,9 +231,9 @@ select.form-control option {
 }
 
 .id-lookup-hint.found {
-    color: #22c55e;
-    background: rgba(34, 197, 94, 0.08);
-    border: 1px solid rgba(34, 197, 94, 0.2);
+    color: var(--success-color, #22c55e);
+    background: color-mix(in srgb, var(--success-color, #22c55e) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--success-color, #22c55e) 20%, transparent);
 }
 
 .id-lookup-hint.found::before {
@@ -564,12 +242,34 @@ select.form-control option {
 }
 
 .id-lookup-hint.not-found {
-    color: #ef4444;
-    background: rgba(239, 68, 68, 0.08);
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: var(--danger-color, #ef4444);
+    background: color-mix(in srgb, var(--danger-color, #ef4444) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--danger-color, #ef4444) 20%, transparent);
 }
 
 .id-lookup-hint.not-found::before {
     content: '✗ ';
     font-weight: 700;
+}
+
+/* ── Responsive ─────────────────────────────── */
+@media (max-width: 768px) {
+    .filters-grid {
+        flex-direction: column;
+    }
+
+    .filter-group {
+        min-width: auto;
+        flex: none;
+        width: 100%;
+    }
+
+    .notif-tabs {
+        gap: 6px;
+    }
+
+    .notif-tab-btn {
+        padding: 7px 12px;
+        font-size: 0.8rem;
+    }
 }
