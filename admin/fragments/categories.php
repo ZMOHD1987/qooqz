@@ -620,7 +620,7 @@ if (!function_exists('renderFragmentThemeVars')) {
             </div>
             <div style="padding:20px;">
                 <!-- Instructions -->
-                <div style="background:color-mix(in srgb, var(--info-color,#3b82f6) 8%, transparent); border:1px solid color-mix(in srgb, var(--info-color,#3b82f6) 30%, transparent); border-radius:8px; padding:12px; margin-bottom:16px; font-size:0.85rem; color:var(--text-secondary,#94a3b8);">
+                <div class="info-hint-box" style="background:color-mix(in srgb, var(--info-color,#3b82f6) 8%, transparent); border:1px solid color-mix(in srgb, var(--info-color,#3b82f6) 30%, transparent);">
                     <strong style="color:var(--text-primary,#fff);"><i class="fas fa-info-circle"></i> <span data-i18n="excel.columns_info_label"><?= __t('excel.columns_info_label', 'Excel Column Format:') ?></span></strong><br>
                     <code style="color:var(--info-color);">name</code> (required) &nbsp;|&nbsp;
                     <code style="color:var(--info-color);">parent_name</code> &nbsp;|&nbsp;
@@ -646,7 +646,7 @@ if (!function_exists('renderFragmentThemeVars')) {
                 </div>
 
                 <!-- Preview Info -->
-                <div id="catExcelPreviewInfo" style="display:none; background:color-mix(in srgb, var(--success-color,#10b981) 8%, transparent); border:1px solid color-mix(in srgb, var(--success-color,#10b981) 30%, transparent); border-radius:8px; padding:10px; margin-bottom:12px; font-size:0.85rem; color:var(--text-secondary,#94a3b8);">
+                <div id="catExcelPreviewInfo" class="success-hint-box" style="display:none;">
                     <span id="catExcelPreviewText"></span>
                 </div>
 

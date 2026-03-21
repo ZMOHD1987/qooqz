@@ -561,6 +561,35 @@
 [dir="rtl"] .af-notification { right: auto; left: 20px; }
 
 /* ════════════════════════════════════════════════════════════
+   INFO HINT BOX
+   Reusable info/notice box with tinted background
+   ════════════════════════════════════════════════════════════ */
+
+.info-hint-box {
+    background: color-mix(in srgb, var(--info-color, #3b82f6) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--info-color, #3b82f6) 25%, transparent);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #94a3b8);
+}
+
+.info-hint-box .fa-info-circle {
+    color: var(--info-color);
+}
+
+.success-hint-box {
+    background: color-mix(in srgb, var(--success-color, #10b981) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--success-color, #10b981) 30%, transparent);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 12px;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #94a3b8);
+}
+
+/* ════════════════════════════════════════════════════════════
    RESPONSIVE
    ════════════════════════════════════════════════════════════ */
 

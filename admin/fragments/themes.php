@@ -817,7 +817,7 @@ window.THEMES_CONFIG = {
             <div class="settings-header">
                 <h3 data-i18n="theme_manager_settings.translations.title">Translations</h3>
             </div>
-            <div style="background:color-mix(in srgb, var(--info-color,#3b82f6) 8%, transparent); border:1px solid color-mix(in srgb, var(--info-color,#3b82f6) 25%, transparent); border-radius:8px; padding:12px; margin-bottom:16px; font-size:0.85rem; color:var(--text-secondary,#94a3b8);">
+            <div class="info-hint-box">
                 <i class="fas fa-info-circle" style="color:var(--info-color);"></i>
                 Add translated <strong style="color:var(--text-primary,#fff);">name</strong> and <strong style="color:var(--text-primary,#fff);">description</strong> for any language.
             </div>
