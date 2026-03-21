@@ -1,0 +1,318 @@
+/*!
+ * /admin/assets/css/pages/PAGE_NAME.css
+ *
+ * ── القواعد الأساسية ───────────────────────────────────────
+ * 1. هذا الملف يحتوي فقط على styles خاصة بهذه الصفحة
+ * 2. لا تُعرِّف هنا: btn / card / form-control / badge-success
+ *    badge-danger / badge-warning / table / pagination / states
+ *    هذه كلها في admin_framework.css
+ * 3. كل قيمة لون/حجم/خط = var(--xxx) من DB
+ *    الـ hardcoded يظهر فقط كـ fallback داخل var(--x, #fallback)
+ * 4. لا rgba() مباشرة — استخدم color-mix()
+ * 5. لا px ثابتة على الـ layout — استخدم clamp() أو %
+ * 6. لا max-width على .page-container — admin-layout يتحكم بالعرض
+ *
+ * ── DB Variables المتاحة ──────────────────────────────────
+ * الألوان:
+ *   --primary-color       --primary-hover
+ *   --secondary-color     --accent-color
+ *   --success-color       --warning-color
+ *   --error-color         --danger-color
+ *   --info-color
+ *   --background-main     --background-secondary
+ *   --surface-color       --card-bg
+ *   --input-bg            --thead-bg
+ *   --text-primary        --text-secondary
+ *   --input-placeholder   --border-color
+ *
+ * الأحجام:
+ *   --border-radius       --card-border-radius
+ *
+ * الخطوط:
+ *   --body-font-family    --heading-font-family
+ *   --form-font-family    --form-font-size
+ *   --card-font-family    --card-font-size
+ *
+ * ── Status Badges الموجودة في framework (لا تُعيد تعريفها) ──
+ *   badge-active / badge-draft / badge-pending / badge-scheduled
+ *   badge-paused / badge-ended / badge-expired / badge-archived
+ *   badge-cancelled / badge-rejected / badge-failed
+ *   badge-sold / badge-completed / badge-approved
+ *   badge-primary / badge-secondary / badge-success
+ *   badge-warning / badge-danger / badge-info
+ */
+
+/* ════════════════════════════════════════════════════════════
+   PAGE CONTAINER — لا max-width، يملأ admin-main كاملاً
+   ════════════════════════════════════════════════════════════ */
+
+.page-container {
+    width: 100%;
+    padding: clamp(10px, 2vw, 24px);
+    box-sizing: border-box;
+    color: var(--text-primary, #fff);
+    font-family: var(--body-font-family, system-ui, sans-serif);
+}
+
+/* ════════════════════════════════════════════════════════════
+   PAGE HEADER
+   ════════════════════════════════════════════════════════════ */
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: clamp(8px, 1.5vw, 16px);
+    padding: clamp(12px, 2vw, 20px);
+    margin-bottom: clamp(12px, 2vw, 20px);
+    background: var(--background-secondary, #1e293b);
+    border: 1px solid var(--border-color, #334155);
+    border-radius: var(--card-border-radius, 12px);
+    flex-wrap: wrap;
+}
+
+.page-header-content { flex: 1 1 200px; min-width: 0; }
+
+.page-title {
+    margin: 0;
+    font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+    font-weight: 700;
+    color: var(--text-primary, #fff);
+    line-height: 1.2;
+}
+
+.page-subtitle {
+    margin: 4px 0 0;
+    font-size: clamp(0.78rem, 1.2vw, 0.9rem);
+    color: var(--text-secondary, #94a3b8);
+}
+
+.page-header-actions {
+    display: flex;
+    gap: clamp(6px, 1vw, 12px);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+/* ════════════════════════════════════════════════════════════
+   FILTERS
+   ════════════════════════════════════════════════════════════ */
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(clamp(140px, 18vw, 220px), 1fr));
+    gap: clamp(8px, 1.5vw, 14px);
+    align-items: end;
+}
+
+.filter-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: clamp(0.78rem, 1.1vw, 0.875rem);
+    color: var(--text-secondary, #94a3b8);
+    font-weight: 500;
+}
+
+.filter-actions {
+    display: flex;
+    gap: clamp(6px, 1vw, 10px);
+    flex-wrap: wrap;
+}
+
+/* ════════════════════════════════════════════════════════════
+   TABS  (إن وجدت)
+   ════════════════════════════════════════════════════════════ */
+
+.form-tabs {
+    display: flex;
+    margin-bottom: clamp(12px, 2vw, 20px);
+    border-bottom: 2px solid var(--border-color, #334155);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+.form-tabs::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+    flex-shrink: 0;
+    padding: clamp(8px, 1.2vw, 12px) clamp(10px, 1.5vw, 18px);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    color: var(--text-secondary, #94a3b8);
+    font-size: clamp(0.78rem, 1.1vw, 0.9rem);
+    font-weight: 500;
+    font-family: var(--body-font-family, inherit);
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.tab-btn:hover {
+    color: var(--text-primary, #fff);
+    background: color-mix(in srgb, var(--primary-color, #3b82f6) 6%, transparent);
+}
+
+.tab-btn.active {
+    color: var(--primary-color, #3b82f6);
+    border-bottom-color: var(--primary-color, #3b82f6);
+    font-weight: 600;
+}
+
+.tab-content { animation: tab-in 0.2s ease; }
+
+@keyframes tab-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ════════════════════════════════════════════════════════════
+   PAGE-SPECIFIC BADGES
+   أضف هنا فقط الـ badges الخاصة بهذه الصفحة
+   التي لا توجد في admin_framework.css
+   ════════════════════════════════════════════════════════════ */
+
+/*
+ * نموذج:
+ * .badge-CUSTOM_STATUS {
+ *     background: color-mix(in srgb, var(--primary-color, #3b82f6) 12%, transparent);
+ *     color: var(--primary-color, #3b82f6);
+ *     border: 1px solid color-mix(in srgb, var(--primary-color, #3b82f6) 30%, transparent);
+ * }
+ */
+
+/* ════════════════════════════════════════════════════════════
+   PAGE-SPECIFIC COMPONENTS
+   أضف هنا المكونات الخاصة بهذه الصفحة فقط
+   ════════════════════════════════════════════════════════════ */
+
+/*
+ * نموذج مكوّن خاص:
+ *
+ * .my-panel {
+ *     border: 1px solid var(--border-color, #334155);
+ *     border-radius: var(--border-radius, 8px);
+ *     overflow: hidden;
+ *     background: var(--background-secondary, #1e293b);
+ * }
+ *
+ * .my-panel-header {
+ *     display: flex;
+ *     justify-content: space-between;
+ *     align-items: center;
+ *     padding: clamp(10px, 1.5vw, 14px) clamp(12px, 1.8vw, 16px);
+ *     background: color-mix(in srgb, var(--primary-color, #3b82f6) 6%, transparent);
+ *     border-bottom: 1px solid var(--border-color, #334155);
+ *     flex-wrap: wrap;
+ *     gap: 8px;
+ * }
+ *
+ * .my-panel-header h5 {
+ *     margin: 0;
+ *     font-size: clamp(0.85rem, 1.3vw, 0.95rem);
+ *     font-weight: 600;
+ *     color: var(--primary-color, #3b82f6);
+ *     display: flex;
+ *     align-items: center;
+ *     gap: 8px;
+ * }
+ *
+ * .my-stats-grid {
+ *     display: grid;
+ *     grid-template-columns: repeat(auto-fit, minmax(clamp(100px, 15vw, 160px), 1fr));
+ *     gap: 1px;
+ *     background: var(--border-color, #334155);
+ * }
+ *
+ * .my-stat {
+ *     padding: clamp(10px, 1.5vw, 16px) clamp(8px, 1vw, 12px);
+ *     text-align: center;
+ *     background: var(--background-secondary, #1e293b);
+ * }
+ *
+ * .my-stat-value {
+ *     font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+ *     font-weight: 700;
+ *     color: var(--text-primary, #fff);
+ * }
+ *
+ * .my-stat-label {
+ *     font-size: clamp(0.65rem, 0.9vw, 0.72rem);
+ *     color: var(--text-secondary, #94a3b8);
+ *     margin-top: 3px;
+ *     text-transform: uppercase;
+ *     letter-spacing: 0.04em;
+ * }
+ */
+
+/* ════════════════════════════════════════════════════════════
+   PRICE / NUMBER HELPERS  (إن احتجتها)
+   ════════════════════════════════════════════════════════════ */
+
+/*
+ * .price-positive { color: var(--success-color, #10b981); font-weight: 700; }
+ * .price-negative { color: var(--error-color,   #ef4444); font-weight: 700; }
+ * .price-neutral  { color: var(--text-secondary, #94a3b8); }
+ */
+
+/* ════════════════════════════════════════════════════════════
+   RTL
+   ════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] .page-header-actions { flex-direction: row-reverse; }
+[dir="rtl"] .filter-actions      { flex-direction: row-reverse; }
+/*
+ * أضف هنا أي RTL خاص بمكوناتك:
+ * [dir="rtl"] .my-panel-header { flex-direction: row-reverse; }
+ */
+
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ════════════════════════════════════════════════════════════ */
+
+/* Tablet 1024px */
+@media (max-width: 1024px) {
+    .filters-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+}
+
+/* Mobile 768px */
+@media (max-width: 768px) {
+    .page-header          { flex-direction: column; align-items: stretch; }
+    .page-title           { font-size: 1.2rem; }
+    .page-header-actions  { width: 100%; }
+    .page-header-actions .btn { flex: 1; justify-content: center; }
+    .filters-grid         { grid-template-columns: 1fr; }
+    .filter-actions       { flex-direction: column; }
+    .filter-actions .btn  { width: 100%; justify-content: center; }
+    /*
+     * أضف هنا تعديلات الموبايل الخاصة بمكوناتك:
+     * .my-stats-grid { grid-template-columns: repeat(2, 1fr); }
+     */
+}
+
+/* Small Mobile 480px */
+@media (max-width: 480px) {
+    .page-container { padding: 8px; }
+    /*
+     * .my-stat { padding: 10px 6px; }
+     */
+}
+
+/* ════════════════════════════════════════════════════════════
+   PRINT
+   ════════════════════════════════════════════════════════════ */
+
+@media print {
+    .page-header-actions,
+    .filter-card,
+    .form-actions,
+    .table-actions,
+    .pagination-wrapper { display: none !important; }
+    .page-container     { padding: 0; }
+}

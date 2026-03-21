@@ -1,0 +1,532 @@
+/*!
+ * /admin/assets/css/pages/addresses.css — v3.0
+ *
+ * كل قيمة = var(--hyphen, var(--underscore, fallback))
+ * يغطي كلا صيغتي DB:
+ *   --primary_color   (underscore — DB مباشرة)
+ *   --primary-color   (hyphen — يُولِّدها header.php / fragment inject)
+ *
+ * جميع الـ selectors مقيّدة بـ #addressesPage
+ */
+
+/* ════════════════════════════════════════════════════════════
+   PAGE CONTAINER
+   ════════════════════════════════════════════════════════════ */
+
+#addressesPage {
+    width: 100%;
+    padding: clamp(10px, 2vw, 18px);
+    box-sizing: border-box;
+    color: var(--text-primary, var(--text_primary, #fff));
+    font-family: var(--body-font-family, var(--body_font_family, system-ui, sans-serif));
+}
+
+/* ════════════════════════════════════════════════════════════
+   PAGE HEADER
+   ════════════════════════════════════════════════════════════ */
+
+#addressesPage .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: clamp(8px, 1.5vw, 12px);
+    padding: clamp(12px, 2vw, 16px);
+    margin-bottom: clamp(12px, 2vw, 18px);
+    background: var(--background-secondary, var(--background_secondary, #1e293b));
+    border: 1px solid var(--border-color, var(--border_color, #334155));
+    border-radius: var(--card-border-radius, var(--border-radius, var(--border_radius, 12px)));
+}
+
+#addressesPage .page-title {
+    margin: 0 0 4px;
+    font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+    font-weight: 700;
+    color: var(--text-primary, var(--text_primary, #fff));
+    line-height: 1.2;
+}
+
+#addressesPage .page-subtitle {
+    margin: 0;
+    font-size: clamp(0.8rem, 1.2vw, 0.9375rem);
+    color: var(--text-secondary, var(--text_secondary, #94a3b8));
+}
+
+/* ════════════════════════════════════════════════════════════
+   BUTTONS
+   ════════════════════════════════════════════════════════════ */
+
+#addressesPage .btn {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: var(--border-radius, var(--border_radius, 8px));
+    cursor: pointer;
+    font-weight: 600;
+    font-family: var(--body-font-family, var(--body_font_family, inherit));
+    font-size: 0.9rem;
+    transition: filter 0.2s, background 0.2s, border-color 0.2s;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    text-decoration: none;
+    line-height: 1;
+}
+
+#addressesPage .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+#addressesPage .btn-primary {
+    background: var(--primary-color, var(--primary_color, #3b82f6));
+    color: #fff;
+    border-color: var(--primary-color, var(--primary_color, #3b82f6));
+}
+#addressesPage .btn-primary:hover:not(:disabled) {
+    background: var(--primary-hover, var(--primary_hover, var(--primary-color, #3b82f6)));
+    filter: brightness(0.9);
+}
+
+#addressesPage .btn-secondary {
+    background: var(--secondary-color, var(--secondary_color, #64748b));
+    color: #fff;
+    border-color: var(--secondary-color, var(--secondary_color, #64748b));
+}
+#addressesPage .btn-secondary:hover:not(:disabled) { filter: brightness(0.85); }
+
+#addressesPage .btn-outline {
+    background: transparent;
+    color: var(--text-primary, var(--text_primary, #fff));
+    border-color: var(--border-color, var(--border_color, #334155));
+}
+#addressesPage .btn-outline:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--primary-color, var(--primary_color, #3b82f6)) 8%, transparent);
+    border-color: var(--primary-color, var(--primary_color, #3b82f6));
+    color: var(--primary-color, var(--primary_color, #3b82f6));
+}
+
+#addressesPage .btn-danger {
+    background: var(--danger-color, var(--danger_color, var(--error-color, var(--error_color, #ef4444))));
+    color: #fff;
+    border-color: var(--danger-color, var(--danger_color, #ef4444));
+}
+#addressesPage .btn-danger:hover:not(:disabled) { filter: brightness(0.85); }
+
+#addressesPage .btn-sm { padding: 5px 8px; font-size: 0.82rem; }
+
+/* ════════════════════════════════════════════════════════════
+   CARDS
+   ════════════════════════════════════════════════════════════ */
+
+#addressesPage .card {
+    background: var(--card-bg, var(--card_bg, var(--background-secondary, var(--background_secondary, #1e293b))));
+    border: 1px solid var(--border-color, var(--border_color, #334155));
+    border-radius: var(--card-border-radius, var(--border-radius, var(--border_radius, 12px)));
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+#addressesPage .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color, var(--border_color, #334155));
+    background: var(--surface-color, var(--background-secondary, var(--background_secondary, #1e293b)));
+}
+
+#addressesPage .card-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary, var(--text_primary, #fff));
+}
+
+#addressesPage .card-body { padding: clamp(10px, 2vw, 16px); }
+
+/* ════════════════════════════════════════════════════════════
+   SUPER-ADMIN NOTICE
+   ════════════════════════════════════════════════════════════ */
+
+#addressesPage .super-admin-notice {
+    padding: 10px 12px;
+    background: color-mix(in srgb, var(--primary-color, var(--primary_color, #3b82f6)) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--primary-color, var(--primary_color, #3b82f6)) 30%, transparent);
+    border-radius: var(--border-radius, var(--border_radius, 6px));
+    margin-bottom: 14px;
+    color: var(--primary-color, var(--primary_color, #3b82f6));
+    font-size: 0.875rem;
+}
+
+/* ════════════════════════════════════════════════════════════
+   FORM
+   ════════════════════════════════════════════════════════════ */
+
+#addressesPage .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(clamp(160px, 20vw, 220px), 1fr));
+    gap: clamp(8px, 1.5vw, 12px);
+    margin-bottom: 12px;
+}
+
+#addressesPage .form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+#addressesPage .form-group label {
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+    color: var(--text-secondary, var(--text_secondary, #94a3b8));
+    font-weight: 500;
+}
+
+#addressesPage .required {
+    color: var(--danger-color, var(--danger_color, #ef4444));
+}
+
+#addressesPage .form-control,
+#addressesPage input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+#addressesPage select,
+#addressesPage textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: var(--border-radius, var(--border_radius, 8px));
+    background: var(--input-bg, var(--input_bg, var(--input-background, var(--input_background, var(--surface-color, #0f172a)))));
+    color: var(--text-primary, var(--text_primary, #fff));
+    border: 1px solid var(--border-color, var(--border_color, #334155));
+    font-family: var(--body-font-family, var(--body_font_family, inherit));
+    font-size: 0.9rem;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#addressesPage .form-control:focus,
+#addressesPage input:focus,
+#addressesPage select:focus,
+#addressesPage textarea:focus {
+    outline: none;
+    border-color: var(--primary-color, var(--primary_color, #3b82f6));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color, var(--primary_color, #3b82f6)) 15%, transparent);
+}
+
+#addressesPage .form-control::placeholder,
+#addressesPage input::placeholder {
+    color: var(--input-placeholder, var(--input_placeholder, var(--text-secondary, #64748b)));
+    opacity: 0.8;
+}
+
+#addressesPage select option {
+    background: var(--background-secondary, var(--background_secondary, #1e293b));
+    color: var(--text-primary, var(--text_primary, #fff));
+}
+
+#addressesPage .form-control.is-invalid,
+#addressesPage input.is-invalid,
+#addressesPage select.is-invalid {
+    border-color: var(--danger-color, var(--danger_color, #ef4444));
+}
+
+#addressesPage .invalid-feedback {
+    display: none;
+    margin-top: 4px;
+    font-size: 0.82rem;
+    color: var(--danger-color, var(--danger_color, #ef4444));
+}
+
+#addressesPage .form-control.is-invalid ~ .invalid-feedback { display: block; }
+
+#addressesPage .form-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-color, var(--border_color, #334155));
+    margin-top: 14px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   FILTERS
+   ════════════════════════════════════════════════════════════ */
+
+#addressesPage .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(clamp(140px, 18vw, 180px), 1fr));
+    gap: clamp(8px, 1.5vw, 10px);
+    align-items: end;
+}
+
+/* ════════════════════════════════════════════════════════════
+   DATA TABLE
+   ════════════════════════════════════════════════════════════ */
+
+#addressesPage .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+}
+
+#addressesPage .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+#addressesPage .data-table thead {
+    background: var(--thead-bg, var(--thead_bg, var(--surface-color, #0f172a)));
+    border-bottom: 2px solid var(--border-color, var(--border_color, #334155));
+}
+
+#addressesPage .data-table th {
+    padding: 10px 12px;
+    text-align: start;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary, var(--text_secondary, #94a3b8));
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+#addressesPage .data-table td {
+    padding: 10px 12px;
+    text-align: start;
+    color: var(--text-primary, var(--text_primary, #fff));
+    border-bottom: 1px solid var(--border-color, var(--border_color, #334155));
+    vertical-align: middle;
+}
+
+#addressesPage .data-table tbody tr:last-child td { border-bottom: none; }
+
+#addressesPage .data-table tbody tr:hover {
+    background: color-mix(in srgb, var(--primary-color, var(--primary_color, #3b82f6)) 4%, transparent);
+}
+
+/* ════════════════════════════════════════════════════════════
+   TABLE ACTIONS
+   ════════════════════════════════════════════════════════════ */
+
+#addressesPage .table-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+#addressesPage .table-actions .btn { padding: 5px 8px; font-size: 0.82rem; }
+
+/* ════════════════════════════════════════════════════════════
+   BADGES
+   ════════════════════════════════════════════════════════════ */
+
+#addressesPage .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+#addressesPage .badge-active {
+    background: color-mix(in srgb, var(--success-color, var(--success_color, #10b981)) 14%, transparent);
+    color: var(--success-color, var(--success_color, #10b981));
+    border: 1px solid color-mix(in srgb, var(--success-color, var(--success_color, #10b981)) 30%, transparent);
+}
+
+#addressesPage .badge-inactive {
+    background: color-mix(in srgb, var(--danger-color, var(--danger_color, #ef4444)) 14%, transparent);
+    color: var(--danger-color, var(--danger_color, #ef4444));
+    border: 1px solid color-mix(in srgb, var(--danger-color, var(--danger_color, #ef4444)) 30%, transparent);
+}
+
+/* ════════════════════════════════════════════════════════════
+   STATES
+   ════════════════════════════════════════════════════════════ */
+
+#addressesPage .loading-state,
+#addressesPage .empty-state,
+#addressesPage .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(24px, 4vw, 40px) 20px;
+    text-align: center;
+    gap: 8px;
+    color: var(--text-secondary, var(--text_secondary, #94a3b8));
+}
+
+#addressesPage .loading-state .spinner {
+    width: 38px;
+    height: 38px;
+    border: 3px solid var(--border-color, var(--border_color, #334155));
+    border-top-color: var(--primary-color, var(--primary_color, #3b82f6));
+    border-radius: 50%;
+    animation: addr-spin 0.9s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes addr-spin { to { transform: rotate(360deg); } }
+
+#addressesPage .empty-state h3,
+#addressesPage .error-state h3 {
+    margin: 4px 0 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary, var(--text_primary, #fff));
+}
+
+#addressesPage .empty-state p,
+#addressesPage .error-state p {
+    margin: 4px 0 12px;
+    font-size: 0.9rem;
+}
+
+/* ════════════════════════════════════════════════════════════
+   PAGINATION
+   ════════════════════════════════════════════════════════════ */
+
+#addressesPage .pagination-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color, var(--border_color, #334155));
+}
+
+#addressesPage .pagination-info {
+    font-size: 0.875rem;
+    color: var(--text-secondary, var(--text_secondary, #94a3b8));
+}
+
+#addressesPage .pagination { display: flex; gap: 4px; flex-wrap: wrap; }
+
+#addressesPage .page-btn {
+    min-width: 34px;
+    height: 34px;
+    padding: 0 8px;
+    border-radius: var(--border-radius, var(--border_radius, 6px));
+    border: 1px solid var(--border-color, var(--border_color, #334155));
+    background: transparent;
+    color: var(--text-primary, var(--text_primary, #fff));
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-family: var(--body-font-family, inherit);
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#addressesPage .page-btn:hover:not(:disabled) {
+    background: var(--primary-color, var(--primary_color, #3b82f6));
+    border-color: var(--primary-color, var(--primary_color, #3b82f6));
+    color: #fff;
+}
+
+#addressesPage .page-btn.active {
+    background: var(--primary-color, var(--primary_color, #3b82f6));
+    border-color: var(--primary-color, var(--primary_color, #3b82f6));
+    color: #fff;
+    font-weight: 600;
+}
+
+#addressesPage .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+#addressesPage .page-ellipsis {
+    padding: 0 4px;
+    color: var(--text-secondary, var(--text_secondary, #94a3b8));
+    display: inline-flex;
+    align-items: center;
+}
+
+/* ════════════════════════════════════════════════════════════
+   RESULTS COUNT
+   ════════════════════════════════════════════════════════════ */
+
+#addressesPage .results-count {
+    color: var(--text-secondary, var(--text_secondary, #94a3b8));
+    font-size: 0.875rem;
+    animation: addr-fade 0.3s ease-in;
+}
+
+#addressesPage .results-count i {
+    margin-inline-end: 6px;
+    color: var(--primary-color, var(--primary_color, #3b82f6));
+}
+
+@keyframes addr-fade {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ════════════════════════════════════════════════════════════
+   RTL
+   ════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] #addressesPage                     { direction: rtl; }
+[dir="rtl"] #addressesPage .page-header        { flex-direction: row-reverse; }
+[dir="rtl"] #addressesPage .card-header        { flex-direction: row-reverse; }
+[dir="rtl"] #addressesPage .form-actions       { flex-direction: row-reverse; }
+[dir="rtl"] #addressesPage .table-actions      { flex-direction: row-reverse; }
+[dir="rtl"] #addressesPage .pagination-wrapper { flex-direction: row-reverse; }
+[dir="rtl"] #addressesPage .pagination         { flex-direction: row-reverse; }
+[dir="rtl"] #addressesPage .data-table         { direction: rtl; }
+[dir="rtl"] #addressesPage .data-table th,
+[dir="rtl"] #addressesPage .data-table td      { text-align: start; }
+[dir="rtl"] #addressesPage input,
+[dir="rtl"] #addressesPage select,
+[dir="rtl"] #addressesPage textarea            { direction: rtl; text-align: start; }
+
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1024px) {
+    #addressesPage .form-row     { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+    #addressesPage .filters-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+}
+
+@media (max-width: 768px) {
+    #addressesPage                     { padding: 10px; }
+    #addressesPage .page-header        { flex-direction: column; align-items: stretch; }
+    #addressesPage .page-header .btn   { width: 100%; justify-content: center; }
+    #addressesPage .form-row           { grid-template-columns: 1fr; }
+    #addressesPage .filters-grid       { grid-template-columns: 1fr; }
+    #addressesPage .form-actions       { flex-direction: column; }
+    #addressesPage .form-actions .btn  { width: 100%; justify-content: center; }
+    #addressesPage .card-header        { flex-direction: column; align-items: stretch; }
+    #addressesPage .pagination-wrapper { flex-direction: column; align-items: stretch; }
+    #addressesPage .pagination         { justify-content: center; }
+    #addressesPage .data-table th,
+    #addressesPage .data-table td      { padding: 8px 6px; font-size: 0.82rem; }
+}
+
+@media (max-width: 480px) {
+    #addressesPage                     { padding: 8px; }
+    #addressesPage .page-title         { font-size: 1.1rem; }
+    #addressesPage input,
+    #addressesPage select,
+    #addressesPage textarea            { font-size: 16px !important; } /* iOS zoom prevention */
+    #addressesPage .data-table th,
+    #addressesPage .data-table td      { font-size: 0.78rem; padding: 6px 4px; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   PRINT
+   ════════════════════════════════════════════════════════════ */
+
+@media print {
+    #addressesPage .form-card,
+    #addressesPage .form-actions,
+    #addressesPage .table-actions,
+    #btnAddAddress, #btnCloseForm,
+    #btnDeleteAddress, #btnGetLocation { display: none !important; }
+    #addressesPage { padding: 0; }
+}

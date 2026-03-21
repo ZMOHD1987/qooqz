@@ -1,0 +1,167 @@
+/*!
+ * admin/assets/js/sidebar-toggle.js
+ * Sidebar toggle with auto-close on navigation
+ */
+(function () {
+  'use strict';
+
+  if (window.SidebarToggle && window.SidebarToggle.__installed) return;
+
+  var SidebarToggle = { __installed: true };
+
+  // ════════════════════════════════════════════════════════════
+  // Helpers
+  // ════════════════════════════════════════════════════════════
+  
+  function log() {
+    if (console && console.log) console.log.apply(console, arguments);
+  }
+
+  function findToggle() {
+    return document.getElementById('sidebarToggle') ||
+           document.querySelector('[data-sidebar-toggle]');
+  }
+
+  function findSidebar() {
+    return document.getElementById('adminSidebar') ||
+           document.querySelector('.admin-sidebar');
+  }
+
+  function findBackdrop() {
+    return document.querySelector('.sidebar-backdrop');
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // State
+  // ════════════════════════════════════════════════════════════
+  
+  function isOpen() {
+    return document.body.classList.contains('sidebar-open');
+  }
+
+  function openSidebar() {
+    document.body.classList.add('sidebar-open');
+    
+    var toggle = findToggle();
+    if (toggle) toggle.setAttribute('aria-expanded', 'true');
+    
+    log('✓ Sidebar opened');
+  }
+
+  function closeSidebar() {
+    document.body.classList.remove('sidebar-open');
+    
+    var toggle = findToggle();
+    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    
+    log('✓ Sidebar closed');
+  }
+
+  function toggleSidebar() {
+    if (isOpen()) {
+      closeSidebar();
+    } else {
+      openSidebar();
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // Events
+  // ════════════════════════════════════════════════════════════
+  
+  function bindEvents() {
+    var toggle = findToggle();
+    var sidebar = findSidebar();
+    var backdrop = findBackdrop();
+
+    if (!toggle || !sidebar) {
+      console.warn('⚠ Sidebar elements missing');
+      return;
+    }
+
+    // 1. Toggle button click
+    toggle.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleSidebar();
+    });
+
+    // 2. Backdrop click
+    if (backdrop) {
+      backdrop.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeSidebar();
+      });
+    }
+
+    // 3. ESC key
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && isOpen()) {
+        closeSidebar();
+      }
+    });
+
+    // 4. CRITICAL: Close on link click (mobile)
+    sidebar.addEventListener('click', function (e) {
+      // Find clicked link
+      var link = e.target.closest('a');
+      if (!link) return;
+      
+      var href = link.getAttribute('href') || '';
+      
+      // Ignore hash links and javascript:
+      if (href === '#' || href.indexOf('javascript:') === 0) return;
+      
+      // Close sidebar after short delay (allow navigation to start)
+      setTimeout(function() {
+        closeSidebar();
+        log('✓ Sidebar auto-closed after navigation');
+      }, 150);
+    });
+
+    // 5. Close sidebar on window resize (desktop)
+    var resizeTimer;
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function() {
+        if (window.innerWidth > 768 && isOpen()) {
+          closeSidebar();
+        }
+      }, 200);
+    });
+
+    log('✓ SidebarToggle events bound');
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // Init
+  // ════════════════════════════════════════════════════════════
+  
+  function init() {
+    // Ensure sidebar is closed on page load (mobile)
+    if (window.innerWidth <= 768) {
+      closeSidebar();
+    }
+
+    bindEvents();
+
+    // Expose API
+    SidebarToggle.open = openSidebar;
+    SidebarToggle.close = closeSidebar;
+    SidebarToggle.toggle = toggleSidebar;
+    SidebarToggle.isOpen = isOpen;
+    
+    window.SidebarToggle = SidebarToggle;
+    
+    log('✓ SidebarToggle initialized');
+  }
+
+  // Run
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+})();
