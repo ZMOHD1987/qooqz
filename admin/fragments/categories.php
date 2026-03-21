@@ -613,23 +613,23 @@ if (!function_exists('renderFragmentThemeVars')) {
         <div style="background:var(--card-bg,#081127); border:1px solid var(--border-color,#263044); border-radius:12px; width:min(700px,95vw); max-height:90vh; overflow-y:auto; padding:0;">
             <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid var(--border-color,#263044);">
                 <h3 style="margin:0; color:var(--text-primary,#fff); font-size:1.1rem;">
-                    <i class="fas fa-file-excel" style="color:#22c55e; margin-right:8px;"></i>
+                    <i class="fas fa-file-excel" style="color:var(--success-color); margin-right:8px;"></i>
                     <span data-i18n="excel.title"><?= __t('excel.title', 'Import Categories from Excel / CSV') ?></span>
                 </h3>
                 <button type="button" id="catExcelImportClose" style="background:none; border:none; color:var(--text-secondary,#94a3b8); cursor:pointer; font-size:1.2rem;">&times;</button>
             </div>
             <div style="padding:20px;">
                 <!-- Instructions -->
-                <div style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.3); border-radius:8px; padding:12px; margin-bottom:16px; font-size:0.85rem; color:var(--text-secondary,#94a3b8);">
+                <div style="background:color-mix(in srgb, var(--info-color,#3b82f6) 8%, transparent); border:1px solid color-mix(in srgb, var(--info-color,#3b82f6) 30%, transparent); border-radius:8px; padding:12px; margin-bottom:16px; font-size:0.85rem; color:var(--text-secondary,#94a3b8);">
                     <strong style="color:var(--text-primary,#fff);"><i class="fas fa-info-circle"></i> <span data-i18n="excel.columns_info_label"><?= __t('excel.columns_info_label', 'Excel Column Format:') ?></span></strong><br>
-                    <code style="color:#60a5fa;">name</code> (required) &nbsp;|&nbsp;
-                    <code style="color:#60a5fa;">parent_name</code> &nbsp;|&nbsp;
-                    <code style="color:#60a5fa;">level</code> &nbsp;|&nbsp;
-                    <code style="color:#60a5fa;">slug</code> &nbsp;|&nbsp;
-                    <code style="color:#60a5fa;">description</code> &nbsp;|&nbsp;
-                    <code style="color:#60a5fa;">sort_order</code> &nbsp;|&nbsp;
-                    <code style="color:#60a5fa;">is_active</code> &nbsp;|&nbsp;
-                    <code style="color:#60a5fa;">is_featured</code><br>
+                    <code style="color:var(--info-color);">name</code> (required) &nbsp;|&nbsp;
+                    <code style="color:var(--info-color);">parent_name</code> &nbsp;|&nbsp;
+                    <code style="color:var(--info-color);">level</code> &nbsp;|&nbsp;
+                    <code style="color:var(--info-color);">slug</code> &nbsp;|&nbsp;
+                    <code style="color:var(--info-color);">description</code> &nbsp;|&nbsp;
+                    <code style="color:var(--info-color);">sort_order</code> &nbsp;|&nbsp;
+                    <code style="color:var(--info-color);">is_active</code> &nbsp;|&nbsp;
+                    <code style="color:var(--info-color);">is_featured</code><br>
                     <small data-i18n="excel.columns_info"><?= __t('excel.columns_info', 'Supported columns: name, parent_name, level, slug, description, sort_order, is_active, is_featured — plus language columns: en_name, en_slug, en_description, en_meta_title, en_meta_description, en_meta_keywords, ar_name, ar_slug, ar_description, ar_meta_title, ar_meta_description, ar_meta_keywords') ?></small>
                 </div>
 
@@ -646,7 +646,7 @@ if (!function_exists('renderFragmentThemeVars')) {
                 </div>
 
                 <!-- Preview Info -->
-                <div id="catExcelPreviewInfo" style="display:none; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:8px; padding:10px; margin-bottom:12px; font-size:0.85rem; color:var(--text-secondary,#94a3b8);">
+                <div id="catExcelPreviewInfo" style="display:none; background:color-mix(in srgb, var(--success-color,#10b981) 8%, transparent); border:1px solid color-mix(in srgb, var(--success-color,#10b981) 30%, transparent); border-radius:8px; padding:10px; margin-bottom:12px; font-size:0.85rem; color:var(--text-secondary,#94a3b8);">
                     <span id="catExcelPreviewText"></span>
                 </div>
 

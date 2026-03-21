@@ -231,7 +231,7 @@ $imageTypeId = 12; // brand image type (from image_types table)
                     <label data-i18n="form.fields.image.label">Image</label>
                     <div class="image-upload-section">
                         <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                            <img id="brandImagePreview" src="/assets/images/no-image.png" style="width:100px; height:100px; object-fit:contain; border-radius:4px; background:#1a2332;">
+                            <img id="brandImagePreview" src="/assets/images/no-image.png" style="width:100px; height:100px; object-fit:contain; border-radius:4px; background:var(--surface-color);">
                             <div style="flex:1;">
                                 <button type="button" id="brandSelectImageBtn" class="btn btn-secondary" data-i18n="common.select_image" style="width:100%; margin-bottom:8px;">
                                     <?= __t('common.select_image', 'Select Image') ?>
@@ -242,7 +242,7 @@ $imageTypeId = 12; // brand image type (from image_types table)
                                 <select id="brandImageType" class="form-control" style="font-size:0.85rem; display:none;">
                                     <option value="<?= $imageTypeId ?>">Brand Image (600x600)</option>
                                 </select>
-                                <small id="brandImageTypeDesc" style="color:#94a3b8; display:none;">Image will be cropped to 600x600, fit</small>
+                                <small id="brandImageTypeDesc" style="color:var(--text-secondary); display:none;">Image will be cropped to 600x600, fit</small>
                                 <div id="brandImageLinks" style="margin-top:5px; font-size:0.8rem; display:flex; gap:10px;"></div>
                             </div>
                         </div>

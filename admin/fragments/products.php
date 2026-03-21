@@ -377,7 +377,7 @@ if (!function_exists('prodAssetVer')) {
                     <!-- ═══════════════════════════════════════════════ -->
                     <div class="english-content-section" style="margin-top:28px; padding-top:20px; border-top:2px solid var(--primary-color,#3b82f6);">
                         <h4 style="margin-bottom:16px; color:var(--text-primary,#fff); display:flex; align-items:center; gap:10px;">
-                            <span style="background:var(--primary-color,#3b82f6); color:#fff; padding:3px 10px; border-radius:20px; font-size:0.75rem; font-weight:700;">EN</span>
+                            <span style="background:var(--primary-color,#3b82f6); color:var(--text-primary,#fff); padding:3px 10px; border-radius:20px; font-size:0.75rem; font-weight:700;">EN</span>
                             English Content <span style="color:var(--text-secondary,#94a3b8); font-size:0.8rem; font-weight:400; margin-left:6px;">(Default Language — required)</span>
                         </h4>
 
@@ -654,8 +654,8 @@ if (!function_exists('prodAssetVer')) {
                         <h4 style="margin-bottom:12px; color:var(--text-primary,#fff); border-bottom:1px solid var(--border-color,#263044); padding-bottom:8px;">
                             <i class="fas fa-language"></i> Translations
                         </h4>
-                        <div style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.25); border-radius:8px; padding:12px; margin-bottom:16px; font-size:0.85rem; color:var(--text-secondary,#94a3b8);">
-                            <i class="fas fa-info-circle" style="color:#3b82f6;"></i>
+                        <div style="background:color-mix(in srgb, var(--info-color,#3b82f6) 8%, transparent); border:1px solid color-mix(in srgb, var(--info-color,#3b82f6) 25%, transparent); border-radius:8px; padding:12px; margin-bottom:16px; font-size:0.85rem; color:var(--text-secondary,#94a3b8);">
+                            <i class="fas fa-info-circle" style="color:var(--info-color);"></i>
                             <strong style="color:var(--text-primary,#fff);">English</strong> translation fields are in the <strong style="color:var(--text-primary,#fff);">General tab</strong>. Use this tab to add translations for other languages (Arabic, French, etc.).
                         </div>
                         <div id="prodTranslations" class="translation-panels"></div>
@@ -845,9 +845,9 @@ if (!function_exists('prodAssetVer')) {
             </div>
 
             <!-- Instructions -->
-            <div style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.25); border-radius:8px; padding:14px; margin-bottom:18px;">
+            <div style="background:color-mix(in srgb, var(--info-color,#3b82f6) 8%, transparent); border:1px solid color-mix(in srgb, var(--info-color,#3b82f6) 25%, transparent); border-radius:8px; padding:14px; margin-bottom:18px;">
                 <p style="color:var(--text-secondary,#94a3b8); margin:0; font-size:0.88rem; line-height:1.6;">
-                    <i class="fas fa-info-circle" style="color:#3b82f6;"></i>
+                    <i class="fas fa-info-circle" style="color:var(--info-color);"></i>
                     <span data-i18n="csv.instructions"><?= __t('csv.instructions', 'Upload a CSV file to bulk-import products with English translations. Each row = one product. Max recommended: 1000 rows per file.') ?></span>
                 </p>
             </div>

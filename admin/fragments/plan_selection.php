@@ -121,3 +121,4 @@ window.PLAN_SELECTION_CONFIG = {
 };
 </script>
 <script src="assets/js/pages/plan_selection.js?v=<?= time() ?>"></script>
+<?php if (!$isFragment) require_once __DIR__ . '/../includes/footer.php'; ?>

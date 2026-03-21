@@ -213,7 +213,7 @@ $apiBase = '/api';
                 <?php endforeach; ?>
             </select>
             <?php else: ?>
-            <div style="min-width:200px;padding:6px 10px;background:#0f172a;color:#cbd5e1;border-radius:6px;text-align:center;">
+            <div style="min-width:200px;padding:6px 10px;background:var(--background-secondary);color:var(--text-secondary);border-radius:6px;text-align:center;">
                 <span data-i18n="permissions.tenant_label"><?= __t('permissions.tenant_label', 'Tenant') ?></span>: 
                 <?= $tenantId === null ? '<strong data-i18n="permissions.global">'.  __t('permissions.global', 'Global') .'</strong>' : 'ID ' . (int)$tenantId ?>
             </div>

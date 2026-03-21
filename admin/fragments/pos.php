@@ -549,7 +549,7 @@ window.POS_CONFIG = {
                 <button class="pos-camera-close" id="posCameraClose">✕</button>
             </div>
             <video id="posCameraVideo" autoplay playsinline muted
-                   style="width:100%;border-radius:8px;background:#000"></video>
+                   style="width:100%;border-radius:8px;background:var(--background-main,#000)"></video>
             <div class="pos-camera-guide">
                 <div class="pos-scan-line"></div>
             </div>
