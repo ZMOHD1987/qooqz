@@ -56,62 +56,6 @@
    BUTTONS
    ════════════════════════════════════════════════════════════ */
 
-#addressesPage .btn {
-    display: inline-flex !important;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    border-radius: var(--border-radius, var(--border_radius, 8px));
-    cursor: pointer;
-    font-weight: 600;
-    font-family: var(--body-font-family, var(--body_font_family, inherit));
-    font-size: 0.9rem;
-    transition: filter 0.2s, background 0.2s, border-color 0.2s;
-    border: 1px solid transparent;
-    white-space: nowrap;
-    text-decoration: none;
-    line-height: 1;
-}
-
-#addressesPage .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-#addressesPage .btn-primary {
-    background: var(--primary-color, var(--primary_color, #3b82f6));
-    color: #fff;
-    border-color: var(--primary-color, var(--primary_color, #3b82f6));
-}
-#addressesPage .btn-primary:hover:not(:disabled) {
-    background: var(--primary-hover, var(--primary_hover, var(--primary-color, #3b82f6)));
-    filter: brightness(0.9);
-}
-
-#addressesPage .btn-secondary {
-    background: var(--secondary-color, var(--secondary_color, #64748b));
-    color: #fff;
-    border-color: var(--secondary-color, var(--secondary_color, #64748b));
-}
-#addressesPage .btn-secondary:hover:not(:disabled) { filter: brightness(0.85); }
-
-#addressesPage .btn-outline {
-    background: transparent;
-    color: var(--text-primary, var(--text_primary, #fff));
-    border-color: var(--border-color, var(--border_color, #334155));
-}
-#addressesPage .btn-outline:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--primary-color, var(--primary_color, #3b82f6)) 8%, transparent);
-    border-color: var(--primary-color, var(--primary_color, #3b82f6));
-    color: var(--primary-color, var(--primary_color, #3b82f6));
-}
-
-#addressesPage .btn-danger {
-    background: var(--danger-color, var(--danger_color, var(--error-color, var(--error_color, #ef4444))));
-    color: #fff;
-    border-color: var(--danger-color, var(--danger_color, #ef4444));
-}
-#addressesPage .btn-danger:hover:not(:disabled) { filter: brightness(0.85); }
-
-#addressesPage .btn-sm { padding: 5px 8px; font-size: 0.82rem; }
-
 /* ════════════════════════════════════════════════════════════
    CARDS
    ════════════════════════════════════════════════════════════ */

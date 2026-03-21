@@ -145,54 +145,6 @@
 }
 
 /* ── Buttons ── */
-.btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: .9rem;
-    font-weight: 600;
-    transition: opacity .2s;
-}
-
-.btn:hover:not(:disabled) {
-    opacity: .85;
-}
-
-.btn:disabled {
-    opacity: .5;
-    cursor: not-allowed;
-}
-
-.btn-primary {
-    background: var(--primary-color, #5e72e4);
-    color: #fff;
-}
-
-.btn-secondary {
-    background: var(--secondary-color, #6c757d);
-    color: #fff;
-}
-
-.btn-info {
-    background: var(--info-color, #36b9cc);
-    color: #fff;
-}
-
-.btn-warning {
-    background: var(--warning-color, #f6c23e);
-    color: #1a1a2e;
-}
-
-.btn-danger {
-    background: var(--danger-color, #e74c3c);
-    color: #fff;
-}
-
-.btn-sm {
-    padding: 4px 10px;
-    font-size: .8rem;
-}
 
 /* ── Table ── */
 .data-table {

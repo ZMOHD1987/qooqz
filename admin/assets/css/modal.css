@@ -145,27 +145,6 @@
     border: 1px solid transparent;
 }
 
-.modal-footer .btn-primary {
-    background: var(--primary-color, #3b82f6);
-    color: #fff;
-    border-color: var(--primary-color, #3b82f6);
-}
-
-.modal-footer .btn-primary:hover {
-    background: var(--primary-hover, #2563eb);
-    border-color: var(--primary-hover, #2563eb);
-}
-
-.modal-footer .btn-secondary {
-    background: transparent;
-    color: var(--text-primary, #fff);
-    border-color: var(--border-color, #334155);
-}
-
-.modal-footer .btn-secondary:hover {
-    background: var(--border-color, #334155);
-}
-
 /* ════════════════════════════════════════════════════════════
    MODAL FORMS
    ════════════════════════════════════════════════════════════ */
