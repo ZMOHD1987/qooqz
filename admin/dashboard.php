@@ -123,61 +123,61 @@ $canViewUsers = in_array('view_users', $user['permissions'] ?? [], true)
         </div>
     </div>
 
-    <!-- Quick Actions -->
+    <!-- Quick Actions (AJAX links) -->
     <div class="dash-card">
         <h2 style="font-size:1.125rem; font-weight:600; margin-bottom:0.25rem; color:var(--text-primary);" data-i18n="quick_actions_title">Quick Actions</h2>
         <p class="dash-subtitle" style="margin-bottom:0;" data-i18n="quick_actions_subtitle">Jump to any section</p>
         <div class="quick-actions-grid">
-            <a href="/admin/fragments/products.php" class="action-card">
+            <a href="#" class="action-card js-ajax-link" data-load-url="/admin/fragments/products.php">
                 <div class="action-icon"><i class="fas fa-box"></i></div>
                 <div class="action-content"><h3 data-i18n="nav.products">Products</h3><p data-i18n="manage_products">Manage products &amp; inventory</p></div>
             </a>
-            <a href="/admin/fragments/categories.php" class="action-card">
+            <a href="#" class="action-card js-ajax-link" data-load-url="/admin/fragments/categories.php">
                 <div class="action-icon"><i class="fas fa-tags"></i></div>
                 <div class="action-content"><h3 data-i18n="nav.categories">Categories</h3><p data-i18n="manage_categories">Organize product categories</p></div>
             </a>
             <?php if ($canViewUsers): ?>
-            <a href="/admin/fragments/users.php" class="action-card">
+            <a href="#" class="action-card js-ajax-link" data-load-url="/admin/fragments/users.php">
                 <div class="action-icon"><i class="fas fa-users"></i></div>
                 <div class="action-content"><h3 data-i18n="nav.users">Users</h3><p data-i18n="manage_users">Manage user accounts</p></div>
             </a>
             <?php endif; ?>
-            <a href="/admin/fragments/tenant_users.php" class="action-card">
+            <a href="#" class="action-card js-ajax-link" data-load-url="/admin/fragments/tenant_users.php">
                 <div class="action-icon"><i class="fas fa-user-shield"></i></div>
                 <div class="action-content"><h3 data-i18n="nav.tenant_users">Staff</h3><p data-i18n="manage_tenant_users">Manage staff accounts</p></div>
             </a>
-            <a href="/admin/fragments/vendors.php" class="action-card">
+            <a href="#" class="action-card js-ajax-link" data-load-url="/admin/fragments/vendors.php">
                 <div class="action-icon"><i class="fas fa-store-alt"></i></div>
                 <div class="action-content"><h3 data-i18n="menu.vendors">Vendors</h3><p data-i18n="manage_vendors">Manage vendor accounts</p></div>
             </a>
             <?php if ($canViewDrivers): ?>
-            <a href="/admin/fragments/IndependentDriver.php" class="action-card">
+            <a href="#" class="action-card js-ajax-link" data-load-url="/admin/fragments/IndependentDriver.php">
                 <div class="action-icon"><i class="fas fa-truck"></i></div>
                 <div class="action-content"><h3 data-i18n="nav.drivers">Drivers</h3><p data-i18n="manage_drivers">Manage delivery drivers</p></div>
             </a>
             <?php endif; ?>
-            <a href="/admin/fragments/entities.php" class="action-card">
+            <a href="#" class="action-card js-ajax-link" data-load-url="/admin/fragments/entities.php">
                 <div class="action-icon"><i class="fas fa-store"></i></div>
                 <div class="action-content"><h3 data-i18n="menu.entities">Branches</h3><p data-i18n="manage_entities">Manage branches &amp; outlets</p></div>
             </a>
-            <a href="/admin/fragments/pos.php" class="action-card">
+            <a href="#" class="action-card js-ajax-link" data-load-url="/admin/fragments/pos.php">
                 <div class="action-icon"><i class="fas fa-cash-register"></i></div>
                 <div class="action-content"><h3 data-i18n="nav.pos">POS</h3><p data-i18n="manage_pos">Point of sale system</p></div>
             </a>
-            <a href="/admin/fragments/discounts.php" class="action-card">
+            <a href="#" class="action-card js-ajax-link" data-load-url="/admin/fragments/discounts.php">
                 <div class="action-icon"><i class="fas fa-percent"></i></div>
                 <div class="action-content"><h3 data-i18n="discounts">Discounts</h3><p data-i18n="manage_discounts">Manage offers &amp; discounts</p></div>
             </a>
-            <a href="/admin/fragments/flash_sales.php" class="action-card">
+            <a href="#" class="action-card js-ajax-link" data-load-url="/admin/fragments/flash_sales.php">
                 <div class="action-icon"><i class="fas fa-bolt"></i></div>
                 <div class="action-content"><h3 data-i18n="menu.flash_sales">Flash Sales</h3><p data-i18n="manage_flash_sales">Manage limited time deals</p></div>
             </a>
-            <a href="/admin/fragments/banners.php" class="action-card">
+            <a href="#" class="action-card js-ajax-link" data-load-url="/admin/fragments/banners.php">
                 <div class="action-icon"><i class="fas fa-images"></i></div>
                 <div class="action-content"><h3 data-i18n="menu.banners">Banners</h3><p data-i18n="manage_banners">Manage promotional banners</p></div>
             </a>
             <?php if ($canViewSettings): ?>
-            <a href="/admin/fragments/themes.php" class="action-card">
+            <a href="#" class="action-card js-ajax-link" data-load-url="/admin/fragments/themes.php">
                 <div class="action-icon"><i class="fas fa-paint-brush"></i></div>
                 <div class="action-content"><h3 data-i18n="nav.settings">Settings &amp; Theme</h3><p data-i18n="manage_settings">Configure system &amp; appearance</p></div>
             </a>
