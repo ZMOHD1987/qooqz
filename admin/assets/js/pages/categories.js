@@ -661,7 +661,6 @@
 
             const response = await AF.api(`${API}${isEdit ? '/' + data.id : ''}`, {
                 method: isEdit ? 'PUT' : 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
 
@@ -1633,9 +1632,11 @@
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', () => {
+            init().catch(e => console.error('[Categories] init failed:', e));
+        });
     } else {
-        init();
+        init().catch(e => console.error('[Categories] init failed:', e));
     }
 
 })();
