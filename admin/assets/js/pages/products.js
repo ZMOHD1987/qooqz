@@ -2622,11 +2622,11 @@
         // Cache DOM elements
         el = {
             // Containers
-            container: $id('tableContainer'),
-            loading: $id('tableLoading'),
-            empty: $id('emptyState'),
-            error: $id('errorState'),
-            errorMessage: $id('errorMessage'),
+            container: $id('pageTableContainer') || $id('tableContainer'),
+            loading: $id('pageLoading') || $id('tableLoading'),
+            empty: $id('pageEmpty') || $id('emptyState'),
+            error: $id('pageError') || $id('errorState'),
+            errorMessage: $id('pageErrorMessage') || $id('errorMessage'),
 
             // Form
             formContainer: $id('productFormContainer'),

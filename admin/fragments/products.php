@@ -621,7 +621,7 @@ if (!function_exists('assetVer')) {
         <div class="card-body">
             <div class="filters-grid">
                 <div class="filter-group">
-                    <label for="searchInput" data-i18n="filters.search">
+                    <label class="filter-label" for="searchInput" data-i18n="filters.search">
                         <?= _prd('filters.search', 'Search') ?>
                     </label>
                     <input type="text" id="searchInput" class="form-control"
@@ -631,7 +631,7 @@ if (!function_exists('assetVer')) {
 
                 <?php if (is_super_admin()): ?>
                 <div class="filter-group">
-                    <label for="tenantFilter" data-i18n="filters.tenant_id">
+                    <label class="filter-label" for="tenantFilter" data-i18n="filters.tenant_id">
                         <?= _prd('filters.tenant_id', 'Tenant ID') ?>
                     </label>
                     <input type="number" id="tenantFilter" class="form-control" value="<?= $tenantId ?>"
@@ -641,21 +641,21 @@ if (!function_exists('assetVer')) {
                 <?php endif; ?>
 
                 <div class="filter-group">
-                    <label for="typeFilter" data-i18n="filters.product_type">Product Type</label>
+                    <label class="filter-label" for="typeFilter" data-i18n="filters.product_type">Product Type</label>
                     <select id="typeFilter" class="form-control">
                         <option value="">All Types</option>
                     </select>
                 </div>
 
                 <div class="filter-group">
-                    <label for="brandFilter" data-i18n="filters.brand">Brand</label>
+                    <label class="filter-label" for="brandFilter" data-i18n="filters.brand">Brand</label>
                     <select id="brandFilter" class="form-control">
                         <option value="">All Brands</option>
                     </select>
                 </div>
 
                 <div class="filter-group">
-                    <label for="statusFilter" data-i18n="filters.status">
+                    <label class="filter-label" for="statusFilter" data-i18n="filters.status">
                         <?= _prd('filters.status', 'Status') ?>
                     </label>
                     <select id="statusFilter" class="form-control">
@@ -691,12 +691,12 @@ if (!function_exists('assetVer')) {
     <!-- Table -->
     <div class="card table-card">
         <div class="card-body">
-            <div id="tableLoading" class="loading-state">
+            <div id="pageLoading" class="loading-state" style="display:none;">
                 <div class="spinner"></div>
                 <p data-i18n="products.loading"><?= _prd('products.loading', 'Loading...') ?></p>
             </div>
 
-            <div id="tableContainer" style="display:none">
+            <div id="pageTableContainer" class="table-responsive" style="display:none;">
                 <div class="table-responsive">
                     <table class="data-table" id="productsTable">
                         <thead>
@@ -728,7 +728,7 @@ if (!function_exists('assetVer')) {
                 </div>
             </div>
 
-            <div id="emptyState" class="empty-state" style="display:none">
+            <div id="pageEmpty" class="empty-state" style="display:none;">
                 <div class="empty-icon">📦</div>
                 <h3 data-i18n="table.empty.title">No Products Found</h3>
                 <p data-i18n="table.empty.message">Start by adding your first product</p>
@@ -740,10 +740,10 @@ if (!function_exists('assetVer')) {
                 <?php endif; ?>
             </div>
 
-            <div id="errorState" class="error-state" style="display:none">
+            <div id="pageError" class="error-state" style="display:none;">
                 <div class="error-icon">⚠️</div>
                 <h3 data-i18n="messages.error.load_failed">Error Loading Data</h3>
-                <p id="errorMessage"></p>
+                <p id="pageErrorMessage"></p>
                 <button id="btnRetry" class="btn btn-secondary" data-i18n="products.retry">Retry</button>
             </div>
         </div>
@@ -836,7 +836,15 @@ if (!function_exists('assetVer')) {
 
 <!-- Expose client-side globals for the module -->
 <script>
-window.PRODUCTS_CONFIG = {
+window.PAGE_NAME_CONFIG = {
+    csrfToken: <?= json_encode($csrf) ?>,
+    strings: <?= json_encode($_prdStrings, JSON_UNESCAPED_UNICODE) ?>,
+    canCreate: <?= json_encode($canCreate) ?>,
+    canEdit: <?= json_encode($canEdit) ?>,
+    canDelete: <?= json_encode($canDelete) ?>
+};
+
+window.PRODUCTS_CONFIG = Object.assign({}, window.PAGE_NAME_CONFIG, {
     apiBase: <?= json_encode($apiBase, JSON_UNESCAPED_SLASHES) ?>,
     apiUrl: <?= json_encode($apiBase . '/products', JSON_UNESCAPED_SLASHES) ?>,
     categoriesApi: <?= json_encode($apiBase . '/categories', JSON_UNESCAPED_SLASHES) ?>,
@@ -854,7 +862,6 @@ window.PRODUCTS_CONFIG = {
     tenantId: <?= (int)$tenantId ?>,
     userId: <?= (int)$userId ?>,
     itemsPerPage: 25,
-    strings: <?= json_encode($_prdStrings, JSON_UNESCAPED_UNICODE) ?>,
     permissions: <?= json_encode([
         'canCreate' => $canCreate,
         'canEdit' => $canEdit,
@@ -869,7 +876,7 @@ window.PRODUCTS_CONFIG = {
         'canDeleteOwn' => $canDeleteOwn,
         'isSuperAdmin' => $isSuperAdmin,
     ], JSON_UNESCAPED_UNICODE) ?>
-};
+});
 </script>
 <script src="/admin/assets/js/pages/products.js?v=<?= assetVer('/admin/assets/js/pages/products.js') ?>"></script>
 
