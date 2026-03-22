@@ -719,8 +719,7 @@
             el.userInfo.style.display = 'none';
 
             // Show delete button in edit mode
-            var btnDelete = document.getElementById('btnDeleteTenantUser');
-            if (btnDelete) btnDelete.style.display = '';
+            if (el.btnDelete) el.btnDelete.style.display = '';
 
             AF.Form.show('tenantUserFormContainer', t('form.edit_title'));
             el.formId.value = String(item.id || '');
@@ -819,8 +818,7 @@
         el.entityInfo.style.display = 'none';
 
         // Hide delete button in add mode
-        var btnDelete = document.getElementById('btnDeleteTenantUser');
-        if (btnDelete) btnDelete.style.display = 'none';
+        if (el.btnDelete) el.btnDelete.style.display = 'none';
 
         el.formRoleId.innerHTML = `<option value="">${t('form.fields.role_id.enter_tenant_first')}</option>`;
         el.formRoleId.disabled = true;
@@ -1066,11 +1064,11 @@
             btnAdd: AF.$('btnAddTenantUser'),
             btnClose: AF.$('btnCloseForm'),
             btnCancel: AF.$('btnCancelForm'),
-            btnDelete: document.getElementById('btnDeleteTenantUser'),
+            btnDelete: AF.$('btnDeleteTenantUser'),
             btnApply: AF.$('btnApplyFilters'),
             btnReset: AF.$('btnResetFilters'),
             btnExport: AF.$('btnExportExcel'),
-            btnRetry: AF.$('btnRetryLoad')
+            btnRetry: AF.$('btnRetry')
         };
 
         // Load permissions
