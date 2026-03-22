@@ -158,14 +158,14 @@ function loadDiscounts(page) {
                         '<td>' + esc(item.ends_at || '-') + '</td>' +
                         '<td>' + esc(String(item.current_redemptions || item.redemptions_count || 0)) + '</td>' +
                         '<td class="actions-cell">' +
-                            '<button class="btn btn-sm btn-info dc-btn-info btn-translations" data-id="' + item.id + '" data-btn-slug="info">' + t('translations.title', 'Translations') + '</button> ' +
-                            '<button class="btn btn-sm btn-secondary dc-btn-secondary btn-scopes" data-id="' + item.id + '" data-btn-slug="secondary">' + t('scopes.title', 'Scopes') + '</button> ' +
-                            '<button class="btn btn-sm btn-info dc-btn-info btn-conditions" data-id="' + item.id + '" data-btn-slug="info">' + t('conditions.title', 'Conditions') + '</button> ' +
-                            '<button class="btn btn-sm btn-secondary dc-btn-secondary btn-actions" data-id="' + item.id + '" data-btn-slug="secondary">' + t('actions.title', 'Actions') + '</button> ' +
-                            '<button class="btn btn-sm btn-warning dc-btn-warning btn-exclusions" data-id="' + item.id + '" data-btn-slug="warning">' + t('exclusions.title', 'Exclusions') + '</button> ' +
-                            '<button class="btn btn-sm btn-info dc-btn-info btn-redemptions" data-id="' + item.id + '" data-btn-slug="info">' + t('redemptions.title', 'Redemptions') + '</button> ' +
-                            '<button class="btn btn-sm btn-primary dc-btn-primary btn-edit" data-id="' + item.id + '" data-btn-slug="primary"><i class="fas fa-edit" aria-hidden="true"></i> ' + t('edit', 'Edit') + '</button> ' +
-                            '<button class="btn btn-sm btn-danger dc-btn-danger btn-delete" data-id="' + item.id + '" data-btn-slug="danger"><i class="fas fa-trash" aria-hidden="true"></i> ' + t('delete', 'Delete') + '</button>' +
+                            '<button class="btn btn-sm btn-primary btn-translations" data-id="' + item.id + '" data-btn-slug="primary">' + t('translations.title', 'Translations') + '</button> ' +
+                            '<button class="btn btn-sm btn-secondary btn-scopes" data-id="' + item.id + '" data-btn-slug="secondary">' + t('scopes.title', 'Scopes') + '</button> ' +
+                            '<button class="btn btn-sm btn-primary btn-conditions" data-id="' + item.id + '" data-btn-slug="primary">' + t('conditions.title', 'Conditions') + '</button> ' +
+                            '<button class="btn btn-sm btn-secondary btn-actions" data-id="' + item.id + '" data-btn-slug="secondary">' + t('actions.title', 'Actions') + '</button> ' +
+                            '<button class="btn btn-sm btn-warning btn-exclusions" data-id="' + item.id + '" data-btn-slug="warning">' + t('exclusions.title', 'Exclusions') + '</button> ' +
+                            '<button class="btn btn-sm btn-primary btn-redemptions" data-id="' + item.id + '" data-btn-slug="primary">' + t('redemptions.title', 'Redemptions') + '</button> ' +
+                            '<button class="btn btn-sm btn-primary btn-edit" data-id="' + item.id + '" data-btn-slug="primary"><i class="fas fa-edit" aria-hidden="true"></i> ' + t('edit', 'Edit') + '</button> ' +
+                            '<button class="btn btn-sm btn-danger btn-delete" data-id="' + item.id + '" data-btn-slug="danger"><i class="fas fa-trash" aria-hidden="true"></i> ' + t('delete', 'Delete') + '</button>' +
                         '</td>';
                     tbody.appendChild(tr);
                 });
@@ -328,7 +328,7 @@ function openTranslationsModal(discountId) {
                         '<td>' + esc(tr_item.description || '') + '</td>' +
                         '<td>' + esc(tr_item.terms_conditions || '') + '</td>' +
                         '<td>' + esc(tr_item.marketing_badge || '') + '</td>' +
-                        '<td><button class="btn btn-sm btn-danger dc-btn-danger btn-delete-trans" data-btn-slug="danger" data-id="' + tr_item.id + '">' + t('delete', 'Delete') + '</button></td>';
+                        '<td><button class="btn btn-sm btn-danger btn-delete-trans" data-btn-slug="danger" data-id="' + tr_item.id + '">' + t('delete', 'Delete') + '</button></td>';
                     tbody.appendChild(tr);
                 });
             }
@@ -422,7 +422,7 @@ function openScopesModal(discountId) {
                         '<td>' + esc(item.scope_type || '') + '</td>' +
                         '<td>' + esc(String(item.scope_id || '')) + '</td>' +
                         '<td class="scope-name-cell">...</td>' +
-                        '<td><button class="btn btn-sm btn-danger dc-btn-danger btn-delete-scope" data-btn-slug="danger" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button></td>';
+                        '<td><button class="btn btn-sm btn-danger btn-delete-scope" data-btn-slug="danger" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button></td>';
                     tbody.appendChild(tr);
                     var nameCell = tr.querySelector('.scope-name-cell');
                     resolveScopeName(item.scope_type, item.scope_id, function(name){ nameCell.textContent = name; });
@@ -530,7 +530,7 @@ function openConditionsModal(discountId) {
                         '<td>' + esc(item.condition_type || '') + '</td>' +
                         '<td>' + esc(item.operator || '') + '</td>' +
                         '<td>' + esc(String(item.condition_value || item.value || '')) + '</td>' +
-                        '<td><button class="btn btn-sm btn-danger dc-btn-danger btn-delete-condition" data-btn-slug="danger" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button></td>';
+                        '<td><button class="btn btn-sm btn-danger btn-delete-condition" data-btn-slug="danger" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button></td>';
                     tbody.appendChild(tr);
                 });
             }
@@ -598,7 +598,7 @@ function openActionsModal(discountId) {
                     tr.innerHTML =
                         '<td>' + esc(item.action_type || '') + '</td>' +
                         '<td>' + esc(String(item.action_value || '')) + '</td>' +
-                        '<td><button class="btn btn-sm btn-danger dc-btn-danger btn-delete-action" data-btn-slug="danger" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button></td>';
+                        '<td><button class="btn btn-sm btn-danger btn-delete-action" data-btn-slug="danger" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button></td>';
                     tbody.appendChild(tr);
                 });
             }
@@ -662,7 +662,7 @@ function openExclusionsModal(discountId) {
                     var tr = document.createElement('tr');
                     tr.innerHTML =
                         '<td>' + esc(item.excluded_discount_name || String(item.excluded_discount_id || '')) + '</td>' +
-                        '<td><button class="btn btn-sm btn-danger dc-btn-danger btn-delete-exclusion" data-btn-slug="danger" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button></td>';
+                        '<td><button class="btn btn-sm btn-danger btn-delete-exclusion" data-btn-slug="danger" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button></td>';
                     tbody.appendChild(tr);
                 });
             }

@@ -148,22 +148,40 @@
     flex: 1;
 }
 
-/* Filter Bar — full-width, no border-radius */
-.filter-bar {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-    margin: 0;
-    padding: clamp(8px, 1.5vw, 12px) clamp(12px, 2vw, 16px);
-    background: var(--card-bg, #081127);
-    border-bottom: 1px solid var(--border-color, #263044);
+/* Filters Grid — proper grid layout, buttons don't stretch full-width */
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.8rem;
+    align-items: flex-end;
 }
 
-.filter-bar input,
-.filter-bar select {
-    flex: 1;
-    min-width: 140px;
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.filter-group--search {
+    grid-column: span 2;
+}
+
+.filter-label {
+    display: block;
+    margin-bottom: 0;
+    font-size: clamp(0.78rem, 1.1vw, 0.875rem);
+    color: var(--text-secondary, #94a3b8);
+    font-weight: 500;
+    font-family: var(--body-font-family, inherit);
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+    padding-bottom: 1px;
+    flex-wrap: wrap;
 }
 
 /* Table */
@@ -532,7 +550,7 @@
     text-align: start;
 }
 
-[dir="rtl"] .filter-bar {
+[dir="rtl"] .filter-buttons {
     flex-direction: row-reverse;
 }
 
@@ -586,13 +604,11 @@
         grid-template-columns: repeat(2, 1fr);
     }
 
-    .filter-bar {
-        flex-wrap: wrap;
+    .filters-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-
-    .filter-bar input,
-    .filter-bar select {
-        min-width: 120px;
+    .filter-group--search {
+        grid-column: span 2;
     }
 }
 
@@ -617,15 +633,18 @@
         grid-template-columns: 1fr 1fr;
     }
 
-    .filter-bar {
+    .filters-grid {
+        grid-template-columns: 1fr;
+    }
+    .filter-group--search {
+        grid-column: span 1;
+    }
+    .filter-buttons {
         flex-direction: column;
     }
-
-    .filter-bar input,
-    .filter-bar select,
-    .filter-bar .form-control,
-    .filter-bar .btn {
+    .filter-buttons .btn {
         width: 100%;
+        justify-content: center;
     }
 
     .card-body {
@@ -726,7 +745,8 @@
     .page-header-actions,
     .form-actions,
     .dc-modal-backdrop,
-    .filter-bar,
+    .filters-grid,
+    .filter-buttons,
     .dc-notifications,
     .pagination-wrapper,
     .actions-cell,

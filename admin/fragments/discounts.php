@@ -77,7 +77,7 @@ if (!function_exists('assetVer')) {
       <p class="page-subtitle"><?= _dt('subtitle', 'Manage discount codes, rules, and redemptions') ?></p>
     </div>
     <div class="page-header-actions">
-      <button class="btn btn-primary dc-btn-primary" id="btnAddDiscount" data-btn-slug="primary">+ <?= _dt('add_discount', 'Add Discount') ?></button>
+      <button class="btn btn-primary" id="btnAddDiscount" data-btn-slug="primary">+ <?= _dt('add_discount', 'Add Discount') ?></button>
     </div>
   </div>
 
@@ -88,7 +88,7 @@ if (!function_exists('assetVer')) {
       <label><?= _dt('tenant_id', 'Tenant ID') ?></label>
       <div class="dc-tenant-input-row">
         <input type="number" class="form-control dc-tenant-input" id="tenantIdInput" placeholder="<?= _dt('enter_tenant_id', 'Enter Tenant ID') ?>" min="1">
-        <button class="btn btn-secondary btn-sm dc-btn-secondary" id="btnVerifyTenant" data-btn-slug="secondary"><?= _dt('verify', 'Verify') ?></button>
+        <button class="btn btn-secondary btn-sm" id="btnVerifyTenant" data-btn-slug="secondary"><?= _dt('verify', 'Verify') ?></button>
       </div>
       <small id="tenantName" class="dc-tenant-name" style="display:none"></small>
     </div>
@@ -110,26 +110,50 @@ if (!function_exists('assetVer')) {
   </div>
 
   <!-- Filter Bar -->
-  <div class="filter-bar">
-    <input type="text" class="form-control" id="searchInput" placeholder="<?= _dt('filter.search', 'Search by code or name...') ?>">
-    <select class="form-control" id="typeFilter">
-      <option value=""><?= _dt('filter.all_types', 'All Types') ?></option>
-      <option value="percentage"><?= _dt('filter.percentage', 'Percentage') ?></option>
-      <option value="fixed"><?= _dt('filter.fixed', 'Fixed') ?></option>
-      <option value="buy_x_get_y"><?= _dt('filter.buy_x_get_y', 'Buy X Get Y') ?></option>
-      <option value="free_shipping"><?= _dt('filter.free_shipping', 'Free Shipping') ?></option>
-    </select>
-    <select class="form-control" id="statusFilter">
-      <option value=""><?= _dt('filter.all_status', 'All Status') ?></option>
-      <option value="active"><?= _dt('filter.active', 'Active') ?></option>
-      <option value="inactive"><?= _dt('filter.inactive', 'Inactive') ?></option>
-      <option value="expired"><?= _dt('filter.expired', 'Expired') ?></option>
-      <option value="scheduled"><?= _dt('filter.scheduled', 'Scheduled') ?></option>
-    </select>
-    <input type="date" class="form-control" id="dateFrom" placeholder="<?= _dt('filter.date_from', 'From') ?>" title="<?= _dt('filter.date_from', 'From') ?>">
-    <input type="date" class="form-control" id="dateTo" placeholder="<?= _dt('filter.date_to', 'To') ?>" title="<?= _dt('filter.date_to', 'To') ?>">
-    <button class="btn btn-secondary dc-btn-secondary" id="btnFilter" data-btn-slug="secondary"><?= _dt('filter.apply', 'Filter') ?></button>
-    <button class="btn btn-outline dc-btn-outline" id="btnClearFilter" data-btn-slug="outline"><?= _dt('filter.clear', 'Clear') ?></button>
+  <div class="card">
+    <div class="card-body" style="padding: clamp(8px, 1.5vw, 12px) clamp(12px, 2vw, 16px);">
+      <div class="filters-grid">
+        <div class="filter-group filter-group--search">
+          <label class="filter-label" for="searchInput"><?= _dt('filter.search', 'Search') ?></label>
+          <input type="text" class="form-control" id="searchInput" placeholder="<?= _dt('filter.search_placeholder', 'Search by code or name...') ?>">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="typeFilter"><?= _dt('filter.type', 'Type') ?></label>
+          <select class="form-control" id="typeFilter">
+            <option value=""><?= _dt('filter.all_types', 'All Types') ?></option>
+            <option value="percentage"><?= _dt('filter.percentage', 'Percentage') ?></option>
+            <option value="fixed"><?= _dt('filter.fixed', 'Fixed') ?></option>
+            <option value="buy_x_get_y"><?= _dt('filter.buy_x_get_y', 'Buy X Get Y') ?></option>
+            <option value="free_shipping"><?= _dt('filter.free_shipping', 'Free Shipping') ?></option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="statusFilter"><?= _dt('filter.status', 'Status') ?></label>
+          <select class="form-control" id="statusFilter">
+            <option value=""><?= _dt('filter.all_status', 'All Status') ?></option>
+            <option value="active"><?= _dt('filter.active', 'Active') ?></option>
+            <option value="inactive"><?= _dt('filter.inactive', 'Inactive') ?></option>
+            <option value="expired"><?= _dt('filter.expired', 'Expired') ?></option>
+            <option value="scheduled"><?= _dt('filter.scheduled', 'Scheduled') ?></option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="dateFrom"><?= _dt('filter.date_from', 'From') ?></label>
+          <input type="date" class="form-control" id="dateFrom" title="<?= _dt('filter.date_from', 'From') ?>">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="dateTo"><?= _dt('filter.date_to', 'To') ?></label>
+          <input type="date" class="form-control" id="dateTo" title="<?= _dt('filter.date_to', 'To') ?>">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" aria-hidden="true">&nbsp;</label>
+          <div class="filter-buttons">
+            <button class="btn btn-sm btn-primary" id="btnFilter" data-btn-slug="primary"><?= _dt('filter.apply', 'Filter') ?></button>
+            <button class="btn btn-sm btn-secondary" id="btnClearFilter" data-btn-slug="secondary"><?= _dt('filter.clear', 'Clear') ?></button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Data Table -->
@@ -193,7 +217,7 @@ if (!function_exists('assetVer')) {
             <label><?= _dt('form.code', 'Code') ?> *</label>
             <div class="input-group">
               <input type="text" class="form-control" id="discountCode" name="code" required>
-              <button type="button" class="btn btn-secondary btn-sm dc-btn-secondary" id="btnGenerateCode" data-btn-slug="secondary"><?= _dt('form.generate_code', 'Auto-Generate') ?></button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btnGenerateCode" data-btn-slug="secondary"><?= _dt('form.generate_code', 'Auto-Generate') ?></button>
             </div>
           </div>
         </div>
@@ -254,8 +278,8 @@ if (!function_exists('assetVer')) {
           </select>
         </div>
         <div class="form-actions">
-          <button type="button" class="btn btn-outline dc-btn-outline btn-close-modal" data-modal="discountModal" id="btnCancelModal" data-btn-slug="outline"><?= _dt('cancel', 'Cancel') ?></button>
-          <button type="submit" class="btn btn-primary dc-btn-primary" data-btn-slug="primary"><?= _dt('save', 'Save') ?></button>
+          <button type="button" class="btn btn-secondary btn-close-modal" data-modal="discountModal" id="btnCancelModal" data-btn-slug="secondary"><?= _dt('cancel', 'Cancel') ?></button>
+          <button type="submit" class="btn btn-primary" data-btn-slug="primary"><?= _dt('save', 'Save') ?></button>
         </div>
       </form>
     </div>
@@ -292,7 +316,7 @@ if (!function_exists('assetVer')) {
           <label><?= _dt('translations.marketing_badge', 'Marketing Badge') ?></label>
           <input type="text" class="form-control" id="transMarketingBadge">
         </div>
-        <button class="btn btn-primary btn-sm dc-btn-primary" id="btnSaveTranslation" data-btn-slug="primary"><?= _dt('translations.save', 'Save Translation') ?></button>
+        <button class="btn btn-primary btn-sm" id="btnSaveTranslation" data-btn-slug="primary"><?= _dt('translations.save', 'Save Translation') ?></button>
         <table class="data-table dc-sub-table">
           <thead>
             <tr>
@@ -339,7 +363,7 @@ if (!function_exists('assetVer')) {
             <span id="scopeIdName" class="lookup-name"></span>
           </div>
           <div class="form-group form-group-btn">
-            <button class="btn btn-primary btn-sm dc-btn-primary" id="btnAddScope" data-btn-slug="primary">+ <?= _dt('scopes.add', 'Add Scope') ?></button>
+            <button class="btn btn-primary btn-sm" id="btnAddScope" data-btn-slug="primary">+ <?= _dt('scopes.add', 'Add Scope') ?></button>
           </div>
         </div>
         <table class="data-table dc-sub-table">
@@ -401,7 +425,7 @@ if (!function_exists('assetVer')) {
             <input type="text" class="form-control" id="conditionValue">
           </div>
           <div class="form-group form-group-btn">
-            <button class="btn btn-primary btn-sm dc-btn-primary" id="btnAddCondition" data-btn-slug="primary">+ <?= _dt('conditions.add', 'Add Condition') ?></button>
+            <button class="btn btn-primary btn-sm" id="btnAddCondition" data-btn-slug="primary">+ <?= _dt('conditions.add', 'Add Condition') ?></button>
           </div>
         </div>
         <table class="data-table dc-sub-table">
@@ -443,7 +467,7 @@ if (!function_exists('assetVer')) {
             <input type="text" class="form-control" id="actionValue">
           </div>
           <div class="form-group form-group-btn">
-            <button class="btn btn-primary btn-sm dc-btn-primary" id="btnAddAction" data-btn-slug="primary">+ <?= _dt('actions.add', 'Add Action') ?></button>
+            <button class="btn btn-primary btn-sm" id="btnAddAction" data-btn-slug="primary">+ <?= _dt('actions.add', 'Add Action') ?></button>
           </div>
         </div>
         <table class="data-table dc-sub-table">
@@ -477,7 +501,7 @@ if (!function_exists('assetVer')) {
             </select>
           </div>
           <div class="form-group form-group-btn">
-            <button class="btn btn-primary btn-sm dc-btn-primary" id="btnAddExclusion" data-btn-slug="primary">+ <?= _dt('exclusions.add', 'Add Exclusion') ?></button>
+            <button class="btn btn-primary btn-sm" id="btnAddExclusion" data-btn-slug="primary">+ <?= _dt('exclusions.add', 'Add Exclusion') ?></button>
           </div>
         </div>
         <table class="data-table dc-sub-table">
