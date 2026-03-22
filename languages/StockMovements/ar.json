@@ -31,7 +31,8 @@
     "notes": "ملاحظات",
     "date": "التاريخ",
     "actions": "الإجراءات",
-    "no_records": "لا توجد حركات"
+    "no_records": "لا توجد حركات",
+    "loading": "جارٍ التحميل..."
   },
   "form": {
     "product_id": "رقم المنتج",
@@ -52,7 +53,9 @@
     "adjustment": "تعديل"
   },
   "filter": {
-    "search": "بحث...",
+    "search": "بحث",
+    "search_placeholder": "البحث باسم المنتج أو رمز SKU...",
+    "type": "النوع",
     "all_types": "جميع الأنواع",
     "date_from": "من تاريخ",
     "date_to": "إلى تاريخ",
