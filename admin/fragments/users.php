@@ -258,6 +258,11 @@ if (!function_exists('assetVer')) {
 
 <script>
 window.USER_LANGUAGE = '<?= htmlspecialchars($lang) ?>';
+window.USERS_CONFIG = {
+    lang:    <?= json_encode($_utLangCode) ?>,
+    dir:     <?= json_encode($dir) ?>,
+    strings: <?= json_encode($_utStrings, JSON_UNESCAPED_UNICODE) ?>
+};
 </script>
 
 <!-- Load JS if embedded -->

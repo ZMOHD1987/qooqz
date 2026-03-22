@@ -17,6 +17,19 @@
     let languages = [];
     let userLanguage = window.USER_LANGUAGE || window.ADMIN_LANG || 'en';
 
+    // ── Translation ──
+    var CFG = window.USERS_CONFIG || {};
+    var S = CFG.strings || {};
+    function t(key, fb) {
+        var parts = key.split('.');
+        var v = S;
+        for (var i = 0; i < parts.length; i++) {
+            if (!v || typeof v !== 'object') return fb || key;
+            v = v[parts[i]];
+        }
+        return (typeof v === 'string') ? v : (fb || key);
+    }
+
     // ════════════════════════════════════════════════════════════
     // HELPERS
     // ════════════════════════════════════════════════════════════
@@ -60,7 +73,7 @@
     }
 
     function formatDate(dateString) {
-        if (!dateString) return 'N/A';
+        if (!dateString) return t('na', 'N/A');
         try {
             const date = new Date(dateString);
             return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
@@ -116,7 +129,7 @@
                 // Populate filter dropdown
                 const filterSelect = getEl('languageFilter');
                 if (filterSelect) {
-                    filterSelect.innerHTML = '<option value="">All Languages</option>';
+                    filterSelect.innerHTML = '<option value="">' + t('filter.all_languages', 'All Languages') + '</option>';
                     languages.forEach(function(lang) {
                         const option = document.createElement('option');
                         option.value = lang.code;
@@ -168,12 +181,12 @@
                 renderTable(items);
                 renderPagination(result.data.meta || {});
             } else {
-                throw new Error(result.message || 'Failed to load users');
+                throw new Error(result.message || t('messages.load_error', 'Failed to load users'));
             }
 
         } catch (error) {
             console.error('[Users] loadUsers:', error);
-            showError('Failed to load users: ' + error.message);
+            showError(t('messages.load_error', 'Failed to load users') + ': ' + error.message);
         }
     }
 
@@ -208,10 +221,10 @@
             var tr = document.createElement('tr');
 
             var statusClass = user.is_active ? 'badge-active' : 'badge-inactive';
-            var statusText = user.is_active ? 'Active' : 'Inactive';
+            var statusText = user.is_active ? t('active', 'Active') : t('inactive', 'Inactive');
 
             // Find language name
-            var langName = user.preferred_language || 'N/A';
+            var langName = user.preferred_language || t('na', 'N/A');
             for (var i = 0; i < languages.length; i++) {
                 if (languages[i].code === user.preferred_language) {
                     langName = languages[i].name;
@@ -224,12 +237,12 @@
                 '<td><strong>' + escapeHtml(user.username) + '</strong></td>' +
                 '<td>' + escapeHtml(user.email) + '</td>' +
                 '<td>' + escapeHtml(langName) + '</td>' +
-                '<td>' + escapeHtml(user.phone || 'N/A') + '</td>' +
+                '<td>' + escapeHtml(user.phone || t('na', 'N/A')) + '</td>' +
                 '<td>' + formatDate(user.created_at) + '</td>' +
                 '<td><span class="badge ' + statusClass + '">' + statusText + '</span></td>' +
                 '<td class="actions-cell">' +
-                    (permissions.canEdit ? '<button onclick="Users.edit(' + user.id + ')" class="btn btn-sm btn-icon btn-primary" title="Edit" aria-label="Edit"><i class="fas fa-edit" aria-hidden="true"></i></button>' : '') +
-                    (permissions.canDelete ? '<button onclick="Users.delete(' + user.id + ')" class="btn btn-sm btn-icon btn-danger" title="Delete" aria-label="Delete"><i class="fas fa-trash" aria-hidden="true"></i></button>' : '') +
+                    (permissions.canEdit ? '<button onclick="Users.edit(' + user.id + ')" class="btn btn-sm btn-icon btn-primary" title="' + t('edit', 'Edit') + '" aria-label="' + t('edit', 'Edit') + '"><i class="fas fa-edit" aria-hidden="true"></i></button>' : '') +
+                    (permissions.canDelete ? '<button onclick="Users.delete(' + user.id + ')" class="btn btn-sm btn-icon btn-danger" title="' + t('delete', 'Delete') + '" aria-label="' + t('delete', 'Delete') + '"><i class="fas fa-trash" aria-hidden="true"></i></button>' : '') +
                 '</td>';
 
             tbody.appendChild(tr);
@@ -306,7 +319,7 @@
     function openAddForm() {
         safeSetValue('formAction', 'add');
         safeSetValue('editingId', '');
-        safeSetText('modalTitle', 'Add User');
+        safeSetText('modalTitle', t('modal.add_title', 'Add User'));
 
         var form = getEl('userForm');
         if (form) form.reset();
@@ -314,7 +327,7 @@
         var password = getEl('password');
         if (password) password.required = true;
 
-        safeSetText('passwordLabel', '*');
+        safeSetText('passwordLabel', t('form.required', '*'));
         safeSetValue('is_active', true);
         safeHide('btnDeleteUser');
 
@@ -330,7 +343,7 @@
 
                 safeSetValue('formAction', 'edit');
                 safeSetValue('editingId', user.id);
-                safeSetText('modalTitle', 'Edit User');
+                safeSetText('modalTitle', t('modal.edit_title', 'Edit User'));
                 safeSetValue('username', user.username);
                 safeSetValue('email', user.email);
                 safeSetValue('password', '');
@@ -338,7 +351,7 @@
                 var password = getEl('password');
                 if (password) password.required = false;
 
-                safeSetText('passwordLabel', '(optional)');
+                safeSetText('passwordLabel', t('form.optional', '(optional)'));
                 safeSetValue('preferred_language', user.preferred_language || 'en');
                 safeSetValue('phone', user.phone);
                 safeSetValue('is_active', user.is_active == 1);
@@ -349,7 +362,7 @@
             }
         } catch (error) {
             console.error('[Users] editUser:', error);
-            showNotification('Failed to load user: ' + error.message, 'error');
+            showNotification(t('messages.load_user_error', 'Failed to load user: ') + error.message, 'error');
         }
     }
 
@@ -387,18 +400,18 @@
             if (result.success) {
                 closeModal();
                 loadUsers(currentPage);
-                showNotification(action === 'edit' ? 'User updated!' : 'User added!', 'success');
+                showNotification(action === 'edit' ? t('messages.user_updated', 'User updated!') : t('messages.user_added', 'User added!'), 'success');
             } else {
-                throw new Error(result.message || 'Save failed');
+                throw new Error(result.message || t('messages.save_failed', 'Save failed'));
             }
         } catch (error) {
             console.error('[Users] submitForm:', error);
-            showNotification('Failed to save: ' + error.message, 'error');
+            showNotification(t('messages.save_error', 'Failed to save: ') + error.message, 'error');
         }
     }
 
     async function deleteUser(id) {
-        if (!confirm('Delete this user?')) return;
+        if (!confirm(t('messages.confirm_delete', 'Delete this user?'))) return;
 
         try {
             var result = await apiFetch('/api/users_account', {
@@ -413,13 +426,13 @@
             if (result.success) {
                 closeModal();
                 loadUsers(currentPage);
-                showNotification('User deleted!', 'success');
+                showNotification(t('messages.user_deleted', 'User deleted!'), 'success');
             } else {
-                throw new Error(result.message || 'Delete failed');
+                throw new Error(result.message || t('messages.delete_failed', 'Delete failed'));
             }
         } catch (error) {
             console.error('[Users] deleteUser:', error);
-            showNotification('Failed to delete: ' + error.message, 'error');
+            showNotification(t('messages.delete_error', 'Failed to delete: ') + error.message, 'error');
         }
     }
 
