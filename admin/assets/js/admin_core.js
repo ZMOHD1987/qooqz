@@ -428,6 +428,213 @@
   }
 
   // ════════════════════════════════════════════════════════════
+  // DYNAMIC BUTTON ENGINE
+  // ════════════════════════════════════════════════════════════
+  // Provides utilities for creating, styling, and managing buttons
+  // dynamically from DB-driven button_styles data.
+  // All button properties come from window.ADMIN_UI.theme.button_styles.
+  // Pages use a prefix (e.g. 'prd-', 'usr-') to namespace their buttons.
+
+  Admin.buttons = (function () {
+    'use strict';
+
+    /**
+     * Get all button styles from ADMIN_UI theme data.
+     * @returns {Array} Array of button style objects from DB
+     */
+    function getStyles() {
+      return window.ADMIN_UI?.theme?.button_styles || [];
+    }
+
+    /**
+     * Find a specific button style by slug.
+     * @param {string} slug - Button slug (e.g. 'primary', 'danger', 'outline')
+     * @returns {Object|null} Button style object or null
+     */
+    function getStyleBySlug(slug) {
+      if (!slug) return null;
+      const styles = getStyles();
+      return styles.find(function (s) {
+        return s.slug === slug;
+      }) || null;
+    }
+
+    /**
+     * Build inline style string from a button style object.
+     * @param {Object} style - Button style from DB
+     * @returns {string} CSS inline style string
+     */
+    function buildInlineStyle(style) {
+      if (!style) return '';
+      var parts = [];
+      if (style.background_color) parts.push('background-color:' + style.background_color);
+      if (style.text_color)       parts.push('color:' + style.text_color);
+      if (style.border_color) {
+        var bw = style.border_width || 1;
+        parts.push('border:' + bw + 'px solid ' + style.border_color);
+      }
+      if (style.border_radius) parts.push('border-radius:' + style.border_radius + 'px');
+      if (style.padding)       parts.push('padding:' + style.padding);
+      if (style.font_size)     parts.push('font-size:' + style.font_size);
+      if (style.font_weight)   parts.push('font-weight:' + style.font_weight);
+      return parts.join(';');
+    }
+
+    /**
+     * Build hover style string from a button style object.
+     * @param {Object} style - Button style from DB
+     * @returns {string} CSS inline style string for hover state
+     */
+    function buildHoverStyle(style) {
+      if (!style) return '';
+      var parts = [];
+      if (style.hover_background_color) parts.push('background-color:' + style.hover_background_color);
+      if (style.hover_text_color)       parts.push('color:' + style.hover_text_color);
+      if (style.hover_border_color)     parts.push('border-color:' + style.hover_border_color);
+      return parts.join(';');
+    }
+
+    /**
+     * Create a button element with DB-driven styles.
+     * @param {Object} options
+     * @param {string} options.slug     - Button style slug (e.g. 'primary')
+     * @param {string} options.prefix   - Page prefix (e.g. 'prd-')
+     * @param {string} options.text     - Button label text
+     * @param {string} [options.icon]   - FontAwesome icon class (e.g. 'fas fa-plus')
+     * @param {string} [options.id]     - Button ID
+     * @param {string} [options.type]   - Button type ('button', 'submit', 'reset')
+     * @param {Object} [options.data]   - data-* attributes as key-value pairs
+     * @param {string} [options.extraClass] - Additional CSS classes
+     * @param {Function} [options.onClick] - Click handler
+     * @returns {HTMLButtonElement}
+     */
+    function create(options) {
+      var slug   = options.slug || 'primary';
+      var prefix = options.prefix || '';
+      var style  = getStyleBySlug(slug);
+      var btn    = document.createElement('button');
+
+      btn.type = options.type || 'button';
+      btn.className = 'btn btn-' + slug;
+      if (options.extraClass) btn.className += ' ' + options.extraClass;
+      if (prefix) btn.className += ' ' + prefix + 'btn-' + slug;
+
+      if (options.id) btn.id = options.id;
+
+      // Set data attributes
+      if (options.data) {
+        Object.keys(options.data).forEach(function (key) {
+          btn.setAttribute('data-' + key, options.data[key]);
+        });
+      }
+
+      // Store slug for hover engine
+      btn.setAttribute('data-btn-slug', slug);
+
+      // Build content
+      var html = '';
+      if (options.icon) {
+        html += '<i class="' + options.icon + '" aria-hidden="true"></i>';
+      }
+      if (options.text) {
+        html += (options.icon ? ' ' : '') + options.text;
+      }
+      btn.innerHTML = html;
+
+      // Attach click handler
+      if (typeof options.onClick === 'function') {
+        btn.addEventListener('click', options.onClick);
+      }
+
+      return btn;
+    }
+
+    /**
+     * Apply hover effects to all buttons with [data-btn-slug] inside a container.
+     * Uses DB-driven hover_* properties from button_styles.
+     * @param {HTMLElement} [container=document] - Scope to search within
+     */
+    function applyHoverEffects(container) {
+      var root = container || document;
+      var buttons = root.querySelectorAll('[data-btn-slug]');
+      buttons.forEach(function (btn) {
+        var slug  = btn.getAttribute('data-btn-slug');
+        var style = getStyleBySlug(slug);
+        if (!style) return;
+
+        var hoverCss   = buildHoverStyle(style);
+        if (!hoverCss) return;
+
+        var originalBg    = btn.style.backgroundColor;
+        var originalColor = btn.style.color;
+        var originalBorder = btn.style.borderColor;
+
+        btn.addEventListener('mouseenter', function () {
+          if (btn.disabled) return;
+          if (style.hover_background_color) btn.style.backgroundColor = style.hover_background_color;
+          if (style.hover_text_color)       btn.style.color = style.hover_text_color;
+          if (style.hover_border_color)     btn.style.borderColor = style.hover_border_color;
+        });
+
+        btn.addEventListener('mouseleave', function () {
+          btn.style.backgroundColor = originalBg;
+          btn.style.color = originalColor;
+          btn.style.borderColor = originalBorder;
+        });
+      });
+    }
+
+    /**
+     * Disable a button (sets disabled attribute and opacity).
+     * @param {HTMLButtonElement} btn
+     */
+    function disable(btn) {
+      if (!btn) return;
+      btn.disabled = true;
+      btn.setAttribute('aria-disabled', 'true');
+    }
+
+    /**
+     * Enable a button (removes disabled attribute).
+     * @param {HTMLButtonElement} btn
+     */
+    function enable(btn) {
+      if (!btn) return;
+      btn.disabled = false;
+      btn.removeAttribute('aria-disabled');
+    }
+
+    /**
+     * Set loading state on a button.
+     * @param {HTMLButtonElement} btn
+     * @param {boolean} isLoading
+     */
+    function setLoading(btn, isLoading) {
+      if (!btn) return;
+      if (isLoading) {
+        btn._originalHTML = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block"></span>';
+        disable(btn);
+      } else {
+        if (btn._originalHTML) btn.innerHTML = btn._originalHTML;
+        enable(btn);
+      }
+    }
+
+    return {
+      getStyles:          getStyles,
+      getStyleBySlug:     getStyleBySlug,
+      buildInlineStyle:   buildInlineStyle,
+      buildHoverStyle:    buildHoverStyle,
+      create:             create,
+      applyHoverEffects:  applyHoverEffects,
+      disable:            disable,
+      enable:             enable,
+      setLoading:         setLoading
+    };
+  })();
+
+  // ════════════════════════════════════════════════════════════
   // I18N (INTERNATIONALIZATION)
   // ════════════════════════════════════════════════════════════
   
