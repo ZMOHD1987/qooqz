@@ -1586,7 +1586,7 @@
 
         el.prodImagesPreview.innerHTML = state.selectedImages.map((img, idx) => `
             <div class="image-item" data-index="${idx}">
-                <img src="${esc(img.url || img.thumb_url)}" alt="">
+                <img src="${esc(img.url || img.thumb_url)}" alt="${esc(img.alt_text || 'Product image')}">
                 <button type="button" class="btn btn-sm btn-danger image-item-remove"
                         onclick="Products.removeImage(${idx})">
                     <i class="fas fa-times"></i>

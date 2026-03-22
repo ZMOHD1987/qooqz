@@ -122,7 +122,7 @@ if (!function_exists('assetVer')) {
         static $cache = [];
         if (!isset($cache[$path])) {
             $full = $_SERVER['DOCUMENT_ROOT'] . $path;
-            $cache[$path] = file_exists($full) ? (string)filemtime($full) : '0';
+            $cache[$path] = file_exists($full) ? (string)filemtime($full) : '1';
         }
         return $cache[$path];
     }

@@ -184,6 +184,9 @@ textarea.form-control {
 }
 
 .image-item-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
     padding: 2px 6px;
 }
 
@@ -573,7 +576,7 @@ textarea.form-control {
 .prd-toast-error   { background: var(--danger-color, var(--error-color, #ef4444)); }
 .prd-toast-warning {
     background: var(--warning-color, #f59e0b);
-    color: color-mix(in srgb, var(--warning-color, #f59e0b) 10%, #000);
+    color: #1f2937;
 }
 .prd-toast-info    { background: var(--info-color, var(--primary-color, #3b82f6)); }
 
@@ -659,6 +662,11 @@ textarea.form-control {
 [dir="rtl"] .image-main-badge {
     left: auto;
     right: 4px;
+}
+
+[dir="rtl"] .image-item-remove {
+    right: auto;
+    left: 4px;
 }
 
 /* ════════════════════════════════════════════════════════════
