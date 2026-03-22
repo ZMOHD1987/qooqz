@@ -145,7 +145,7 @@ if (!function_exists('assetVer')) {
           <label class="filter-label" for="dateTo"><?= _dt('filter.date_to', 'To') ?></label>
           <input type="date" class="form-control" id="dateTo" title="<?= _dt('filter.date_to', 'To') ?>">
         </div>
-        <div class="filter-group">
+        <div class="filter-group filter-group--buttons">
           <label class="filter-label" aria-hidden="true">&nbsp;</label>
           <div class="filter-buttons">
             <button class="btn btn-sm btn-icon btn-primary" id="btnFilter" data-btn-slug="primary" title="<?= _dt('filter.apply', 'Filter') ?>" aria-label="<?= _dt('filter.apply', 'Filter') ?>"><i class="fas fa-search" aria-hidden="true"></i></button>

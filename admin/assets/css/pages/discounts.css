@@ -148,40 +148,46 @@
     flex: 1;
 }
 
-/* Filters Grid — proper grid layout, buttons don't stretch full-width */
+/* Filters — single-row flex layout, all filters aligned horizontally */
 .filters-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 0.8rem;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.6rem;
     align-items: flex-end;
 }
 
 .filter-group {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.25rem;
     min-width: 0;
+    flex: 1 1 0;
 }
 
 .filter-group--search {
-    grid-column: span 2;
+    flex: 2 1 0;
+}
+
+.filter-group--buttons {
+    flex: 0 0 auto;
 }
 
 .filter-label {
     display: block;
     margin-bottom: 0;
-    font-size: clamp(0.78rem, 1.1vw, 0.875rem);
+    font-size: 0.75rem;
     color: var(--text-secondary, #94a3b8);
     font-weight: 500;
     font-family: var(--body-font-family, inherit);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .filter-buttons {
     display: flex;
-    gap: 0.5rem;
-    align-items: flex-end;
-    padding-bottom: 1px;
-    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
 }
 
 /* Table */
@@ -615,10 +621,17 @@
     }
 
     .filters-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        flex-wrap: wrap;
+    }
+    .filter-group {
+        flex: 1 1 calc(50% - 0.6rem);
+        min-width: 120px;
     }
     .filter-group--search {
-        grid-column: span 2;
+        flex: 1 1 100%;
+    }
+    .filter-group--buttons {
+        flex: 0 0 auto;
     }
 }
 
@@ -644,16 +657,22 @@
     }
 
     .filters-grid {
-        grid-template-columns: 1fr;
+        flex-wrap: wrap;
+    }
+    .filter-group {
+        flex: 1 1 100%;
     }
     .filter-group--search {
-        grid-column: span 1;
+        flex: 1 1 100%;
+    }
+    .filter-group--buttons {
+        flex: 1 1 100%;
     }
     .filter-buttons {
-        flex-direction: column;
+        justify-content: stretch;
     }
     .filter-buttons .btn {
-        width: 100%;
+        flex: 1;
         justify-content: center;
     }
 
