@@ -312,7 +312,55 @@
 }
 
 /* ════════════════════════════════════════════════════════════
-   BADGES
+   TOGGLE SWITCH — DB-driven colors via CSS variables
+   ════════════════════════════════════════════════════════════ */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 38px;
+    height: 22px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--secondary-color, #64748b) 30%, transparent);
+    border: 1px solid var(--border-color, #334155);
+    border-radius: 22px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background: var(--text-secondary, #94a3b8);
+    border-radius: 50%;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: color-mix(in srgb, var(--success-color, #10b981) 35%, transparent);
+    border-color: var(--success-color, #10b981);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(16px);
+    background: var(--success-color, #10b981);
+}
+
+/* ════════════════════════════════════════════════════════════
+   BADGES — DB-driven colors via CSS variables
    ════════════════════════════════════════════════════════════ */
 .badge {
     padding: 4px 8px;
@@ -323,13 +371,15 @@
 }
 
 .badge-active {
-    background: rgba(16, 185, 129, 0.12);
+    background: color-mix(in srgb, var(--success-color, #10b981) 12%, transparent);
     color: var(--success-color, #10b981);
+    border: 1px solid color-mix(in srgb, var(--success-color, #10b981) 30%, transparent);
 }
 
 .badge-inactive {
-    background: rgba(239, 68, 68, 0.12);
+    background: color-mix(in srgb, var(--danger-color, #ef4444) 12%, transparent);
     color: var(--danger-color, #ef4444);
+    border: 1px solid color-mix(in srgb, var(--danger-color, #ef4444) 25%, transparent);
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -523,6 +573,15 @@
 
 [dir="rtl"] .usr-modal-backdrop { direction: rtl; }
 [dir="rtl"] .usr-modal-header   { flex-direction: row-reverse; }
+
+[dir="rtl"] .toggle-slider::before {
+    left: auto;
+    right: 3px;
+}
+
+[dir="rtl"] .toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(-16px);
+}
 
 [dir="rtl"] .form-group label {
     text-align: start;
