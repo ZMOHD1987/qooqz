@@ -12,7 +12,7 @@
     // ════════════════════════════════════════════════════════════
     const CONFIG = window.PRODUCTS_CONFIG || {};
     const AF = window.AdminFramework || {};
-    const PERMS = window.PAGE_PERMISSIONS || {};
+    const PERMS = CONFIG.permissions || window.PAGE_PERMISSIONS || {};
 
     const API = {
         products: CONFIG.apiUrl || '/api/products',
@@ -47,10 +47,11 @@
         productAttributes: [],
         productVariants: [],
         permissions: PERMS,
-        language: window.USER_LANGUAGE || CONFIG.lang || 'en',
-        direction: window.USER_DIRECTION || 'ltr',
-        csrfToken: window.CSRF_TOKEN || CONFIG.csrfToken || '',
-        tenantId: window.APP_CONFIG?.TENANT_ID || 1
+        language: CONFIG.lang || window.USER_LANGUAGE || 'en',
+        direction: CONFIG.dir || window.USER_DIRECTION || 'ltr',
+        csrfToken: CONFIG.csrfToken || window.CSRF_TOKEN || '',
+        tenantId: Number(CONFIG.tenantId || window.APP_CONFIG?.TENANT_ID || 1),
+        userId: Number(CONFIG.userId || window.APP_CONFIG?.USER_ID || 0)
     };
 
     let el = {}; // DOM elements cache
@@ -635,9 +636,9 @@
             }
 
             const canEdit = state.permissions.canEdit || state.permissions.canEditAll ||
-                (state.permissions.canEditOwn && prod.created_by_user_id == window.APP_CONFIG?.USER_ID);
+                (state.permissions.canEditOwn && prod.created_by_user_id == state.userId);
             const canDelete = state.permissions.canDelete || state.permissions.canDeleteAll ||
-                (state.permissions.canDeleteOwn && prod.created_by_user_id == window.APP_CONFIG?.USER_ID);
+                (state.permissions.canDeleteOwn && prod.created_by_user_id == state.userId);
 
             return `
                 <tr data-id="${prod.id}">

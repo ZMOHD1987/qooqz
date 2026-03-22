@@ -141,7 +141,7 @@ if (!function_exists('assetVer')) {
                 <input type="hidden" id="formId" name="id">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
                 <input type="hidden" id="prodTenantId" name="tenant_id" value="<?= $tenantId ?>">
-                <input type="hidden" id="prodName" name="name" value="">
+                <input type="hidden" id="prodName" name="name" value=""><!-- synced from enProdName in products.js -->
                 <input type="hidden" id="prodTranslationsData" name="translations_data">
                 <input type="hidden" id="prodAttributesData" name="attributes_data">
                 <input type="hidden" id="prodVariantsData" name="variants_data">
@@ -453,7 +453,7 @@ if (!function_exists('assetVer')) {
                     <h4 class="section-heading" data-i18n="tabs.categories">
                         <i class="fas fa-folder-tree"></i> <?= _prd('tabs.categories', 'Categories') ?>
                     </h4>
-                    <div class="form-row" style="display:none;">
+                    <div class="form-row" hidden><!-- legacy hooks required by products.js category cascade -->
                         <div class="form-group">
                             <label for="prodMainCategory" data-i18n="form.fields.main_category.label">
                                 <?= _prd('form.fields.main_category.label', 'Main Category') ?>
@@ -868,11 +868,7 @@ window.PRODUCTS_CONFIG = {
         'canDeleteAll' => $canDeleteAll,
         'canDeleteOwn' => $canDeleteOwn,
         'isSuperAdmin' => $isSuperAdmin,
-    ], JSON_UNESCAPED_UNICODE) ?>,
-    canCreate: <?= json_encode($canCreate) ?>,
-    canEdit: <?= json_encode($canEdit) ?>,
-    canDelete: <?= json_encode($canDelete) ?>,
-    isSuperAdmin: <?= json_encode($isSuperAdmin) ?>
+    ], JSON_UNESCAPED_UNICODE) ?>
 };
 </script>
 <script src="/admin/assets/js/pages/products.js?v=<?= assetVer('/admin/assets/js/pages/products.js') ?>"></script>
