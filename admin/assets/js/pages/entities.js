@@ -11,8 +11,7 @@
     // CONFIGURATION & STATE
     // ════════════════════════════════════════════════════════════
     const CONFIG = window.ENTITIES_CONFIG || {};
-    const AF = window.AdminFramework || {};
-    const PERMS = window.PAGE_PERMISSIONS || {};
+    const PERMS = CONFIG.permissions || {};
 
     const API = {
         entities: CONFIG.apiUrl || '/api/entities',
@@ -47,11 +46,11 @@
         addressData: null,
         deletedTranslationIds: [],
         permissions: PERMS,
-        language: window.USER_LANGUAGE || CONFIG.lang || 'en',
-        direction: window.USER_DIRECTION || 'ltr',
-        csrfToken: window.CSRF_TOKEN || CONFIG.csrfToken || '',
-        tenantId: window.APP_CONFIG?.TENANT_ID || 1,
-        userId: window.APP_CONFIG?.USER_ID || null
+        language: CONFIG.lang || 'en',
+        direction: CONFIG.dir || 'ltr',
+        csrfToken: CONFIG.csrfToken || '',
+        tenantId: CONFIG.tenantId || 1,
+        userId: CONFIG.userId || null
     };
 
     let el = {}; // DOM elements cache
@@ -59,6 +58,7 @@
     let _messageListenerAdded = false; // prevent duplicate message listeners
     let _addressMessageListenerAdded = false; // prevent duplicate address message listeners
     let _currentImageType = null; // track current image type for media studio
+    let _escListenerAdded = false;
 
     // Days of week configuration
     const DAYS_OF_WEEK = [
@@ -1480,6 +1480,8 @@
             el.mediaFrame.src = `${CONFIG.mediaStudioBase}?embedded=1&tenant_id=${state.tenantId}&lang=${state.language}&owner_id=${state.currentEntity.id}&image_type_id=${imageType}`;
 
             el.mediaFrame.dataset.imageType = imageType;
+            const first = el.mediaModal.querySelector('input:not([type="hidden"]), select, textarea, button');
+            if (first) setTimeout(() => first.focus(), 50);
         }
     }
 
@@ -2093,57 +2095,65 @@
     // ════════════════════════════════════════════════════════════
     // UI STATE HELPERS
     // ════════════════════════════════════════════════════════════
-    function showLoading() {
-        if (el.loading) {
-            el.loading.innerHTML = `<div class="spinner"></div><p>${t('entities.loading', 'Loading...')}</p>`;
-            el.loading.style.display = 'flex';
+    function showState(nextState, errorMsg = '') {
+        const { loading, empty, error, container } = el;
+        [loading, empty, error, container].forEach((node) => {
+            if (node) node.style.display = 'none';
+        });
+
+        switch (nextState) {
+            case 'loading':
+                if (loading) loading.style.display = 'flex';
+                break;
+            case 'empty':
+                if (empty) empty.style.display = 'flex';
+                break;
+            case 'error':
+                if (error) error.style.display = 'flex';
+                if (errorMsg && el.errorMessage) el.errorMessage.textContent = errorMsg;
+                break;
+            default:
+                if (container) container.style.display = 'block';
+                break;
         }
-        if (el.container) el.container.style.display = 'none';
-        if (el.empty) el.empty.style.display = 'none';
-        if (el.error) el.error.style.display = 'none';
     }
 
-    function showTable() {
-        if (el.loading) el.loading.style.display = 'none';
-        if (el.container) el.container.style.display = 'block';
-        if (el.empty) el.empty.style.display = 'none';
-        if (el.error) el.error.style.display = 'none';
-    }
-
+    function showLoading() { showState('loading'); }
+    function showTable()   { showState('table'); }
     function showEmpty() {
-        if (el.loading) el.loading.style.display = 'none';
-        if (el.container) el.container.style.display = 'none';
-        if (el.error) el.error.style.display = 'none';
-        if (el.empty) {
-            el.empty.innerHTML = `
-                <div class="empty-icon">🏢</div>
-                <h3>${t('table.empty.title', 'No Entities Found')}</h3>
-                <p>${t('table.empty.message', 'Start by adding your first entity')}</p>
-                ${state.permissions.canCreate ? `<button class="btn btn-primary" onclick="Entities.add()">
-                    <i class="fas fa-plus"></i> ${t('table.empty.add_first', 'Add First Entity')}
-                </button>` : ''}
-            `;
-            el.empty.style.display = 'flex';
-        }
+        showState('empty');
         if (el.tbody) el.tbody.innerHTML = '';
     }
-
-    function showError(message) {
-        if (el.loading) el.loading.style.display = 'none';
-        if (el.container) el.container.style.display = 'none';
-        if (el.empty) el.empty.style.display = 'none';
-        if (el.error) {
-            if (el.errorMessage) el.errorMessage.textContent = message;
-            el.error.style.display = 'flex';
-        }
-    }
+    function showError(message) { showState('error', message); }
 
     function showNotification(message, type = 'info') {
-        if (AF.notify) {
-            AF.notify(message, type);
-        } else {
-            alert(message);
+        let container = document.getElementById('entNotifications');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'entNotifications';
+            container.className = 'ent-notifications';
+            const page = document.getElementById('entitiesPageContainer');
+            (page || document.body).insertBefore(container, (page || document.body).firstChild);
         }
+
+        const toast = document.createElement('div');
+        toast.className = `ent-toast ent-toast-${type}`;
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+
+        const msg = document.createElement('span');
+        msg.textContent = message;
+        toast.appendChild(msg);
+
+        const close = document.createElement('button');
+        close.className = 'ent-toast-close';
+        close.setAttribute('aria-label', 'Close');
+        close.textContent = '\u00d7';
+        close.addEventListener('click', () => toast.remove());
+        toast.appendChild(close);
+
+        container.appendChild(toast);
+        setTimeout(() => toast && toast.remove && toast.remove(), 4500);
     }
 
     // ════════════════════════════════════════════════════════════
@@ -2166,11 +2176,11 @@
 
         el = {
             // Containers
-            container: $id('tableContainer'),
-            loading: $id('tableLoading'),
-            empty: $id('emptyState'),
-            error: $id('errorState'),
-            errorMessage: $id('errorMessage'),
+            container: $id('entTableContainer'),
+            loading: $id('entLoading'),
+            empty: $id('entEmpty'),
+            error: $id('entError'),
+            errorMessage: $id('entErrorMessage'),
 
             // Form
             formContainer: $id('entityFormContainer'),
@@ -2235,8 +2245,6 @@
             // Media
             mediaModal: $id('mediaStudioModal'),
             mediaFrame: $id('mediaStudioFrame'),
-            mediaClose: $id('mediaStudioClose'),
-
             // Address
             addressEmbeddedContainer: $id('addressEmbeddedContainer'),
 
@@ -2341,7 +2349,19 @@
         });
 
         // Media Studio close
-        if (el.mediaClose) el.mediaClose.onclick = closeMediaStudio;
+        document.querySelectorAll('.btn-close-modal').forEach((btn) => {
+            btn.onclick = () => closeMediaStudio();
+        });
+
+        if (!_escListenerAdded) {
+            _escListenerAdded = true;
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== 'Escape') return;
+                if (el.mediaModal && el.mediaModal.style.display !== 'none') {
+                    closeMediaStudio();
+                }
+            });
+        }
 
         // Translations
         if (el.entityAddLangBtn) el.entityAddLangBtn.onclick = addTranslation;
@@ -2408,22 +2428,16 @@
         deleteImage: deleteEntityImage
     };
 
-    // Fragment support
     window.page = { run: init };
-
-    // Auto-init
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () {
-            if (window.AdminFramework && !window.page.__fragment_init) {
-                init().catch(function (e) { console.error('[Entities] Auto-init failed:', e); });
-            }
-        });
-    } else {
-        if (window.AdminFramework && !window.page.__fragment_init) {
-            init().catch(function (e) { console.error('[Entities] Auto-init failed:', e); });
-        }
+    if (window.Admin?.page?.register) {
+        window.Admin.page.register('entities', init);
     }
-    window.page.__fragment_init = false;
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
 
     console.log('[Entities] Module loaded');
 
