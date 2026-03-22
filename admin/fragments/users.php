@@ -3,287 +3,251 @@ declare(strict_types=1);
 
 /**
  * /admin/fragments/users.php
- * Production Version - Uses admin_context
+ * Users Management — Production (matches discounts.php pattern)
+ *
+ * DB Table columns: id, username, email, password_hash,
+ *   preferred_language, phone, is_active, created_at, updated_at
  */
 
 // ════════════════════════════════════════════════════════════
 // DETECT REQUEST TYPE
 // ════════════════════════════════════════════════════════════
-$isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+$isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
           strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 $isEmbedded = isset($_GET['embedded']) || isset($_POST['embedded']);
 $isFragment = $isAjax || $isEmbedded;
 
-// ════════════════════════════════════════════════════════════
-// LOAD CONTEXT
-// ════════════════════════════════════════════════════════════
-if (!$isFragment) {
-    require_once __DIR__ . '/../includes/header.php';
-} else {
-    // Load admin_context in fragment mode
+if ($isFragment) {
     require_once __DIR__ . '/../includes/admin_context.php';
+} else {
+    require_once __DIR__ . '/../includes/header.php';
 }
 
 // ════════════════════════════════════════════════════════════
-// ✅ USE HELPER FUNCTIONS FROM admin_context
+// CONTEXT (matching discounts.php / categories.php pattern)
 // ════════════════════════════════════════════════════════════
-$canCreate = can('manage_users');
-$canEdit = can('manage_users');
-$canDelete = can('manage_users');
+$payload     = $GLOBALS['ADMIN_UI'] ?? [];
+$user        = $payload['user'] ?? (function_exists('admin_user') ? admin_user() : []);
+$permissions = $user['permissions'] ?? [];
+$roles       = $user['roles'] ?? [];
+$lang        = $payload['lang'] ?? ($user['preferred_language'] ?? 'en');
+$dir         = $payload['direction'] ?? (in_array($lang, ['ar','he','fa','ur']) ? 'rtl' : 'ltr');
+$csrf        = $payload['csrf_token'] ?? (function_exists('admin_csrf') ? admin_csrf() : '');
+$username    = $user['username'] ?? ($_SESSION['username'] ?? 'unknown');
 
-$lang = admin_lang();
-$userLanguage = admin_user()['preferred_language'] ?? $lang;
-$csrf = admin_csrf();
-$username = admin_username();
+$isSuperAdmin = in_array('super_admin', $roles, true) || (function_exists('is_super_admin') && is_super_admin());
+$canManage = $isSuperAdmin || in_array('manage_users', $permissions, true);
+$canCreate = $canManage;
+$canEdit   = $canManage;
+$canDelete = $canManage;
 
+// ─── Translation helper ───
+$_utAllowedLangs = ['ar','en','fr','de','es','it','pt','ru','zh','ja','ko','tr','nl','sv','pl','uk','hi','bn','id','ms','th','vi','cs','ro','hu','el'];
+$_utLangCode = in_array($lang, $_utAllowedLangs) ? $lang : 'en';
+$_utStringsFile = __DIR__ . '/../../languages/Users/' . $_utLangCode . '.json';
+$_utStrings = file_exists($_utStringsFile) ? (json_decode(file_get_contents($_utStringsFile), true) ?: []) : [];
+function _ut(string $key, string $fallback = ''): string {
+    global $_utStrings;
+    $parts = explode('.', $key);
+    $val = $_utStrings;
+    foreach ($parts as $p) {
+        if (!is_array($val) || !isset($val[$p])) return $fallback ?: $key;
+        $val = $val[$p];
+    }
+    return is_string($val) ? $val : ($fallback ?: $key);
+}
+
+if (!function_exists('assetVer')) {
+    function assetVer(string $path): string
+    {
+        static $cache = [];
+        if (!isset($cache[$path])) {
+            $full         = $_SERVER['DOCUMENT_ROOT'] . $path;
+            $cache[$path] = file_exists($full) ? (string) filemtime($full) : '0';
+        }
+        return $cache[$path];
+    }
+}
 ?>
+<link rel="stylesheet"
+      href="/admin/assets/css/pages/users.css?v=<?= assetVer('/admin/assets/css/pages/users.css') ?>">
 
-<!-- Force load CSS if embedded -->
-<?php if ($isFragment): ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/users.css?v=<?= time() ?>">
-<?php endif; ?>
+<meta data-page="users"
+      data-i18n-files="/languages/Users/<?= rawurlencode($_utLangCode) ?>.json">
 
-<!-- Page Meta -->
-<meta data-page="users" 
-      data-i18n-files="/languages/Users/<?= htmlspecialchars($userLanguage) ?>.json"
-      data-assets-css="/admin/assets/css/pages/users.css"
-      data-assets-js="/admin/assets/js/pages/users.js">
+<div class="page-container full-page-admin" dir="<?= $dir ?>">
 
-<!-- Page Container -->
-<div class="page-container" id="usersPageContainer">
-
-    <!-- Page Header -->
-    <div class="page-header">
-        <div class="page-header-content">
-            <h1 class="page-title" data-i18n="users.title">Users Management</h1>
-            <p class="page-subtitle" data-i18n="users.subtitle">Manage system users</p>
-        </div>
-        <div class="page-header-actions">
-            <?php if ($canCreate): ?>
-            <button id="btnAddUser" class="btn btn-primary" style="display:inline-flex!important;opacity:1!important;visibility:visible!important">
-                <i class="fas fa-plus"></i>
-                <span data-i18n="users.add_new">Add User</span>
-            </button>
-            <?php endif; ?>
-        </div>
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h2><?= _ut('title', 'Users Management') ?></h2>
+      <p class="page-subtitle"><?= _ut('subtitle', 'Manage system users') ?></p>
     </div>
-
-    <!-- Form Container -->
-    <div id="formContainer" class="card form-card" style="display:none">
-        <div class="card-header">
-            <h3 id="formTitle" data-i18n="users.form.add">Add User</h3>
-            <button id="btnCloseForm" class="btn btn-sm btn-outline">×</button>
-        </div>
-        <div class="card-body">
-            <form id="userForm">
-                <input type="hidden" id="formAction" value="add">
-                <input type="hidden" id="editingId" value="">
-                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="username" data-i18n="users.form.username">Username *</label>
-                        <input type="text" id="username" name="username" required placeholder="Enter username">
-                    </div>
-                    <div class="form-group">
-                        <label for="email" data-i18n="users.form.email">Email *</label>
-                        <input type="email" id="email" name="email" required placeholder="Enter email">
-                    </div>
-                    <div class="form-group">
-                        <label for="password">
-                            <span data-i18n="users.form.password">Password</span>
-                            <span id="passwordLabel">*</span>
-                        </label>
-                        <input type="password" id="password" name="password" placeholder="Enter password">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="preferred_language" data-i18n="users.form.preferred_language">Language</label>
-                        <select id="preferred_language" name="preferred_language">
-                            <option value="en">English</option>
-                            <option value="ar">Arabic</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="role_id" data-i18n="users.form.role">Role</label>
-                        <select id="role_id" name="role_id">
-                            <option value="">Select Role</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="country_id" data-i18n="users.form.country">Country</label>
-                        <select id="country_id" name="country_id">
-                            <option value="">Select Country</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="city_id" data-i18n="users.form.city">City</label>
-                        <select id="city_id" name="city_id">
-                            <option value="">Select City</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="phone" data-i18n="users.form.phone">Phone</label>
-                        <input type="text" id="phone" name="phone" placeholder="Enter phone">
-                    </div>
-                    <div class="form-group">
-                        <label for="timezone" data-i18n="users.form.timezone">Timezone</label>
-                        <select id="timezone" name="timezone">
-                            <option value="UTC">UTC</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="is_active" name="is_active" checked>
-                            <span data-i18n="users.form.active">Active</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary" data-i18n="users.form.save">Save</button>
-                    <button type="button" id="btnCancelForm" class="btn btn-outline" data-i18n="users.form.cancel">Cancel</button>
-                    <?php if ($canDelete): ?>
-                    <button type="button" id="btnDeleteUser" class="btn btn-danger" style="display:none" data-i18n="users.form.delete">Delete</button>
-                    <?php endif; ?>
-                </div>
-            </form>
-        </div>
+    <div class="page-header-actions">
+      <?php if ($canCreate): ?>
+      <button class="btn btn-primary" id="btnAddUser" data-btn-slug="primary">+ <?= _ut('add_user', 'Add User') ?></button>
+      <?php endif; ?>
     </div>
+  </div>
 
-    <!-- Filters Card -->
-    <div class="card filter-card">
-        <div class="card-body">
-            <div class="filters-grid">
-                <div class="filter-group">
-                    <label for="searchInput" data-i18n="users.search">Search</label>
-                    <input type="text" id="searchInput" class="form-control" placeholder="Search">
-                </div>
-
-                <div class="filter-group">
-                    <label for="languageFilter" data-i18n="users.language">Language</label>
-                    <select id="languageFilter" class="form-control">
-                        <option value="">All Languages</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label for="countryFilter" data-i18n="users.country">Country</label>
-                    <select id="countryFilter" class="form-control">
-                        <option value="">All Countries</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label for="cityFilter" data-i18n="users.city">City</label>
-                    <select id="cityFilter" class="form-control" disabled>
-                        <option value="">All Cities</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label for="timezoneFilter" data-i18n="users.timezone">Timezone</label>
-                    <select id="timezoneFilter" class="form-control">
-                        <option value="">All Timezones</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label for="roleFilter" data-i18n="users.role">Role</label>
-                    <select id="roleFilter" class="form-control">
-                        <option value="">All Roles</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label for="statusFilter" data-i18n="users.status">Status</label>
-                    <select id="statusFilter" class="form-control">
-                        <option value="">All Status</option>
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                    </select>
-                </div>
-
-                <div class="filter-actions">
-                    <button id="btnApplyFilters" class="btn btn-secondary" data-i18n="users.apply_filters">Apply</button>
-                    <button id="btnResetFilters" class="btn btn-outline" data-i18n="users.reset_filters">Reset</button>
-                </div>
-            </div>
+  <!-- Filter Bar -->
+  <div class="card">
+    <div class="card-body" style="padding: clamp(8px, 1.5vw, 12px) clamp(12px, 2vw, 16px);">
+      <div class="filters-grid">
+        <div class="filter-group filter-group--search">
+          <label class="filter-label" for="searchInput"><?= _ut('filter.search', 'Search') ?></label>
+          <input type="text" class="form-control" id="searchInput" placeholder="<?= _ut('filter.search_placeholder', 'Search by username or email...') ?>">
         </div>
-    </div>
-
-    <!-- Table Card -->
-    <div class="card table-card">
-        <div class="card-body">
-            
-            <!-- Loading State -->
-            <div id="tableLoading" class="loading-state">
-                <div class="spinner"></div>
-                <p data-i18n="users.loading">Loading...</p>
-            </div>
-
-            <!-- Table Container -->
-            <div id="tableContainer" style="display:none">
-                <div class="table-responsive">
-                    <table class="data-table" id="usersTable">
-                        <thead>
-                            <tr>
-                                <th data-i18n="users.table.id">ID</th>
-                                <th data-i18n="users.table.username">Username</th>
-                                <th data-i18n="users.table.email">Email</th>
-                                <th data-i18n="users.table.role">Role</th>
-                                <th data-i18n="users.table.country">Country</th>
-                                <th data-i18n="users.table.city">City</th>
-                                <th data-i18n="users.table.created_at">Created At</th>
-                                <th data-i18n="users.table.status">Status</th>
-                                <th data-i18n="users.table.actions">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableBody"></tbody>
-                    </table>
-                </div>
-
-                <!-- Pagination -->
-                <div class="pagination-wrapper">
-                    <div class="pagination-info">
-                        <span data-i18n="users.showing">Showing</span>
-                        <span id="paginationInfo">0-0 of 0</span>
-                    </div>
-                    <div class="pagination" id="pagination"></div>
-                </div>
-            </div>
-
-            <!-- Empty State -->
-            <div id="emptyState" class="empty-state" style="display:none">
-                <div class="empty-icon">👥</div>
-                <h3 data-i18n="users.empty_title">No Users Found</h3>
-                <p data-i18n="users.empty_message">Start by adding users</p>
-                <?php if ($canCreate): ?>
-                <button class="btn btn-primary" onclick="if(window.Users)Users.add()">
-                    <i class="fas fa-plus"></i>
-                    <span data-i18n="users.add_first">Add First User</span>
-                </button>
-                <?php endif; ?>
-            </div>
-
-            <!-- Error State -->
-            <div id="errorState" class="error-state" style="display:none">
-                <div class="error-icon">⚠️</div>
-                <h3 data-i18n="users.error_title">Error Loading Data</h3>
-                <p id="errorMessage"></p>
-                <button id="btnRetry" class="btn btn-secondary" data-i18n="users.retry">Retry</button>
-            </div>
-
+        <div class="filter-group">
+          <label class="filter-label" for="languageFilter"><?= _ut('filter.language', 'Language') ?></label>
+          <select class="form-control" id="languageFilter">
+            <option value=""><?= _ut('filter.all_languages', 'All Languages') ?></option>
+          </select>
         </div>
+        <div class="filter-group">
+          <label class="filter-label" for="statusFilter"><?= _ut('filter.status', 'Status') ?></label>
+          <select class="form-control" id="statusFilter">
+            <option value=""><?= _ut('filter.all_status', 'All Status') ?></option>
+            <option value="1"><?= _ut('filter.active', 'Active') ?></option>
+            <option value="0"><?= _ut('filter.inactive', 'Inactive') ?></option>
+          </select>
+        </div>
+        <div class="filter-group filter-group--buttons">
+          <label class="filter-label" aria-hidden="true">&nbsp;</label>
+          <div class="filter-buttons">
+            <button class="btn btn-sm btn-icon btn-primary" id="btnApplyFilters" data-btn-slug="primary" title="<?= _ut('filter.apply', 'Filter') ?>" aria-label="<?= _ut('filter.apply', 'Filter') ?>"><i class="fas fa-search" aria-hidden="true"></i></button>
+            <button class="btn btn-sm btn-icon btn-secondary" id="btnResetFilters" data-btn-slug="secondary" title="<?= _ut('filter.clear', 'Clear') ?>" aria-label="<?= _ut('filter.clear', 'Clear') ?>"><i class="fas fa-times" aria-hidden="true"></i></button>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
+
+  <!-- Data Table -->
+  <div class="card">
+    <div class="card-body table-overflow">
+
+      <!-- Loading State -->
+      <div id="tableLoading" class="loading-state">
+        <div class="spinner"></div>
+        <p><?= _ut('loading', 'Loading...') ?></p>
+      </div>
+
+      <!-- Table Container -->
+      <div id="tableContainer" style="display:none">
+        <table class="data-table" id="usersTable">
+          <thead>
+            <tr>
+              <th><?= _ut('table.id', 'ID') ?></th>
+              <th><?= _ut('table.username', 'Username') ?></th>
+              <th><?= _ut('table.email', 'Email') ?></th>
+              <th><?= _ut('table.language', 'Language') ?></th>
+              <th><?= _ut('table.phone', 'Phone') ?></th>
+              <th><?= _ut('table.created_at', 'Created At') ?></th>
+              <th><?= _ut('table.status', 'Status') ?></th>
+              <th><?= _ut('table.actions', 'Actions') ?></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr><td colspan="8" class="text-center"><?= _ut('table.loading', 'Loading...') ?></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="empty-state" style="display:none">
+        <div class="empty-icon">👥</div>
+        <h3><?= _ut('empty_title', 'No Users Found') ?></h3>
+        <p><?= _ut('empty_message', 'Start by adding users') ?></p>
+        <?php if ($canCreate): ?>
+        <button class="btn btn-primary" onclick="if(window.Users)Users.add()">
+          <i class="fas fa-plus"></i> <?= _ut('add_first', 'Add First User') ?>
+        </button>
+        <?php endif; ?>
+      </div>
+
+      <!-- Error State -->
+      <div id="errorState" class="error-state" style="display:none">
+        <div class="error-icon">⚠️</div>
+        <h3><?= _ut('error_title', 'Error Loading Data') ?></h3>
+        <p id="errorMessage"></p>
+        <button id="btnRetry" class="btn btn-secondary"><?= _ut('retry', 'Retry') ?></button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination-wrapper">
+    <div class="pagination-info" id="paginationInfo"></div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <!-- Create/Edit User Modal -->
+  <div class="usr-modal-backdrop" id="userModal" style="display:none">
+    <div class="usr-modal-panel">
+      <div class="usr-modal-header">
+        <h3 id="modalTitle"><?= _ut('modal.add_title', 'Add User') ?></h3>
+        <button class="usr-modal-close" id="btnCloseModal" aria-label="Close">&times;</button>
+      </div>
+      <form id="userForm">
+        <input type="hidden" id="formAction" value="add">
+        <input type="hidden" id="editingId" value="">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+
+        <div class="usr-modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="username"><?= _ut('form.username', 'Username') ?> *</label>
+              <input type="text" id="username" name="username" class="form-control" required placeholder="<?= _ut('form.username_placeholder', 'Enter username') ?>">
+            </div>
+            <div class="form-group">
+              <label for="email"><?= _ut('form.email', 'Email') ?> *</label>
+              <input type="email" id="email" name="email" class="form-control" required placeholder="<?= _ut('form.email_placeholder', 'Enter email') ?>">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="password">
+                <?= _ut('form.password', 'Password') ?>
+                <span id="passwordLabel">*</span>
+              </label>
+              <input type="password" id="password" name="password" class="form-control" placeholder="<?= _ut('form.password_placeholder', 'Enter password') ?>">
+            </div>
+            <div class="form-group">
+              <label for="preferred_language"><?= _ut('form.preferred_language', 'Language') ?></label>
+              <select id="preferred_language" name="preferred_language" class="form-control">
+                <option value="en">English</option>
+                <option value="ar">Arabic</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="phone"><?= _ut('form.phone', 'Phone') ?></label>
+              <input type="text" id="phone" name="phone" class="form-control" placeholder="<?= _ut('form.phone_placeholder', 'Enter phone') ?>">
+            </div>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="is_active" name="is_active" checked>
+                <?= _ut('form.active', 'Active') ?>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="usr-modal-footer">
+          <button type="submit" class="btn btn-primary" data-btn-slug="primary"><?= _ut('form.save', 'Save') ?></button>
+          <button type="button" class="btn btn-outline" id="btnCancelForm"><?= _ut('form.cancel', 'Cancel') ?></button>
+          <?php if ($canDelete): ?>
+          <button type="button" id="btnDeleteUser" class="btn btn-danger" data-btn-slug="danger" style="display:none"><?= _ut('form.delete', 'Delete') ?></button>
+          <?php endif; ?>
+        </div>
+      </form>
+    </div>
+  </div>
 
 </div>
 
@@ -293,37 +257,25 @@ $username = admin_username();
 </script>
 
 <script>
-window.USER_LANGUAGE = '<?= htmlspecialchars($userLanguage) ?>';
-console.log('%c[Users] Page loaded using admin_context', 'color:#10b981;font-weight:bold');
-console.log('User:', '<?= htmlspecialchars($username) ?>');
-console.log('Can Create:', <?= $canCreate ? 'true' : 'false' ?>);
-console.log('Can Edit:', <?= $canEdit ? 'true' : 'false' ?>);
-console.log('Can Delete:', <?= $canDelete ? 'true' : 'false' ?>);
-console.log('Is Super Admin:', <?= is_super_admin() ? 'true' : 'false' ?>);
-console.log('Roles:', <?= json_encode(admin_roles()) ?>);
-console.log('Permissions:', <?= json_encode(admin_permissions()) ?>);
+window.USER_LANGUAGE = '<?= htmlspecialchars($lang) ?>';
 </script>
 
 <!-- Load JS if embedded -->
 <?php if ($isFragment): ?>
-<script src="/admin/assets/js/pages/users.js?v=<?= time() ?>"></script>
+<script src="/admin/assets/js/pages/users.js?v=<?= assetVer('/admin/assets/js/pages/users.js') ?>"></script>
 <script>
 (function(){
-    console.log('%c[Users] Embedded mode - initializing', 'color:#3b82f6;font-weight:bold');
     let attempts = 0;
     const check = setInterval(function(){
         attempts++;
         if (window.Users && typeof window.Users.init === 'function') {
             clearInterval(check);
-            console.log('%c[Users] ✅ Module found!', 'color:#10b981;font-weight:bold');
-            window.Users.init().then(()=>{
-                console.log('%c[Users] ✅ Initialized successfully!', 'color:#10b981;font-weight:bold');
-            }).catch(err=>{
-                console.error('%c[Users] ❌ Init failed:', 'color:#ef4444;font-weight:bold', err);
+            window.Users.init().catch(function(err){
+                console.error('[Users] Init failed:', err);
             });
         } else if (attempts > 30) {
             clearInterval(check);
-            console.error('%c[Users] ❌ Timeout after 30 attempts', 'color:#ef4444;font-weight:bold');
+            console.error('[Users] Timeout after 30 attempts');
         }
     }, 200);
 })();
@@ -331,7 +283,6 @@ console.log('Permissions:', <?= json_encode(admin_permissions()) ?>);
 <?php endif; ?>
 
 <?php
-// Load footer if standalone
 if (!$isFragment) {
     require_once __DIR__ . '/../includes/footer.php';
 }
