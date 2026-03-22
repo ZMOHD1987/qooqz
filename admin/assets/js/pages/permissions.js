@@ -209,13 +209,14 @@
           <td><code>${escapeHtml(r.key_name)}</code></td>
           <td><small>${escapeHtml(r.created_at || '')}</small></td>
           <td>
-            <button class="btn btn-sm btn-primary" data-role-edit="${r.id}" aria-label="${t('edit')} role"><i class="fas fa-edit"></i></button>
-            <button class="btn btn-sm btn-danger" data-role-delete="${r.id}" data-role-name="${escapeHtml(r.display_name)}" aria-label="${t('delete')} role"><i class="fas fa-trash"></i></button>
+            <button class="btn btn-sm btn-primary" data-role-edit="${r.id}" data-btn-slug="primary" aria-label="${t('edit')} role"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-sm btn-danger" data-role-delete="${r.id}" data-role-name="${escapeHtml(r.display_name)}" data-btn-slug="danger" aria-label="${t('delete')} role"><i class="fas fa-trash"></i></button>
           </td>
         </tr>
       `).join('');
       tbody.querySelectorAll('[data-role-edit]').forEach(b => b.addEventListener('click', () => openRoleModal(Number(b.dataset.roleEdit))));
       tbody.querySelectorAll('[data-role-delete]').forEach(b => b.addEventListener('click', () => deleteRole(Number(b.dataset.roleDelete), b.dataset.roleName)));
+      if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) Admin.buttons.applyHoverEffects(tbody);
       loading.style.display = 'none';
       content.style.display = 'block';
     } catch (err) {
@@ -321,13 +322,14 @@
           <td><code>${escapeHtml(p.key_name)}</code></td>
           <td><small>${escapeHtml(p.description || '')}</small></td>
           <td>
-            <button class="btn btn-sm btn-primary" data-perm-edit="${p.id}"><i class="fas fa-edit"></i></button>
-            <button class="btn btn-sm btn-danger" data-perm-delete="${p.id}" data-perm-name="${escapeHtml(p.display_name)}"><i class="fas fa-trash"></i></button>
+            <button class="btn btn-sm btn-primary" data-perm-edit="${p.id}" data-btn-slug="primary"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-sm btn-danger" data-perm-delete="${p.id}" data-perm-name="${escapeHtml(p.display_name)}" data-btn-slug="danger"><i class="fas fa-trash"></i></button>
           </td>
         </tr>
       `).join('');
       tbody.querySelectorAll('[data-perm-edit]').forEach(b => b.addEventListener('click', () => openPermissionModal(Number(b.dataset.permEdit))));
       tbody.querySelectorAll('[data-perm-delete]').forEach(b => b.addEventListener('click', () => deletePermission(Number(b.dataset.permDelete), b.dataset.permName)));
+      if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) Admin.buttons.applyHoverEffects(tbody);
       loading.style.display = 'none'; content.style.display = 'block';
     } catch (err) {
       loading.style.display = 'none'; empty.style.display = 'block';
@@ -516,14 +518,15 @@
           <td><input type="checkbox" class="res-cb" data-field="can_delete_all" ${p.can_delete_all ? 'checked' : ''}></td>
           <td><input type="checkbox" class="res-cb" data-field="can_delete_own" ${p.can_delete_own ? 'checked' : ''}></td>
           <td>
-            <button class="btn btn-xs btn-secondary" data-rp-edit="${p.id}"><i class="fas fa-edit"></i></button>
-            <button class="btn btn-xs btn-danger" data-rp-delete="${p.id}"><i class="fas fa-trash"></i></button>
+            <button class="btn btn-xs btn-secondary" data-rp-edit="${p.id}" data-btn-slug="secondary"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-xs btn-danger" data-rp-delete="${p.id}" data-btn-slug="danger"><i class="fas fa-trash"></i></button>
           </td>
         </tr>`;
       }).join('');
       
       tbody.querySelectorAll('[data-rp-edit]').forEach(b => b.addEventListener('click', () => openResourcePermModal(Number(b.dataset.rpEdit))));
       tbody.querySelectorAll('[data-rp-delete]').forEach(b => b.addEventListener('click', () => deleteResourcePerm(Number(b.dataset.rpDelete))));
+      if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) Admin.buttons.applyHoverEffects(tbody);
       loading.style.display = 'none'; content.style.display = 'block';
     } catch (err) {
       loading.style.display = 'none'; empty.style.display = 'block';
@@ -764,6 +767,9 @@
       await renderRolesTable();
       await renderPermissionsTable();
       await loadResourceRolesSelector();
+      if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
+        Admin.buttons.applyHoverEffects(document.getElementById('permissionsPageContainer'));
+      }
       log('PermissionsApp initialized');
     } catch (err) {
       console.error('init error', err);
