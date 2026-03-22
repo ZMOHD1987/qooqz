@@ -468,7 +468,7 @@
                     </td>
                     <td>
                         <div class="table-actions">
-                            ${state.permissions.canEdit ? `<button class="btn btn-sm btn-icon btn-primary" data-btn-slug="primary" title="${t('table.actions.edit')}" aria-label="${t('table.actions.edit')}" onclick="TenantUsers.edit(${item.id})"><i class="fas fa-edit" aria-hidden="true"></i></button>` : ''}
+                            ${state.permissions.canEdit ? `<button class="btn btn-sm btn-icon btn-warning" data-btn-slug="warning" title="${t('table.actions.edit')}" aria-label="${t('table.actions.edit')}" onclick="TenantUsers.edit(${item.id})"><i class="fas fa-edit" aria-hidden="true"></i></button>` : ''}
                             ${state.permissions.canDelete ? `<button class="btn btn-sm btn-icon btn-danger" data-btn-slug="danger" title="${t('table.actions.delete')}" aria-label="${t('table.actions.delete')}" onclick="TenantUsers.remove(${item.id})"><i class="fas fa-trash" aria-hidden="true"></i></button>` : ''}
                         </div>
                     </td>
@@ -722,6 +722,11 @@
             el.form.classList.remove('was-validated');
             el.tenantInfo.style.display = 'none';
             el.userInfo.style.display = 'none';
+
+            // Show delete button in edit mode
+            var btnDelete = document.getElementById('btnDeleteTenantUser');
+            if (btnDelete) btnDelete.style.display = '';
+
             AF.Form.show('tenantUserFormContainer', t('form.edit_title'));
             el.formId.value = String(item.id || '');
             el.formTenantId.value = String(item.tenant_id || '');
@@ -822,6 +827,11 @@
         el.tenantInfo.style.display = 'none';
         el.userInfo.style.display = 'none';
         el.entityInfo.style.display = 'none';
+
+        // Hide delete button in add mode
+        var btnDelete = document.getElementById('btnDeleteTenantUser');
+        if (btnDelete) btnDelete.style.display = 'none';
+
         el.formRoleId.innerHTML = `<option value="">${t('form.fields.role_id.enter_tenant_first')}</option>`;
         el.formRoleId.disabled = true;
         el.formEntityId.innerHTML = `<option value="">${t('form.fields.entity_id.enter_tenant_first')}</option>`;
@@ -1071,6 +1081,7 @@
             btnAdd: AF.$('btnAddTenantUser'),
             btnClose: AF.$('btnCloseForm'),
             btnCancel: AF.$('btnCancelForm'),
+            btnDelete: document.getElementById('btnDeleteTenantUser'),
             btnApply: AF.$('btnApplyFilters'),
             btnReset: AF.$('btnResetFilters'),
             btnExport: AF.$('btnExportExcel'),
@@ -1091,6 +1102,10 @@
         if (el.btnAdd) el.btnAdd.onclick = add;
         if (el.btnClose) el.btnClose.onclick = () => AF.Form.hide('tenantUserFormContainer');
         if (el.btnCancel) el.btnCancel.onclick = () => AF.Form.hide('tenantUserFormContainer');
+        if (el.btnDelete) el.btnDelete.onclick = function() {
+            var id = el.formId.value;
+            if (id) remove(parseInt(id, 10));
+        };
         if (el.btnApply) el.btnApply.onclick = applyFilters;
         if (el.btnReset) el.btnReset.onclick = resetFilters;
         if (el.btnExport) el.btnExport.onclick = exportToExcel;

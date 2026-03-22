@@ -402,9 +402,9 @@ $apiBase = '/api';
                 </div>
 
                 <div class="filter-actions">
-                    <button id="btnApplyFilters" class="btn btn-sm btn-icon btn-primary" data-btn-slug="primary" title="<?= __t('filters.apply', 'Apply') ?>" aria-label="<?= __t('filters.apply', 'Apply') ?>"><i class="fas fa-search" aria-hidden="true"></i></button>
-                    <button id="btnResetFilters" class="btn btn-sm btn-icon btn-secondary" data-btn-slug="secondary" title="<?= __t('filters.reset', 'Reset') ?>" aria-label="<?= __t('filters.reset', 'Reset') ?>"><i class="fas fa-times" aria-hidden="true"></i></button>
-                    <button id="btnExportExcel" class="btn btn-sm btn-icon btn-success" data-btn-slug="success" title="<?= __t('table.actions.export', 'Export Excel') ?>" aria-label="<?= __t('table.actions.export', 'Export Excel') ?>" style="margin-inline-start:auto"><i class="fas fa-file-excel" aria-hidden="true"></i></button>
+                    <button id="btnApplyFilters" class="btn btn-sm btn-primary" data-btn-slug="primary"><i class="fas fa-search" aria-hidden="true"></i> <span data-i18n="filters.apply"><?= __t('filters.apply', 'Apply') ?></span></button>
+                    <button id="btnResetFilters" class="btn btn-sm btn-secondary" data-btn-slug="secondary"><i class="fas fa-times" aria-hidden="true"></i> <span data-i18n="filters.reset"><?= __t('filters.reset', 'Reset') ?></span></button>
+                    <button id="btnExportExcel" class="btn btn-sm btn-success" data-btn-slug="success" style="margin-inline-start:auto"><i class="fas fa-file-excel" aria-hidden="true"></i> <span data-i18n="table.actions.export"><?= __t('table.actions.export', 'Export Excel') ?></span></button>
                 </div>
             </div>
         </div>
