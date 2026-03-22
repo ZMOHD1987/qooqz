@@ -1,526 +1,824 @@
-/**
- * admin/assets/js/pages/permissions.js
- * Full CRUD UI for permissions list - Updated to use /api/permissions endpoint
- */
 (function () {
   'use strict';
 
-  // Config / globals
-  var ADMIN_UI = window.ADMIN_UI || {};
-  var I18N = window.I18N_FLAT || {};
-  var USER = window.USER_INFO || {};
-  var THEME = window.THEME || {};
-  var LANG = window.LANG || 'en';
-  var DIRECTION = window.DIRECTION || 'ltr';
-  var CSRF = window.CSRF_TOKEN || '';
-  // Use /api/permissions endpoint
-  var API = window.API_PERMISSIONS || '/api/permissions';
+  // ----------------------------
+  // Configuration & State
+  // ----------------------------
+  const APP_CONFIG = window.APP_CONFIG || {
+    API_BASE: '/api',
+    TENANT_ID: 0,
+    CSRF_TOKEN: '',
+    IS_SUPER_ADMIN: false,
+    USER_LANG: 'en'
+  };
 
-  // Permission check
-  var CAN_MANAGE = !!(
-    (USER && Number(USER.role_id) === 1) ||
-    (USER && Array.isArray(USER.roles) && (USER.roles.indexOf('super_admin') !== -1 || USER.roles.indexOf('admin') !== -1)) ||
-    (USER && Array.isArray(USER.permissions) && USER.permissions.indexOf('manage_permissions') !== -1)
-  );
+  APP_CONFIG.TENANT_ID = Number(APP_CONFIG.TENANT_ID || 0);
+  const LANG = (APP_CONFIG.USER_LANG || 'en').toLowerCase().startsWith('ar') ? 'ar' : 'en';
+  const IS_RTL = LANG === 'ar';
 
-  // DOM
-  var root = document.getElementById('adminPermissions');
-  if (!root) return;
+  const STR = {
+    en: {
+      loading: 'Loading...',
+      saving: 'Saving...',
+      saved: 'Saved',
+      save_failed: 'Failed to save',
+      fill_required: 'Please fill required fields',
+      select_role_first: 'Please select a role first',
+      refresh: 'Refreshing data...',
+      delete_confirm: 'This action cannot be undone. Continue?',
+      error_generic: 'An unexpected error occurred',
+      global_no_tenant: 'Global (no tenant)',
+      create_resource_permission: 'Add Resource Permission',
+      edit_resource_permission: 'Edit Resource Permission',
+      no_changes: 'No changes to save',
+      updated_success: 'Updated successfully'
+    },
+    ar: {
+      loading: 'جارٍ التحميل...',
+      saving: 'جارٍ الحفظ...',
+      saved: 'تم الحفظ',
+      save_failed: 'فشل الحفظ',
+      fill_required: 'يرجى ملء الحقول المطلوبة',
+      select_role_first: 'يرجى اختيار دور أولاً',
+      refresh: 'جارٍ تحديث البيانات...',
+      delete_confirm: 'هذا الإجراء لا يمكن التراجع عنه. متابعة؟',
+      error_generic: 'حدث خطأ غير متوقع',
+      global_no_tenant: 'عام (بدون مستأجر)',
+      create_resource_permission: 'إضافة صلاحية مورد',
+      edit_resource_permission: 'تعديل صلاحية مورد',
+      no_changes: 'لا توجد تغييرات للحفظ',
+      updated_success: 'تم التحديث بنجاح'
+    }
+  }[LANG];
 
-  var searchInput = document.getElementById('permSearch');
-  var refreshBtn = document.getElementById('permRefresh');
-  var newBtn = document.getElementById('permNew');
-  var statusEl = document.getElementById('permStatus');
-  var tableBody = document.getElementById('permTbody');
-  var formWrap = document.getElementById('permFormWrap');
-  var permForm = document.getElementById('permForm');
-  var permIdEl = document.getElementById('permId');
-  var permKeyEl = document.getElementById('permKey');
-  var permDisplayEl = document.getElementById('permDisplay');
-  var permDescEl = document.getElementById('permDesc');
-  var permSaveBtn = document.getElementById('permSave');
-  var permCancelBtn = document.getElementById('permCancel');
-  var pagerWrap = document.getElementById('permPager');
+  function t(k) { return STR[k] || k; }
 
-  // State
-  var cache = [];
-  var filtered = [];
-  var currentPage = 1;
-  var perPage = 10;
-  var perPageOptions = [5, 10, 20, 50];
+  const STATE = {
+    tenantId: APP_CONFIG.TENANT_ID,
+    roles: [],
+    permissions: [],
+    tenants: [],
+    selectedRoleId: null,
+    selectedResourceRoleId: null
+  };
 
-  // Helpers
-  function t(key, fallback) {
-    if (!key) return fallback || '';
-    if (I18N && typeof I18N[key] !== 'undefined' && I18N[key] !== '') return I18N[key];
-    return fallback || (key.split('.').pop().replace(/_/g, ' '));
+  // Simple in-memory cache
+  const CACHE = new Map();
+  const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
+
+  function cacheSet(key, value) { CACHE.set(key, { ts: Date.now(), v: value }); }
+  function cacheGet(key) {
+    const r = CACHE.get(key);
+    if (!r) return null;
+    if (Date.now() - r.ts > CACHE_TTL) { CACHE.delete(key); return null; }
+    return r.v;
   }
-  
-  function esc(s) { 
-    return String(s == null ? '' : s)
-      .replace(/&/g,'&amp;')
-      .replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;');
+  function cacheDel(prefix) {
+    for (const k of Array.from(CACHE.keys())) if (k.startsWith(prefix)) CACHE.delete(k);
   }
-  
-  function formatDate(dateString) {
-    if (!dateString) return '';
+
+  // ----------------------------
+  // Utilities
+  // ----------------------------
+  function log(...args) { console.debug('[PermissionsApp]', ...args); }
+  function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+  function buildQS(obj) {
+    return Object.keys(obj).filter(k => obj[k] !== undefined && obj[k] !== null && obj[k] !== '').map(k => `${encodeURIComponent(k)}=${encodeURIComponent(obj[k])}`).join('&');
+  }
+  function payloadTenantValue(v) { 
+    // Handle tenant_id conversion: 0 → null for backend
+    if (v === 0 || v === '0' || v === null || v === undefined || v === '') {
+      return null;
+    }
+    return Number(v);
+  }
+
+  // show alert
+  function showAlert(type, msg, ttl = 5000) {
+    const container = document.getElementById('alertsContainer');
+    if (!container) return;
+    const div = document.createElement('div');
+    div.className = `alert alert-${type}`;
+    div.role = 'alert';
+    div.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> <span>${escapeHtml(msg)}</span>`;
+    container.appendChild(div);
+    setTimeout(() => { div.style.opacity = '0'; setTimeout(() => div.remove(), 300); }, ttl);
+  }
+
+  // fetch wrapper
+  async function apiCall(path, opts = {}) {
+    if (!APP_CONFIG || !APP_CONFIG.API_BASE) throw new Error('APP_CONFIG.API_BASE not set');
+    const url = APP_CONFIG.API_BASE.replace(/\/$/, '') + path;
+    const method = (opts.method || 'GET').toUpperCase();
+    const headers = Object.assign({ 'Content-Type': 'application/json', 'X-CSRF-Token': APP_CONFIG.CSRF_TOKEN }, opts.headers || {});
+    const cfg = { method, headers, credentials: 'same-origin' };
+    if (opts.body !== undefined) cfg.body = JSON.stringify(opts.body);
+
+    const isGet = method === 'GET';
+    const attempts = isGet ? 3 : 1;
+    let lastErr;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        log('apiCall', method, url, opts.body || '');
+        const res = await fetch(url, cfg);
+        const text = await res.text();
+        let json;
+        try { json = text ? JSON.parse(text) : {}; } catch (e) { throw new Error('Invalid JSON response from server'); }
+        if (!res.ok) {
+          const msg = json && json.message ? json.message : `HTTP ${res.status}`;
+          throw new Error(msg);
+        }
+        if (json && typeof json === 'object' && 'success' in json) {
+          if (!json.success) throw new Error(json.message || 'Request failed');
+          return json;
+        }
+        return { success: true, data: json };
+      } catch (err) {
+        lastErr = err;
+        log('apiCall error', err.message, 'attempt', i + 1);
+        if (i < attempts - 1) await new Promise(r => setTimeout(r, 200 * (i + 1)));
+      }
+    }
+    throw lastErr;
+  }
+
+  // ----------------------------
+  // Data loaders
+  // ----------------------------
+  async function loadRolesIfNeeded(force = false) {
+    const key = `roles:${STATE.tenantId}`;
+    if (!force) {
+      const c = cacheGet(key);
+      if (c) { STATE.roles = c; return c; }
+    }
+    const q = buildQS({ tenant_id: STATE.tenantId || 0 });
+    const res = await apiCall(`/roles?${q}`);
+    const rows = res.data || [];
+    STATE.roles = Array.isArray(rows) ? rows : [];
+    cacheSet(key, STATE.roles);
+    return STATE.roles;
+  }
+
+  async function loadPermissionsIfNeeded(force = false) {
+    const key = `permissions:${STATE.tenantId}`;
+    if (!force) {
+      const c = cacheGet(key);
+      if (c) { STATE.permissions = c; return c; }
+    }
+    const q = buildQS({ tenant_id: STATE.tenantId || 0 });
+    const res = await apiCall(`/permissions?${q}`);
+    const rows = res.data || [];
+    STATE.permissions = Array.isArray(rows) ? rows : [];
+    cacheSet(key, STATE.permissions);
+    return STATE.permissions;
+  }
+
+  async function loadTenantsIfNeeded(force = false) {
+    const key = `tenants:all`;
+    if (!force) {
+      const c = cacheGet(key);
+      if (c) { STATE.tenants = c; return c; }
+    }
+    const res = await apiCall('/tenants');
+    const rows = res.data || [];
+    STATE.tenants = Array.isArray(rows) ? rows : [];
+    cacheSet(key, STATE.tenants);
+    return STATE.tenants;
+  }
+
+  // ----------------------------
+  // Roles CRUD
+  // ----------------------------
+  async function renderRolesTable() {
+    const loading = document.getElementById('rolesLoading');
+    const content = document.getElementById('rolesContent');
+    const empty = document.getElementById('rolesEmpty');
+    const tbody = document.getElementById('rolesTableBody');
+    if (!tbody) return;
+    loading.style.display = 'block';
+    content.style.display = 'none';
+    empty.style.display = 'none';
     try {
-      var date = new Date(dateString);
-      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    } catch (e) {
-      return dateString;
+      await loadRolesIfNeeded(true);
+      const rows = STATE.roles;
+      if (!rows.length) { loading.style.display = 'none'; empty.style.display = 'block'; tbody.innerHTML = ''; return; }
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td>${r.id}</td>
+          <td><strong>${escapeHtml(r.display_name)}</strong></td>
+          <td><code>${escapeHtml(r.key_name)}</code></td>
+          <td><small>${escapeHtml(r.created_at || '')}</small></td>
+          <td>
+            <button class="btn btn-sm btn-primary" data-role-edit="${r.id}" aria-label="${t('edit')} role"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-sm btn-danger" data-role-delete="${r.id}" data-role-name="${escapeHtml(r.display_name)}" aria-label="${t('delete')} role"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+      `).join('');
+      tbody.querySelectorAll('[data-role-edit]').forEach(b => b.addEventListener('click', () => openRoleModal(Number(b.dataset.roleEdit))));
+      tbody.querySelectorAll('[data-role-delete]').forEach(b => b.addEventListener('click', () => deleteRole(Number(b.dataset.roleDelete), b.dataset.roleName)));
+      loading.style.display = 'none';
+      content.style.display = 'block';
+    } catch (err) {
+      loading.style.display = 'none';
+      empty.style.display = 'block';
+      console.error('renderRolesTable error', err);
+      showAlert('error', `${t('error_generic')}: ${err.message}`);
     }
   }
-  
-  function setStatus(msg, isError) {
-    if (!statusEl) return;
-    statusEl.textContent = msg || '';
-    statusEl.style.color = isError ? 
-      (THEME && THEME.colors_map && THEME.colors_map['error'] ? THEME.colors_map['error'] : '#b91c1c') : 
-      (THEME && THEME.colors_map && THEME.colors_map['primary'] ? THEME.colors_map['primary'] : '#064e3b');
-  }
 
-  function fetchJson(url, options) {
-    var opts = {
-      method: options.method || 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-CSRF-Token': CSRF
-      },
-      credentials: 'same-origin'
-    };
-    
-    if (options.body) {
-      opts.body = JSON.stringify(options.body);
-    }
-    
-    return fetch(url, opts)
-      .then(function(response) {
-        if (!response.ok) {
-          return response.json().then(function(err) {
-            throw new Error(err.message || 'HTTP ' + response.status);
-          }).catch(function() {
-            throw new Error('HTTP ' + response.status);
-          });
-        }
-        return response.json();
-      })
-      .then(function(data) {
-        if (data && data.error) {
-          throw new Error(data.error);
-        }
-        return data;
-      });
-  }
-
-  // Load permissions list
-  function loadPermissions() {
-    setStatus(t('permissions.loading', 'Loading...'));
-    
-    fetchJson(API, { method: 'GET' })
-      .then(function (data) {
-        if (data && data.success && Array.isArray(data.data)) {
-          cache = data.data;
-        } else if (Array.isArray(data)) {
-          cache = data;
-        } else {
-          cache = [];
-        }
-        applyFilter();
-        setStatus('');
-      })
-      .catch(function (err) {
-        console.error('loadPermissions error', err);
-        setStatus(err.message || t('permissions.error_loading', 'Error loading'), true);
-        cache = [];
-        applyFilter();
-      });
-  }
-
-  // Apply search filter
-  function applyFilter() {
-    var q = (searchInput && searchInput.value) ? String(searchInput.value).trim().toLowerCase() : '';
-    if (!q) {
-      filtered = cache.slice();
+  function openRoleModal(id = null) {
+    const modal = document.getElementById('roleModal');
+    const title = document.getElementById('roleModalTitle');
+    const form = document.getElementById('roleForm');
+    if (!modal || !form) return;
+    form.reset();
+    document.getElementById('roleId').value = '';
+    if (id) {
+      const r = STATE.roles.find(x => Number(x.id) === Number(id));
+      if (r) {
+        title.textContent = LANG === 'ar' ? 'تعديل الدور' : 'Edit Role';
+        document.getElementById('roleId').value = r.id;
+        document.getElementById('roleDisplayName').value = r.display_name;
+        document.getElementById('roleKeyName').value = r.key_name;
+      }
     } else {
-      filtered = cache.filter(function (p) {
-        if (!p) return false;
-        if (String(p.id).indexOf(q) !== -1) return true;
-        if ((p.key_name || '').toLowerCase().indexOf(q) !== -1) return true;
-        if ((p.display_name || '').toLowerCase().indexOf(q) !== -1) return true;
-        if ((p.description || '').toLowerCase().indexOf(q) !== -1) return true;
-        return false;
-      });
+      title.textContent = LANG === 'ar' ? 'إضافة دور' : 'Add Role';
     }
-    currentPage = 1;
-    renderTable();
-    renderPager();
+    modal.classList.add('active');
+    setTimeout(() => document.getElementById('roleDisplayName').focus(), 120);
   }
 
-  // Render permissions table
-  function renderTable() {
-    if (!tableBody) return;
-    tableBody.innerHTML = '';
-    
-    if (!filtered || filtered.length === 0) {
-      var tr = document.createElement('tr');
-      tr.innerHTML = '<td colspan="6" style="padding:12px;text-align:center;color:#666;">' + 
-        esc(t('permissions.no_permissions', 'No permissions found')) + '</td>';
-      tableBody.appendChild(tr);
-      return;
-    }
-    
-    var total = filtered.length;
-    var start = (currentPage - 1) * perPage;
-    var end = Math.min(total, start + perPage);
-    var pageItems = filtered.slice(start, end);
-    
-    pageItems.forEach(function (p) {
-      var tr = document.createElement('tr');
-      var actions = '';
-      
-      if (CAN_MANAGE) {
-        actions = '<button class="btn editBtn" data-id="' + esc(p.id) + '">' + 
-                  esc(t('permissions.btn_edit','Edit')) + '</button> ' +
-                  '<button class="btn danger delBtn" data-id="' + esc(p.id) + '">' + 
-                  esc(t('permissions.btn_delete','Delete')) + '</button>';
+  function closeRoleModal() {
+    const modal = document.getElementById('roleModal');
+    if (modal) modal.classList.remove('active');
+  }
+
+  let saveRoleInFlight = false;
+
+  async function saveRole() {
+    if (saveRoleInFlight) { console.warn('saveRole already running, skipping'); return; }
+    const btn = document.getElementById('btnSaveRole');
+    if (!btn) return;
+    const id = document.getElementById('roleId').value || null;
+    const display_name = document.getElementById('roleDisplayName').value.trim();
+    const key_name = document.getElementById('roleKeyName').value.trim();
+    if (!display_name || !key_name) { showAlert('warning', t('fill_required')); return; }
+    saveRoleInFlight = true;
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${t('saving')}`;
+    try {
+      const payload = { tenant_id: payloadTenantValue(STATE.tenantId), display_name, key_name };
+      if (id) {
+        payload.id = Number(id);
+        await apiCall('/roles', { method: 'PUT', body: payload });
+      } else {
+        await apiCall('/roles', { method: 'POST', body: payload });
       }
-      
-      tr.innerHTML = '<td style="padding:10px;border-bottom:1px solid #eee;">' + esc(p.id) + '</td>' +
-                     '<td style="padding:10px;border-bottom:1px solid #eee;"><strong>' + esc(p.key_name) + '</strong></td>' +
-                     '<td style="padding:10px;border-bottom:1px solid #eee;">' + esc(p.display_name || '') + '</td>' +
-                     '<td style="padding:10px;border-bottom:1px solid #eee;">' + esc(p.description || '') + '</td>' +
-                     '<td style="padding:10px;border-bottom:1px solid #eee;">' + esc(formatDate(p.created_at)) + '</td>' +
-                     '<td style="padding:10px;border-bottom:1px solid #eee;text-align:right;">' + actions + '</td>';
-      tableBody.appendChild(tr);
-    });
-
-    // Attach event listeners
-    var editBtns = tableBody.querySelectorAll('.editBtn');
-    editBtns.forEach(function (b) {
-      b.addEventListener('click', function () {
-        var id = this.getAttribute('data-id');
-        openEdit(id);
-      });
-    });
-    
-    var delBtns = tableBody.querySelectorAll('.delBtn');
-    delBtns.forEach(function (b) {
-      b.addEventListener('click', function () {
-        var id = this.getAttribute('data-id');
-        if (!CAN_MANAGE) { 
-          alert(t('permissions.no_permission_notice','You do not have permission')); 
-          return; 
-        }
-        if (!confirm(t('permissions.confirm_delete','Are you sure you want to delete this permission?'))) return;
-        deletePermission(id);
-      });
-    });
+      cacheDel('roles:');
+      await renderRolesTable();
+      closeRoleModal();
+      showAlert('success', t('saved'));
+    } catch (err) {
+      console.error('saveRole', err);
+      showAlert('error', `${t('save_failed')}: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fas fa-save"></i> ${LANG === 'ar' ? 'حفظ' : 'Save'}`;
+      saveRoleInFlight = false;
+    }
   }
 
-  // Render pagination
-  function renderPager() {
-    if (!pagerWrap) return;
-    pagerWrap.innerHTML = '';
-    
-    var total = filtered.length || 0;
-    var totalPages = Math.max(1, Math.ceil(total / perPage));
-    
-    // Items per page selector
-    var perSel = document.createElement('select');
-    perSel.style.marginRight = '8px';
-    perPageOptions.forEach(function (opt) {
-      var o = document.createElement('option');
-      o.value = opt;
-      o.textContent = opt + ' / page';
-      if (opt === perPage) o.selected = true;
-      perSel.appendChild(o);
-    });
-    perSel.addEventListener('change', function () {
-      perPage = Number(this.value) || perPage;
-      currentPage = 1;
-      renderTable();
-      renderPager();
-    });
-    pagerWrap.appendChild(perSel);
-
-    // Info text
-    var info = document.createElement('span');
-    info.style.marginRight = '12px';
-    var start = total === 0 ? 0 : (currentPage - 1) * perPage + 1;
-    var end = Math.min(total, currentPage * perPage);
-    info.textContent = total === 0 ? 
-      t('permissions.no_permissions','No permissions') : 
-      ('Showing ' + start + '-' + end + ' of ' + total);
-    pagerWrap.appendChild(info);
-
-    // Previous button
-    var prev = document.createElement('button');
-    prev.className = 'btn';
-    prev.textContent = t('permissions.prev','Prev');
-    prev.disabled = currentPage <= 1;
-    prev.addEventListener('click', function () { 
-      if (currentPage > 1) { 
-        currentPage--; 
-        renderTable(); 
-        renderPager(); 
-      } 
-    });
-    pagerWrap.appendChild(prev);
-
-    // Page buttons
-    var maxButtons = 7;
-    var startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
-    var endPage = Math.min(totalPages, startPage + maxButtons - 1);
-    if (endPage - startPage < maxButtons - 1) {
-      startPage = Math.max(1, endPage - maxButtons + 1);
+  async function deleteRole(id, name) {
+    if (!confirm(`${t('delete_confirm')}\n${name}`)) return;
+    try {
+      await apiCall('/roles', { method: 'DELETE', body: { id: Number(id), tenant_id: payloadTenantValue(STATE.tenantId) } });
+      cacheDel('roles:'); await renderRolesTable();
+      showAlert('success', 'Deleted');
+    } catch (err) {
+      console.error('deleteRole', err);
+      showAlert('error', `${t('error_generic')}: ${err.message}`);
     }
+  }
 
-    for (var p = startPage; p <= endPage; p++) {
-      (function (pageNum) {
-        var b = document.createElement('button');
-        b.className = 'btn small';
-        b.style.margin = '0 4px';
-        b.textContent = String(pageNum);
-        if (pageNum === currentPage) { 
-          b.style.fontWeight = '700'; 
-          b.disabled = true; 
-        }
-        b.addEventListener('click', function () { 
-          currentPage = pageNum; 
-          renderTable(); 
-          renderPager(); 
+  // ----------------------------
+  // Permissions CRUD
+  // ----------------------------
+  async function renderPermissionsTable() {
+    const loading = document.getElementById('permissionsLoading');
+    const content = document.getElementById('permissionsContent');
+    const empty = document.getElementById('permissionsEmpty');
+    const tbody = document.getElementById('permissionsTableBody');
+    if (!tbody) return;
+    loading.style.display = 'block'; content.style.display = 'none'; empty.style.display = 'none';
+    try {
+      await loadPermissionsIfNeeded(true);
+      const rows = STATE.permissions;
+      if (!rows.length) { loading.style.display = 'none'; empty.style.display = 'block'; tbody.innerHTML = ''; return; }
+      tbody.innerHTML = rows.map(p => `
+        <tr>
+          <td>${p.id}</td>
+          <td><strong>${escapeHtml(p.display_name)}</strong></td>
+          <td><code>${escapeHtml(p.key_name)}</code></td>
+          <td><small>${escapeHtml(p.description || '')}</small></td>
+          <td>
+            <button class="btn btn-sm btn-primary" data-perm-edit="${p.id}"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-sm btn-danger" data-perm-delete="${p.id}" data-perm-name="${escapeHtml(p.display_name)}"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+      `).join('');
+      tbody.querySelectorAll('[data-perm-edit]').forEach(b => b.addEventListener('click', () => openPermissionModal(Number(b.dataset.permEdit))));
+      tbody.querySelectorAll('[data-perm-delete]').forEach(b => b.addEventListener('click', () => deletePermission(Number(b.dataset.permDelete), b.dataset.permName)));
+      loading.style.display = 'none'; content.style.display = 'block';
+    } catch (err) {
+      loading.style.display = 'none'; empty.style.display = 'block';
+      console.error('renderPermissionsTable', err);
+      showAlert('error', `${t('error_generic')}: ${err.message}`);
+    }
+  }
+
+  function openPermissionModal(id = null) {
+    const modal = document.getElementById('permissionModal');
+    const title = document.getElementById('permissionModalTitle');
+    const form = document.getElementById('permissionForm');
+    if (!modal || !form) return;
+    form.reset(); document.getElementById('permissionId').value = '';
+    if (id) {
+      const p = STATE.permissions.find(x => Number(x.id) === Number(id));
+      if (p) {
+        title.textContent = LANG === 'ar' ? 'تعديل صلاحية' : 'Edit Permission';
+        document.getElementById('permissionId').value = p.id;
+        document.getElementById('permissionDisplayName').value = p.display_name;
+        document.getElementById('permissionKeyName').value = p.key_name;
+        document.getElementById('permissionDescription').value = p.description || '';
+      }
+    } else {
+      title.textContent = LANG === 'ar' ? 'إضافة صلاحية' : 'Add Permission';
+    }
+    modal.classList.add('active'); setTimeout(() => document.getElementById('permissionDisplayName').focus(), 120);
+  }
+
+  function closePermissionModal() { const modal = document.getElementById('permissionModal'); if (modal) modal.classList.remove('active'); }
+
+  let savePermissionInFlight = false;
+
+  async function savePermission() {
+    if (savePermissionInFlight) { console.warn('savePermission already running, skipping'); return; }
+    const btn = document.getElementById('btnSavePermission');
+    if (!btn) return;
+    const id = document.getElementById('permissionId').value || null;
+    const display_name = document.getElementById('permissionDisplayName').value.trim();
+    const key_name = document.getElementById('permissionKeyName').value.trim();
+    const description = document.getElementById('permissionDescription').value.trim();
+    if (!display_name || !key_name) { showAlert('warning', t('fill_required')); return; }
+    savePermissionInFlight = true;
+    btn.disabled = true; btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${t('saving')}`;
+    try {
+      const payload = { tenant_id: payloadTenantValue(STATE.tenantId), display_name, key_name, description };
+      if (id) { payload.id = Number(id); await apiCall('/permissions', { method: 'PUT', body: payload }); }
+      else await apiCall('/permissions', { method: 'POST', body: payload });
+      cacheDel('permissions:'); await renderPermissionsTable(); closePermissionModal(); showAlert('success', t('saved'));
+    } catch (err) {
+      console.error('savePermission', err);
+      showAlert('error', `${t('save_failed')}: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fas fa-save"></i> ${LANG === 'ar' ? 'حفظ' : 'Save'}`;
+      savePermissionInFlight = false;
+    }
+  }
+
+  async function deletePermission(id, name) {
+    if (!confirm(`${t('delete_confirm')}\n${name}`)) return;
+    try { await apiCall('/permissions', { method: 'DELETE', body: { id: Number(id), tenant_id: payloadTenantValue(STATE.tenantId) } }); cacheDel('permissions:'); await renderPermissionsTable(); showAlert('success', 'Deleted'); }
+    catch (err) { console.error('deletePermission', err); showAlert('error', `${t('error_generic')}: ${err.message}`); }
+  }
+
+  // ----------------------------
+  // Assign
+  // ----------------------------
+  async function loadAssignRoles() {
+    const container = document.getElementById('assignRoleSelector');
+    if (!container) return;
+    if (!STATE.roles.length) await loadRolesIfNeeded(true);
+    container.innerHTML = STATE.roles.map(r => `<div class="role-card" data-role-id="${r.id}" data-role-name="${escapeHtml(r.display_name)}">${escapeHtml(r.display_name)}</div>`).join('');
+    container.querySelectorAll('.role-card').forEach(card => card.addEventListener('click', () => {
+      const id = Number(card.dataset.roleId); const name = card.dataset.roleName || '';
+      selectAssignRole(id, name);
+    }));
+  }
+
+  async function selectAssignRole(roleId, roleName) {
+    STATE.selectedRoleId = roleId;
+    document.querySelectorAll('#assignRoleSelector .role-card').forEach(c => c.classList.remove('selected'));
+    const el = document.querySelector(`#assignRoleSelector .role-card[data-role-id="${roleId}"]`);
+    if (el) el.classList.add('selected');
+    document.getElementById('assignRoleName').textContent = roleName;
+    document.getElementById('assignCard').style.display = 'block';
+    try {
+      if (!STATE.permissions.length) await loadPermissionsIfNeeded(true);
+      const q = buildQS({ role_id: roleId, tenant_id: STATE.tenantId || 0 });
+      const res = await apiCall(`/role_permissions?${q}`);
+      const assigned = (res.data || []).map(x => Number(x.permission_id));
+      const grouped = {};
+      STATE.permissions.forEach(p => {
+        const cat = p.key_name.split('_')[0] || 'general';
+        grouped[cat] = grouped[cat] || [];
+        grouped[cat].push(p);
+      });
+      let html = '';
+      Object.keys(grouped).forEach(cat => {
+        html += `<div class="permission-group"><h4 class="permission-group-title">${escapeHtml(cat)}</h4><div class="permission-grid">`;
+        grouped[cat].forEach(p => {
+          const checked = assigned.includes(p.id) ? 'checked' : '';
+          html += `<label class="permission-checkbox-item"><input type="checkbox" class="assign-cb" data-id="${p.id}" ${checked}><div class="perm-meta"><div class="perm-name">${escapeHtml(p.display_name)}</div><div class="perm-desc">${escapeHtml(p.description || p.key_name)}</div></div></label>`;
         });
-        pagerWrap.appendChild(b);
-      })(p);
-    }
-
-    // Next button
-    var next = document.createElement('button');
-    next.className = 'btn';
-    next.textContent = t('permissions.next','Next');
-    next.disabled = currentPage >= totalPages;
-    next.addEventListener('click', function () { 
-      if (currentPage < totalPages) { 
-        currentPage++; 
-        renderTable(); 
-        renderPager(); 
-      } 
-    });
-    pagerWrap.appendChild(next);
-  }
-
-  // Open edit form
-  function openEdit(id) {
-    var found = cache.find(function (x) { return String(x.id) === String(id); });
-    if (found) {
-      populateForm(found);
-      return;
-    }
-    
-    setStatus(t('permissions.loading','Loading...'));
-    fetchJson(API + '?id=' + encodeURIComponent(id), { method: 'GET' })
-      .then(function (data) {
-        var row = data && data.data ? data.data : null;
-        if (row) {
-          populateForm(row);
-        }
-        setStatus('');
-      })
-      .catch(function (err) { 
-        console.error(err); 
-        setStatus(t('permissions.error_fetch','Error fetching data'), true); 
+        html += `</div></div>`;
       });
-  }
-
-  // Populate form with permission data
-  function populateForm(permission) {
-    if (!formWrap) return;
-    formWrap.style.display = 'block';
-    
-    if (permIdEl) permIdEl.value = permission.id || '';
-    if (permKeyEl) permKeyEl.value = permission.key_name || '';
-    if (permDisplayEl) permDisplayEl.value = permission.display_name || '';
-    if (permDescEl) permDescEl.value = permission.description || '';
-    
-    var title = document.getElementById('permFormTitle');
-    if (title) {
-      title.textContent = permission.id ? 
-        t('permissions.form_title_edit','Edit Permission') : 
-        t('permissions.form_title_create','Create Permission');
+      document.getElementById('assignContent').innerHTML = html;
+    } catch (err) {
+      console.error('selectAssignRole', err); showAlert('error', `${t('error_generic')}: ${err.message}`);
     }
-    
-    if (permKeyEl) permKeyEl.focus();
-    window.scrollTo({ top: formWrap.offsetTop - 20, behavior: 'smooth' });
   }
 
-  // Delete permission
-  function deletePermission(id) {
-    if (!CAN_MANAGE) { 
-      alert(t('permissions.no_permission_notice','You do not have permission')); 
+  let saveAssignInFlight = false;
+
+  async function saveAssign() {
+    if (!STATE.selectedRoleId) { showAlert('warning', t('select_role_first')); return; }
+    if (saveAssignInFlight) { console.warn('saveAssign already running, skipping'); return; }
+    const btn = document.getElementById('btnSaveAssign');
+    if (!btn) return;
+    saveAssignInFlight = true;
+    btn.disabled = true; btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${t('saving')}`;
+    try {
+      const selected = Array.from(document.querySelectorAll('.assign-cb:checked')).map(cb => Number(cb.dataset.id));
+      const payload = selected.map(pid => ({ tenant_id: payloadTenantValue(STATE.tenantId), role_id: STATE.selectedRoleId, permission_id: pid }));
+      await apiCall('/role_permissions', { method: 'POST', body: payload });
+      cacheDel('role_permissions:'); showAlert('success', t('saved'));
+    } catch (err) {
+      console.error('saveAssign', err);
+      showAlert('error', `${t('save_failed')}: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fas fa-save"></i> ${LANG === 'ar' ? 'حفظ' : 'Save'}`;
+      saveAssignInFlight = false;
+    }
+  }
+
+  // ----------------------------
+  // Resource Permissions
+  // ----------------------------
+  async function loadResourceRolesSelector() {
+    const container = document.getElementById('resourcesRoleSelector');
+    if (!container) return;
+    if (!STATE.roles.length) await loadRolesIfNeeded(true);
+    container.innerHTML = STATE.roles.map(r => `<div class="role-card" data-role-id="${r.id}" data-role-name="${escapeHtml(r.display_name)}">${escapeHtml(r.display_name)}</div>`).join('');
+    container.querySelectorAll('.role-card').forEach(card => card.addEventListener('click', () => {
+      const id = Number(card.dataset.roleId); const name = card.dataset.roleName || '';
+      selectResourceRole(id, name);
+    }));
+  }
+
+  async function selectResourceRole(roleId, roleName) {
+    STATE.selectedResourceRoleId = roleId;
+    document.querySelectorAll('#resourcesRoleSelector .role-card').forEach(c => c.classList.remove('selected'));
+    const el = document.querySelector(`#resourcesRoleSelector .role-card[data-role-id="${roleId}"]`);
+    if (el) el.classList.add('selected');
+    document.getElementById('resourceRoleName').textContent = roleName;
+    document.getElementById('resourcesCard').style.display = 'block';
+
+    const loading = document.getElementById('resourcesLoading');
+    const content = document.getElementById('resourcesContent');
+    const empty = document.getElementById('resourcesEmpty');
+    const tbody = document.getElementById('resourcesTableBody');
+    loading.style.display = 'block'; content.style.display = 'none'; empty.style.display = 'none'; tbody.innerHTML = '';
+    try {
+      const q = buildQS({ role_id: roleId, tenant_id: STATE.tenantId || 0 });
+      const res = await apiCall(`/resource_permissions?${q}`);
+      const rows = res.data || [];
+      if (!rows.length) { loading.style.display = 'none'; empty.style.display = 'block'; return; }
+      
+      // FIXED: Store tenant_id as 0 for null to avoid dataset issues
+      tbody.innerHTML = rows.map(p => {
+        const tenantId = p.tenant_id === null ? 0 : p.tenant_id;
+        return `
+        <tr data-id="${p.id}" data-tenant-id="${tenantId}">
+          <td class="sticky-col">
+            <div style="font-weight:600">${escapeHtml(p.display_name || p.key_name)}</div>
+            <div style="font-size:.75rem;color:#666">${escapeHtml(p.resource_type)}</div>
+            <div style="font-size:.7rem;color:#999">${p.tenant_id ? 'Tenant: ' + p.tenant_id : 'Global'}${p.role_id ? ' / Role: ' + p.role_id : ''}</div>
+          </td>
+          <td><input type="checkbox" class="res-cb" data-field="can_view_all" ${p.can_view_all ? 'checked' : ''}></td>
+          <td><input type="checkbox" class="res-cb" data-field="can_view_own" ${p.can_view_own ? 'checked' : ''}></td>
+          <td><input type="checkbox" class="res-cb" data-field="can_view_tenant" ${p.can_view_tenant ? 'checked' : ''}></td>
+          <td><input type="checkbox" class="res-cb" data-field="can_create" ${p.can_create ? 'checked' : ''}></td>
+          <td><input type="checkbox" class="res-cb" data-field="can_edit_all" ${p.can_edit_all ? 'checked' : ''}></td>
+          <td><input type="checkbox" class="res-cb" data-field="can_edit_own" ${p.can_edit_own ? 'checked' : ''}></td>
+          <td><input type="checkbox" class="res-cb" data-field="can_delete_all" ${p.can_delete_all ? 'checked' : ''}></td>
+          <td><input type="checkbox" class="res-cb" data-field="can_delete_own" ${p.can_delete_own ? 'checked' : ''}></td>
+          <td>
+            <button class="btn btn-xs btn-secondary" data-rp-edit="${p.id}"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-xs btn-danger" data-rp-delete="${p.id}"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>`;
+      }).join('');
+      
+      tbody.querySelectorAll('[data-rp-edit]').forEach(b => b.addEventListener('click', () => openResourcePermModal(Number(b.dataset.rpEdit))));
+      tbody.querySelectorAll('[data-rp-delete]').forEach(b => b.addEventListener('click', () => deleteResourcePerm(Number(b.dataset.rpDelete))));
+      loading.style.display = 'none'; content.style.display = 'block';
+    } catch (err) {
+      loading.style.display = 'none'; empty.style.display = 'block';
+      console.error('selectResourceRole', err); showAlert('error', `${t('error_generic')}: ${err.message}`);
+    }
+  }
+
+  function openResourcePermModal(id = null) {
+    const modal = document.getElementById('resourcePermModal');
+    if (!modal) return;
+    Promise.all([loadPermissionsIfNeeded(true), loadRolesIfNeeded(true)]).then(() => {
+      const permSelect = document.getElementById('rpPermissionId');
+      const roleSelect = document.getElementById('rpRoleId');
+      if (permSelect) permSelect.innerHTML = `<option value="">-- Select --</option>` + STATE.permissions.map(p => `<option value="${p.id}">${escapeHtml(p.display_name)} (${escapeHtml(p.key_name)})</option>`).join('');
+      if (roleSelect) roleSelect.innerHTML = `<option value="">— Any / Global —</option>` + STATE.roles.map(r => `<option value="${r.id}">${escapeHtml(r.display_name)}</option>`).join('');
+      document.getElementById('resourcePermForm').reset();
+      document.getElementById('rpId').value = '';
+      const tsel = document.getElementById('rpTenantId'); if (tsel) tsel.value = String(STATE.tenantId || 0);
+      if (!id) {
+        document.getElementById('resourcePermModalTitle').textContent = t('create_resource_permission');
+        modal.classList.add('active');
+        setTimeout(() => document.getElementById('rpResourceType').focus(), 120);
+        return;
+      }
+      apiCall(`/resource_permissions/${id}`).then(res => {
+        const rp = res.data;
+        if (!rp) throw new Error('Not found');
+        document.getElementById('rpId').value = rp.id;
+        document.getElementById('rpResourceType').value = rp.resource_type || '';
+        document.getElementById('rpPermissionId').value = rp.permission_id || '';
+        document.getElementById('rpRoleId').value = rp.role_id ? String(rp.role_id) : '';
+        document.getElementById('rpTenantId').value = rp.tenant_id === null ? '0' : String(rp.tenant_id);
+        ['can_view_all','can_view_own','can_view_tenant','can_create','can_edit_all','can_edit_own','can_delete_all','can_delete_own'].forEach(f => {
+          const el = document.getElementById('rp_' + f);
+          if (el) el.checked = !!rp[f];
+        });
+        document.getElementById('resourcePermModalTitle').textContent = t('edit_resource_permission');
+        modal.classList.add('active');
+      }).catch(err => { console.error('openResourcePermModal load', err); showAlert('error', `Failed to load resource permission: ${err.message}`); });
+    }).catch(err => { console.error('openResourcePermModal init', err); showAlert('error', `Failed to prepare modal: ${err.message}`); });
+  }
+
+  function closeResourcePermModal() { const m = document.getElementById('resourcePermModal'); if (m) m.classList.remove('active'); }
+
+  let saveResourcePermInFlight = false;
+
+  async function saveResourcePerm() {
+    if (saveResourcePermInFlight) { console.warn('saveResourcePerm already running, skipping'); return; }
+    const btn = document.getElementById('btnSaveResourcePerm'); if (!btn) return;
+    const id = document.getElementById('rpId').value || null;
+    const resource_type = document.getElementById('rpResourceType').value.trim();
+    const permission_id = Number(document.getElementById('rpPermissionId').value || 0);
+    const roleVal = document.getElementById('rpRoleId').value; const role_id = roleVal === '' ? null : Number(roleVal);
+    const tenantVal = document.getElementById('rpTenantId').value; const tenant_id = tenantVal === '0' ? null : Number(tenantVal);
+    if (!resource_type || !permission_id) { showAlert('warning', t('fill_required')); return; }
+    saveResourcePermInFlight = true;
+    btn.disabled = true; btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${t('saving')}`;
+    try {
+      const payload = { resource_type, permission_id, role_id, tenant_id,
+        can_view_all: document.getElementById('rp_can_view_all').checked ? 1 : 0,
+        can_view_own: document.getElementById('rp_can_view_own').checked ? 1 : 0,
+        can_view_tenant: document.getElementById('rp_can_view_tenant').checked ? 1 : 0,
+        can_create: document.getElementById('rp_can_create').checked ? 1 : 0,
+        can_edit_all: document.getElementById('rp_can_edit_all').checked ? 1 : 0,
+        can_edit_own: document.getElementById('rp_can_edit_own').checked ? 1 : 0,
+        can_delete_all: document.getElementById('rp_can_delete_all').checked ? 1 : 0,
+        can_delete_own: document.getElementById('rp_can_delete_own').checked ? 1 : 0
+      };
+      if (id) { payload.id = Number(id); await apiCall('/resource_permissions', { method: 'PUT', body: payload }); }
+      else await apiCall('/resource_permissions', { method: 'POST', body: payload });
+      cacheDel('resource_permissions:');
+      closeResourcePermModal();
+      // Refresh table first, then show success message
+      if (STATE.selectedResourceRoleId) {
+        await selectResourceRole(STATE.selectedResourceRoleId, document.getElementById('resourceRoleName').textContent);
+      }
+      // Show success message AFTER table refresh completes
+      showAlert('success', t('saved'));
+    } catch (err) {
+      console.error('saveResourcePerm', err);
+      showAlert('error', `${t('save_failed')}: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fas fa-save"></i> ${LANG === 'ar' ? 'حفظ' : 'Save'}`;
+      saveResourcePermInFlight = false;
+    }
+  }
+
+  async function deleteResourcePerm(id) {
+    if (!confirm(t('delete_confirm'))) return;
+    try {
+      await apiCall(`/resource_permissions/${id}`, { method: 'DELETE' });
+      cacheDel('resource_permissions:'); showAlert('success', 'Deleted');
+      if (STATE.selectedResourceRoleId) await selectResourceRole(STATE.selectedResourceRoleId, document.getElementById('resourceRoleName').textContent);
+    } catch (err) { console.error('deleteResourcePerm', err); showAlert('error', `${t('error_generic')}: ${err.message}`); }
+  }
+
+  // ----------------------------
+  // SAVE RESOURCES - FIXED VERSION
+  // ----------------------------
+  let saveResourcesInFlight = false;
+
+  async function saveResources() {
+    if (!STATE.selectedResourceRoleId) { 
+      showAlert('warning', t('select_role_first')); 
       return; 
     }
     
-    setStatus(t('permissions.processing','Processing...'));
-    
-    fetchJson(API, {
-      method: 'DELETE',
-      body: { id: id }
-    })
-    .then(function (data) {
-      if (data && data.success) {
-        setStatus(t('permissions.deleted_success','Permission deleted successfully'));
-        cache = cache.filter(function (x) { return String(x.id) !== String(id); });
-        applyFilter();
-        
-        // Hide form if editing the deleted item
-        if (formWrap.style.display !== 'none' && permIdEl && permIdEl.value === String(id)) {
-          formWrap.style.display = 'none';
-        }
-      } else {
-        setStatus(data.message || t('permissions.error_delete','Delete failed'), true);
-      }
-    })
-    .catch(function (err) { 
-      console.error(err); 
-      setStatus(err.message || t('permissions.error_delete','Error deleting'), true); 
-    });
-  }
-
-  // Save permission (create or update)
-  function saveFromForm(e) {
-    if (e && e.preventDefault) e.preventDefault();
-    if (!CAN_MANAGE) { 
-      alert(t('permissions.no_permission_notice','You do not have permission')); 
+    if (saveResourcesInFlight) { 
+      console.warn('saveResources already running, skipping'); 
       return; 
     }
-    if (!permForm) return;
     
-    var formData = new FormData(permForm);
-    var data = {
-      key_name: formData.get('key_name'),
-      display_name: formData.get('display_name'),
-      description: formData.get('description')
-    };
+    saveResourcesInFlight = true;
+    const btn = document.getElementById('btnSaveResource');
     
-    var id = formData.get('id');
-    if (id) data.id = id;
-    
-    // Validate required fields
-    if (!data.key_name || !data.display_name) {
-      setStatus(t('permissions.error_required','Key and Display name are required'), true);
-      return;
+    if (btn) {
+      btn.disabled = true;
+      btn.style.pointerEvents = 'none';
+      btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${t('saving')}`;
     }
-    
-    setStatus(t('permissions.processing','Processing...'));
-    
-    var method = id ? 'PUT' : 'POST';
-    
-    fetchJson(API, {
-      method: method,
-      body: data
-    })
-    .then(function (response) {
-      if (response && response.success) {
-        setStatus(t('permissions.saved_success','Permission saved successfully'));
+
+    try {
+      const rows = Array.from(document.querySelectorAll('#resourcesTableBody tr'));
+      const items = [];
+
+      for (const row of rows) {
+        const id = row.dataset.id;
+        if (!id) continue;
         
-        // Reset form and hide it
-        if (permForm) permForm.reset();
-        if (permIdEl) permIdEl.value = '';
-        if (formWrap) formWrap.style.display = 'none';
+        const obj = { id: Number(id) };
         
-        // Reload permissions list
-        setTimeout(loadPermissions, 500);
-      } else {
-        setStatus(response.message || t('permissions.error_save','Error saving'), true);
+        // Collect checkbox values
+        row.querySelectorAll('.res-cb').forEach(cb => { 
+          obj[cb.dataset.field] = cb.checked ? 1 : 0; 
+        });
+        
+        // Always include role_id
+        obj.role_id = Number(STATE.selectedResourceRoleId);
+        
+        // FIXED: Handle tenant_id properly
+        const rowTenantId = row.dataset.tenantId;
+        if (rowTenantId !== undefined && rowTenantId !== '') {
+          // Convert to number first
+          const tenantIdNum = Number(rowTenantId);
+          // Convert 0 to null for backend
+          obj.tenant_id = tenantIdNum === 0 ? null : tenantIdNum;
+        } else {
+          // Fallback to state tenantId, also convert 0 to null
+          obj.tenant_id = STATE.tenantId === 0 ? null : Number(STATE.tenantId);
+        }
+        
+        items.push(obj);
       }
-    })
-    .catch(function (err) { 
-      console.error(err); 
-      setStatus(err.message || t('permissions.error_save','Error saving'), true); 
+
+      if (!items.length) { 
+        showAlert('info', t('no_changes')); 
+        return; 
+      }
+
+      console.log('Sending bulk update:', items);
+      
+      // Send as bulk update
+      const response = await apiCall('/resource_permissions', {
+        method: 'PUT',
+        body: { updates: items }
+      });
+      
+      if (response.success) {
+        cacheDel('resource_permissions:');
+        showAlert('success', `${t('updated_success')}: ${items.length} items`);
+        
+        // Refresh the table
+        if (STATE.selectedResourceRoleId) {
+          const roleName = document.getElementById('resourceRoleName').textContent;
+          await selectResourceRole(STATE.selectedResourceRoleId, roleName);
+        }
+      } else {
+        throw new Error(response.message || t('save_failed'));
+      }
+      
+    } catch (err) {
+      console.error('saveResources error:', err);
+      showAlert('error', `${t('save_failed')}: ${err.message || t('error_generic')}`);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.style.pointerEvents = 'auto';
+        btn.innerHTML = `<i class="fas fa-save"></i> ${LANG === 'ar' ? 'حفظ التغييرات' : 'Save Changes'}`;
+      }
+      saveResourcesInFlight = false;
+    }
+  }
+
+  // ----------------------------
+  // Initialization
+  // ----------------------------
+  function bindUI() {
+    const tsel = document.getElementById('tenantSelector');
+    if (tsel) tsel.addEventListener('change', async (e) => {
+      STATE.tenantId = Number(e.target.value || 0);
+      cacheDel('roles:'); cacheDel('permissions:'); cacheDel('resource_permissions:');
+      await renderRolesTable(); await renderPermissionsTable(); await loadResourceRolesSelector();
     });
+
+    const btnSaveRole = document.getElementById('btnSaveRole');
+    if (btnSaveRole) btnSaveRole.addEventListener('click', saveRole);
+
+    const btnSavePerm = document.getElementById('btnSavePermission');
+    if (btnSavePerm) btnSavePerm.addEventListener('click', savePermission);
+
+    const btnSaveRP = document.getElementById('btnSaveResourcePerm');
+    if (btnSaveRP) btnSaveRP.addEventListener('click', saveResourcePerm);
+
+    const btnSaveResources = document.getElementById('btnSaveResource');
+    if (btnSaveResources) btnSaveResources.addEventListener('click', saveResources);
+
+    const btnSaveAssign = document.getElementById('btnSaveAssign');
+    if (btnSaveAssign) btnSaveAssign.addEventListener('click', saveAssign);
+
+    document.querySelectorAll('.main-tab').forEach(btn => btn.addEventListener('click', () => {
+      document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active')); btn.classList.add('active');
+      const name = btn.dataset.tab; document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); const ct = document.getElementById('tab-' + name); if (ct) ct.classList.add('active');
+      if (name === 'assign') loadAssignRoles();
+      if (name === 'resources') loadResourceRolesSelector();
+    }));
+
+    const rs = document.getElementById('rolesSearch'); if (rs) rs.addEventListener('input', e => { const q = e.target.value.toLowerCase(); document.querySelectorAll('#rolesTableBody tr').forEach(r => r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none'); });
+    const ps = document.getElementById('permissionsSearch'); if (ps) ps.addEventListener('input', e => { const q = e.target.value.toLowerCase(); document.querySelectorAll('#permissionsTableBody tr').forEach(r => r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none'); });
+    const rrs = document.getElementById('resourceRolesSearch'); if (rrs) rrs.addEventListener('input', e => { const q = e.target.value.toLowerCase(); document.querySelectorAll('#resourcesRoleSelector .role-card').forEach(c => c.style.display = c.textContent.toLowerCase().includes(q) ? '' : 'none'); });
   }
 
-  // Initialize event listeners
-  function initEventListeners() {
-    if (searchInput) {
-      var searchTimer = null;
-      searchInput.addEventListener('input', function () {
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(function () { 
-          applyFilter(); 
-        }, 300);
-      });
-    }
-    
-    if (refreshBtn) {
-      refreshBtn.addEventListener('click', loadPermissions);
-    }
-    
-    if (newBtn) {
-      newBtn.addEventListener('click', function () {
-        if (!CAN_MANAGE) { 
-          alert(t('permissions.no_permission_notice','You do not have permission')); 
-          return; 
-        }
-        
-        if (formWrap) formWrap.style.display = 'block';
-        if (permForm) permForm.reset();
-        if (permIdEl) permIdEl.value = '';
-        
-        var title = document.getElementById('permFormTitle');
-        if (title) {
-          title.textContent = t('permissions.form_title_create','Create Permission');
-        }
-        
-        if (permKeyEl) {
-          permKeyEl.focus();
-        }
-        
-        window.scrollTo({ top: formWrap.offsetTop - 20, behavior: 'smooth' });
-      });
-    }
-    
-    if (permCancelBtn) {
-      permCancelBtn.addEventListener('click', function () { 
-        if (formWrap) {
-          formWrap.style.display = 'none';
-          permForm.reset();
-        }
-      });
-    }
-    
-    if (permForm) {
-      permForm.addEventListener('submit', saveFromForm);
+  async function init() {
+    try {
+      if (IS_RTL) document.documentElement.dir = 'rtl';
+      bindUI();
+      await Promise.all([loadTenantsIfNeeded(true), loadRolesIfNeeded(true), loadPermissionsIfNeeded(true)]);
+      await renderRolesTable();
+      await renderPermissionsTable();
+      await loadResourceRolesSelector();
+      log('PermissionsApp initialized');
+    } catch (err) {
+      console.error('init error', err);
+      showAlert('error', `${t('error_generic')}: ${err.message}`);
     }
   }
 
-  // Initialize on DOM ready
-  function init() {
-    if (DIRECTION === 'rtl') {
-      var container = document.getElementById('adminPermissions');
-      if (container) container.setAttribute('dir', 'rtl');
-    }
-    
-    initEventListeners();
-    loadPermissions();
-  }
+  // ----------------------------
+  // Public API
+  // ----------------------------
+  const Public = {
+    loadRoles: renderRolesTable,
+    openRoleModal,
+    closeRoleModal,
+    saveRole,
+    deleteRole,
+    loadPermissions: renderPermissionsTable,
+    openPermissionModal,
+    closePermissionModal,
+    savePermission,
+    deletePermission,
+    loadAssignRoles,
+    selectAssignRole,
+    saveAssign,
+    selectAllAssign: () => document.querySelectorAll('.assign-cb').forEach(cb => cb.checked = true),
+    deselectAllAssign: () => document.querySelectorAll('.assign-cb').forEach(cb => cb.checked = false),
+    loadResourceRoles: loadResourceRolesSelector,
+    selectResourceRole,
+    saveResources,
+    openResourcePermModal,
+    closeResourcePermModal,
+    saveResourcePerm,
+    deleteResourcePerm,
+    refreshAll: async () => { cacheDel('roles:'); cacheDel('permissions:'); cacheDel('resource_permissions:'); await renderRolesTable(); await renderPermissionsTable(); await loadResourceRolesSelector(); showAlert('info', t('refresh')); }
+  };
 
-  // Start when DOM is ready
+  window.PermissionsApp = Public;
+
+  window.openRoleModal = (id) => Public.openRoleModal(id);
+  window.closeRoleModal = () => Public.closeRoleModal();
+  window.saveRole = () => Public.saveRole();
+  window.openPermissionModal = (id) => Public.openPermissionModal(id);
+  window.closePermissionModal = () => Public.closePermissionModal();
+  window.savePermission = () => Public.savePermission();
+  window.openResourcePermModal = (id) => Public.openResourcePermModal(id);
+  window.closeResourcePermModal = () => Public.closeResourcePermModal();
+  window.saveResourcePerm = () => Public.saveResourcePerm();
+  window.saveResources = () => Public.saveResources();
+  window.selectAssignRole = (id, name) => Public.selectAssignRole(id, name);
+  window.saveAssign = () => Public.saveAssign();
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
-
-  // Expose to global scope for debugging
-  window._permissionsAdmin = {
-    reload: loadPermissions,
-    getCache: function() { return cache; },
-    getFiltered: function() { return filtered; }
-  };
 
 })();

@@ -1,26 +1,826 @@
-/* admin/assets/css/pages/permissions.css
-   Minimal styling for Permissions admin page - leverages same CSS vars as theme
-*/
-:root {
-  --pn-bg: var(--theme-background, #fff);
-  --pn-text: var(--theme-text-primary, #111);
-  --pn-border: var(--theme-border, #e5e7eb);
-  --pn-primary: var(--theme-primary, #3b82f6);
+/*!
+ * /admin/assets/css/pages/permissions.css  v2.0
+ *
+ * Requires: admin_framework.css
+ * (btn, badge, card, form, table, states, pagination — all in framework)
+ *
+ * This file contains ONLY:
+ *  1. Design tokens  scoped to #permissionsPageContainer
+ *  2. Page layout    (container / header / tabs / cards)
+ *  3. Permissions-specific components (tabs, role-selector, modals, etc.)
+ *  4. RTL + Responsive + Print
+ *
+ * RULE: No .btn-*, no global .badge-* variants — all from admin_framework.css + DB.
+ */
+
+/* ════════════════════════════════════════════════════════════
+   1. DESIGN TOKENS — scoped to page container
+   Reads DB-generated vars (both underscore and hyphen forms)
+   ════════════════════════════════════════════════════════════ */
+
+#permissionsPageContainer {
+    --_primary      : var(--primary-color,        var(--primary_color,        #3b82f6));
+    --_primary-hover: var(--primary-hover,         var(--primary_hover,        #2563eb));
+    --_success      : var(--success-color,         var(--success_color,        #10b981));
+    --_danger       : var(--danger-color,          var(--danger_color,         var(--error-color, #ef4444)));
+    --_warning      : var(--warning-color,         var(--warning_color,        #f59e0b));
+    --_bg-main      : var(--background-main,       var(--background_main,      #0f172a));
+    --_bg-sec       : var(--background-secondary,  var(--background_secondary, var(--card-bg, #1e293b)));
+    --_bg-ter       : var(--surface-color,         var(--thead-bg,             #0f172a));
+    --_text         : var(--text-primary,          var(--text_primary,         #e2e8f0));
+    --_text-muted   : var(--text-secondary,        var(--text_secondary,       #94a3b8));
+    --_border       : var(--border-color,          var(--border_color,         #334155));
+    --_radius-sm    : var(--border-radius,         var(--border_radius,        6px));
+    --_radius-md    : var(--card-border-radius,    var(--border_radius,        8px));
+    --_radius-lg    : var(--card-border-radius,    12px);
+    --_transition   : all 0.2s ease;
+    --_font         : var(--body-font-family,      var(--body_font-family,     system-ui, sans-serif));
 }
 
-#adminPermissions { max-width:1200px; margin:16px auto; padding:12px; font-family:var(--theme-font-primary, Inter, system-ui); color:var(--pn-text); background:var(--pn-bg); }
+/* ════════════════════════════════════════════════════════════
+   2. BASE
+   ════════════════════════════════════════════════════════════ */
 
-.tools { display:flex; gap:8px; align-items:center; margin-bottom:10px; }
-.tools input[type="search"] { padding:8px; border:1px solid var(--pn-border); border-radius:6px; width:300px; }
-.btn { padding:8px 12px; border-radius:6px; border:1px solid var(--pn-border); background:transparent; cursor:pointer; }
-.btn.primary { background:var(--pn-primary); color:#fff; border-color:transparent; }
+#permissionsPageContainer {
+    font-family: var(--_font);
+    background: transparent;
+    color: var(--_text);
+    line-height: 1.6;
+    font-size: 14px;
+}
 
-.table-wrap { border:1px solid var(--pn-border); border-radius:8px; overflow:auto; margin-top:8px; }
-#permTable { width:100%; border-collapse:collapse; font-size:14px; }
-#permTable thead th { padding:10px; background:var(--theme-card, #f8fafc); text-align:left; border-bottom:1px solid var(--pn-border); }
-#permTable tbody td { padding:10px; border-bottom:1px solid var(--pn-border); }
+#permissionsPageContainer .container {
+    max-width: 1920px;
+    margin: 0 auto;
+    padding: clamp(1rem, 2vw, 2rem);
+}
 
-.form-wrap { margin-top:12px; padding:12px; border:1px solid var(--pn-border); border-radius:8px; background:var(--theme-card,#fff); }
+/* ════════════════════════════════════════════════════════════
+   3. PAGE HEADER
+   ════════════════════════════════════════════════════════════ */
 
-.status { margin:8px 0; color:var(--pn-primary); }
-.alert { background:#fff5f5; border:1px solid #fca5a5; padding:8px; border-radius:6px; color:#7f1d1d; }
+#permissionsPageContainer .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: clamp(1rem, 2vw, 2rem);
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--_border);
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+#permissionsPageContainer .page-header-content {
+    flex: 1 1 200px;
+    min-width: 0;
+}
+
+#permissionsPageContainer .page-title {
+    font-size: clamp(1.25rem, 3vw, 2rem);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0 0 0.5rem;
+    color: var(--_text);
+}
+
+#permissionsPageContainer .page-title i {
+    color: var(--_primary);
+}
+
+#permissionsPageContainer .page-subtitle {
+    margin: 0;
+    color: var(--_text-muted);
+    font-size: clamp(0.8rem, 1.2vw, 0.875rem);
+}
+
+#permissionsPageContainer .page-header-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* ════════════════════════════════════════════════════════════
+   4. MAIN TABS
+   ════════════════════════════════════════════════════════════ */
+
+#permissionsPageContainer .main-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: clamp(1rem, 2vw, 2rem);
+    border-bottom: 2px solid var(--_border);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--_primary) var(--_bg-sec);
+}
+
+#permissionsPageContainer .main-tabs::-webkit-scrollbar {
+    height: 4px;
+}
+
+#permissionsPageContainer .main-tabs::-webkit-scrollbar-track {
+    background: var(--_bg-sec);
+}
+
+#permissionsPageContainer .main-tabs::-webkit-scrollbar-thumb {
+    background: var(--_primary);
+    border-radius: 4px;
+}
+
+#permissionsPageContainer .main-tab {
+    padding: 1rem 1.75rem;
+    background: transparent;
+    border: none;
+    color: var(--_text-muted);
+    cursor: pointer;
+    font-size: 0.9375rem;
+    font-family: var(--_font);
+    font-weight: 600;
+    border-bottom: 3px solid transparent;
+    transition: var(--_transition);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#permissionsPageContainer .main-tab:hover {
+    color: var(--_text);
+    background: color-mix(in srgb, var(--_primary) 5%, transparent);
+}
+
+#permissionsPageContainer .main-tab.active {
+    color: var(--_primary);
+    border-bottom-color: var(--_primary);
+    background: color-mix(in srgb, var(--_primary) 10%, transparent);
+}
+
+#permissionsPageContainer .main-tab i {
+    font-size: 1rem;
+}
+
+/* ════════════════════════════════════════════════════════════
+   5. TAB CONTENT
+   ════════════════════════════════════════════════════════════ */
+
+#permissionsPageContainer .tab-content {
+    display: none;
+}
+
+#permissionsPageContainer .tab-content.active {
+    display: block;
+    animation: pn-fadeIn 0.3s ease;
+}
+
+@keyframes pn-fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ════════════════════════════════════════════════════════════
+   6. CARDS — page-specific overrides (base from framework)
+   ════════════════════════════════════════════════════════════ */
+
+#permissionsPageContainer .card {
+    background: var(--_bg-sec);
+    border: 1px solid var(--_border);
+    border-radius: var(--_radius-lg);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 2px color-mix(in srgb, #000 30%, transparent);
+}
+
+#permissionsPageContainer .card-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--_border);
+    background: var(--_bg-ter);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+#permissionsPageContainer .card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+    color: var(--_text);
+    font-family: var(--_font);
+}
+
+#permissionsPageContainer .card-title i {
+    color: var(--_primary);
+}
+
+#permissionsPageContainer .card-body {
+    padding: 1.5rem;
+}
+
+/* ════════════════════════════════════════════════════════════
+   7. TABLES
+   ════════════════════════════════════════════════════════════ */
+
+#permissionsPageContainer .table-responsive {
+    overflow-x: auto;
+    border: 1px solid var(--_border);
+    border-radius: var(--_radius-md);
+    -webkit-overflow-scrolling: touch;
+}
+
+#permissionsPageContainer .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+#permissionsPageContainer .data-table th,
+#permissionsPageContainer .data-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--_border);
+    text-align: left;
+}
+
+#permissionsPageContainer .data-table th {
+    background: var(--_bg-ter);
+    color: var(--_text-muted);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    white-space: nowrap;
+}
+
+#permissionsPageContainer .data-table tbody tr {
+    transition: var(--_transition);
+}
+
+#permissionsPageContainer .data-table tbody tr:hover {
+    background: color-mix(in srgb, var(--_primary) 5%, transparent);
+}
+
+#permissionsPageContainer .data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+#permissionsPageContainer .data-table code {
+    background: var(--_bg-ter);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--_radius-sm);
+    font-size: 0.8125rem;
+    color: var(--_primary);
+}
+
+/* Resource Table */
+#permissionsPageContainer .resource-table th,
+#permissionsPageContainer .resource-table td {
+    text-align: center;
+}
+
+#permissionsPageContainer .resource-table th.sticky-col,
+#permissionsPageContainer .resource-table td.sticky-col {
+    position: sticky;
+    left: 0;
+    background: var(--_bg-sec);
+    text-align: left;
+    z-index: 11;
+    min-width: 250px;
+    box-shadow: 2px 0 4px color-mix(in srgb, #000 10%, transparent);
+}
+
+#permissionsPageContainer .resource-table th.sticky-col {
+    background: var(--_bg-ter);
+    z-index: 12;
+}
+
+#permissionsPageContainer .text-center {
+    text-align: center;
+}
+
+/* ════════════════════════════════════════════════════════════
+   8. FORM — page-specific overrides (base from framework)
+   ════════════════════════════════════════════════════════════ */
+
+#permissionsPageContainer .form-control {
+    background: var(--input-bg, var(--input-background, var(--_bg-main)));
+    border: 1px solid var(--_border);
+    border-radius: var(--_radius-md);
+    color: var(--_text);
+    transition: var(--_transition);
+}
+
+#permissionsPageContainer .form-control:focus {
+    outline: none;
+    border-color: var(--_primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--_primary) 15%, transparent);
+}
+
+#permissionsPageContainer .form-control::placeholder {
+    color: var(--_text-muted);
+}
+
+#permissionsPageContainer textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+    font-family: var(--_font);
+}
+
+/* Checkbox (page-specific) */
+#permissionsPageContainer .checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--_primary);
+}
+
+#permissionsPageContainer .checkbox-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+}
+
+/* Flags grid (resource permissions checkboxes) */
+#permissionsPageContainer .flags-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+}
+
+#permissionsPageContainer .flags-grid label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    color: var(--_text);
+    font-size: 0.875rem;
+}
+
+/* ════════════════════════════════════════════════════════════
+   9. ALERTS (page-specific toast notifications)
+   ════════════════════════════════════════════════════════════ */
+
+#permissionsPageContainer .alerts-container {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    z-index: 9999;
+    min-width: 350px;
+    max-width: 500px;
+}
+
+#permissionsPageContainer .alert {
+    padding: 1rem 1.25rem;
+    border-radius: var(--_radius-md);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    animation: pn-slideIn 0.3s ease;
+    border: 1px solid;
+    transition: opacity 0.3s ease;
+}
+
+@keyframes pn-slideIn {
+    from { opacity: 0; transform: translateX(100px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+#permissionsPageContainer .alert i {
+    font-size: 1.25rem;
+}
+
+#permissionsPageContainer .alert-success {
+    background: color-mix(in srgb, var(--_success) 15%, transparent);
+    border-color: var(--_success);
+    color: var(--_success);
+}
+
+#permissionsPageContainer .alert-error {
+    background: color-mix(in srgb, var(--_danger) 15%, transparent);
+    border-color: var(--_danger);
+    color: var(--_danger);
+}
+
+#permissionsPageContainer .alert-warning {
+    background: color-mix(in srgb, var(--_warning) 15%, transparent);
+    border-color: var(--_warning);
+    color: var(--_warning);
+}
+
+#permissionsPageContainer .alert-info {
+    background: color-mix(in srgb, var(--_primary) 15%, transparent);
+    border-color: var(--_primary);
+    color: var(--_primary);
+}
+
+/* ════════════════════════════════════════════════════════════
+   10. MODALS
+   ════════════════════════════════════════════════════════════ */
+
+#roleModal, #permissionModal, #resourcePermModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: color-mix(in srgb, #000 75%, transparent);
+    z-index: 12000;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(8px, 2vw, 2rem);
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+#roleModal.active, #permissionModal.active, #resourcePermModal.active {
+    display: flex;
+}
+
+#roleModal .modal-dialog,
+#permissionModal .modal-dialog,
+#resourcePermModal .modal-dialog {
+    background: var(--_bg-sec);
+    border: 1px solid var(--_border);
+    border-radius: var(--_radius-lg);
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: pn-modalIn 0.3s ease;
+    box-shadow: 0 20px 25px color-mix(in srgb, #000 40%, transparent);
+}
+
+@keyframes pn-modalIn {
+    from { opacity: 0; transform: scale(0.9) translateY(-20px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+#roleModal .modal-header,
+#permissionModal .modal-header,
+#resourcePermModal .modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--_border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#roleModal .modal-title,
+#permissionModal .modal-title,
+#resourcePermModal .modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--_text);
+    font-family: var(--_font);
+}
+
+#roleModal .modal-close,
+#permissionModal .modal-close,
+#resourcePermModal .modal-close {
+    background: none;
+    border: none;
+    color: var(--_text-muted);
+    font-size: 1.75rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    transition: var(--_transition);
+    line-height: 1;
+}
+
+#roleModal .modal-close:hover,
+#permissionModal .modal-close:hover,
+#resourcePermModal .modal-close:hover {
+    color: var(--_text);
+    transform: scale(1.1);
+}
+
+#roleModal .modal-body,
+#permissionModal .modal-body,
+#resourcePermModal .modal-body {
+    padding: 1.5rem;
+}
+
+#roleModal .modal-footer,
+#permissionModal .modal-footer,
+#resourcePermModal .modal-footer {
+    padding: 1.5rem;
+    border-top: 1px solid var(--_border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+/* ════════════════════════════════════════════════════════════
+   11. LOADING STATE
+   ════════════════════════════════════════════════════════════ */
+
+#permissionsPageContainer .loading {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--_text-muted);
+}
+
+#permissionsPageContainer .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid color-mix(in srgb, var(--_primary) 15%, transparent);
+    border-top-color: var(--_primary);
+    border-radius: 50%;
+    animation: pn-spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes pn-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ════════════════════════════════════════════════════════════
+   12. EMPTY STATE — page-specific override
+   ════════════════════════════════════════════════════════════ */
+
+#permissionsPageContainer .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--_text-muted);
+}
+
+#permissionsPageContainer .empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    opacity: 0.3;
+    color: var(--_primary);
+    display: block;
+}
+
+#permissionsPageContainer .empty-state h3 {
+    font-size: 1.25rem;
+    margin: 0 0 0.5rem;
+    color: var(--_text);
+}
+
+#permissionsPageContainer .empty-state p {
+    font-size: 0.875rem;
+    margin: 0 0 1.5rem;
+}
+
+/* ════════════════════════════════════════════════════════════
+   13. ROLE SELECTOR
+   ════════════════════════════════════════════════════════════ */
+
+#permissionsPageContainer .role-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+#permissionsPageContainer .role-card {
+    padding: 1.5rem;
+    background: var(--_bg-main);
+    border: 2px solid var(--_border);
+    border-radius: var(--_radius-lg);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+#permissionsPageContainer .role-card:hover {
+    border-color: var(--_primary);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--_primary) 25%, transparent);
+}
+
+#permissionsPageContainer .role-card.selected {
+    border-color: var(--_primary);
+    background: color-mix(in srgb, var(--_primary) 10%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--_primary) 20%, transparent);
+}
+
+#permissionsPageContainer .role-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: var(--_primary);
+}
+
+#permissionsPageContainer .role-name {
+    font-weight: 600;
+    font-size: 1.125rem;
+    margin-bottom: 0.5rem;
+    color: var(--_text);
+}
+
+#permissionsPageContainer .role-key {
+    font-size: 0.75rem;
+    color: var(--_text-muted);
+    font-family: 'Courier New', monospace;
+}
+
+/* ════════════════════════════════════════════════════════════
+   14. PERMISSION GROUPS (assign tab)
+   ════════════════════════════════════════════════════════════ */
+
+#permissionsPageContainer .permission-group {
+    background: var(--_bg-main);
+    border: 1px solid var(--_border);
+    border-radius: var(--_radius-md);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+#permissionsPageContainer .permission-group-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--_primary);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+#permissionsPageContainer .permission-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+#permissionsPageContainer .permission-checkbox-item {
+    background: var(--_bg-sec);
+    border: 1px solid var(--_border);
+    border-radius: var(--_radius-md);
+    padding: 1rem;
+    transition: var(--_transition);
+}
+
+#permissionsPageContainer .permission-checkbox-item:hover {
+    border-color: var(--_primary);
+    background: color-mix(in srgb, var(--_primary) 5%, transparent);
+}
+
+#permissionsPageContainer .permission-details {
+    flex: 1;
+}
+
+#permissionsPageContainer .permission-name {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    color: var(--_text);
+}
+
+#permissionsPageContainer .permission-desc {
+    font-size: 0.8125rem;
+    color: var(--_text-muted);
+}
+
+/* ════════════════════════════════════════════════════════════
+   15. ACTIONS ROW
+   ════════════════════════════════════════════════════════════ */
+
+#permissionsPageContainer .actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+/* ════════════════════════════════════════════════════════════
+   16. SCROLLBAR
+   ════════════════════════════════════════════════════════════ */
+
+#permissionsPageContainer ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+#permissionsPageContainer ::-webkit-scrollbar-track {
+    background: var(--_bg-sec);
+}
+
+#permissionsPageContainer ::-webkit-scrollbar-thumb {
+    background: var(--_bg-ter);
+    border-radius: 4px;
+}
+
+#permissionsPageContainer ::-webkit-scrollbar-thumb:hover {
+    background: var(--_border);
+}
+
+/* ════════════════════════════════════════════════════════════
+   17. RTL
+   ════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] #permissionsPageContainer .page-header-actions { flex-direction: row-reverse; }
+[dir="rtl"] #permissionsPageContainer .actions              { flex-direction: row-reverse; }
+[dir="rtl"] #permissionsPageContainer .alerts-container     { right: auto; left: 2rem; }
+[dir="rtl"] #permissionsPageContainer .modal-footer         { flex-direction: row-reverse; }
+[dir="rtl"] #permissionsPageContainer .pn-slideIn           { animation-name: pn-slideInRtl; }
+
+@keyframes pn-slideInRtl {
+    from { opacity: 0; transform: translateX(-100px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ════════════════════════════════════════════════════════════
+   18. RESPONSIVE
+   ════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1024px) {
+    #permissionsPageContainer .permission-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    #permissionsPageContainer .alerts-container {
+        top: 1rem;
+        right: 1rem;
+        left: 1rem;
+        min-width: auto;
+    }
+
+    #permissionsPageContainer .role-selector {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+
+    #permissionsPageContainer .permission-grid {
+        grid-template-columns: 1fr;
+    }
+
+    #permissionsPageContainer .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    #permissionsPageContainer .actions {
+        width: 100%;
+    }
+
+    #permissionsPageContainer .data-table {
+        font-size: 0.8125rem;
+    }
+
+    #permissionsPageContainer .data-table th,
+    #permissionsPageContainer .data-table td {
+        padding: 0.75rem 0.5rem;
+    }
+
+    #roleModal, #permissionModal, #resourcePermModal {
+        padding: 0;
+        align-items: flex-end;
+    }
+
+    #roleModal .modal-dialog,
+    #permissionModal .modal-dialog,
+    #resourcePermModal .modal-dialog {
+        max-width: 100%;
+        max-height: 92vh;
+        border-radius: var(--_radius-lg) var(--_radius-lg) 0 0;
+        border-bottom: none;
+    }
+}
+
+@media (max-width: 480px) {
+    #permissionsPageContainer .container {
+        padding: 0.5rem;
+    }
+
+    #permissionsPageContainer .main-tab {
+        padding: 0.75rem 1rem;
+        font-size: 0.8125rem;
+    }
+
+    #permissionsPageContainer .main-tab span {
+        display: none;
+    }
+
+    #permissionsPageContainer .role-selector {
+        grid-template-columns: 1fr;
+    }
+
+    #permissionsPageContainer .flags-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   19. PRINT
+   ════════════════════════════════════════════════════════════ */
+
+@media print {
+    #permissionsPageContainer .page-header-actions,
+    #permissionsPageContainer .main-tabs,
+    #permissionsPageContainer .actions,
+    #roleModal, #permissionModal, #resourcePermModal,
+    #permissionsPageContainer .alerts-container {
+        display: none !important;
+    }
+
+    #permissionsPageContainer .card {
+        break-inside: avoid;
+    }
+}
