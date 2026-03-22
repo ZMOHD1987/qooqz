@@ -35,6 +35,7 @@ if ($isFragment) {
 if (!is_admin_logged_in()) {
     if ($isFragment) {
         http_response_code(401);
+        header('Content-Type: application/json');
         echo json_encode(['error' => 'Not authenticated']);
         exit;
     } else {
@@ -116,14 +117,18 @@ $apiBase = '/api';
      Button/card/color CSS comes from AdminUiThemeLoader::generateCss()
      injected by header.php via <style id="dynamic-theme-db">. -->
 <?php
-if (!function_exists('prodAssetVer')) {
-    function prodAssetVer(string $path): string {
-        $full = $_SERVER['DOCUMENT_ROOT'] . $path;
-        return file_exists($full) ? (string)filemtime($full) : '1';
+if (!function_exists('assetVer')) {
+    function assetVer(string $path): string {
+        static $cache = [];
+        if (!isset($cache[$path])) {
+            $full = $_SERVER['DOCUMENT_ROOT'] . $path;
+            $cache[$path] = file_exists($full) ? (string)filemtime($full) : '0';
+        }
+        return $cache[$path];
     }
 }
 ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/products.css?v=<?= prodAssetVer('/admin/assets/css/pages/products.css') ?>">
+<link rel="stylesheet" href="/admin/assets/css/pages/products.css?v=<?= assetVer('/admin/assets/css/pages/products.css') ?>">
 
 <!-- Page Meta -->
 <meta data-page="products"
@@ -672,7 +677,7 @@ if (!function_exists('prodAssetVer')) {
                     </select>
                 </div>
 
-                <div class="filter-actions">
+                <div class="filter-buttons">
                     <button id="btnApplyFilters" class="btn btn-secondary" data-i18n="filters.apply">
                         <?= __t('filters.apply', 'Apply') ?>
                     </button>
@@ -754,26 +759,53 @@ if (!function_exists('prodAssetVer')) {
     </div>
 
     <!-- Media Studio Modal -->
-    <div id="prodMediaStudioModal" class="modal" style="display:none">
-        <div class="modal-content">
-            <span class="close" id="prodMediaStudioClose">&times;</span>
-            <iframe id="prodMediaStudioFrame" class="media-studio-iframe" src="/admin/fragments/media_studio.php?embedded=1&tenant_id=<?= $tenantId ?>&lang=<?= $lang ?>"></iframe>
+    <div id="prodMediaStudioModal"
+         class="prd-modal-backdrop"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="prodMediaStudioTitle"
+         style="display:none">
+        <div class="prd-modal-panel prd-modal-panel--wide prd-modal-panel--studio">
+            <div class="prd-modal-header">
+                <h3 id="prodMediaStudioTitle" data-i18n="media_studio.title"><?= __t('media_studio.title', 'Media Studio') ?></h3>
+                <button type="button"
+                        class="btn-close-modal icon-btn"
+                        id="prodMediaStudioClose"
+                        data-modal="prodMediaStudioModal"
+                        aria-label="<?= __t('accessibility.close', 'Close') ?>">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="prd-modal-body prd-modal-body--studio">
+                <iframe id="prodMediaStudioFrame" class="media-studio-iframe" src="/admin/fragments/media_studio.php?embedded=1&tenant_id=<?= $tenantId ?>&lang=<?= $lang ?>"></iframe>
+            </div>
         </div>
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- CSV Import Modal -->
     <!-- ═══════════════════════════════════════════════════════════ -->
-    <div id="csvImportModal" class="modal" style="display:none;">
-        <div class="modal-content csv-modal-content">
-            <!-- Header -->
-            <div class="csv-modal-header">
-                <h3>
+    <div id="csvImportModal"
+         class="prd-modal-backdrop"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="csvImportTitle"
+         style="display:none;">
+        <div class="prd-modal-panel csv-modal-content">
+            <div class="prd-modal-header">
+                <h3 id="csvImportTitle">
                     <i class="fas fa-file-csv"></i>
                     <span data-i18n="csv.title"><?= __t('csv.title', 'Import Products via CSV') ?></span>
                 </h3>
-                <button type="button" id="csvImportClose" class="csv-modal-close">&times;</button>
+                <button type="button"
+                        id="csvImportClose"
+                        class="btn-close-modal icon-btn"
+                        data-modal="csvImportModal"
+                        aria-label="<?= __t('accessibility.close', 'Close') ?>">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
             </div>
+            <div class="prd-modal-body">
 
             <!-- Instructions -->
             <div class="info-hint-box csv-instructions">
@@ -825,8 +857,9 @@ if (!function_exists('prodAssetVer')) {
                     <span data-i18n="csv.import"><?= __t('csv.import', 'Start Import') ?></span>
                 </button>
             </div>
-        </div>
-    </div>
+            </div><!-- /.prd-modal-body -->
+        </div><!-- /.prd-modal-panel -->
+    </div><!-- /#csvImportModal -->
 
 </div>
 
@@ -866,18 +899,23 @@ window.PAGE_PERMISSIONS = <?= json_encode([
 
 <script type="text/javascript">
 window.PRODUCTS_CONFIG = {
-    apiUrl: '<?= $apiBase ?>/products',
-    categoriesApi: '<?= $apiBase ?>/categories',
-    brandsApi: '<?= $apiBase ?>/brands',
-    productTypesApi: '<?= $apiBase ?>/product_types',
-    attributesApi: '<?= $apiBase ?>/product_attributes',
-    attributeValuesApi: '<?= $apiBase ?>/product_attribute_values',
-    currenciesApi: '<?= $apiBase ?>/currencies',
-    languagesApi: '<?= $apiBase ?>/languages',
-    imagesApi: '<?= $apiBase ?>/images',
-    tenantsApi: '<?= $apiBase ?>/tenants',
-    csrfToken: '<?= addslashes($csrf) ?>',
-    lang: '<?= addslashes($lang) ?>',
+    apiBase:   <?= json_encode($apiBase, JSON_UNESCAPED_SLASHES) ?>,
+    apiUrl:    <?= json_encode($apiBase . '/products', JSON_UNESCAPED_SLASHES) ?>,
+    categoriesApi: <?= json_encode($apiBase . '/categories', JSON_UNESCAPED_SLASHES) ?>,
+    brandsApi: <?= json_encode($apiBase . '/brands', JSON_UNESCAPED_SLASHES) ?>,
+    productTypesApi: <?= json_encode($apiBase . '/product_types', JSON_UNESCAPED_SLASHES) ?>,
+    attributesApi: <?= json_encode($apiBase . '/product_attributes', JSON_UNESCAPED_SLASHES) ?>,
+    attributeValuesApi: <?= json_encode($apiBase . '/product_attribute_values', JSON_UNESCAPED_SLASHES) ?>,
+    currenciesApi: <?= json_encode($apiBase . '/currencies', JSON_UNESCAPED_SLASHES) ?>,
+    languagesApi: <?= json_encode($apiBase . '/languages', JSON_UNESCAPED_SLASHES) ?>,
+    imagesApi: <?= json_encode($apiBase . '/images', JSON_UNESCAPED_SLASHES) ?>,
+    tenantsApi: <?= json_encode($apiBase . '/tenants', JSON_UNESCAPED_SLASHES) ?>,
+    csrfToken: <?= json_encode($csrf) ?>,
+    lang:      <?= json_encode($lang) ?>,
+    dir:       <?= json_encode($dir) ?>,
+    canCreate: <?= json_encode($canCreate) ?>,
+    canEdit:   <?= json_encode($canEdit) ?>,
+    canDelete: <?= json_encode($canDelete) ?>,
     itemsPerPage: 25
 };
 </script>
@@ -953,8 +991,8 @@ window.PRODUCTS_CONFIG = {
 
 <!-- Load AdminFramework + Page module when embedded; otherwise load normally -->
 <?php if ($isFragment): ?>
-<script src="/admin/assets/js/admin_framework.js?v=<?= prodAssetVer('/admin/assets/js/admin_framework.js') ?>"></script>
-<script src="/admin/assets/js/pages/products.js?v=<?= prodAssetVer('/admin/assets/js/pages/products.js') ?>"></script>
+<script src="/admin/assets/js/admin_framework.js?v=<?= assetVer('/admin/assets/js/admin_framework.js') ?>"></script>
+<script src="/admin/assets/js/pages/products.js?v=<?= assetVer('/admin/assets/js/pages/products.js') ?>"></script>
 
 <script>
 (function(){
@@ -985,7 +1023,7 @@ window.PRODUCTS_CONFIG = {
 })();
 </script>
 <?php else: ?>
-<script src="/admin/assets/js/pages/products.js?v=<?= prodAssetVer('/admin/assets/js/pages/products.js') ?>"></script>
+<script src="/admin/assets/js/pages/products.js?v=<?= assetVer('/admin/assets/js/pages/products.js') ?>"></script>
 <script>
 // Standalone mode init
 (function(){
