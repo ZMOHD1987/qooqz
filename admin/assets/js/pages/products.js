@@ -660,7 +660,7 @@
                     <td>${statusBadge}</td>
                     <td>
                         <div class="table-actions">
-                            ${canEdit ? `<button class="btn btn-sm btn-secondary" onclick="Products.edit(${prod.id})" title="${t('table.actions.edit', 'Edit')}">
+                            ${canEdit ? `<button class="btn btn-sm btn-primary" onclick="Products.edit(${prod.id})" title="${t('table.actions.edit', 'Edit')}">
                                 <i class="fas fa-edit"></i>
                             </button>` : ''}
                             ${state.permissions.canDuplicate ? `<button class="btn btn-sm btn-secondary" onclick="Products.duplicate(${prod.id})" title="${t('table.actions.duplicate', 'Duplicate')}">
