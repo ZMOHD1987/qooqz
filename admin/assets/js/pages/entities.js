@@ -649,8 +649,8 @@
                     <td>${verifiedBadge}</td>
                     <td>
                         <div class="table-actions">
-                            ${canEdit ? `<button class="btn btn-sm btn-secondary" onclick="Entities.edit(${entity.id})" title="${t('table.actions.edit', 'Edit')}">
-                                <i class="fas fa-edit"></i>
+                            ${canEdit ? `<button class="btn btn-sm btn-primary edit-btn" data-id="${entity.id}" onclick="Entities.edit(${entity.id})" title="${t('table.actions.edit', 'Edit')}">
+                                <i class="fas fa-edit" aria-hidden="true"></i>
                             </button>` : ''}
                             ${canDelete ? `<button class="btn btn-sm btn-danger" onclick="Entities.remove(${entity.id})" title="${t('table.actions.delete', 'Delete')}">
                                 <i class="fas fa-trash"></i>

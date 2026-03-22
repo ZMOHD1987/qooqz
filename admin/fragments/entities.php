@@ -138,8 +138,8 @@ $apiBase = '/api';
     <div id="entityFormContainer" class="card form-card" style="display:none">
         <div class="card-header">
             <h3 class="card-title" id="formTitle" data-i18n="form.add_title"><?= __t('form.add_title', 'Add Entity') ?></h3>
-            <button type="button" class="btn btn-sm btn-outline" id="btnCloseForm" aria-label="<?= __t('accessibility.close', 'Close') ?>">
-                <i class="fas fa-times"></i>
+            <button type="button" class="btn btn-secondary cancel-btn" id="btnCloseForm" aria-label="<?= __t('accessibility.close', 'Close') ?>">
+                <i class="fas fa-times" aria-hidden="true"></i>
             </button>
         </div>
         <div class="card-body">
@@ -680,7 +680,8 @@ $apiBase = '/api';
                         <i class="fas fa-save"></i>
                         <span data-i18n="form.buttons.save"><?= __t('form.buttons.save', 'Save') ?></span>
                     </button>
-                    <button type="button" class="btn btn-outline" id="btnCancelForm" data-i18n="form.buttons.cancel">
+                    <button type="button" class="btn btn-secondary cancel-btn" id="btnCancelForm" data-i18n="form.buttons.cancel">
+                        <i class="fas fa-times" aria-hidden="true"></i>
                         <?= __t('form.buttons.cancel', 'Cancel') ?>
                     </button>
                     <?php if ($canDelete): ?>
