@@ -124,7 +124,7 @@
             const result = await apiFetch('/api/languages');
 
             if (result.success && result.data) {
-                languages = result.data;
+                languages = Array.isArray(result.data) ? result.data : (result.data.items || []);
 
                 // Populate filter dropdown
                 const filterSelect = getEl('languageFilter');
