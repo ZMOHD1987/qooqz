@@ -50,6 +50,16 @@ final class UsersService
     public function save(array $data, ?int $userId = null): array
     {
         $isUpdate = !empty($data['id']);
+
+        // For partial updates, merge with existing data so validation passes
+        if ($isUpdate) {
+            $existing = $this->repo->find((int)$data['id']);
+            if (!$existing) {
+                throw new RuntimeException('User not found');
+            }
+            $data = array_merge($existing, $data);
+        }
+
         $errors = UsersValidator::validate($data, $isUpdate);
         if (!empty($errors)) {
             throw new InvalidArgumentException(

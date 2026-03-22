@@ -234,7 +234,7 @@
 
             var statusCell = permissions.canEdit
                 ? '<td><label class="toggle-switch" title="' + statusText + '">' +
-                      '<input type="checkbox" class="usr-status-toggle" data-user-id="' + user.id + '"' + (user.is_active ? ' checked' : '') + '>' +
+                      '<input type="checkbox" class="usr-status-toggle" data-user-id="' + user.id + '" aria-label="' + t('toggle_status', 'Toggle status') + ' ' + escapeHtml(user.username) + '"' + (user.is_active ? ' checked' : '') + '>' +
                       '<span class="toggle-slider"></span>' +
                   '</label></td>'
                 : '<td><span class="badge ' + statusClass + '">' + statusText + '</span></td>';
