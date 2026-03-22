@@ -12,7 +12,7 @@
     // ════════════════════════════════════════════════════════════
     const CONFIG = window.PRODUCTS_CONFIG || {};
     const AF = window.AdminFramework || {};
-    const PERMS = window.PAGE_PERMISSIONS || {};
+    const PERMS = CONFIG.permissions || {};
 
     const API = {
         products: CONFIG.apiUrl || '/api/products',
@@ -47,10 +47,10 @@
         productAttributes: [],
         productVariants: [],
         permissions: PERMS,
-        language: window.USER_LANGUAGE || CONFIG.lang || 'en',
-        direction: window.USER_DIRECTION || 'ltr',
-        csrfToken: window.CSRF_TOKEN || CONFIG.csrfToken || '',
-        tenantId: window.APP_CONFIG?.TENANT_ID || 1
+        language: CONFIG.lang || 'en',
+        direction: CONFIG.dir || 'ltr',
+        csrfToken: CONFIG.csrfToken || '',
+        tenantId: CONFIG.tenantId || 1
     };
 
     let el = {}; // DOM elements cache
@@ -635,9 +635,9 @@
             }
 
             const canEdit = state.permissions.canEdit || state.permissions.canEditAll ||
-                (state.permissions.canEditOwn && prod.created_by_user_id == window.APP_CONFIG?.USER_ID);
+                (state.permissions.canEditOwn && prod.created_by_user_id == CONFIG.userId);
             const canDelete = state.permissions.canDelete || state.permissions.canDeleteAll ||
-                (state.permissions.canDeleteOwn && prod.created_by_user_id == window.APP_CONFIG?.USER_ID);
+                (state.permissions.canDeleteOwn && prod.created_by_user_id == CONFIG.userId);
 
             return `
                 <tr data-id="${prod.id}">
@@ -2592,9 +2592,7 @@
 
         const ok = failCount === 0;
         resultDiv.style.display = 'block';
-        resultDiv.className = ok ? 'csv-result-success' : 'csv-result-partial';
-        resultDiv.style.padding = '12px';
-        resultDiv.style.borderRadius = 'var(--border-radius, 8px)';
+        resultDiv.className = ok ? 'csv-result-summary csv-result-success' : 'csv-result-summary csv-result-partial';
         resultDiv.innerHTML = `
             <strong>${ok ? '✅' : '⚠️'} ${t('csv.import_complete', 'Import Finished')}</strong><br>
             <span class="csv-count-success">✓ ${t('csv.created', 'Created')}: ${successCount}</span>

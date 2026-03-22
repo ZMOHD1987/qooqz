@@ -607,6 +607,12 @@ textarea.form-control {
    CSV IMPORT RESULT HELPERS
    ════════════════════════════════════════════════════════════ */
 
+.csv-result-summary {
+    margin-bottom: 16px;
+    padding: 12px;
+    border-radius: var(--border-radius, 8px);
+}
+
 .csv-result-success {
     background: color-mix(in srgb, var(--success-color, #4ade80) 10%, transparent);
     border: 1px solid color-mix(in srgb, var(--success-color, #4ade80) 30%, transparent);
@@ -857,12 +863,6 @@ textarea.form-control {
     font-size: 0.78rem;
     color: var(--text-secondary, #94a3b8);
     font-family: monospace;
-}
-
-.csv-result-summary {
-    margin-bottom: 16px;
-    padding: 12px;
-    border-radius: 8px;
 }
 
 .csv-actions {
