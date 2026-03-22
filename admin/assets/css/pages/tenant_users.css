@@ -105,6 +105,16 @@
    Page CSS must NOT redefine .btn-primary / .btn-danger / etc.
    ════════════════════════════════════════════════════════════ */
 
+/* Icon-only button variant — compact square for table/filter actions */
+#tenantUsersPageContainer .btn.btn-icon {
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* ════════════════════════════════════════════════════════════
    CARDS
    ════════════════════════════════════════════════════════════ */

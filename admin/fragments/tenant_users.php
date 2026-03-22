@@ -186,7 +186,7 @@ $apiBase = '/api';
     <div id="tenantUserFormContainer" class="card form-card" style="display:none">
         <div class="card-header">
             <h3 class="card-title" id="formTitle" data-i18n="form.add_title"><?= __t('form.add_title', 'Add Tenant User') ?></h3>
-            <button type="button" class="btn btn-sm btn-outline" id="btnCloseForm" data-btn-slug="outline" aria-label="<?= __t('accessibility.close', 'Close') ?>">
+            <button type="button" class="btn btn-sm btn-secondary" id="btnCloseForm" data-btn-slug="secondary" aria-label="<?= __t('accessibility.close', 'Close') ?>">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -325,7 +325,7 @@ $apiBase = '/api';
                         <i class="fas fa-save"></i>
                         <span data-i18n="form.buttons.save"><?= __t('form.buttons.save', 'Save') ?></span>
                     </button>
-                    <button type="button" class="btn btn-outline" id="btnCancelForm" data-btn-slug="outline" data-i18n="form.buttons.cancel">
+                    <button type="button" class="btn btn-secondary" id="btnCancelForm" data-btn-slug="secondary" data-i18n="form.buttons.cancel">
                         <?= __t('form.buttons.cancel', 'Cancel') ?>
                     </button>
                     <?php if ($canDelete): ?>
@@ -408,7 +408,7 @@ $apiBase = '/api';
                     <button id="btnApplyFilters" class="btn btn-secondary" data-btn-slug="secondary" data-i18n="filters.apply">
                         <?= __t('filters.apply', 'Apply') ?>
                     </button>
-                    <button id="btnResetFilters" class="btn btn-outline" data-btn-slug="outline" data-i18n="filters.reset">
+                    <button id="btnResetFilters" class="btn btn-secondary" data-btn-slug="secondary" data-i18n="filters.reset">
                         <?= __t('filters.reset', 'Reset') ?>
                     </button>
                     <button id="btnExportExcel" class="btn btn-success" data-btn-slug="success" data-i18n="table.actions.export" style="margin-inline-start:auto">

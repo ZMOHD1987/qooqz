@@ -366,7 +366,7 @@
         }
 
         // Previous
-        html += `<button class="btn btn-sm btn-outline ${page === 1 ? 'disabled' : ''}" data-btn-slug="outline"
+        html += `<button class="btn btn-sm btn-secondary ${page === 1 ? 'disabled' : ''}" data-btn-slug="secondary"
                         ${page > 1 ? `onclick="TenantUsers.load(${page - 1})"` : ''}>
                     &laquo; ${t('pagination.previous', 'Previous')}
                  </button>`;
@@ -382,22 +382,22 @@
         }
 
         if (startPage > 1) {
-            html += `<button class="btn btn-sm btn-outline" data-btn-slug="outline" onclick="TenantUsers.load(1)">1</button>`;
+            html += `<button class="btn btn-sm btn-secondary" data-btn-slug="secondary" onclick="TenantUsers.load(1)">1</button>`;
             if (startPage > 2) html += `<span class="page-ellipsis">...</span>`;
         }
 
         for (let i = startPage; i <= endPage; i++) {
-            html += `<button class="btn btn-sm ${i === page ? 'btn-primary' : 'btn-outline'}" data-btn-slug="${i === page ? 'primary' : 'outline'}"
+            html += `<button class="btn btn-sm ${i === page ? 'btn-primary' : 'btn-secondary'}" data-btn-slug="${i === page ? 'primary' : 'secondary'}"
                             onclick="TenantUsers.load(${i})">${i}</button>`;
         }
 
         if (endPage < pages) {
             if (endPage < pages - 1) html += `<span class="page-ellipsis">...</span>`;
-            html += `<button class="btn btn-sm btn-outline" data-btn-slug="outline" onclick="TenantUsers.load(${pages})">${pages}</button>`;
+            html += `<button class="btn btn-sm btn-secondary" data-btn-slug="secondary" onclick="TenantUsers.load(${pages})">${pages}</button>`;
         }
 
         // Next
-        html += `<button class="btn btn-sm btn-outline ${page === pages ? 'disabled' : ''}" data-btn-slug="outline"
+        html += `<button class="btn btn-sm btn-secondary ${page === pages ? 'disabled' : ''}" data-btn-slug="secondary"
                         ${page < pages ? `onclick="TenantUsers.load(${page + 1})"` : ''}>
                     ${t('pagination.next', 'Next')} &raquo;
                  </button>`;
@@ -468,8 +468,8 @@
                     </td>
                     <td>
                         <div class="table-actions">
-                            ${state.permissions.canEdit ? `<button class="btn btn-sm btn-outline" data-btn-slug="outline" onclick="TenantUsers.edit(${item.id})">${t('table.actions.edit')}</button>` : ''}
-                            ${state.permissions.canDelete ? `<button class="btn btn-sm btn-danger" data-btn-slug="danger" onclick="TenantUsers.remove(${item.id})">${t('table.actions.delete')}</button>` : ''}
+                            ${state.permissions.canEdit ? `<button class="btn btn-sm btn-icon btn-primary" data-btn-slug="primary" title="${t('table.actions.edit')}" aria-label="${t('table.actions.edit')}" onclick="TenantUsers.edit(${item.id})"><i class="fas fa-edit" aria-hidden="true"></i></button>` : ''}
+                            ${state.permissions.canDelete ? `<button class="btn btn-sm btn-icon btn-danger" data-btn-slug="danger" title="${t('table.actions.delete')}" aria-label="${t('table.actions.delete')}" onclick="TenantUsers.remove(${item.id})"><i class="fas fa-trash" aria-hidden="true"></i></button>` : ''}
                         </div>
                     </td>
                 </tr>
@@ -789,6 +789,11 @@
                 if (container) container.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }, 200);
 
+            // Apply DB-driven hover effects to form buttons
+            if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
+                Admin.buttons.applyHoverEffects(AF.$('tenantUserFormContainer'));
+            }
+
         } catch (err) {
             console.error('[TenantUsers] Edit error:', err);
             AF.error(t('messages.error.load_failed'));
@@ -822,6 +827,11 @@
         el.formEntityId.innerHTML = `<option value="">${t('form.fields.entity_id.enter_tenant_first')}</option>`;
         el.formEntityId.disabled = true;
         AF.Form.show('tenantUserFormContainer', t('form.add_title'));
+
+        // Apply DB-driven hover effects to form buttons
+        if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
+            Admin.buttons.applyHoverEffects(AF.$('tenantUserFormContainer'));
+        }
     }
 
     // ----------------------------
