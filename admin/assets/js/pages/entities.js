@@ -11,7 +11,7 @@
     // CONFIGURATION & STATE
     // ════════════════════════════════════════════════════════════
     const CONFIG = window.ENTITIES_CONFIG || {};
-    const PERMS = CONFIG.permissions || {};
+    const PERMS = CONFIG.permissions || window.PAGE_PERMISSIONS || {};
 
     const API = {
         entities: CONFIG.apiUrl || '/api/entities',
@@ -46,11 +46,11 @@
         addressData: null,
         deletedTranslationIds: [],
         permissions: PERMS,
-        language: CONFIG.lang || 'en',
-        direction: CONFIG.dir || 'ltr',
-        csrfToken: CONFIG.csrfToken || '',
-        tenantId: CONFIG.tenantId || 1,
-        userId: CONFIG.userId || null
+        language: CONFIG.lang || window.USER_LANGUAGE || 'en',
+        direction: CONFIG.dir || window.USER_DIRECTION || 'ltr',
+        csrfToken: CONFIG.csrfToken || window.CSRF_TOKEN || '',
+        tenantId: Number(CONFIG.tenantId || window.APP_CONFIG?.TENANT_ID || 1),
+        userId: Number(CONFIG.userId || window.APP_CONFIG?.USER_ID || 0) || null
     };
 
     let el = {}; // DOM elements cache
