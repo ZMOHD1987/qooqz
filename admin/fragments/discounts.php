@@ -168,7 +168,7 @@ if (!function_exists('assetVer')) {
     <div class="dc-modal-panel dc-modal-panel--wide">
       <div class="dc-modal-header">
         <h3 id="modalTitle"><?= _dt('modal.add_title', 'Add Discount') ?></h3>
-        <button class="dc-modal-close btn-close-modal" data-modal="discountModal" id="btnCloseModal">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="discountModal" id="btnCloseModal" aria-label="Close">&times;</button>
       </div>
       <form id="discountForm">
         <input type="hidden" id="discountId" value="">
@@ -266,7 +266,7 @@ if (!function_exists('assetVer')) {
     <div class="dc-modal-panel dc-modal-panel--wide">
       <div class="dc-modal-header">
         <h3><?= _dt('translations.title', 'Discount Translations') ?></h3>
-        <button class="dc-modal-close btn-close-modal" data-modal="translationsModal" id="btnCloseTranslations">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="translationsModal" id="btnCloseTranslations" aria-label="Close">&times;</button>
       </div>
       <div class="dc-modal-body">
         <input type="hidden" id="transDiscountId">
@@ -315,7 +315,7 @@ if (!function_exists('assetVer')) {
     <div class="dc-modal-panel dc-modal-panel--wide">
       <div class="dc-modal-header">
         <h3><?= _dt('scopes.title', 'Discount Scopes') ?></h3>
-        <button class="dc-modal-close btn-close-modal" data-modal="scopesModal" id="btnCloseScopes">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="scopesModal" id="btnCloseScopes" aria-label="Close">&times;</button>
       </div>
       <div class="dc-modal-body">
         <input type="hidden" id="scopesDiscountId">
@@ -362,7 +362,7 @@ if (!function_exists('assetVer')) {
     <div class="dc-modal-panel dc-modal-panel--wide">
       <div class="dc-modal-header">
         <h3><?= _dt('conditions.title', 'Discount Conditions') ?></h3>
-        <button class="dc-modal-close btn-close-modal" data-modal="conditionsModal" id="btnCloseConditions">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="conditionsModal" id="btnCloseConditions" aria-label="Close">&times;</button>
       </div>
       <div class="dc-modal-body">
         <input type="hidden" id="conditionsDiscountId">
@@ -424,7 +424,7 @@ if (!function_exists('assetVer')) {
     <div class="dc-modal-panel dc-modal-panel--wide">
       <div class="dc-modal-header">
         <h3><?= _dt('actions.title', 'Discount Actions') ?></h3>
-        <button class="dc-modal-close btn-close-modal" data-modal="actionsModal" id="btnCloseActions">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="actionsModal" id="btnCloseActions" aria-label="Close">&times;</button>
       </div>
       <div class="dc-modal-body">
         <input type="hidden" id="actionsDiscountId">
@@ -465,7 +465,7 @@ if (!function_exists('assetVer')) {
     <div class="dc-modal-panel dc-modal-panel--wide">
       <div class="dc-modal-header">
         <h3><?= _dt('exclusions.title', 'Discount Exclusions') ?></h3>
-        <button class="dc-modal-close btn-close-modal" data-modal="exclusionsModal" id="btnCloseExclusions">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="exclusionsModal" id="btnCloseExclusions" aria-label="Close">&times;</button>
       </div>
       <div class="dc-modal-body">
         <input type="hidden" id="exclusionsDiscountId">
@@ -498,7 +498,7 @@ if (!function_exists('assetVer')) {
     <div class="dc-modal-panel dc-modal-panel--wide">
       <div class="dc-modal-header">
         <h3><?= _dt('redemptions.title', 'Discount Redemptions') ?></h3>
-        <button class="dc-modal-close btn-close-modal" data-modal="redemptionsModal" id="btnCloseRedemptions">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="redemptionsModal" id="btnCloseRedemptions" aria-label="Close">&times;</button>
       </div>
       <div class="dc-modal-body">
         <input type="hidden" id="redemptionsDiscountId">
