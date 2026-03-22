@@ -5,7 +5,7 @@
  * • الترجمات من CONFIG.strings فقط — لا fetch مكرّر
  * • notify() بـ ms- prefix يتطابق مع CSS
  * • showState() موحّدة (msLoading/msEmpty/msError/msTableContainer)
- * • btn-outline للتعديل → btn-edit
+ * • btn-outline للتعديل → btn-primary
  * • credentials: 'same-origin' على كل fetch
  * • ESC يُغلق الـ form cards
  * • Admin.page.register + window.page
@@ -239,14 +239,14 @@
         tbody.innerHTML = state.items.map(item => {
             const date = item.created_at ? new Date(item.created_at).toLocaleDateString() : '—';
 
-            // ✅ btn-edit للتعديل
+            // ✅ btn-primary للتعديل
             const editBtn = CFG.permissions?.canEdit
-                ? `<button class="btn btn-sm btn-edit ms-edit-btn" data-id="${esc(item.id)}" aria-label="${t('edit','Edit')}">
+                ? `<button class="btn btn-sm btn-primary ms-edit-btn" data-id="${esc(item.id)}" aria-label="${t('edit','Edit')}">
                        <i class="fas fa-edit" aria-hidden="true"></i>
                    </button>`
                 : '';
             const delBtn = CFG.permissions?.canDelete
-                ? `<button class="btn btn-sm btn-delete ms-del-btn" data-id="${esc(item.id)}" aria-label="${t('delete','Delete')}">
+                ? `<button class="btn btn-sm btn-danger ms-del-btn" data-id="${esc(item.id)}" aria-label="${t('delete','Delete')}">
                        <i class="fas fa-trash" aria-hidden="true"></i>
                    </button>`
                 : '';
