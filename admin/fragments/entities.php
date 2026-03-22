@@ -129,6 +129,17 @@ if (!function_exists('assetVer')) {
     }
 }
 
+if (!function_exists('__ent_json')) {
+    function __ent_json($value, int $flags = 0): string
+    {
+        $encoded = json_encode(
+            $value,
+            $flags | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
+        );
+        return ($encoded === false) ? 'null' : $encoded;
+    }
+}
+
 ?>
 <!-- Force load CSS if embedded -->
 <?php if ($isFragment): ?>
@@ -898,28 +909,28 @@ if (!function_exists('assetVer')) {
 
 <script type="text/javascript">
 window.ENTITIES_CONFIG = {
-    apiBase: <?= json_encode($apiBase, JSON_UNESCAPED_SLASHES) ?>,
-    apiUrl: <?= json_encode($apiBase . '/entities', JSON_UNESCAPED_SLASHES) ?>,
-    attributesApi: <?= json_encode($apiBase . '/entities_attributes', JSON_UNESCAPED_SLASHES) ?>,
-    attributeValuesApi: <?= json_encode($apiBase . '/entities_attribute_values', JSON_UNESCAPED_SLASHES) ?>,
-    settingsApi: <?= json_encode($apiBase . '/entity_settings', JSON_UNESCAPED_SLASHES) ?>,
-    workingHoursApi: <?= json_encode($apiBase . '/entities_working_hours', JSON_UNESCAPED_SLASHES) ?>,
-    languagesApi: <?= json_encode($apiBase . '/languages', JSON_UNESCAPED_SLASHES) ?>,
-    timezonesApi: <?= json_encode($apiBase . '/timezones', JSON_UNESCAPED_SLASHES) ?>,
-    tenantsApi: <?= json_encode($apiBase . '/tenants', JSON_UNESCAPED_SLASHES) ?>,
-    entityTypesApi: <?= json_encode($apiBase . '/entity_types', JSON_UNESCAPED_SLASHES) ?>,
-    addressesApi: <?= json_encode($apiBase . '/addresses', JSON_UNESCAPED_SLASHES) ?>,
-    csrfToken: <?= json_encode($csrf) ?>,
-    lang: <?= json_encode($lang) ?>,
-    dir: <?= json_encode($dir) ?>,
+    apiBase: <?= __ent_json($apiBase) ?>,
+    apiUrl: <?= __ent_json($apiBase . '/entities') ?>,
+    attributesApi: <?= __ent_json($apiBase . '/entities_attributes') ?>,
+    attributeValuesApi: <?= __ent_json($apiBase . '/entities_attribute_values') ?>,
+    settingsApi: <?= __ent_json($apiBase . '/entity_settings') ?>,
+    workingHoursApi: <?= __ent_json($apiBase . '/entities_working_hours') ?>,
+    languagesApi: <?= __ent_json($apiBase . '/languages') ?>,
+    timezonesApi: <?= __ent_json($apiBase . '/timezones') ?>,
+    tenantsApi: <?= __ent_json($apiBase . '/tenants') ?>,
+    entityTypesApi: <?= __ent_json($apiBase . '/entity_types') ?>,
+    addressesApi: <?= __ent_json($apiBase . '/addresses') ?>,
+    csrfToken: <?= __ent_json($csrf) ?>,
+    lang: <?= __ent_json($lang) ?>,
+    dir: <?= __ent_json($dir) ?>,
     tenantId: <?= (int)$tenantId ?>,
     userId: <?= (int)$userId ?>,
-    strings: <?= json_encode($_entStrings, JSON_UNESCAPED_UNICODE) ?>,
-    canCreate: <?= json_encode($canCreate) ?>,
-    canEdit: <?= json_encode($canEdit) ?>,
-    canDelete: <?= json_encode($canDelete) ?>,
-    isSuperAdmin: <?= json_encode(is_super_admin()) ?>,
-    permissions: <?= json_encode([
+    strings: <?= __ent_json($_entStrings) ?>,
+    canCreate: <?= __ent_json($canCreate) ?>,
+    canEdit: <?= __ent_json($canEdit) ?>,
+    canDelete: <?= __ent_json($canDelete) ?>,
+    isSuperAdmin: <?= __ent_json(is_super_admin()) ?>,
+    permissions: <?= __ent_json([
         'canCreate' => $canCreate,
         'canEdit' => $canEdit,
         'canDelete' => $canDelete,
@@ -931,15 +942,15 @@ window.ENTITIES_CONFIG = {
         'canDeleteAll' => $canDeleteAll,
         'canDeleteOwn' => $canDeleteOwn,
         'isSuperAdmin' => is_super_admin()
-    ], JSON_UNESCAPED_UNICODE) ?>,
+    ]) ?>,
     itemsPerPage: 25,
-    mediaStudioBase: <?= json_encode('/admin/fragments/media_studio.php') ?>,
-    addressesFragment: <?= json_encode('/admin/fragments/addresses.php') ?>
+    mediaStudioBase: <?= __ent_json('/admin/fragments/media_studio.php') ?>,
+    addressesFragment: <?= __ent_json('/admin/fragments/addresses.php') ?>
 };
 </script>
 
 <script id="ENTITIES_INITIAL_PAYLOAD" type="application/json">
-<?= json_encode(['items' => [], 'meta' => ['page' => 1, 'per_page' => 25, 'total' => 0]]) ?>
+<?= __ent_json(['items' => [], 'meta' => ['page' => 1, 'per_page' => 25, 'total' => 0]]) ?>
 </script>
 
 <?php if ($isFragment): ?>
