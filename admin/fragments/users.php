@@ -160,7 +160,7 @@ if (!function_exists('assetVer')) {
         <h3><?= _ut('empty_title', 'No Users Found') ?></h3>
         <p><?= _ut('empty_message', 'Start by adding users') ?></p>
         <?php if ($canCreate): ?>
-        <button class="btn btn-primary" onclick="if(window.Users)Users.add()">
+        <button class="btn btn-primary" data-btn-slug="primary" onclick="if(window.Users)Users.add()">
           <i class="fas fa-plus"></i> <?= _ut('add_first', 'Add First User') ?>
         </button>
         <?php endif; ?>
@@ -171,7 +171,7 @@ if (!function_exists('assetVer')) {
         <div class="error-icon">⚠️</div>
         <h3><?= _ut('error_title', 'Error Loading Data') ?></h3>
         <p id="errorMessage"></p>
-        <button id="btnRetry" class="btn btn-secondary"><?= _ut('retry', 'Retry') ?></button>
+        <button id="btnRetry" class="btn btn-secondary" data-btn-slug="secondary"><?= _ut('retry', 'Retry') ?></button>
       </div>
 
     </div>
@@ -240,7 +240,7 @@ if (!function_exists('assetVer')) {
 
         <div class="usr-modal-footer">
           <button type="submit" class="btn btn-primary" data-btn-slug="primary"><?= _ut('form.save', 'Save') ?></button>
-          <button type="button" class="btn btn-outline" id="btnCancelForm"><?= _ut('form.cancel', 'Cancel') ?></button>
+          <button type="button" class="btn btn-secondary" id="btnCancelForm" data-btn-slug="secondary"><?= _ut('form.cancel', 'Cancel') ?></button>
           <?php if ($canDelete): ?>
           <button type="button" id="btnDeleteUser" class="btn btn-danger" data-btn-slug="danger" style="display:none"><?= _ut('form.delete', 'Delete') ?></button>
           <?php endif; ?>

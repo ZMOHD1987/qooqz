@@ -44,6 +44,21 @@
         return div.innerHTML;
     }
 
+    /* ── Toast Notifications (usr-toast-*) ── */
+    function showNotification(msg, type) {
+        var container = document.querySelector('.usr-notifications');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'usr-notifications';
+            document.body.appendChild(container);
+        }
+        var n = document.createElement('div');
+        n.className = 'usr-toast usr-toast-' + (type || 'info');
+        n.textContent = msg;
+        container.appendChild(n);
+        setTimeout(function(){ n.style.opacity = '0'; setTimeout(function(){ n.remove(); }, 300); }, 3000);
+    }
+
     function formatDate(dateString) {
         if (!dateString) return 'N/A';
         try {
@@ -219,6 +234,11 @@
 
             tbody.appendChild(tr);
         });
+
+        // Apply DB-driven hover effects on table action buttons
+        if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
+            Admin.buttons.applyHoverEffects(tbody);
+        }
     }
 
     // ════════════════════════════════════════════════════════════
@@ -329,7 +349,7 @@
             }
         } catch (error) {
             console.error('[Users] editUser:', error);
-            alert('Failed to load user: ' + error.message);
+            showNotification('Failed to load user: ' + error.message, 'error');
         }
     }
 
@@ -367,13 +387,13 @@
             if (result.success) {
                 closeModal();
                 loadUsers(currentPage);
-                alert(action === 'edit' ? 'User updated!' : 'User added!');
+                showNotification(action === 'edit' ? 'User updated!' : 'User added!', 'success');
             } else {
                 throw new Error(result.message || 'Save failed');
             }
         } catch (error) {
             console.error('[Users] submitForm:', error);
-            alert('Failed to save: ' + error.message);
+            showNotification('Failed to save: ' + error.message, 'error');
         }
     }
 
@@ -393,13 +413,13 @@
             if (result.success) {
                 closeModal();
                 loadUsers(currentPage);
-                alert('User deleted!');
+                showNotification('User deleted!', 'success');
             } else {
                 throw new Error(result.message || 'Delete failed');
             }
         } catch (error) {
             console.error('[Users] deleteUser:', error);
-            alert('Failed to delete: ' + error.message);
+            showNotification('Failed to delete: ' + error.message, 'error');
         }
     }
 
@@ -533,6 +553,12 @@
         await loadUsers();
 
         window.UsersPageInitialized = true;
+
+        // Apply DB-driven hover effects on static page buttons
+        if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
+            Admin.buttons.applyHoverEffects(document.querySelector('.page-container'));
+        }
+
         console.log('[Users] Initialized');
         return Promise.resolve(true);
     }

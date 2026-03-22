@@ -65,6 +65,11 @@
     flex-direction: column;
 }
 
+/* Filter card (first .card) stays compact; table card expands */
+.card:has(.filters-grid) {
+    flex: 0 0 auto;
+}
+
 .card-header {
     padding: 14px 16px;
     border-bottom: 1px solid var(--border-color, #263044);
@@ -79,6 +84,11 @@
     display: flex;
     flex-direction: column;
     flex: 1;
+}
+
+/* Filter card-body should not expand */
+.card:has(.filters-grid) .card-body {
+    flex: 0 0 auto;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -447,6 +457,41 @@
 .actions-cell .btn { margin: 2px; }
 
 /* ════════════════════════════════════════════════════════════
+   NOTIFICATION TOAST  (usr-toast-*)
+   ════════════════════════════════════════════════════════════ */
+.usr-notifications {
+    position: fixed;
+    top: clamp(12px, 2vh, 20px);
+    right: clamp(12px, 2vw, 20px);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.usr-toast {
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 0.9em;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s ease;
+    transition: opacity 0.3s;
+    pointer-events: auto;
+}
+
+.usr-toast-success { background: var(--success-color, #10b981); }
+.usr-toast-error   { background: var(--danger-color, #ef4444); }
+.usr-toast-warning { background: var(--warning-color, #f59e0b); color: #333; }
+.usr-toast-info    { background: var(--info-color, #3b82f6); }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ════════════════════════════════════════════════════════════
    RTL SUPPORT
    ════════════════════════════════════════════════════════════ */
 [dir="rtl"] {
@@ -469,6 +514,11 @@
 
 [dir="rtl"] .filter-buttons {
     flex-direction: row-reverse;
+}
+
+[dir="rtl"] .usr-notifications {
+    right: auto;
+    left: clamp(12px, 2vw, 20px);
 }
 
 [dir="rtl"] .usr-modal-backdrop { direction: rtl; }
@@ -596,5 +646,11 @@
     .pagination {
         flex-wrap: wrap;
         justify-content: center;
+    }
+
+    .usr-notifications,
+    [dir="rtl"] .usr-notifications {
+        right: 10px;
+        left: 10px;
     }
 }
