@@ -131,8 +131,8 @@ if (!function_exists('assetVer')) {
     <div id="productFormContainer" class="card form-card" style="display:none">
         <div class="card-header">
             <h3 class="card-title" id="formTitle" data-i18n="form.add_title"><?= _prd('form.add_title', 'Add Product') ?></h3>
-            <button type="button" class="btn btn-sm btn-outline" id="btnCloseForm" aria-label="<?= _prd('accessibility.close', 'Close') ?>">
-                <i class="fas fa-times"></i>
+            <button type="button" class="btn btn-secondary cancel-btn" id="btnCloseForm" aria-label="<?= _prd('accessibility.close', 'Close') ?>">
+                <i class="fas fa-times" aria-hidden="true"></i>
             </button>
         </div>
         <div class="card-body">
@@ -602,7 +602,8 @@ if (!function_exists('assetVer')) {
                         <i class="fas fa-save"></i>
                         <span data-i18n="form.buttons.save"><?= _prd('form.buttons.save', 'Save') ?></span>
                     </button>
-                    <button type="button" class="btn btn-outline" id="btnCancelForm" data-i18n="form.buttons.cancel">
+                    <button type="button" class="btn btn-secondary cancel-btn" id="btnCancelForm" data-i18n="form.buttons.cancel">
+                        <i class="fas fa-times" aria-hidden="true"></i>
                         <?= _prd('form.buttons.cancel', 'Cancel') ?>
                     </button>
                     <?php if ($canDelete): ?>
