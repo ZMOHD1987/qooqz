@@ -912,5 +912,3 @@ window.DELIVERY_CONFIG = {
 <script src="/admin/assets/js/pages/delivery.js?v=<?= assetVer('/admin/assets/js/pages/delivery.js') ?>"></script>
 
 <?php if (!$isFragment) require_once __DIR__ . '/../includes/footer.php'; ?>
-
-<?php if (!$isFragment): require_once __DIR__ . '/../includes/footer.php'; endif; ?>
