@@ -317,6 +317,12 @@
 [dir="rtl"] .data-table thead th,
 [dir="rtl"] .data-table tbody td { text-align: right; }
 [dir="rtl"] .media-studio-header { flex-direction: row-reverse; }
+[dir="rtl"] input[type="date"],
+[dir="rtl"] input[type="datetime-local"],
+[dir="rtl"] input[type="time"] {
+    text-align: right;
+    direction: rtl;
+}
 
 /* =====================================================
    RESPONSIVE
