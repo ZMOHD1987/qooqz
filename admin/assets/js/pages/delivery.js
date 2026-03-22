@@ -866,7 +866,7 @@
                     '<span class="zone-item-meta">' + esc(z.zone_type) + ' · ' + esc(z.delivery_fee) + ' · ' + esc(z.estimated_minutes) + ' min</span>' +
                 '</div>' +
                 '<div class="zone-item-actions">' +
-                (CFG.canEdit   ? '<button class="btn btn-sm btn-icon" onclick="Delivery.editZone(' + z.id + ')" title="Edit"><i class="fas fa-edit"></i></button>'   : '') +
+                (CFG.canEdit   ? '<button class="btn btn-sm btn-icon btn-primary" onclick="Delivery.editZone(' + z.id + ')" title="Edit"><i class="fas fa-edit"></i></button>'   : '') +
                 (CFG.canDelete ? '<button class="btn btn-sm btn-icon btn-danger" onclick="Delivery.delZone(' + z.id + ')" title="Delete"><i class="fas fa-trash"></i></button>' : '') +
                 '</div></div>';
         }).join('');
