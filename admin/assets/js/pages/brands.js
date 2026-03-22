@@ -625,8 +625,13 @@
 
         const closeBtn = document.getElementById('brandMediaStudioClose');
         if (closeBtn) {
-            closeBtn.onclick = () => { if (modal) modal.style.display = 'none'; };
+            closeBtn.onclick = closeMediaStudio;
         }
+    }
+
+    function closeMediaStudio() {
+        const modal = AF.$('brandMediaStudioModal');
+        if (modal) modal.style.display = 'none';
     }
 
     // ----------------------------
@@ -860,12 +865,10 @@
         // ESC key closes modal
         document.addEventListener('keydown', function (e) {
             if (e.key !== 'Escape') return;
-            ['brandMediaStudioModal'].forEach(function (id) {
-                const modal = document.getElementById(id);
-                if (modal && modal.style.display !== 'none' && modal.style.display !== '') {
-                    modal.style.display = 'none';
-                }
-            });
+            const modal = document.getElementById('brandMediaStudioModal');
+            if (modal && modal.style.display !== 'none' && modal.style.display !== '') {
+                closeMediaStudio();
+            }
         });
 
         await loadLanguages();
@@ -895,8 +898,7 @@
                     });
 
                     studioWin.addEventListener('ImageStudio:close', () => {
-                        const modal = AF.$('brandMediaStudioModal');
-                        if (modal) modal.style.display = 'none';
+                        closeMediaStudio();
                     });
                 } catch (err) {
                     console.warn('[Brands] Cannot attach events to iframe (CORS?)', err);
@@ -905,8 +907,7 @@
         }
 
         window.addEventListener('ImageStudio:close', () => {
-            const modal = AF.$('brandMediaStudioModal');
-            if (modal) modal.style.display = 'none';
+            closeMediaStudio();
         });
 
         // Set up events

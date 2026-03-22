@@ -100,7 +100,7 @@ $_brLangFile = __DIR__ . '/../../languages/Brands/' . $_brSafeLang . '.json';
 if (file_exists($_brLangFile)) {
     $_brJson = json_decode(file_get_contents($_brLangFile), true);
     if (is_array($_brJson)) {
-        $_brStrings = $_brJson;
+        $_brStrings = isset($_brJson['strings']) ? $_brJson['strings'] : $_brJson;
     }
 }
 
