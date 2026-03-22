@@ -174,7 +174,7 @@ $apiBase = '/api';
         </div>
         <div class="page-header-actions">
             <?php if ($canCreate): ?>
-            <button id="btnAddTenantUser" class="btn btn-primary" data-btn-slug="primary">
+            <button id="btnAddTenantUser" class="btn btn-primary">
                 <i class="fas fa-plus"></i>
                 <span data-i18n="tenant_users.add_new"><?= __t('tenant_users.add_new', 'Add New User') ?></span>
             </button>
@@ -186,7 +186,7 @@ $apiBase = '/api';
     <div id="tenantUserFormContainer" class="card form-card" style="display:none">
         <div class="card-header">
             <h3 class="card-title" id="formTitle" data-i18n="form.add_title"><?= __t('form.add_title', 'Add Tenant User') ?></h3>
-            <button type="button" class="btn btn-sm btn-secondary" id="btnCloseForm" data-btn-slug="secondary" aria-label="<?= __t('accessibility.close', 'Close') ?>">
+            <button type="button" class="btn btn-sm btn-outline" id="btnCloseForm" aria-label="<?= __t('accessibility.close', 'Close') ?>">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -321,15 +321,18 @@ $apiBase = '/api';
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary" id="btnSubmitForm" data-btn-slug="primary">
+                    <button type="submit" class="btn btn-primary" id="btnSubmitForm">
                         <i class="fas fa-save"></i>
                         <span data-i18n="form.buttons.save"><?= __t('form.buttons.save', 'Save') ?></span>
                     </button>
-                    <button type="button" class="btn btn-secondary" id="btnCancelForm" data-btn-slug="secondary" data-i18n="form.buttons.cancel">
+                    <button type="button" class="btn btn-outline" id="btnCancelForm" data-i18n="form.buttons.cancel">
                         <?= __t('form.buttons.cancel', 'Cancel') ?>
                     </button>
                     <?php if ($canDelete): ?>
-                    <button type="button" id="btnDeleteTenantUser" class="btn btn-sm btn-icon btn-danger" data-btn-slug="danger" title="<?= __t('table.actions.delete', 'Delete') ?>" aria-label="<?= __t('table.actions.delete', 'Delete') ?>" style="display:none"><i class="fas fa-trash" aria-hidden="true"></i></button>
+                    <button type="button" id="btnDeleteTenantUser" class="btn btn-danger" style="display:none">
+                        <i class="fas fa-trash"></i>
+                        <span data-i18n="table.actions.delete"><?= __t('table.actions.delete', 'Delete') ?></span>
+                    </button>
                     <?php endif; ?>
                 </div>
             </form>
@@ -402,9 +405,9 @@ $apiBase = '/api';
                 </div>
 
                 <div class="filter-actions">
-                    <button id="btnApplyFilters" class="btn btn-sm btn-primary" data-btn-slug="primary"><i class="fas fa-search" aria-hidden="true"></i> <span data-i18n="filters.apply"><?= __t('filters.apply', 'Apply') ?></span></button>
-                    <button id="btnResetFilters" class="btn btn-sm btn-secondary" data-btn-slug="secondary"><i class="fas fa-times" aria-hidden="true"></i> <span data-i18n="filters.reset"><?= __t('filters.reset', 'Reset') ?></span></button>
-                    <button id="btnExportExcel" class="btn btn-sm btn-success" data-btn-slug="success" style="margin-inline-start:auto"><i class="fas fa-file-excel" aria-hidden="true"></i> <span data-i18n="table.actions.export"><?= __t('table.actions.export', 'Export Excel') ?></span></button>
+                    <button id="btnApplyFilters" class="btn btn-secondary" data-i18n="filters.apply"><?= __t('filters.apply', 'Apply') ?></button>
+                    <button id="btnResetFilters" class="btn btn-outline" data-i18n="filters.reset"><?= __t('filters.reset', 'Reset') ?></button>
+                    <button id="btnExportExcel" class="btn btn-success" style="margin-inline-start:auto" data-i18n="table.actions.export"><?= __t('table.actions.export', 'Export Excel') ?></button>
                 </div>
             </div>
         </div>
@@ -452,7 +455,7 @@ $apiBase = '/api';
                 <h3 data-i18n="table.empty.title"><?= __t('table.empty.title', 'No Tenant Users Found') ?></h3>
                 <p data-i18n="table.empty.message"><?= __t('table.empty.message', 'Start by adding users to tenants') ?></p>
                 <?php if ($canCreate): ?>
-                <button class="btn btn-primary" data-btn-slug="primary" onclick="if(window.TenantUsers)window.TenantUsers.add()">
+                <button class="btn btn-primary" onclick="if(window.TenantUsers)window.TenantUsers.add()">
                     <i class="fas fa-plus"></i>
                     <span data-i18n="table.empty.add_first"><?= __t('table.empty.add_first', 'Add First User') ?></span>
                 </button>
@@ -463,7 +466,7 @@ $apiBase = '/api';
                 <div class="error-icon">⚠️</div>
                 <h3 data-i18n="messages.error.load_failed"><?= __t('messages.error.load_failed', 'Error Loading Data') ?></h3>
                 <p id="errorMessage"></p>
-                <button id="btnRetry" class="btn btn-secondary" data-btn-slug="secondary" data-i18n="tenant_users.retry">
+                <button id="btnRetry" class="btn btn-secondary" data-i18n="tenant_users.retry">
                     <?= __t('tenant_users.retry', 'Retry') ?>
                 </button>
             </div>

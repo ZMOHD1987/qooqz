@@ -366,9 +366,9 @@
         }
 
         // Previous
-        html += `<button class="btn btn-sm btn-secondary ${page === 1 ? 'disabled' : ''}" data-btn-slug="secondary"
+        html += `<button class="pagination-btn" ${page <= 1 ? 'disabled' : ''}
                         ${page > 1 ? `onclick="TenantUsers.load(${page - 1})"` : ''}>
-                    &laquo; ${t('pagination.previous', 'Previous')}
+                    <i class="fas fa-chevron-left"></i>
                  </button>`;
 
         // Pages
@@ -382,24 +382,24 @@
         }
 
         if (startPage > 1) {
-            html += `<button class="btn btn-sm btn-secondary" data-btn-slug="secondary" onclick="TenantUsers.load(1)">1</button>`;
-            if (startPage > 2) html += `<span class="page-ellipsis">...</span>`;
+            html += `<button class="pagination-btn" onclick="TenantUsers.load(1)">1</button>`;
+            if (startPage > 2) html += `<span class="pagination-ellipsis">...</span>`;
         }
 
         for (let i = startPage; i <= endPage; i++) {
-            html += `<button class="btn btn-sm ${i === page ? 'btn-primary' : 'btn-secondary'}" data-btn-slug="${i === page ? 'primary' : 'secondary'}"
+            html += `<button class="pagination-btn ${i === page ? 'active' : ''}"
                             onclick="TenantUsers.load(${i})">${i}</button>`;
         }
 
         if (endPage < pages) {
-            if (endPage < pages - 1) html += `<span class="page-ellipsis">...</span>`;
-            html += `<button class="btn btn-sm btn-secondary" data-btn-slug="secondary" onclick="TenantUsers.load(${pages})">${pages}</button>`;
+            if (endPage < pages - 1) html += `<span class="pagination-ellipsis">...</span>`;
+            html += `<button class="pagination-btn" onclick="TenantUsers.load(${pages})">${pages}</button>`;
         }
 
         // Next
-        html += `<button class="btn btn-sm btn-secondary ${page === pages ? 'disabled' : ''}" data-btn-slug="secondary"
+        html += `<button class="pagination-btn" ${page >= pages ? 'disabled' : ''}
                         ${page < pages ? `onclick="TenantUsers.load(${page + 1})"` : ''}>
-                    ${t('pagination.next', 'Next')} &raquo;
+                    <i class="fas fa-chevron-right"></i>
                  </button>`;
 
         container.innerHTML = html;
@@ -419,7 +419,7 @@
                     <div class="empty-icon">👥</div>
                     <h3>${t('table.empty.title')}</h3>
                     <p>${t('table.empty.message')}</p>
-                    ${state.permissions.canCreate ? `<button class="btn btn-primary" data-btn-slug="primary" onclick="TenantUsers.add()">${t('table.empty.add_first')}</button>` : ''}
+                    ${state.permissions.canCreate ? `<button class="btn btn-primary" onclick="TenantUsers.add()">${t('table.empty.add_first')}</button>` : ''}
                 `;
                 el.empty.style.display = 'block';
             }
@@ -468,8 +468,8 @@
                     </td>
                     <td>
                         <div class="table-actions">
-                            ${state.permissions.canEdit ? `<button class="btn btn-sm btn-icon btn-warning" data-btn-slug="warning" title="${t('table.actions.edit')}" aria-label="${t('table.actions.edit')}" onclick="TenantUsers.edit(${item.id})"><i class="fas fa-edit" aria-hidden="true"></i></button>` : ''}
-                            ${state.permissions.canDelete ? `<button class="btn btn-sm btn-icon btn-danger" data-btn-slug="danger" title="${t('table.actions.delete')}" aria-label="${t('table.actions.delete')}" onclick="TenantUsers.remove(${item.id})"><i class="fas fa-trash" aria-hidden="true"></i></button>` : ''}
+                            ${state.permissions.canEdit ? `<button class="btn btn-sm btn-secondary" onclick="TenantUsers.edit(${item.id})" title="${t('table.actions.edit')}"><i class="fas fa-edit"></i></button>` : ''}
+                            ${state.permissions.canDelete ? `<button class="btn btn-sm btn-danger" onclick="TenantUsers.remove(${item.id})" title="${t('table.actions.delete')}"><i class="fas fa-trash"></i></button>` : ''}
                         </div>
                     </td>
                 </tr>
@@ -480,11 +480,6 @@
         if (el.container) el.container.style.display = 'block';
         if (el.empty) el.empty.style.display = 'none';
         if (el.error) el.error.style.display = 'none';
-
-        // Apply DB-driven button hover effects to newly rendered buttons
-        if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
-            Admin.buttons.applyHoverEffects(el.tbody);
-        }
 
         console.log('[TenantUsers] Table rendered successfully!');
     }
@@ -794,11 +789,6 @@
                 if (container) container.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }, 200);
 
-            // Apply DB-driven hover effects to form buttons
-            if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
-                Admin.buttons.applyHoverEffects(AF.$('tenantUserFormContainer'));
-            }
-
         } catch (err) {
             console.error('[TenantUsers] Edit error:', err);
             AF.error(t('messages.error.load_failed'));
@@ -837,11 +827,6 @@
         el.formEntityId.innerHTML = `<option value="">${t('form.fields.entity_id.enter_tenant_first')}</option>`;
         el.formEntityId.disabled = true;
         AF.Form.show('tenantUserFormContainer', t('form.add_title'));
-
-        // Apply DB-driven hover effects to form buttons
-        if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
-            Admin.buttons.applyHoverEffects(AF.$('tenantUserFormContainer'));
-        }
     }
 
     // ----------------------------
@@ -992,7 +977,7 @@
             if (el.container) el.container.style.display = 'none';
             if (el.empty) el.empty.style.display = 'none';
             if (el.error) {
-                el.error.innerHTML = `<div class="error-icon">⚠️</div><h3>${t('messages.error.load_failed')}</h3><p id="errorMessage">${err.message}</p><button id="btnRetry" class="btn btn-secondary" data-btn-slug="secondary">${t('tenant_users.retry')}</button>`;
+                el.error.innerHTML = `<div class="error-icon">⚠️</div><h3>${t('messages.error.load_failed')}</h3><p id="errorMessage">${err.message}</p><button id="btnRetry" class="btn btn-secondary" data-i18n="tenant_users.retry">${t('tenant_users.retry')}</button>`;
                 el.error.style.display = 'block';
             }
             if (el.tbody) el.tbody.innerHTML = '';
@@ -1110,11 +1095,6 @@
         if (el.btnReset) el.btnReset.onclick = resetFilters;
         if (el.btnExport) el.btnExport.onclick = exportToExcel;
         if (el.btnRetry) el.btnRetry.onclick = () => load(state.page);
-
-        // Apply DB-driven button hover effects to static page buttons
-        if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
-            Admin.buttons.applyHoverEffects(document.querySelector('.page-container') || document.getElementById('tenantUsersPageContainer'));
-        }
 
         // Load initial data
         load();
