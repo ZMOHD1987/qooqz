@@ -158,14 +158,14 @@ function loadDiscounts(page) {
                         '<td>' + esc(item.ends_at || '-') + '</td>' +
                         '<td>' + esc(String(item.current_redemptions || item.redemptions_count || 0)) + '</td>' +
                         '<td class="actions-cell">' +
-                            '<button class="btn btn-sm btn-primary btn-translations" data-id="' + item.id + '" data-btn-slug="primary">' + t('translations.title', 'Translations') + '</button> ' +
-                            '<button class="btn btn-sm btn-secondary btn-scopes" data-id="' + item.id + '" data-btn-slug="secondary">' + t('scopes.title', 'Scopes') + '</button> ' +
-                            '<button class="btn btn-sm btn-primary btn-conditions" data-id="' + item.id + '" data-btn-slug="primary">' + t('conditions.title', 'Conditions') + '</button> ' +
-                            '<button class="btn btn-sm btn-secondary btn-actions" data-id="' + item.id + '" data-btn-slug="secondary">' + t('actions.title', 'Actions') + '</button> ' +
-                            '<button class="btn btn-sm btn-warning btn-exclusions" data-id="' + item.id + '" data-btn-slug="warning">' + t('exclusions.title', 'Exclusions') + '</button> ' +
-                            '<button class="btn btn-sm btn-primary btn-redemptions" data-id="' + item.id + '" data-btn-slug="primary">' + t('redemptions.title', 'Redemptions') + '</button> ' +
-                            '<button class="btn btn-sm btn-primary btn-edit" data-id="' + item.id + '" data-btn-slug="primary"><i class="fas fa-edit" aria-hidden="true"></i> ' + t('edit', 'Edit') + '</button> ' +
-                            '<button class="btn btn-sm btn-danger btn-delete" data-id="' + item.id + '" data-btn-slug="danger"><i class="fas fa-trash" aria-hidden="true"></i> ' + t('delete', 'Delete') + '</button>' +
+                            '<button class="btn btn-sm btn-icon btn-primary btn-translations" data-id="' + item.id + '" data-btn-slug="primary" title="' + t('translations.title', 'Translations') + '" aria-label="' + t('translations.title', 'Translations') + '"><i class="fas fa-language" aria-hidden="true"></i></button> ' +
+                            '<button class="btn btn-sm btn-icon btn-secondary btn-scopes" data-id="' + item.id + '" data-btn-slug="secondary" title="' + t('scopes.title', 'Scopes') + '" aria-label="' + t('scopes.title', 'Scopes') + '"><i class="fas fa-crosshairs" aria-hidden="true"></i></button> ' +
+                            '<button class="btn btn-sm btn-icon btn-primary btn-conditions" data-id="' + item.id + '" data-btn-slug="primary" title="' + t('conditions.title', 'Conditions') + '" aria-label="' + t('conditions.title', 'Conditions') + '"><i class="fas fa-filter" aria-hidden="true"></i></button> ' +
+                            '<button class="btn btn-sm btn-icon btn-secondary btn-actions" data-id="' + item.id + '" data-btn-slug="secondary" title="' + t('actions.title', 'Actions') + '" aria-label="' + t('actions.title', 'Actions') + '"><i class="fas fa-bolt" aria-hidden="true"></i></button> ' +
+                            '<button class="btn btn-sm btn-icon btn-warning btn-exclusions" data-id="' + item.id + '" data-btn-slug="warning" title="' + t('exclusions.title', 'Exclusions') + '" aria-label="' + t('exclusions.title', 'Exclusions') + '"><i class="fas fa-ban" aria-hidden="true"></i></button> ' +
+                            '<button class="btn btn-sm btn-icon btn-primary btn-redemptions" data-id="' + item.id + '" data-btn-slug="primary" title="' + t('redemptions.title', 'Redemptions') + '" aria-label="' + t('redemptions.title', 'Redemptions') + '"><i class="fas fa-receipt" aria-hidden="true"></i></button> ' +
+                            '<button class="btn btn-sm btn-icon btn-primary btn-edit" data-id="' + item.id + '" data-btn-slug="primary" title="' + t('edit', 'Edit') + '" aria-label="' + t('edit', 'Edit') + '"><i class="fas fa-edit" aria-hidden="true"></i></button> ' +
+                            '<button class="btn btn-sm btn-icon btn-danger btn-delete" data-id="' + item.id + '" data-btn-slug="danger" title="' + t('delete', 'Delete') + '" aria-label="' + t('delete', 'Delete') + '"><i class="fas fa-trash" aria-hidden="true"></i></button>' +
                         '</td>';
                     tbody.appendChild(tr);
                 });

@@ -523,6 +523,16 @@
     margin-top: 10px;
 }
 
+/* Icon-only button variant — compact square for table/filter actions */
+.btn-icon {
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
 /* Actions cell */
 .actions-cell { white-space: nowrap; }
 .actions-cell .btn { margin: 2px; }
@@ -675,9 +685,8 @@
     }
 
     .actions-cell .btn {
-        display: block;
-        width: 100%;
-        margin: 2px 0;
+        display: inline-flex;
+        margin: 2px;
     }
 
     .pagination-wrapper {

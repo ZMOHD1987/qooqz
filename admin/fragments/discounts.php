@@ -148,8 +148,8 @@ if (!function_exists('assetVer')) {
         <div class="filter-group">
           <label class="filter-label" aria-hidden="true">&nbsp;</label>
           <div class="filter-buttons">
-            <button class="btn btn-sm btn-primary" id="btnFilter" data-btn-slug="primary"><?= _dt('filter.apply', 'Filter') ?></button>
-            <button class="btn btn-sm btn-secondary" id="btnClearFilter" data-btn-slug="secondary"><?= _dt('filter.clear', 'Clear') ?></button>
+            <button class="btn btn-sm btn-icon btn-primary" id="btnFilter" data-btn-slug="primary" title="<?= _dt('filter.apply', 'Filter') ?>" aria-label="<?= _dt('filter.apply', 'Filter') ?>"><i class="fas fa-search" aria-hidden="true"></i></button>
+            <button class="btn btn-sm btn-icon btn-secondary" id="btnClearFilter" data-btn-slug="secondary" title="<?= _dt('filter.clear', 'Clear') ?>" aria-label="<?= _dt('filter.clear', 'Clear') ?>"><i class="fas fa-times" aria-hidden="true"></i></button>
           </div>
         </div>
       </div>
