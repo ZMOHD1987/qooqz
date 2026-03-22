@@ -7,7 +7,7 @@ declare(strict_types=1);
  * ─ المبادئ ────────────────────────────────────────────────────
  * • لا إعادة حقن :root — header.php هو المصدر الوحيد للـ CSS vars
  * • لا تحميل admin_framework.js/css مكرّر — موجودان في header.php
- * • assetVer() بدل assetVer()
+ * • assetVer() بدل time()
  * • admin_context helpers بدل $GLOBALS['ADMIN_UI'] مباشرة
  * • الترجمات مُحقَنة في CONFIG.strings — لا fetch منفصل
  * ─────────────────────────────────────────────────────────────
@@ -111,66 +111,29 @@ if ($needsThemeVars):
           href="/admin/assets/css/admin_framework.css?v=<?= assetVer('/admin/assets/css/admin_framework.css') ?>">
     <style id="iframe-theme-vars">
 <?php
-    if (!function_exists('renderFragmentThemeVars')) {
-        function renderFragmentThemeVars(array $theme): void {
-            echo ':root {' . PHP_EOL;
-            foreach ($theme['color_settings'] ?? [] as $c) {
-                if (empty($c['setting_key']) || !isset($c['color_value'])) continue;
-                $k = htmlspecialchars($c['setting_key'], ENT_QUOTES);
-                $h = htmlspecialchars(str_replace('_', '-', $c['setting_key']), ENT_QUOTES);
-                $v = htmlspecialchars($c['color_value'], ENT_QUOTES);
-                echo "    --{$k}: {$v};" . PHP_EOL;
-                if ($h !== $k) echo "    --{$h}: {$v};" . PHP_EOL;
-            }
-            foreach ($theme['font_settings'] ?? [] as $f) {
-                if (empty($f['setting_key'])) continue;
-                $sk = htmlspecialchars($f['setting_key'], ENT_QUOTES);
-                $sh = htmlspecialchars(str_replace('_', '-', $f['setting_key']), ENT_QUOTES);
-                if (!empty($f['font_family'])) {
-                    $ff = htmlspecialchars($f['font_family'], ENT_QUOTES);
-                    echo "    --{$sk}-family: {$ff};" . PHP_EOL;
-                    if ($sh !== $sk) echo "    --{$sh}-family: {$ff};" . PHP_EOL;
-                }
-                if (!empty($f['font_size'])) {
-                    $fs = htmlspecialchars($f['font_size'], ENT_QUOTES);
-                    echo "    --{$sk}-size: {$fs};" . PHP_EOL;
-                    if ($sh !== $sk) echo "    --{$sh}-size: {$fs};" . PHP_EOL;
-                }
-                if (!empty($f['font_weight'])) {
-                    $fw = htmlspecialchars($f['font_weight'], ENT_QUOTES);
-                    echo "    --{$sk}-weight: {$fw};" . PHP_EOL;
-                    if ($sh !== $sk) echo "    --{$sh}-weight: {$fw};" . PHP_EOL;
-                }
-            }
-            foreach ($theme['design_settings'] ?? [] as $d) {
-                if (empty($d['setting_key']) || !isset($d['setting_value'])) continue;
-                $dk = htmlspecialchars($d['setting_key'], ENT_QUOTES);
-                $dh = htmlspecialchars(str_replace('_', '-', $d['setting_key']), ENT_QUOTES);
-                $dv = htmlspecialchars($d['setting_value'], ENT_QUOTES);
-                echo "    --{$dk}: {$dv};" . PHP_EOL;
-                if ($dh !== $dk) echo "    --{$dh}: {$dv};" . PHP_EOL;
-            }
-            echo '}' . PHP_EOL;
-        }
-    }
-    renderFragmentThemeVars($theme);
+    // نُحقن generated_css إذا متوفر — هو المصدر الأكثر اكتمالاً
     if (!empty($theme['generated_css'])) {
         echo $theme['generated_css'];
+    } else {
+        // fallback: بناء :root من color_settings فقط
+        echo ':root {' . PHP_EOL;
+        foreach ($theme['color_settings'] ?? [] as $c) {
+            if (empty($c['setting_key']) || !isset($c['color_value'])) continue;
+            $k = htmlspecialchars($c['setting_key'], ENT_QUOTES, 'UTF-8');
+            $h = htmlspecialchars(str_replace('_', '-', $c['setting_key']), ENT_QUOTES, 'UTF-8');
+            $v = htmlspecialchars($c['color_value'], ENT_QUOTES, 'UTF-8');
+            echo "    --{$k}: {$v};\n";
+            if ($h !== $k) echo "    --{$h}: {$v};\n";
+        }
+        echo '}' . PHP_EOL;
     }
 ?>
-    *, *::before, *::after {
-        box-sizing: border-box;
-    }
     html, body {
         background: var(--background-main, var(--background_main, #0a0a0a));
         color: var(--text-primary, #fff);
         font-family: var(--body-font-family, system-ui, sans-serif);
         margin: 0; padding: 0;
     }
-    ::-webkit-scrollbar       { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: var(--background-main); }
-    ::-webkit-scrollbar-thumb { background: var(--border-color, #334155); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--primary-color); }
     </style>
 </head>
 <body dir="<?= htmlspecialchars($dir, ENT_QUOTES, 'UTF-8') ?>">
@@ -193,7 +156,7 @@ endif; // needsThemeVars
         <span id="selectionCount">0</span>
         <span data-i18n="selected_label"><?= htmlspecialchars(_ms('selected_label', 'selected'), ENT_QUOTES, 'UTF-8') ?></span>
     </div>
-    <button id="btnConfirmSelectionBar" class="btn btn-submit">
+    <button id="btnConfirmSelectionBar" class="btn btn-primary">
         <i class="fas fa-check" aria-hidden="true"></i>
         <span data-i18n="confirm_select"><?= htmlspecialchars(_ms('confirm_select', 'Confirm Selection'), ENT_QUOTES, 'UTF-8') ?></span>
     </button>
@@ -206,11 +169,11 @@ endif; // needsThemeVars
         <span data-i18n="copy_mode_hint"><?= htmlspecialchars(_ms('copy_mode_hint', 'Click an image to use it'), ENT_QUOTES, 'UTF-8') ?></span>
     </div>
     <div class="ms-copy-actions">
-        <button id="btnConfirmCopy" class="btn btn-submit" disabled>
+        <button id="btnConfirmCopy" class="btn btn-primary" disabled>
             <i class="fas fa-check" aria-hidden="true"></i>
             <span data-i18n="use_image"><?= htmlspecialchars(_ms('use_image', 'Use This Image'), ENT_QUOTES, 'UTF-8') ?></span>
         </button>
-        <button id="btnCancelCopy" class="btn btn-cancel" data-i18n="cancel_button">
+        <button id="btnCancelCopy" class="btn btn-secondary" data-i18n="cancel_button">
             <?= htmlspecialchars(_ms('cancel_button', 'Cancel'), ENT_QUOTES, 'UTF-8') ?>
         </button>
     </div>
@@ -229,12 +192,12 @@ endif; // needsThemeVars
             </p>
         </div>
         <div class="page-header-actions">
-            <button id="btnSelectConfirm" class="btn btn-submit" style="display:none;">
+            <button id="btnSelectConfirm" class="btn btn-primary" style="display:none;">
                 <i class="fas fa-check" aria-hidden="true"></i>
                 <span data-i18n="select_button"><?= htmlspecialchars(_ms('select_button', 'Select'), ENT_QUOTES, 'UTF-8') ?></span>
             </button>
             <?php if ($canCreate): ?>
-            <button id="btnAddImage" class="btn btn-add">
+            <button id="btnAddImage" class="btn btn-primary">
                 <i class="fas fa-plus" aria-hidden="true"></i>
                 <span data-i18n="add_button"><?= htmlspecialchars(_ms('add_button', 'Add Image'), ENT_QUOTES, 'UTF-8') ?></span>
             </button>
@@ -282,7 +245,7 @@ endif; // needsThemeVars
                         </p>
                         <input type="file" id="uploadImages" name="images[]"
                                class="ms-file-input" accept="image/*" multiple required>
-                        <button type="button" class="btn btn-cancel"
+                        <button type="button" class="btn btn-secondary"
                                 onclick="document.getElementById('uploadImages').click()">
                             <i class="fas fa-folder-open" aria-hidden="true"></i>
                             <span data-i18n="browse_files"><?= htmlspecialchars(_ms('browse_files', 'Browse Files'), ENT_QUOTES, 'UTF-8') ?></span>
@@ -291,11 +254,11 @@ endif; // needsThemeVars
                     <div id="uploadFileList" class="ms-file-list" style="display:none;"></div>
 
                     <div class="form-actions">
-                        <button type="submit" class="btn btn-submit" id="btnUploadSave">
+                        <button type="submit" class="btn btn-primary" id="btnUploadSave">
                             <i class="fas fa-upload" aria-hidden="true"></i>
                             <span data-i18n="upload_button"><?= htmlspecialchars(_ms('upload_button', 'Upload'), ENT_QUOTES, 'UTF-8') ?></span>
                         </button>
-                        <button type="button" id="btnCancelUploadForm" class="btn btn-cancel" data-i18n="cancel_button">
+                        <button type="button" id="btnCancelUploadForm" class="btn btn-secondary" data-i18n="cancel_button">
                             <?= htmlspecialchars(_ms('cancel_button', 'Cancel'), ENT_QUOTES, 'UTF-8') ?>
                         </button>
                     </div>
@@ -311,11 +274,11 @@ endif; // needsThemeVars
                     </span>
                 </div>
                 <div class="form-actions">
-                    <button type="button" id="btnEnterStudioCopy" class="btn btn-submit">
+                    <button type="button" id="btnEnterStudioCopy" class="btn btn-primary">
                         <i class="fas fa-images" aria-hidden="true"></i>
                         <span data-i18n="select_from_library"><?= htmlspecialchars(_ms('select_from_library', 'Select from Library'), ENT_QUOTES, 'UTF-8') ?></span>
                     </button>
-                    <button type="button" id="btnCancelStudioTab" class="btn btn-cancel" data-i18n="cancel_button">
+                    <button type="button" id="btnCancelStudioTab" class="btn btn-secondary" data-i18n="cancel_button">
                         <?= htmlspecialchars(_ms('cancel_button', 'Cancel'), ENT_QUOTES, 'UTF-8') ?>
                     </button>
                 </div>
@@ -403,16 +366,16 @@ endif; // needsThemeVars
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" id="btnSaveImage" class="btn btn-submit">
+                    <button type="submit" id="btnSaveImage" class="btn btn-primary">
                         <i class="fas fa-save" aria-hidden="true"></i>
                         <span data-i18n="save_button"><?= htmlspecialchars(_ms('save_button', 'Save'), ENT_QUOTES, 'UTF-8') ?></span>
                     </button>
-                    <button type="button" id="btnCancelImageForm" class="btn btn-cancel" data-i18n="cancel_button">
+                    <button type="button" id="btnCancelImageForm" class="btn btn-secondary" data-i18n="cancel_button">
                         <?= htmlspecialchars(_ms('cancel_button', 'Cancel'), ENT_QUOTES, 'UTF-8') ?>
                     </button>
                     <?php if ($canDelete): ?>
                     <button type="button" id="btnDeleteImage"
-                            class="btn btn-delete ms-delete-btn" style="display:none;" data-i18n="delete_button">
+                            class="btn btn-danger ms-delete-btn" style="display:none;" data-i18n="delete_button">
                         <i class="fas fa-trash" aria-hidden="true"></i>
                         <?= htmlspecialchars(_ms('delete_button', 'Delete'), ENT_QUOTES, 'UTF-8') ?>
                     </button>
@@ -459,15 +422,15 @@ endif; // needsThemeVars
                 <div class="filter-group">
                     <label class="filter-label" aria-hidden="true">&nbsp;</label>
                     <div class="filter-buttons">
-                        <button id="btnApplyImageFilters" class="btn btn-filter" data-i18n="filter_apply">
+                        <button id="btnApplyImageFilters" class="btn btn-primary" data-i18n="filter_apply">
                             <i class="fas fa-search" aria-hidden="true"></i>
                             <?= htmlspecialchars(_ms('filter_apply', 'Filter'), ENT_QUOTES, 'UTF-8') ?>
                         </button>
-                        <button id="btnResetImageFilters" class="btn btn-cancel" data-i18n="filter_reset">
+                        <button id="btnResetImageFilters" class="btn btn-secondary" data-i18n="filter_reset">
                             <?= htmlspecialchars(_ms('filter_reset', 'Reset'), ENT_QUOTES, 'UTF-8') ?>
                         </button>
                         <?php if ($canDelete): ?>
-                        <button id="btnDeleteSelected" class="btn btn-delete" style="display:none;" data-i18n="delete_selected">
+                        <button id="btnDeleteSelected" class="btn btn-danger" style="display:none;" data-i18n="delete_selected">
                             <i class="fas fa-trash" aria-hidden="true"></i>
                             <?= htmlspecialchars(_ms('delete_selected', 'Delete Selected'), ENT_QUOTES, 'UTF-8') ?>
                         </button>
@@ -490,7 +453,7 @@ endif; // needsThemeVars
                 <h3 data-i18n="empty_title"><?= htmlspecialchars(_ms('empty_title', 'No Images Found'), ENT_QUOTES, 'UTF-8') ?></h3>
                 <p data-i18n="empty_description"><?= htmlspecialchars(_ms('empty_description', 'Start by adding images'), ENT_QUOTES, 'UTF-8') ?></p>
                 <?php if ($canCreate): ?>
-                <button id="btnAddImageEmpty" class="btn btn-add" data-i18n="add_button">
+                <button id="btnAddImageEmpty" class="btn btn-primary" data-i18n="add_button">
                     <i class="fas fa-plus" aria-hidden="true"></i>
                     <?= htmlspecialchars(_ms('add_button', 'Add Image'), ENT_QUOTES, 'UTF-8') ?>
                 </button>
@@ -500,7 +463,7 @@ endif; // needsThemeVars
                 <div class="error-icon"><i class="fas fa-exclamation-triangle" aria-hidden="true"></i></div>
                 <h3 data-i18n="error_title"><?= htmlspecialchars(_ms('error_title', 'Error Loading Data'), ENT_QUOTES, 'UTF-8') ?></h3>
                 <p id="msErrorMessage"></p>
-                <button id="btnRetryImages" class="btn btn-submit" data-i18n="retry_button">
+                <button id="btnRetryImages" class="btn btn-primary" data-i18n="retry_button">
                     <?= htmlspecialchars(_ms('retry_button', 'Retry'), ENT_QUOTES, 'UTF-8') ?>
                 </button>
             </div>
