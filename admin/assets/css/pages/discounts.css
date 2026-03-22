@@ -473,6 +473,9 @@
     margin-top: 4px;
     font-size: 0.85rem;
 }
+.dc-tenant-name.error {
+    color: var(--danger-color, #ef4444);
+}
 
 .dc-entity-select {
     min-width: 200px;

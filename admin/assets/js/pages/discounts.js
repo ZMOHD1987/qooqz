@@ -1,3 +1,15 @@
+/**
+ * /admin/assets/js/pages/discounts.js
+ * Discount Management — Production v2.0
+ *
+ * ─ التغييرات ─────────────────────────────────────────────────
+ * • Config from window.DISCOUNTS_CONFIG only — no separate globals
+ * • Admin.page.register() for fragment re-navigation
+ * • dc-modal-* classes — page-specific to avoid AdminModal conflicts
+ * • dc-toast-* notifications with container
+ * • cancel/reset buttons get colors from DB via admin_framework.css
+ * ─────────────────────────────────────────────────────────────
+ */
 (function(){
 'use strict';
 
@@ -26,16 +38,44 @@ function t(key, fb) {
 
 function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
+/* ── Toast Notifications (dc-toast-*) ── */
 function showNotification(msg, type) {
+    var container = document.querySelector('.dc-notifications');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'dc-notifications';
+        document.body.appendChild(container);
+    }
     var n = document.createElement('div');
-    n.className = 'notification notification-' + (type || 'info');
+    n.className = 'dc-toast dc-toast-' + (type || 'info');
     n.textContent = msg;
-    document.body.appendChild(n);
+    container.appendChild(n);
     setTimeout(function(){ n.style.opacity = '0'; setTimeout(function(){ n.remove(); }, 300); }, 3000);
 }
 
-function openModal(id) { document.getElementById(id).style.display = 'block'; }
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+/* ── Modals ── */
+function openModal(id) {
+    var el = document.getElementById(id);
+    if (el) {
+        el.style.display = 'flex';
+        var first = el.querySelector('input:not([type="hidden"]), select, textarea, button');
+        if (first) setTimeout(function(){ first.focus(); }, 50);
+    }
+}
+function closeModal(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+}
+
+// Close on ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Escape') return;
+    ['discountModal', 'translationsModal', 'scopesModal', 'conditionsModal',
+     'actionsModal', 'exclusionsModal', 'redemptionsModal'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && el.style.display !== 'none') closeModal(id);
+    });
+});
 
 function generateCode() {
     var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -792,18 +832,18 @@ function verifyTenant() {
                 var name = tData.name || tData.domain || 'Tenant #' + tid;
                 nameEl.textContent = '✓ ' + name;
                 nameEl.style.display = 'block';
-                nameEl.style.color = 'var(--success-color,#28a745)';
+                nameEl.className = 'dc-tenant-name';
                 loadEntitiesByTenant(tid);
             } else {
                 nameEl.textContent = '✗ ' + t('tenant_not_found', 'Tenant not found');
                 nameEl.style.display = 'block';
-                nameEl.style.color = 'var(--danger-color,#dc3545)';
+                nameEl.className = 'dc-tenant-name error';
             }
         })
         .catch(function(){
             nameEl.textContent = '✗ ' + t('error', 'Error');
             nameEl.style.display = 'block';
-            nameEl.style.color = 'var(--danger-color,#dc3545)';
+            nameEl.className = 'dc-tenant-name error';
         });
 }
 
@@ -921,15 +961,10 @@ function init() {
         document.getElementById('discountCode').value = generateCode();
     });
 
-    // Close modals
-    document.getElementById('btnCloseModal').addEventListener('click', function(){ closeModal('discountModal'); });
-    document.getElementById('btnCancelModal').addEventListener('click', function(){ closeModal('discountModal'); });
-    document.getElementById('btnCloseTranslations').addEventListener('click', function(){ closeModal('translationsModal'); });
-    document.getElementById('btnCloseScopes').addEventListener('click', function(){ closeModal('scopesModal'); });
-    document.getElementById('btnCloseConditions').addEventListener('click', function(){ closeModal('conditionsModal'); });
-    document.getElementById('btnCloseActions').addEventListener('click', function(){ closeModal('actionsModal'); });
-    document.getElementById('btnCloseExclusions').addEventListener('click', function(){ closeModal('exclusionsModal'); });
-    document.getElementById('btnCloseRedemptions').addEventListener('click', function(){ closeModal('redemptionsModal'); });
+    // Close modals via btn-close-modal data-modal pattern
+    document.querySelectorAll('.btn-close-modal').forEach(function(btn) {
+        btn.addEventListener('click', function() { closeModal(btn.dataset.modal); });
+    });
 
     // Form submit
     document.getElementById('discountForm').addEventListener('submit', saveDiscount);
@@ -1000,7 +1035,15 @@ function init() {
     });
 }
 
-// Fragment-compatible init
+// ════════════════════════════════════════════════════════
+// REGISTER  — supports fragment navigation & direct load
+// ════════════════════════════════════════════════════════
+window.page = { run: init };
+
+if (window.Admin && window.Admin.page && window.Admin.page.register) {
+    window.Admin.page.register('discounts', init);
+}
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {
