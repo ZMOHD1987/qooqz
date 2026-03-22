@@ -1,24 +1,28 @@
 /**
  * Brands Management - Production Version
- * Version: 1.2.0 - Fixed image loading & translations
+ * Version: 2.0.0 - FRAGMENT_UPGRADE_GUIDE compliant
  */
 (function () {
     'use strict';
 
     const AF = window.AdminFramework;
-    const API = '/api/brands';
-    const LANG_API = '/api/languages';
-    const TENANT_API = '/api/tenants';
+    const CONFIG = window.BRANDS_CONFIG || {};
+    const API = CONFIG.apiUrl || '/api/brands';
+    const LANG_API = CONFIG.languagesApi || '/api/languages';
+    const TENANT_API = CONFIG.tenantsApi || '/api/tenants';
 
     const state = {
         page: 1,
-        perPage: 25,
+        perPage: CONFIG.itemsPerPage || 25,
         filters: {},
-        permissions: {},
+        permissions: CONFIG.permissions || {},
         translations: {},
-        language: window.USER_LANGUAGE || 'ar',
+        language: CONFIG.lang || 'en',
+        direction: CONFIG.dir || 'ltr',
+        csrfToken: CONFIG.csrfToken || '',
+        tenantId: CONFIG.tenantId || 1,
         brands: [],
-        imageTypeId: 12
+        imageTypeId: CONFIG.imageTypeId || 12
     };
 
     let el = {};
@@ -91,12 +95,12 @@
             const data = await res.json();
             const tenant = data.data || data;
             if (tenant) {
-                el.tenantInfo.innerHTML = `<small style="color:green;">${tenant.name} (${tenant.domain || 'No domain'})</small>`;
+                el.tenantInfo.innerHTML = `<small class="br-tenant-valid">${tenant.name} (${tenant.domain || 'No domain'})</small>`;
             } else {
-                el.tenantInfo.innerHTML = '<small style="color:red;">Invalid tenant ID</small>';
+                el.tenantInfo.innerHTML = '<small class="br-tenant-invalid">Invalid tenant ID</small>';
             }
         } catch (e) {
-            el.tenantInfo.innerHTML = '<small style="color:red;">Error verifying tenant</small>';
+            el.tenantInfo.innerHTML = '<small class="br-tenant-invalid">Error verifying tenant</small>';
         }
     }
 
@@ -322,7 +326,7 @@
         let html = '';
         for (const item of items) {
             const imageUrl = item.image_url || '/assets/images/no-image.png';
-            const image = `<img src="${esc(imageUrl)}" width="50" height="50" style="object-fit:contain;border-radius:4px;background:#1a2332;">`;
+            const image = `<img src="${esc(imageUrl)}" class="br-table-thumb" alt="${esc(item.name || 'Brand')}">`;
 
             // Try to get translated name from current language
             let name = item.name;
@@ -349,15 +353,15 @@
                     <td>${website}</td>
                     <td>${sortOrder}</td>
                     <td>
-                        <span class="badge ${statusClass}" style="background-color: ${item.is_active ? '#10b981' : '#ef4444'}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                        <span class="badge ${statusClass}">
                             ${statusText}
                         </span>
                     </td>
                     <td>${featuredText}</td>
                     <td>
-                        <div class="table-actions" style="display: flex; gap: 8px;">
-                            ${state.permissions.canEdit ? `<button class="btn btn-sm btn-outline" onclick="Brands.edit(${item.id})" style="padding: 4px 8px; border: 1px solid #d1d5db; background: white; color: #374151; border-radius: 4px; font-size: 12px;">${t('table.actions.edit')}</button>` : ''}
-                            ${state.permissions.canDelete ? `<button class="btn btn-sm btn-danger" onclick="Brands.remove(${item.id})" style="padding: 4px 8px; background-color: #ef4444; color: white; border: none; border-radius: 4px; font-size: 12px;">${t('table.actions.delete')}</button>` : ''}
+                        <div class="table-actions">
+                            ${state.permissions.canEdit ? `<button class="btn btn-sm btn-primary" onclick="Brands.edit(${item.id})"><i class="fas fa-edit" aria-hidden="true"></i></button>` : ''}
+                            ${state.permissions.canDelete ? `<button class="btn btn-sm btn-danger" onclick="Brands.remove(${item.id})"><i class="fas fa-trash" aria-hidden="true"></i></button>` : ''}
                         </div>
                     </td>
                 </tr>
@@ -398,7 +402,7 @@
         deletedTranslations = [];
 
         const data = {
-            tenant_id: window.APP_CONFIG?.TENANT_ID || 1,
+            tenant_id: state.tenantId,
             entity_id: parseInt(formData.entity_id) || 0,
             slug: formData.slug || '',
             website_url: formData.website_url || null,
@@ -449,7 +453,7 @@
         console.log('[Brands] Starting edit for ID:', id);
         try {
             // 1. Fetch brand data with translations
-            const response = await AF.get(`${API}/${id}?format=json&lang=${state.language}&tenant_id=${window.APP_CONFIG?.TENANT_ID || 1}&all_translations=1`);
+            const response = await AF.get(`${API}/${id}?format=json&lang=${state.language}&tenant_id=${state.tenantId}&all_translations=1`);
             const { payload } = normalizeApiResponse(response);
 
             let item = null;
@@ -471,7 +475,7 @@
 
             // 3. Populate basic fields
             el.formId.value = String(item.id || '');
-            el.tenantId.value = item.tenant_id || window.APP_CONFIG?.TENANT_ID || 1;
+            el.tenantId.value = item.tenant_id || state.tenantId;
             el.entityId.value = item.entity_id || 0;
             el.slug.value = item.slug || '';
             el.websiteUrl.value = item.website_url || '';
@@ -511,7 +515,7 @@
     // ----------------------------
     async function loadBrandImage(brandId) {
         try {
-            const tenantId = window.APP_CONFIG?.TENANT_ID || 1;
+            const tenantId = state.tenantId;
             const url = `/api/images/by_owner?owner_id=${brandId}&image_type_id=${state.imageTypeId}`;
             console.log('[Brands] Fetching image from:', url);
             const res = await fetch(url, { credentials: 'same-origin' });
@@ -537,8 +541,8 @@
             if (linksContainer) {
                 if (imageId) {
                     linksContainer.innerHTML = `
-                        <a href="${esc(imageUrl)}" target="_blank" style="text-decoration:none; color:#3b82f6;"><i class="fas fa-expand"></i> Large</a>
-                        <a href="${esc(thumbUrl)}" target="_blank" style="text-decoration:none; color:#64748b;"><i class="fas fa-compress"></i> Thumbnail</a>
+                        <a href="${esc(imageUrl)}" target="_blank"><i class="fas fa-expand"></i> Large</a>
+                        <a href="${esc(thumbUrl)}" target="_blank"><i class="fas fa-compress"></i> Thumbnail</a>
                     `;
                 } else {
                     linksContainer.innerHTML = '';
@@ -556,7 +560,7 @@
     async function remove(id) {
         AF.Modal.confirm(t('table.actions.confirm_delete'), async () => {
             try {
-                await AF.delete(`${API}/${id}`, { id: id, tenant_id: window.APP_CONFIG?.TENANT_ID || 1 });
+                await AF.delete(`${API}/${id}`, { id: id, tenant_id: state.tenantId });
                 AF.success(t('messages.success.deleted'));
                 load();
             } catch (err) {
@@ -585,7 +589,7 @@
         if (el.translations) el.translations.innerHTML = '';
 
         // Default values
-        if (el.tenantId) el.tenantId.value = window.APP_CONFIG?.TENANT_ID || 1;
+        if (el.tenantId) el.tenantId.value = state.tenantId;
         if (el.entityId) el.entityId.value = 0;
         if (el.isActive) el.isActive.value = '1';
         if (el.isFeatured) el.isFeatured.value = '0';
@@ -613,7 +617,7 @@
         const modal = AF.$('brandMediaStudioModal');
         const iframe = AF.$('brandMediaStudioFrame');
         if (iframe) {
-            const tenantId = window.APP_CONFIG?.TENANT_ID || 1;
+            const tenantId = state.tenantId;
             const ownerId = el.formId.value ? el.formId.value : 0;
             iframe.src = `/admin/fragments/media_studio.php?embedded=1&tenant_id=${tenantId}&owner_id=${ownerId}&image_type_id=${state.imageTypeId}&mode=select`;
         }
@@ -644,7 +648,7 @@
             const params = new URLSearchParams({
                 page: page,
                 limit: state.perPage,
-                tenant_id: window.APP_CONFIG?.TENANT_ID || 1,
+                tenant_id: state.tenantId,
                 lang: state.language,
                 format: 'json',
                 ...state.filters
@@ -767,7 +771,7 @@
         }
         if (el.tenantFilter) {
             const t = el.tenantFilter.value.trim();
-            if (t && t !== window.APP_CONFIG?.TENANT_ID.toString()) state.filters.tenant_id = t;
+            if (t && t !== state.tenantId.toString()) state.filters.tenant_id = t;
         }
         if (el.statusFilter) {
             const st = el.statusFilter.value;
@@ -782,7 +786,7 @@
 
     function resetFilters() {
         if (el.searchInput) el.searchInput.value = '';
-        if (el.tenantFilter) el.tenantFilter.value = window.APP_CONFIG?.TENANT_ID || 1;
+        if (el.tenantFilter) el.tenantFilter.value = state.tenantId;
         if (el.statusFilter) el.statusFilter.value = '';
         if (el.featuredFilter) el.featuredFilter.value = '';
         state.filters = {};
@@ -808,7 +812,7 @@
         if (translationsLoaded) console.log('[Brands] Translations ready');
         else console.warn('[Brands] Using default texts');
 
-        setDirectionForLang(state.language || window.USER_LANGUAGE || 'en');
+        setDirectionForLang(state.language || 'en');
 
         el = {
             loading: AF.$('tableLoading'),
@@ -851,17 +855,18 @@
             resultsCountText: AF.$('resultsCountText')
         };
 
-        try {
-            const permsScript = AF.$('pagePermissions');
-            if (permsScript) state.permissions = JSON.parse(permsScript.textContent);
-        } catch (e) {
-            state.permissions = {
-                canCreate: true,
-                canEdit: true,
-                canDelete: true,
-                canDuplicate: false
-            };
-        }
+        // Permissions already loaded from CONFIG in state init
+
+        // ESC key closes modal
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape') return;
+            ['brandMediaStudioModal'].forEach(function (id) {
+                const modal = document.getElementById(id);
+                if (modal && modal.style.display !== 'none' && modal.style.display !== '') {
+                    modal.style.display = 'none';
+                }
+            });
+        });
 
         await loadLanguages();
         await load(state.page);
@@ -883,8 +888,8 @@
                         const linksContainer = document.getElementById('brandImageLinks');
                         if (linksContainer) {
                             linksContainer.innerHTML = `
-                                <a href="${esc(img.url)}" target="_blank" style="text-decoration:none; color:#3b82f6;"><i class="fas fa-expand"></i> Large</a>
-                                <a href="${esc(img.thumb_url || img.url)}" target="_blank" style="text-decoration:none; color:#64748b;"><i class="fas fa-compress"></i> Thumbnail</a>
+                                <a href="${esc(img.url)}" target="_blank"><i class="fas fa-expand"></i> Large</a>
+                                <a href="${esc(img.thumb_url || img.url)}" target="_blank"><i class="fas fa-compress"></i> Thumbnail</a>
                             `;
                         }
                     });
@@ -939,15 +944,19 @@
         }
     };
 
-    // fragment support
+    // Fragment support
     window.page = { run: init };
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.AdminFramework && !window.page.__fragment_init) init();
-        });
-    } else {
-        if (window.AdminFramework && !window.page.__fragment_init) init();
+
+    if (window.Admin?.page?.register) {
+        window.Admin.page.register('brands', init);
     }
-    window.page.__fragment_init = false;
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+    console.log('[Brands] Module loaded');
 
 })();
