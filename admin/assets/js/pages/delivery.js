@@ -8,7 +8,6 @@
 
     const AF  = window.AdminFramework;
     const CFG = window.DELIVERY_CONFIG || {};
-    const APP = window.APP_CONFIG || {};
 
     // ─── Constants ───────────────────────────────────────────────────
     const MIN_VISIBLE_MAP_HEIGHT    = 260;
@@ -24,10 +23,10 @@
 
     // ─── State ───────────────────────────────────────────────────────
     const state = {
-        lang:   window.USER_LANGUAGE || CFG.lang || 'ar',
-        tenant: APP.TENANT_ID || CFG.tenantId || 1,
-        csrf:   APP.CSRF_TOKEN || CFG.csrfToken || '',
-        perms:  window.PAGE_PERMISSIONS || {},
+        lang:   CFG.lang || 'ar',
+        tenant: CFG.tenantId || 1,
+        csrf:   CFG.csrfToken || '',
+        perms:  { canCreate: !!CFG.canCreate, canEdit: !!CFG.canEdit, canDelete: !!CFG.canDelete },
         initialized: false,
         zones:          { page: 1, items: [], filters: {}, loaded: false, total: 0, saving: false },
         providers:      { page: 1, items: [], filters: {}, loaded: false, total: 0, saving: false },
@@ -129,7 +128,7 @@
         var t = $('deliveryToast');
         if (!t) { console.log('[Delivery]', type, msg); return; }
         t.textContent = msg;
-        t.className   = 'delivery-toast delivery-toast--' + type;
+        t.className   = 'dl-toast dl-toast--' + type;
         t.style.display = '';
         clearTimeout(t._tmr);
         t._tmr = setTimeout(function () { t.style.display = 'none'; }, 4000);
@@ -685,6 +684,15 @@
     }
 
     function cfgText(key, fallback) {
+        // Check CFG.strings first (server-injected translations), then CFG.i18n for backwards compat
+        if (CFG.strings) {
+            var parts = key.split('.'), val = CFG.strings;
+            for (var i = 0; i < parts.length; i++) {
+                if (val && typeof val === 'object' && parts[i] in val) val = val[parts[i]];
+                else { val = null; break; }
+            }
+            if (typeof val === 'string') return val;
+        }
         return (CFG.i18n && CFG.i18n[key]) ? CFG.i18n[key] : fallback;
     }
 
@@ -858,7 +866,7 @@
                     '<span class="zone-item-meta">' + esc(z.zone_type) + ' · ' + esc(z.delivery_fee) + ' · ' + esc(z.estimated_minutes) + ' min</span>' +
                 '</div>' +
                 '<div class="zone-item-actions">' +
-                (CFG.canEdit   ? '<button class="btn btn-sm btn-icon" onclick="Delivery.editZone(' + z.id + ')" title="Edit"><i class="fas fa-edit"></i></button>'   : '') +
+                (CFG.canEdit   ? '<button class="btn btn-sm btn-icon btn-primary" onclick="Delivery.editZone(' + z.id + ')" title="Edit"><i class="fas fa-edit"></i></button>'   : '') +
                 (CFG.canDelete ? '<button class="btn btn-sm btn-icon btn-danger" onclick="Delivery.delZone(' + z.id + ')" title="Delete"><i class="fas fa-trash"></i></button>' : '') +
                 '</div></div>';
         }).join('');
@@ -1303,10 +1311,26 @@
         if (state.initialized) return;
         state.initialized = true;
 
+        // Re-read config in case of fragment re-navigation
+        var cfg = window.DELIVERY_CONFIG || {};
+        state.lang   = cfg.lang || 'ar';
+        state.tenant = cfg.tenantId || 1;
+        state.csrf   = cfg.csrfToken || '';
+        state.perms  = { canCreate: !!cfg.canCreate, canEdit: !!cfg.canEdit, canDelete: !!cfg.canDelete };
+
         initTabs();
         bindZoneTypeChange();
         bindCascade();
         initCoordPicker();
+
+        // ESC key closes modal
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape') return;
+            var modal = $('coordPickerModal');
+            if (modal && modal.style.display !== 'none' && modal.style.display !== '') {
+                closeCoordPicker();
+            }
+        });
 
         bindProviderLookup('orderProviderId',       'orderProviderName');
         bindProviderLookup('locationProviderId',    'locationProviderName');
@@ -1376,7 +1400,17 @@
         delPZone:     function (id) { pzonesMod.del(id); }
     };
 
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-    else init();
+    // ─── Page Registration ───────────────────────────────────────────
+    window.page = { run: init };
 
-})();
+    if (window.Admin && window.Admin.page && window.Admin.page.register) {
+        window.Admin.page.register('delivery', init);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+}());

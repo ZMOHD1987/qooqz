@@ -397,6 +397,27 @@ final class AdminUiThemeLoader
             $css .= "  --{$hyphen}: " . $sanitizeCssValue((string)$ds['setting_value']) . ";\n";
         }
 
+        // ── Button styles → :root CSS variables ─────────────────────────────────
+        // Variables are emitted as --btn-{slug}-{property} so page CSS can reference
+        // button properties via CSS variables without hardcoding.  This enables
+        // page-specific prefixed buttons: a page can use var(--btn-primary-bg)
+        // to style its own prefixed buttons (e.g. .prd-btn-primary).
+        foreach ($themeData['button_styles'] ?? [] as $button) {
+            if (empty($button['slug'])) continue;
+            $slug = $safeCssIdent((string)$button['slug']);
+            if (!empty($button['background_color']))       $css .= "  --btn-{$slug}-bg: "           . $sanitizeCssValue((string)$button['background_color']) . ";\n";
+            if (!empty($button['text_color']))             $css .= "  --btn-{$slug}-color: "        . $sanitizeCssValue((string)$button['text_color']) . ";\n";
+            if (!empty($button['border_color']))           $css .= "  --btn-{$slug}-border: "       . $sanitizeCssValue((string)$button['border_color']) . ";\n";
+            if (!empty($button['border_width']))           $css .= "  --btn-{$slug}-border-width: " . (int)$button['border_width'] . "px;\n";
+            if (!empty($button['border_radius']))          $css .= "  --btn-{$slug}-radius: "       . (int)$button['border_radius'] . "px;\n";
+            if (!empty($button['padding']))                $css .= "  --btn-{$slug}-padding: "      . $sanitizeCssValue((string)$button['padding']) . ";\n";
+            if (!empty($button['font_size']))              $css .= "  --btn-{$slug}-font-size: "    . $sanitizeCssValue((string)$button['font_size']) . ";\n";
+            if (!empty($button['font_weight']))            $css .= "  --btn-{$slug}-font-weight: "  . $sanitizeCssValue((string)$button['font_weight']) . ";\n";
+            if (!empty($button['hover_background_color'])) $css .= "  --btn-{$slug}-hover-bg: "     . $sanitizeCssValue((string)$button['hover_background_color']) . ";\n";
+            if (!empty($button['hover_text_color']))       $css .= "  --btn-{$slug}-hover-color: "  . $sanitizeCssValue((string)$button['hover_text_color']) . ";\n";
+            if (!empty($button['hover_border_color']))     $css .= "  --btn-{$slug}-hover-border: " . $sanitizeCssValue((string)$button['hover_border_color']) . ";\n";
+        }
+
         // ── Card styles → :root CSS variables ────────────────────────────────────
         // Variables are emitted as --card-{slug}-{property} so page CSS can reference
         // them without hardcoding colors.  POS-specific aliases (--card-product-*,

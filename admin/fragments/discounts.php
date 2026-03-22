@@ -50,35 +50,52 @@ function _dt(string $key, string $fallback = ''): string {
     }
     return is_string($val) ? $val : ($fallback ?: $key);
 }
-?>
-<link rel="stylesheet" href="/admin/assets/css/pages/discounts.css?v=<?= time() ?>">
 
-<div class="page-container" dir="<?= $dir ?>">
+// assetVer() مُعرَّفة في header.php — نُعرِّفها هنا فقط عند fragment مستقل
+if (!function_exists('assetVer')) {
+    function assetVer(string $path): string
+    {
+        static $cache = [];
+        if (!isset($cache[$path])) {
+            $full         = $_SERVER['DOCUMENT_ROOT'] . $path;
+            $cache[$path] = file_exists($full) ? (string) filemtime($full) : '0';
+        }
+        return $cache[$path];
+    }
+}
+?>
+<link rel="stylesheet"
+      href="/admin/assets/css/pages/discounts.css?v=<?= assetVer('/admin/assets/css/pages/discounts.css') ?>">
+
+<meta data-page="discounts"
+      data-i18n-files="/languages/Discounts/<?= rawurlencode($_dtLangCode) ?>.json">
+
+<div class="page-container full-page-admin" dir="<?= $dir ?>">
   <div class="page-header">
     <div>
       <h2><?= _dt('title', 'Discount Management') ?></h2>
       <p class="page-subtitle"><?= _dt('subtitle', 'Manage discount codes, rules, and redemptions') ?></p>
     </div>
     <div class="page-header-actions">
-      <button class="btn btn-primary" id="btnAddDiscount">+ <?= _dt('add_discount', 'Add Discount') ?></button>
+      <button class="btn btn-primary" id="btnAddDiscount" data-btn-slug="primary">+ <?= _dt('add_discount', 'Add Discount') ?></button>
     </div>
   </div>
 
   <!-- Tenant/Entity Cascade Selector -->
-  <div class="entity-selector" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px">
+  <div class="entity-selector">
     <?php if ($isSuperAdmin): ?>
-    <div class="form-group" style="margin:0">
+    <div class="form-group">
       <label><?= _dt('tenant_id', 'Tenant ID') ?></label>
-      <div style="display:flex;gap:6px">
-        <input type="number" class="form-control" id="tenantIdInput" placeholder="<?= _dt('enter_tenant_id', 'Enter Tenant ID') ?>" min="1" style="width:140px">
-        <button class="btn btn-secondary btn-sm" id="btnVerifyTenant"><?= _dt('verify', 'Verify') ?></button>
+      <div class="dc-tenant-input-row">
+        <input type="number" class="form-control dc-tenant-input" id="tenantIdInput" placeholder="<?= _dt('enter_tenant_id', 'Enter Tenant ID') ?>" min="1">
+        <button class="btn btn-secondary btn-sm" id="btnVerifyTenant" data-btn-slug="secondary"><?= _dt('verify', 'Verify') ?></button>
       </div>
-      <small id="tenantName" style="display:none;color:var(--success-color,#28a745);margin-top:4px"></small>
+      <small id="tenantName" class="dc-tenant-name" style="display:none"></small>
     </div>
     <?php endif; ?>
-    <div class="form-group" style="margin:0">
+    <div class="form-group">
       <label><?= _dt('entity_selector', 'Entity') ?></label>
-      <select class="form-control" id="entitySelector" style="min-width:200px">
+      <select class="form-control dc-entity-select" id="entitySelector">
         <option value=""><?= _dt('all_entities', 'All Entities') ?></option>
       </select>
     </div>
@@ -93,31 +110,55 @@ function _dt(string $key, string $fallback = ''): string {
   </div>
 
   <!-- Filter Bar -->
-  <div class="filter-bar">
-    <input type="text" class="form-control" id="searchInput" placeholder="<?= _dt('filter.search', 'Search by code or name...') ?>">
-    <select class="form-control" id="typeFilter">
-      <option value=""><?= _dt('filter.all_types', 'All Types') ?></option>
-      <option value="percentage"><?= _dt('filter.percentage', 'Percentage') ?></option>
-      <option value="fixed"><?= _dt('filter.fixed', 'Fixed') ?></option>
-      <option value="buy_x_get_y"><?= _dt('filter.buy_x_get_y', 'Buy X Get Y') ?></option>
-      <option value="free_shipping"><?= _dt('filter.free_shipping', 'Free Shipping') ?></option>
-    </select>
-    <select class="form-control" id="statusFilter">
-      <option value=""><?= _dt('filter.all_status', 'All Status') ?></option>
-      <option value="active"><?= _dt('filter.active', 'Active') ?></option>
-      <option value="inactive"><?= _dt('filter.inactive', 'Inactive') ?></option>
-      <option value="expired"><?= _dt('filter.expired', 'Expired') ?></option>
-      <option value="scheduled"><?= _dt('filter.scheduled', 'Scheduled') ?></option>
-    </select>
-    <input type="date" class="form-control" id="dateFrom" placeholder="<?= _dt('filter.date_from', 'From') ?>" title="<?= _dt('filter.date_from', 'From') ?>">
-    <input type="date" class="form-control" id="dateTo" placeholder="<?= _dt('filter.date_to', 'To') ?>" title="<?= _dt('filter.date_to', 'To') ?>">
-    <button class="btn btn-secondary" id="btnFilter"><?= _dt('filter.apply', 'Filter') ?></button>
-    <button class="btn btn-secondary" id="btnClearFilter"><?= _dt('filter.clear', 'Clear') ?></button>
+  <div class="card">
+    <div class="card-body" style="padding: clamp(8px, 1.5vw, 12px) clamp(12px, 2vw, 16px);">
+      <div class="filters-grid">
+        <div class="filter-group filter-group--search">
+          <label class="filter-label" for="searchInput"><?= _dt('filter.search', 'Search') ?></label>
+          <input type="text" class="form-control" id="searchInput" placeholder="<?= _dt('filter.search_placeholder', 'Search by code or name...') ?>">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="typeFilter"><?= _dt('filter.type', 'Type') ?></label>
+          <select class="form-control" id="typeFilter">
+            <option value=""><?= _dt('filter.all_types', 'All Types') ?></option>
+            <option value="percentage"><?= _dt('filter.percentage', 'Percentage') ?></option>
+            <option value="fixed"><?= _dt('filter.fixed', 'Fixed') ?></option>
+            <option value="buy_x_get_y"><?= _dt('filter.buy_x_get_y', 'Buy X Get Y') ?></option>
+            <option value="free_shipping"><?= _dt('filter.free_shipping', 'Free Shipping') ?></option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="statusFilter"><?= _dt('filter.status', 'Status') ?></label>
+          <select class="form-control" id="statusFilter">
+            <option value=""><?= _dt('filter.all_status', 'All Status') ?></option>
+            <option value="active"><?= _dt('filter.active', 'Active') ?></option>
+            <option value="inactive"><?= _dt('filter.inactive', 'Inactive') ?></option>
+            <option value="expired"><?= _dt('filter.expired', 'Expired') ?></option>
+            <option value="scheduled"><?= _dt('filter.scheduled', 'Scheduled') ?></option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="dateFrom"><?= _dt('filter.date_from', 'From') ?></label>
+          <input type="date" class="form-control" id="dateFrom" title="<?= _dt('filter.date_from', 'From') ?>">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" for="dateTo"><?= _dt('filter.date_to', 'To') ?></label>
+          <input type="date" class="form-control" id="dateTo" title="<?= _dt('filter.date_to', 'To') ?>">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label" aria-hidden="true">&nbsp;</label>
+          <div class="filter-buttons">
+            <button class="btn btn-sm btn-icon btn-primary" id="btnFilter" data-btn-slug="primary" title="<?= _dt('filter.apply', 'Filter') ?>" aria-label="<?= _dt('filter.apply', 'Filter') ?>"><i class="fas fa-search" aria-hidden="true"></i></button>
+            <button class="btn btn-sm btn-icon btn-secondary" id="btnClearFilter" data-btn-slug="secondary" title="<?= _dt('filter.clear', 'Clear') ?>" aria-label="<?= _dt('filter.clear', 'Clear') ?>"><i class="fas fa-times" aria-hidden="true"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Data Table -->
   <div class="card">
-    <div class="card-body" style="overflow-x:auto">
+    <div class="card-body dc-table-overflow">
       <table class="data-table" id="discountsTable">
         <thead>
           <tr>
@@ -147,11 +188,11 @@ function _dt(string $key, string $fallback = ''): string {
   </div>
 
   <!-- Create/Edit Discount Modal -->
-  <div class="modal" id="discountModal" style="display:none">
-    <div class="modal-content modal-lg">
-      <div class="modal-header">
+  <div class="dc-modal-backdrop" id="discountModal" style="display:none">
+    <div class="dc-modal-panel dc-modal-panel--wide">
+      <div class="dc-modal-header">
         <h3 id="modalTitle"><?= _dt('modal.add_title', 'Add Discount') ?></h3>
-        <button class="modal-close" id="btnCloseModal">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="discountModal" id="btnCloseModal" aria-label="Close">&times;</button>
       </div>
       <form id="discountForm">
         <input type="hidden" id="discountId" value="">
@@ -176,7 +217,7 @@ function _dt(string $key, string $fallback = ''): string {
             <label><?= _dt('form.code', 'Code') ?> *</label>
             <div class="input-group">
               <input type="text" class="form-control" id="discountCode" name="code" required>
-              <button type="button" class="btn btn-secondary btn-sm" id="btnGenerateCode"><?= _dt('form.generate_code', 'Auto-Generate') ?></button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btnGenerateCode" data-btn-slug="secondary"><?= _dt('form.generate_code', 'Auto-Generate') ?></button>
             </div>
           </div>
         </div>
@@ -237,21 +278,21 @@ function _dt(string $key, string $fallback = ''): string {
           </select>
         </div>
         <div class="form-actions">
-          <button type="button" class="btn btn-secondary" id="btnCancelModal"><?= _dt('cancel', 'Cancel') ?></button>
-          <button type="submit" class="btn btn-primary"><?= _dt('save', 'Save') ?></button>
+          <button type="button" class="btn btn-secondary btn-close-modal" data-modal="discountModal" id="btnCancelModal" data-btn-slug="secondary"><?= _dt('cancel', 'Cancel') ?></button>
+          <button type="submit" class="btn btn-primary" data-btn-slug="primary"><?= _dt('save', 'Save') ?></button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- Translations Modal -->
-  <div class="modal" id="translationsModal" style="display:none">
-    <div class="modal-content modal-lg">
-      <div class="modal-header">
+  <div class="dc-modal-backdrop" id="translationsModal" style="display:none">
+    <div class="dc-modal-panel dc-modal-panel--wide">
+      <div class="dc-modal-header">
         <h3><?= _dt('translations.title', 'Discount Translations') ?></h3>
-        <button class="modal-close" id="btnCloseTranslations">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="translationsModal" id="btnCloseTranslations" aria-label="Close">&times;</button>
       </div>
-      <div class="modal-body">
+      <div class="dc-modal-body">
         <input type="hidden" id="transDiscountId">
         <div class="form-row">
           <div class="form-group">
@@ -275,8 +316,8 @@ function _dt(string $key, string $fallback = ''): string {
           <label><?= _dt('translations.marketing_badge', 'Marketing Badge') ?></label>
           <input type="text" class="form-control" id="transMarketingBadge">
         </div>
-        <button class="btn btn-primary btn-sm" id="btnSaveTranslation"><?= _dt('translations.save', 'Save Translation') ?></button>
-        <table class="data-table" style="margin-top:10px">
+        <button class="btn btn-primary btn-sm" id="btnSaveTranslation" data-btn-slug="primary"><?= _dt('translations.save', 'Save Translation') ?></button>
+        <table class="data-table dc-sub-table">
           <thead>
             <tr>
               <th><?= _dt('translations.language', 'Language') ?></th>
@@ -294,13 +335,13 @@ function _dt(string $key, string $fallback = ''): string {
   </div>
 
   <!-- Scopes Modal -->
-  <div class="modal" id="scopesModal" style="display:none">
-    <div class="modal-content modal-lg">
-      <div class="modal-header">
+  <div class="dc-modal-backdrop" id="scopesModal" style="display:none">
+    <div class="dc-modal-panel dc-modal-panel--wide">
+      <div class="dc-modal-header">
         <h3><?= _dt('scopes.title', 'Discount Scopes') ?></h3>
-        <button class="modal-close" id="btnCloseScopes">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="scopesModal" id="btnCloseScopes" aria-label="Close">&times;</button>
       </div>
-      <div class="modal-body">
+      <div class="dc-modal-body">
         <input type="hidden" id="scopesDiscountId">
         <div class="form-row">
           <div class="form-group">
@@ -322,10 +363,10 @@ function _dt(string $key, string $fallback = ''): string {
             <span id="scopeIdName" class="lookup-name"></span>
           </div>
           <div class="form-group form-group-btn">
-            <button class="btn btn-primary btn-sm" id="btnAddScope">+ <?= _dt('scopes.add', 'Add Scope') ?></button>
+            <button class="btn btn-primary btn-sm" id="btnAddScope" data-btn-slug="primary">+ <?= _dt('scopes.add', 'Add Scope') ?></button>
           </div>
         </div>
-        <table class="data-table" style="margin-top:10px">
+        <table class="data-table dc-sub-table">
           <thead>
             <tr>
               <th><?= _dt('scopes.scope_type', 'Scope Type') ?></th>
@@ -341,13 +382,13 @@ function _dt(string $key, string $fallback = ''): string {
   </div>
 
   <!-- Conditions Modal -->
-  <div class="modal" id="conditionsModal" style="display:none">
-    <div class="modal-content modal-lg">
-      <div class="modal-header">
+  <div class="dc-modal-backdrop" id="conditionsModal" style="display:none">
+    <div class="dc-modal-panel dc-modal-panel--wide">
+      <div class="dc-modal-header">
         <h3><?= _dt('conditions.title', 'Discount Conditions') ?></h3>
-        <button class="modal-close" id="btnCloseConditions">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="conditionsModal" id="btnCloseConditions" aria-label="Close">&times;</button>
       </div>
-      <div class="modal-body">
+      <div class="dc-modal-body">
         <input type="hidden" id="conditionsDiscountId">
         <div class="form-row">
           <div class="form-group">
@@ -384,10 +425,10 @@ function _dt(string $key, string $fallback = ''): string {
             <input type="text" class="form-control" id="conditionValue">
           </div>
           <div class="form-group form-group-btn">
-            <button class="btn btn-primary btn-sm" id="btnAddCondition">+ <?= _dt('conditions.add', 'Add Condition') ?></button>
+            <button class="btn btn-primary btn-sm" id="btnAddCondition" data-btn-slug="primary">+ <?= _dt('conditions.add', 'Add Condition') ?></button>
           </div>
         </div>
-        <table class="data-table" style="margin-top:10px">
+        <table class="data-table dc-sub-table">
           <thead>
             <tr>
               <th><?= _dt('conditions.condition_type', 'Condition Type') ?></th>
@@ -403,13 +444,13 @@ function _dt(string $key, string $fallback = ''): string {
   </div>
 
   <!-- Actions Modal -->
-  <div class="modal" id="actionsModal" style="display:none">
-    <div class="modal-content modal-lg">
-      <div class="modal-header">
+  <div class="dc-modal-backdrop" id="actionsModal" style="display:none">
+    <div class="dc-modal-panel dc-modal-panel--wide">
+      <div class="dc-modal-header">
         <h3><?= _dt('actions.title', 'Discount Actions') ?></h3>
-        <button class="modal-close" id="btnCloseActions">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="actionsModal" id="btnCloseActions" aria-label="Close">&times;</button>
       </div>
-      <div class="modal-body">
+      <div class="dc-modal-body">
         <input type="hidden" id="actionsDiscountId">
         <div class="form-row">
           <div class="form-group">
@@ -426,10 +467,10 @@ function _dt(string $key, string $fallback = ''): string {
             <input type="text" class="form-control" id="actionValue">
           </div>
           <div class="form-group form-group-btn">
-            <button class="btn btn-primary btn-sm" id="btnAddAction">+ <?= _dt('actions.add', 'Add Action') ?></button>
+            <button class="btn btn-primary btn-sm" id="btnAddAction" data-btn-slug="primary">+ <?= _dt('actions.add', 'Add Action') ?></button>
           </div>
         </div>
-        <table class="data-table" style="margin-top:10px">
+        <table class="data-table dc-sub-table">
           <thead>
             <tr>
               <th><?= _dt('actions.action_type', 'Action Type') ?></th>
@@ -444,13 +485,13 @@ function _dt(string $key, string $fallback = ''): string {
   </div>
 
   <!-- Exclusions Modal -->
-  <div class="modal" id="exclusionsModal" style="display:none">
-    <div class="modal-content modal-lg">
-      <div class="modal-header">
+  <div class="dc-modal-backdrop" id="exclusionsModal" style="display:none">
+    <div class="dc-modal-panel dc-modal-panel--wide">
+      <div class="dc-modal-header">
         <h3><?= _dt('exclusions.title', 'Discount Exclusions') ?></h3>
-        <button class="modal-close" id="btnCloseExclusions">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="exclusionsModal" id="btnCloseExclusions" aria-label="Close">&times;</button>
       </div>
-      <div class="modal-body">
+      <div class="dc-modal-body">
         <input type="hidden" id="exclusionsDiscountId">
         <div class="form-row">
           <div class="form-group">
@@ -460,10 +501,10 @@ function _dt(string $key, string $fallback = ''): string {
             </select>
           </div>
           <div class="form-group form-group-btn">
-            <button class="btn btn-primary btn-sm" id="btnAddExclusion">+ <?= _dt('exclusions.add', 'Add Exclusion') ?></button>
+            <button class="btn btn-primary btn-sm" id="btnAddExclusion" data-btn-slug="primary">+ <?= _dt('exclusions.add', 'Add Exclusion') ?></button>
           </div>
         </div>
-        <table class="data-table" style="margin-top:10px">
+        <table class="data-table dc-sub-table">
           <thead>
             <tr>
               <th><?= _dt('exclusions.excluded_discount', 'Excluded Discount') ?></th>
@@ -477,13 +518,13 @@ function _dt(string $key, string $fallback = ''): string {
   </div>
 
   <!-- Redemptions Modal -->
-  <div class="modal" id="redemptionsModal" style="display:none">
-    <div class="modal-content modal-lg">
-      <div class="modal-header">
+  <div class="dc-modal-backdrop" id="redemptionsModal" style="display:none">
+    <div class="dc-modal-panel dc-modal-panel--wide">
+      <div class="dc-modal-header">
         <h3><?= _dt('redemptions.title', 'Discount Redemptions') ?></h3>
-        <button class="modal-close" id="btnCloseRedemptions">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="redemptionsModal" id="btnCloseRedemptions" aria-label="Close">&times;</button>
       </div>
-      <div class="modal-body">
+      <div class="dc-modal-body">
         <input type="hidden" id="redemptionsDiscountId">
         <table class="data-table">
           <thead>
@@ -508,20 +549,21 @@ function _dt(string $key, string $fallback = ''): string {
 
 <script>
 window.DISCOUNTS_CONFIG = {
-    csrf: <?= json_encode($csrf) ?>,
-    lang: <?= json_encode($lang) ?>,
-    dir: <?= json_encode($dir) ?>,
-    canManage: <?= json_encode($canManage) ?>,
-    canCreate: <?= json_encode($canCreate) ?>,
-    canEdit: <?= json_encode($canEdit) ?>,
-    canDelete: <?= json_encode($canDelete) ?>,
-    isSuperAdmin: <?= json_encode($isSuperAdmin) ?>,
-    tenantId: <?= json_encode((int)$tenantId) ?>,
-    entityId: <?= json_encode((int)$entityId) ?>,
-    userId: <?= json_encode((int)$userId) ?>,
-    strings: <?= json_encode($_dtStrings) ?>
+    apiBase:      <?= json_encode('/api', JSON_UNESCAPED_SLASHES) ?>,
+    csrfToken:    <?= json_encode($csrf) ?>,
+    lang:         <?= json_encode($_dtLangCode) ?>,
+    dir:          <?= json_encode($dir) ?>,
+    tenantId:     <?= (int) $tenantId ?>,
+    entityId:     <?= (int) $entityId ?>,
+    userId:       <?= (int) $userId ?>,
+    strings:      <?= json_encode($_dtStrings, JSON_UNESCAPED_UNICODE) ?>,
+    canManage:    <?= json_encode($canManage) ?>,
+    canCreate:    <?= json_encode($canCreate) ?>,
+    canEdit:      <?= json_encode($canEdit) ?>,
+    canDelete:    <?= json_encode($canDelete) ?>,
+    isSuperAdmin: <?= json_encode($isSuperAdmin) ?>
 };
 </script>
-<script src="/admin/assets/js/pages/discounts.js?v=<?= time() ?>"></script>
+<script src="/admin/assets/js/pages/discounts.js?v=<?= assetVer('/admin/assets/js/pages/discounts.js') ?>"></script>
 
 <?php if (!$isFragment) require_once __DIR__ . '/../includes/footer.php'; ?>

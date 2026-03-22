@@ -12,7 +12,7 @@
     // ════════════════════════════════════════════════════════════
     const CONFIG = window.PRODUCTS_CONFIG || {};
     const AF = window.AdminFramework || {};
-    const PERMS = window.PAGE_PERMISSIONS || {};
+    const PERMS = CONFIG.permissions || {};
 
     const API = {
         products: CONFIG.apiUrl || '/api/products',
@@ -47,10 +47,10 @@
         productAttributes: [],
         productVariants: [],
         permissions: PERMS,
-        language: window.USER_LANGUAGE || CONFIG.lang || 'en',
-        direction: window.USER_DIRECTION || 'ltr',
-        csrfToken: window.CSRF_TOKEN || CONFIG.csrfToken || '',
-        tenantId: window.APP_CONFIG?.TENANT_ID || 1
+        language: CONFIG.lang || 'en',
+        direction: CONFIG.dir || 'ltr',
+        csrfToken: CONFIG.csrfToken || '',
+        tenantId: CONFIG.tenantId || 1
     };
 
     let el = {}; // DOM elements cache
@@ -635,20 +635,20 @@
             }
 
             const canEdit = state.permissions.canEdit || state.permissions.canEditAll ||
-                (state.permissions.canEditOwn && prod.created_by_user_id == window.APP_CONFIG?.USER_ID);
+                (state.permissions.canEditOwn && prod.created_by_user_id == CONFIG.userId);
             const canDelete = state.permissions.canDelete || state.permissions.canDeleteAll ||
-                (state.permissions.canDeleteOwn && prod.created_by_user_id == window.APP_CONFIG?.USER_ID);
+                (state.permissions.canDeleteOwn && prod.created_by_user_id == CONFIG.userId);
 
             return `
                 <tr data-id="${prod.id}">
                     <td>${esc(prod.id)}</td>
                     ${isSuperAdmin ? `<td>${esc(prod.tenant_id || '')}</td>` : ''}
                     <td>
-                        ${image ? `<img src="${esc(image)}" alt="${esc(name)}" style="width:50px;height:50px;object-fit:cover;border-radius:4px;">` : '📦'}
+                        ${image ? `<img src="${esc(image)}" alt="${esc(name)}" class="prd-table-thumb">` : '📦'}
                     </td>
                     <td>
                         <strong>${esc(name)}</strong>
-                        <br><small style="color:var(--text-secondary,#94a3b8);">${esc(prod.sku || '')}</small>
+                        <br><small class="prd-sku-text">${esc(prod.sku || '')}</small>
                         ${variantsBadge}
                         ${varPills}
                     </td>
@@ -1282,12 +1282,12 @@
                 return `
                     <div class="attribute-item" data-index="${idx}">
                         <label>${esc(attr.attribute_name)}</label>
-                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                            <select class="form-control" style="flex:1;min-width:150px;" onchange="Products.updateAttributeValueId(${idx}, this.value)">
+                        <div class="attr-value-row">
+                            <select class="form-control attr-value-select" onchange="Products.updateAttributeValueId(${idx}, this.value)">
                                 <option value="">${t('form.attributes.select_value', 'Select value')}</option>
                                 ${options}
                             </select>
-                            <input type="text" class="form-control" style="flex:1;min-width:120px;" 
+                            <input type="text" class="form-control attr-custom-input" 
                                    value="${esc(attr.custom_value || '')}" 
                                    placeholder="${t('form.attributes.custom_value', 'Custom value (optional)')}"
                                    onchange="Products.updateCustomValue(${idx}, this.value)">
@@ -1302,7 +1302,7 @@
             return `
                 <div class="attribute-item" data-index="${idx}">
                     <label>${esc(attr.attribute_name)}</label>
-                    <div style="display:flex;gap:8px;align-items:center;">
+                    <div class="attr-value-row">
                         <input type="text" class="form-control" value="${esc(attr.custom_value || attr.value || '')}" 
                                onchange="Products.updateCustomValue(${idx}, this.value)">
                         <button type="button" class="btn btn-sm btn-danger" onclick="Products.removeAttribute(${idx})">
@@ -1370,25 +1370,25 @@
         const isEditMode = !!(el.formId?.value);
 
         el.prodVariantsList.innerHTML = state.productVariants.map((variant, idx) => `
-            <div class="variant-item card" data-index="${idx}" style="margin-bottom:12px; padding:12px;">
+            <div class="variant-item card" data-index="${idx}">
                 <div class="form-row">
-                    <div class="form-group" style="flex:1;">
+                    <div class="form-group variant-field-flex">
                         <label>${t('variants.variant_sku', 'SKU')}</label>
                         <input type="text" class="form-control" value="${esc(variant.sku || '')}"
                                placeholder="${t('variants.variant_sku_placeholder', 'Auto-generated')}"
                                onchange="Products.updateVariantField(${idx}, 'sku', this.value)">
                     </div>
-                    <div class="form-group" style="flex:1;">
+                    <div class="form-group variant-field-flex">
                         <label>${t('variants.variant_barcode', 'Barcode')}</label>
                         <input type="text" class="form-control" value="${esc(variant.barcode || '')}"
                                onchange="Products.updateVariantField(${idx}, 'barcode', this.value)">
                     </div>
-                    <div class="form-group" style="width:100px;">
+                    <div class="form-group variant-field-stock">
                         <label>${t('variants.variant_stock', 'Stock')}</label>
                         <input type="number" class="form-control" value="${esc(variant.stock_quantity || 0)}"
                                onchange="Products.updateVariantField(${idx}, 'stock_quantity', this.value)">
                     </div>
-                    <div style="display:flex;align-items:flex-end;gap:6px;padding-bottom:8px;">
+                    <div class="variant-actions-cell">
                         ${isEditMode ? `<button type="button" class="btn btn-sm btn-primary" title="${t('variants.save_variant', 'Save')}" onclick="Products.saveVariantRow(${idx})">
                             <i class="fas fa-save"></i>
                         </button>` : ''}
@@ -1585,10 +1585,9 @@
         if (!el.prodImagesPreview) return;
 
         el.prodImagesPreview.innerHTML = state.selectedImages.map((img, idx) => `
-            <div class="image-item" data-index="${idx}" style="position:relative; display:inline-block; margin:8px;">
-                <img src="${esc(img.url || img.thumb_url)}" style="width:100px; height:100px; object-fit:cover; border-radius:4px;">
-                <button type="button" class="btn btn-sm btn-danger" 
-                        style="position:absolute; top:4px; right:4px; padding:2px 6px;"
+            <div class="image-item" data-index="${idx}">
+                <img src="${esc(img.url || img.thumb_url)}" alt="${esc(img.alt_text || 'Product image')}">
+                <button type="button" class="btn btn-sm btn-danger image-item-remove"
                         onclick="Products.removeImage(${idx})">
                     <i class="fas fa-times"></i>
                 </button>
@@ -2593,9 +2592,7 @@
 
         const ok = failCount === 0;
         resultDiv.style.display = 'block';
-        resultDiv.className = ok ? 'csv-result-success' : 'csv-result-partial';
-        resultDiv.style.padding = '12px';
-        resultDiv.style.borderRadius = 'var(--border-radius, 8px)';
+        resultDiv.className = ok ? 'csv-result-summary csv-result-success' : 'csv-result-summary csv-result-partial';
         resultDiv.innerHTML = `
             <strong>${ok ? '✅' : '⚠️'} ${t('csv.import_complete', 'Import Finished')}</strong><br>
             <span class="csv-count-success">✓ ${t('csv.created', 'Created')}: ${successCount}</span>
@@ -2784,6 +2781,12 @@
         // Images
         if (el.prodSelectImageBtn) el.prodSelectImageBtn.onclick = openMediaStudio;
         if (el.mediaClose) el.mediaClose.onclick = closeMediaStudio;
+        // Close media studio on backdrop click
+        if (el.mediaModal) {
+            el.mediaModal.addEventListener('click', function (e) {
+                if (e.target === el.mediaModal) closeMediaStudio();
+            });
+        }
 
         // Translations
         if (el.prodAddLangBtn) el.prodAddLangBtn.onclick = addTranslation;
@@ -2860,6 +2863,21 @@
             });
         }
 
+        // ESC key closes open modals
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape') return;
+            ['prodMediaStudioModal', 'csvImportModal'].forEach(function (id) {
+                var modal = document.getElementById(id);
+                if (modal && modal.style.display !== 'none' && modal.style.display !== '') {
+                    if (id === 'csvImportModal') {
+                        closeCsvImport();
+                    } else {
+                        closeMediaStudio();
+                    }
+                }
+            });
+        });
+
         // Initialize tabs
         initTabs();
 
@@ -2915,6 +2933,10 @@
 
     // Fragment support
     window.page = { run: init };
+
+    if (window.Admin?.page?.register) {
+        window.Admin.page.register('products', init);
+    }
 
     // Auto-init: matches categories.js pattern (which works)
     if (document.readyState === 'loading') {

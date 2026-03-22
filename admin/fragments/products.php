@@ -35,6 +35,7 @@ if ($isFragment) {
 if (!is_admin_logged_in()) {
     if ($isFragment) {
         http_response_code(401);
+        header('Content-Type: application/json');
         echo json_encode(['error' => 'Not authenticated']);
         exit;
     } else {
@@ -46,11 +47,12 @@ if (!is_admin_logged_in()) {
 // ════════════════════════════════════════════════════════════
 // GET USER CONTEXT & PERMISSIONS
 // ════════════════════════════════════════════════════════════
-$user = admin_user();
-$lang = admin_lang();
-$dir = admin_dir();
-$csrf = admin_csrf();
+$user     = admin_user();
+$lang     = admin_lang();
+$dir      = in_array($lang, ['ar', 'he', 'fa', 'ur'], true) ? 'rtl' : 'ltr';
+$csrf     = admin_csrf();
 $tenantId = admin_tenant_id();
+$userId   = admin_user_id();
 
 // ════════════════════════════════════════════════════════════
 // CHECK PERMISSIONS
@@ -111,24 +113,48 @@ function __tr($key, $replacements = []) {
 // ════════════════════════════════════════════════════════════
 $apiBase = '/api';
 
+// ════════════════════════════════════════════════════════════
+// TRANSLATIONS (server-side — injected via PRODUCTS_CONFIG.strings)
+// ════════════════════════════════════════════════════════════
+$_prdStrings     = [];
+$_prdAllowedLangs = [
+    'ar','en','fr','tr','ur','de','es','fa','he','hi',
+    'zh','ja','ko','pt','ru','it','nl','sv','pl','th',
+    'vi','id','ms','bn','sw','tl',
+];
+$_prdSafeLang = in_array($lang, $_prdAllowedLangs, true) ? $lang : 'en';
+$_prdLangFile = __DIR__ . '/../../languages/Product/' . $_prdSafeLang . '.json';
+
+if (file_exists($_prdLangFile)) {
+    $_prdJson = json_decode(file_get_contents($_prdLangFile), true);
+    if (is_array($_prdJson)) {
+        $_prdStrings = isset($_prdJson['strings']) ? $_prdJson['strings'] : $_prdJson;
+    }
+}
+
 ?>
 <!-- Structural layout CSS (uses only var() for all visual properties)
      Button/card/color CSS comes from AdminUiThemeLoader::generateCss()
      injected by header.php via <style id="dynamic-theme-db">. -->
 <?php
-if (!function_exists('prodAssetVer')) {
-    function prodAssetVer(string $path): string {
-        $full = $_SERVER['DOCUMENT_ROOT'] . $path;
-        return file_exists($full) ? (string)filemtime($full) : '1';
+if (!function_exists('assetVer')) {
+    function assetVer(string $path): string {
+        static $cache = [];
+        if (!isset($cache[$path])) {
+            $full = $_SERVER['DOCUMENT_ROOT'] . $path;
+            $cache[$path] = file_exists($full) ? (string)filemtime($full) : '1';
+        }
+        return $cache[$path];
     }
 }
 ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/products.css?v=<?= prodAssetVer('/admin/assets/css/pages/products.css') ?>">
+<link rel="stylesheet" href="/admin/assets/css/pages/products.css?v=<?= assetVer('/admin/assets/css/pages/products.css') ?>">
 
 <!-- Page Meta -->
 <meta data-page="products"
       data-assets-css="/admin/assets/css/pages/products.css"
-      data-i18n-files="/languages/Product/<?= rawurlencode($lang) ?>.json">
+      data-assets-js="/admin/assets/js/pages/products.js"
+      data-i18n-files="/languages/Product/<?= rawurlencode($_prdSafeLang) ?>.json">
 
 <!-- Page Container -->
 <div class="page-container" id="productsPageContainer" dir="<?= htmlspecialchars($dir) ?>">
@@ -672,7 +698,7 @@ if (!function_exists('prodAssetVer')) {
                     </select>
                 </div>
 
-                <div class="filter-actions">
+                <div class="filter-buttons">
                     <button id="btnApplyFilters" class="btn btn-secondary" data-i18n="filters.apply">
                         <?= __t('filters.apply', 'Apply') ?>
                     </button>
@@ -754,26 +780,53 @@ if (!function_exists('prodAssetVer')) {
     </div>
 
     <!-- Media Studio Modal -->
-    <div id="prodMediaStudioModal" class="modal" style="display:none">
-        <div class="modal-content">
-            <span class="close" id="prodMediaStudioClose">&times;</span>
-            <iframe id="prodMediaStudioFrame" class="media-studio-iframe" src="/admin/fragments/media_studio.php?embedded=1&tenant_id=<?= $tenantId ?>&lang=<?= $lang ?>"></iframe>
+    <div id="prodMediaStudioModal"
+         class="prd-modal-backdrop"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="prodMediaStudioTitle"
+         style="display:none">
+        <div class="prd-modal-panel prd-modal-panel--wide prd-modal-panel--studio">
+            <div class="prd-modal-header">
+                <h3 id="prodMediaStudioTitle" data-i18n="media_studio.title"><?= __t('media_studio.title', 'Media Studio') ?></h3>
+                <button type="button"
+                        class="btn-close-modal icon-btn"
+                        id="prodMediaStudioClose"
+                        data-modal="prodMediaStudioModal"
+                        aria-label="<?= __t('accessibility.close', 'Close') ?>">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="prd-modal-body prd-modal-body--studio">
+                <iframe id="prodMediaStudioFrame" class="media-studio-iframe" src="/admin/fragments/media_studio.php?embedded=1&tenant_id=<?= $tenantId ?>&lang=<?= $lang ?>"></iframe>
+            </div>
         </div>
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- CSV Import Modal -->
     <!-- ═══════════════════════════════════════════════════════════ -->
-    <div id="csvImportModal" class="modal" style="display:none;">
-        <div class="modal-content csv-modal-content">
-            <!-- Header -->
-            <div class="csv-modal-header">
-                <h3>
+    <div id="csvImportModal"
+         class="prd-modal-backdrop"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="csvImportTitle"
+         style="display:none;">
+        <div class="prd-modal-panel csv-modal-content">
+            <div class="prd-modal-header">
+                <h3 id="csvImportTitle">
                     <i class="fas fa-file-csv"></i>
                     <span data-i18n="csv.title"><?= __t('csv.title', 'Import Products via CSV') ?></span>
                 </h3>
-                <button type="button" id="csvImportClose" class="csv-modal-close">&times;</button>
+                <button type="button"
+                        id="csvImportClose"
+                        class="btn-close-modal icon-btn"
+                        data-modal="csvImportModal"
+                        aria-label="<?= __t('accessibility.close', 'Close') ?>">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
             </div>
+            <div class="prd-modal-body">
 
             <!-- Instructions -->
             <div class="info-hint-box csv-instructions">
@@ -825,187 +878,52 @@ if (!function_exists('prodAssetVer')) {
                     <span data-i18n="csv.import"><?= __t('csv.import', 'Start Import') ?></span>
                 </button>
             </div>
-        </div>
-    </div>
+            </div><!-- /.prd-modal-body -->
+        </div><!-- /.prd-modal-panel -->
+    </div><!-- /#csvImportModal -->
 
-</div>
+</div><!-- /.page-container -->
 
-<!-- Expose client-side globals for the module -->
-<script type="text/javascript">
-window.APP_CONFIG = window.APP_CONFIG || {};
-window.APP_CONFIG.API_BASE = window.APP_CONFIG.API_BASE || '<?= $apiBase ?>';
-window.APP_CONFIG.TENANT_ID = window.APP_CONFIG.TENANT_ID || <?= $tenantId ?>;
-window.APP_CONFIG.CSRF_TOKEN = window.APP_CONFIG.CSRF_TOKEN || '<?= addslashes($csrf) ?>';
-window.APP_CONFIG.USER_ID = window.APP_CONFIG.USER_ID || <?= admin_user_id() ?>;
-
-window.USER_LANGUAGE = window.USER_LANGUAGE || '<?= addslashes($lang) ?>';
-window.USER_DIRECTION = window.USER_DIRECTION || '<?= addslashes($dir) ?>';
-window.CSRF_TOKEN = window.CSRF_TOKEN || '<?= addslashes($csrf) ?>';
-
-// Inject ADMIN_UI with DB theme data (colors, fonts, cards, buttons, design settings)
-if (!window.ADMIN_UI) {
-    window.ADMIN_UI = <?= json_encode($GLOBALS['ADMIN_UI'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
-}
-
-// Page permissions available to JS
-window.PAGE_PERMISSIONS = <?= json_encode([
-    'canCreate' => $canCreate,
-    'canEdit' => $canEdit,
-    'canDelete' => $canDelete,
-    'canDuplicate' => $canDuplicate,
-    'canViewAll' => $canViewAll,
-    'canViewOwn' => $canViewOwn,
-    'canViewTenant' => $canViewTenant,
-    'canEditAll' => $canEditAll,
-    'canEditOwn' => $canEditOwn,
-    'canDeleteAll' => $canDeleteAll,
-    'canDeleteOwn' => $canDeleteOwn,
-    'isSuperAdmin' => is_super_admin()
-], JSON_UNESCAPED_UNICODE) ?>;
-</script>
-
-<script type="text/javascript">
+<script>
 window.PRODUCTS_CONFIG = {
-    apiUrl: '<?= $apiBase ?>/products',
-    categoriesApi: '<?= $apiBase ?>/categories',
-    brandsApi: '<?= $apiBase ?>/brands',
-    productTypesApi: '<?= $apiBase ?>/product_types',
-    attributesApi: '<?= $apiBase ?>/product_attributes',
-    attributeValuesApi: '<?= $apiBase ?>/product_attribute_values',
-    currenciesApi: '<?= $apiBase ?>/currencies',
-    languagesApi: '<?= $apiBase ?>/languages',
-    imagesApi: '<?= $apiBase ?>/images',
-    tenantsApi: '<?= $apiBase ?>/tenants',
-    csrfToken: '<?= addslashes($csrf) ?>',
-    lang: '<?= addslashes($lang) ?>',
+    apiBase:           <?= json_encode($apiBase,                            JSON_UNESCAPED_SLASHES) ?>,
+    apiUrl:            <?= json_encode($apiBase . '/products',              JSON_UNESCAPED_SLASHES) ?>,
+    categoriesApi:     <?= json_encode($apiBase . '/categories',            JSON_UNESCAPED_SLASHES) ?>,
+    brandsApi:         <?= json_encode($apiBase . '/brands',                JSON_UNESCAPED_SLASHES) ?>,
+    productTypesApi:   <?= json_encode($apiBase . '/product_types',         JSON_UNESCAPED_SLASHES) ?>,
+    attributesApi:     <?= json_encode($apiBase . '/product_attributes',    JSON_UNESCAPED_SLASHES) ?>,
+    attributeValuesApi:<?= json_encode($apiBase . '/product_attribute_values', JSON_UNESCAPED_SLASHES) ?>,
+    currenciesApi:     <?= json_encode($apiBase . '/currencies',            JSON_UNESCAPED_SLASHES) ?>,
+    languagesApi:      <?= json_encode($apiBase . '/languages',             JSON_UNESCAPED_SLASHES) ?>,
+    imagesApi:         <?= json_encode($apiBase . '/images',                JSON_UNESCAPED_SLASHES) ?>,
+    tenantsApi:        <?= json_encode($apiBase . '/tenants',               JSON_UNESCAPED_SLASHES) ?>,
+    csrfToken:         <?= json_encode($csrf) ?>,
+    lang:              <?= json_encode($_prdSafeLang) ?>,
+    dir:               <?= json_encode($dir) ?>,
+    tenantId:          <?= (int) $tenantId ?>,
+    userId:            <?= (int) $userId ?>,
+    strings:           <?= json_encode($_prdStrings, JSON_UNESCAPED_UNICODE) ?>,
+    canCreate:         <?= json_encode($canCreate) ?>,
+    canEdit:           <?= json_encode($canEdit) ?>,
+    canDelete:         <?= json_encode($canDelete) ?>,
+    isSuperAdmin:      <?= json_encode(is_super_admin()) ?>,
+    permissions: {
+        canCreate:     <?= json_encode($canCreate) ?>,
+        canEdit:       <?= json_encode($canEdit) ?>,
+        canDelete:     <?= json_encode($canDelete) ?>,
+        canDuplicate:  <?= json_encode($canDuplicate) ?>,
+        canViewAll:    <?= json_encode($canViewAll) ?>,
+        canViewOwn:    <?= json_encode($canViewOwn) ?>,
+        canViewTenant: <?= json_encode($canViewTenant) ?>,
+        canEditAll:    <?= json_encode($canEditAll) ?>,
+        canEditOwn:    <?= json_encode($canEditOwn) ?>,
+        canDeleteAll:  <?= json_encode($canDeleteAll) ?>,
+        canDeleteOwn:  <?= json_encode($canDeleteOwn) ?>,
+        isSuperAdmin:  <?= json_encode(is_super_admin()) ?>
+    },
     itemsPerPage: 25
 };
 </script>
+<script src="/admin/assets/js/pages/products.js?v=<?= assetVer('/admin/assets/js/pages/products.js') ?>"></script>
 
-<!-- Translation loader (runs early) -->
-<script type="text/javascript">
-(function(){
-    async function applyTranslations() {
-        try {
-            const lang = window.USER_LANGUAGE || '<?= $lang ?>';
-            const url = `/languages/Product/${encodeURIComponent(lang)}.json`;
-            console.log('[Products] Loading translations from', url);
-            const res = await fetch(url, { credentials: 'same-origin' });
-            if (!res.ok) throw new Error('Translation fetch failed: ' + res.status);
-            const data = await res.json();
-            // Support both flat and nested (strings key) format
-            const translations = data.strings || data;
-            window.PRODUCTS_TRANSLATIONS = translations;
-            // apply translations to elements with data-i18n
-            const container = document.getElementById('productsPageContainer');
-            if (!container) return;
-            container.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                const txt = key.split('.').reduce((o,k) => (o && o[k] !== undefined) ? o[k] : null, translations);
-                if (txt !== null && txt !== undefined) {
-                    if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
-                        el.placeholder = txt;
-                    } else {
-                        el.textContent = txt;
-                    }
-                }
-            });
-            // placeholders
-            container.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
-                const key = el.getAttribute('data-i18n-placeholder');
-                const txt = key.split('.').reduce((o,k) => (o && o[k] !== undefined) ? o[k] : null, translations);
-                if (txt !== null && txt !== undefined) el.placeholder = txt;
-            });
-            console.log('[Products] Translations applied');
-        } catch (err) {
-            console.warn('[Products] Translation load/apply failed:', err);
-        }
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', applyTranslations);
-    } else {
-        setTimeout(applyTranslations, 50);
-    }
-})();
-</script>
-
-<!-- Page Permissions JSON for scripts that prefer it in DOM -->
-<script id="pagePermissions" type="application/json">
-<?= json_encode([
-    'canCreate' => $canCreate,
-    'canEdit' => $canEdit,
-    'canDelete' => $canDelete,
-    'canDuplicate' => $canDuplicate,
-    'canViewAll' => $canViewAll,
-    'canViewOwn' => $canViewOwn,
-    'canViewTenant' => $canViewTenant,
-    'canEditAll' => $canEditAll,
-    'canEditOwn' => $canEditOwn,
-    'canDeleteAll' => $canDeleteAll,
-    'canDeleteOwn' => $canDeleteOwn,
-    'isSuperAdmin' => is_super_admin()
-], JSON_UNESCAPED_UNICODE) ?>
-</script>
-
-<script id="PRODUCTS_INITIAL_PAYLOAD" type="application/json">
-<?= json_encode(['items' => [], 'meta' => ['page' => 1, 'per_page' => 25, 'total' => 0]]) ?>
-</script>
-
-<!-- Load AdminFramework + Page module when embedded; otherwise load normally -->
-<?php if ($isFragment): ?>
-<script src="/admin/assets/js/admin_framework.js?v=<?= prodAssetVer('/admin/assets/js/admin_framework.js') ?>"></script>
-<script src="/admin/assets/js/pages/products.js?v=<?= prodAssetVer('/admin/assets/js/pages/products.js') ?>"></script>
-
-<script>
-(function(){
-    console.log('[Products] Embedded mode - waiting for module...');
-    var attempts = 0, maxAttempts = 50;
-    var interval = setInterval(function(){
-        attempts++;
-        if (window.Products && typeof window.Products.init === 'function') {
-            clearInterval(interval);
-            console.log('[Products] Module ready - initializing (attempt ' + attempts + ')...');
-            try {
-                var maybePromise = window.Products.init();
-                if (maybePromise && typeof maybePromise.then === 'function') {
-                    maybePromise.then(function(){
-                        console.log('[Products] ✓ Initialized successfully');
-                    }).catch(function(e){
-                        console.error('[Products] Init failed:', e);
-                    });
-                }
-            } catch (e) {
-                console.error('[Products] Init threw:', e);
-            }
-        } else if (attempts > maxAttempts) {
-            clearInterval(interval);
-            console.error('[Products] Timeout waiting for module after ' + (maxAttempts * 100) + 'ms');
-        }
-    }, 100);
-})();
-</script>
-<?php else: ?>
-<script src="/admin/assets/js/pages/products.js?v=<?= prodAssetVer('/admin/assets/js/pages/products.js') ?>"></script>
-<script>
-// Standalone mode init
-(function(){
-    function tryInit() {
-        if (window.Products && typeof window.Products.init === 'function') {
-            window.Products.init().catch(function(e){ console.error('[Products] Init failed', e); });
-        }
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', tryInit);
-    } else {
-        tryInit();
-    }
-})();
-</script>
-<?php endif; ?>
-
-<?php
-// Load footer if standalone
-if (!$isFragment) {
-    require_once __DIR__ . '/../includes/footer.php';
-}
-?>
+<?php if (!$isFragment) require_once __DIR__ . '/../includes/footer.php'; ?>

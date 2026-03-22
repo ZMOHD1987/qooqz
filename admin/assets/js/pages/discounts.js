@@ -1,3 +1,18 @@
+/**
+ * /admin/assets/js/pages/discounts.js
+ * Discount Management — Production v3.0 (Full-Page Admin UI)
+ *
+ * ─ التغييرات ─────────────────────────────────────────────────
+ * • Config from window.DISCOUNTS_CONFIG only — no separate globals
+ * • Admin.page.register() for fragment re-navigation
+ * • dc-modal-* classes — page-specific to avoid AdminModal conflicts
+ * • dc-toast-* notifications with container
+ * • All buttons use Admin.buttons engine for DB-driven styles
+ * • Buttons use dc- prefix for page-scoped namespace
+ * • Hover effects applied from button_styles DB data
+ * • Full-page layout (no margins/padding)
+ * ─────────────────────────────────────────────────────────────
+ */
 (function(){
 'use strict';
 
@@ -26,16 +41,44 @@ function t(key, fb) {
 
 function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
+/* ── Toast Notifications (dc-toast-*) ── */
 function showNotification(msg, type) {
+    var container = document.querySelector('.dc-notifications');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'dc-notifications';
+        document.body.appendChild(container);
+    }
     var n = document.createElement('div');
-    n.className = 'notification notification-' + (type || 'info');
+    n.className = 'dc-toast dc-toast-' + (type || 'info');
     n.textContent = msg;
-    document.body.appendChild(n);
+    container.appendChild(n);
     setTimeout(function(){ n.style.opacity = '0'; setTimeout(function(){ n.remove(); }, 300); }, 3000);
 }
 
-function openModal(id) { document.getElementById(id).style.display = 'block'; }
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+/* ── Modals ── */
+function openModal(id) {
+    var el = document.getElementById(id);
+    if (el) {
+        el.style.display = 'flex';
+        var first = el.querySelector('input:not([type="hidden"]), select, textarea, button');
+        if (first) setTimeout(function(){ first.focus(); }, 50);
+    }
+}
+function closeModal(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+}
+
+// Close on ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Escape') return;
+    ['discountModal', 'translationsModal', 'scopesModal', 'conditionsModal',
+     'actionsModal', 'exclusionsModal', 'redemptionsModal'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && el.style.display !== 'none') closeModal(id);
+    });
+});
 
 function generateCode() {
     var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -115,18 +158,22 @@ function loadDiscounts(page) {
                         '<td>' + esc(item.ends_at || '-') + '</td>' +
                         '<td>' + esc(String(item.current_redemptions || item.redemptions_count || 0)) + '</td>' +
                         '<td class="actions-cell">' +
-                            '<button class="btn btn-sm btn-info btn-translations" data-id="' + item.id + '">' + t('translations.title', 'Translations') + '</button> ' +
-                            '<button class="btn btn-sm btn-secondary btn-scopes" data-id="' + item.id + '">' + t('scopes.title', 'Scopes') + '</button> ' +
-                            '<button class="btn btn-sm btn-info btn-conditions" data-id="' + item.id + '">' + t('conditions.title', 'Conditions') + '</button> ' +
-                            '<button class="btn btn-sm btn-secondary btn-actions" data-id="' + item.id + '">' + t('actions.title', 'Actions') + '</button> ' +
-                            '<button class="btn btn-sm btn-warning btn-exclusions" data-id="' + item.id + '">' + t('exclusions.title', 'Exclusions') + '</button> ' +
-                            '<button class="btn btn-sm btn-info btn-redemptions" data-id="' + item.id + '">' + t('redemptions.title', 'Redemptions') + '</button> ' +
-                            '<button class="btn btn-sm btn-primary btn-edit" data-id="' + item.id + '">' + t('edit', 'Edit') + '</button> ' +
-                            '<button class="btn btn-sm btn-danger btn-delete" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button>' +
+                            '<button class="btn btn-sm btn-icon btn-primary btn-translations" data-id="' + item.id + '" data-btn-slug="primary" title="' + t('translations.title', 'Translations') + '" aria-label="' + t('translations.title', 'Translations') + '"><i class="fas fa-language" aria-hidden="true"></i></button> ' +
+                            '<button class="btn btn-sm btn-icon btn-secondary btn-scopes" data-id="' + item.id + '" data-btn-slug="secondary" title="' + t('scopes.title', 'Scopes') + '" aria-label="' + t('scopes.title', 'Scopes') + '"><i class="fas fa-crosshairs" aria-hidden="true"></i></button> ' +
+                            '<button class="btn btn-sm btn-icon btn-primary btn-conditions" data-id="' + item.id + '" data-btn-slug="primary" title="' + t('conditions.title', 'Conditions') + '" aria-label="' + t('conditions.title', 'Conditions') + '"><i class="fas fa-filter" aria-hidden="true"></i></button> ' +
+                            '<button class="btn btn-sm btn-icon btn-secondary btn-actions" data-id="' + item.id + '" data-btn-slug="secondary" title="' + t('actions.title', 'Actions') + '" aria-label="' + t('actions.title', 'Actions') + '"><i class="fas fa-bolt" aria-hidden="true"></i></button> ' +
+                            '<button class="btn btn-sm btn-icon btn-warning btn-exclusions" data-id="' + item.id + '" data-btn-slug="warning" title="' + t('exclusions.title', 'Exclusions') + '" aria-label="' + t('exclusions.title', 'Exclusions') + '"><i class="fas fa-ban" aria-hidden="true"></i></button> ' +
+                            '<button class="btn btn-sm btn-icon btn-primary btn-redemptions" data-id="' + item.id + '" data-btn-slug="primary" title="' + t('redemptions.title', 'Redemptions') + '" aria-label="' + t('redemptions.title', 'Redemptions') + '"><i class="fas fa-receipt" aria-hidden="true"></i></button> ' +
+                            '<button class="btn btn-sm btn-icon btn-primary btn-edit" data-id="' + item.id + '" data-btn-slug="primary" title="' + t('edit', 'Edit') + '" aria-label="' + t('edit', 'Edit') + '"><i class="fas fa-edit" aria-hidden="true"></i></button> ' +
+                            '<button class="btn btn-sm btn-icon btn-danger btn-delete" data-id="' + item.id + '" data-btn-slug="danger" title="' + t('delete', 'Delete') + '" aria-label="' + t('delete', 'Delete') + '"><i class="fas fa-trash" aria-hidden="true"></i></button>' +
                         '</td>';
                     tbody.appendChild(tr);
                 });
                 renderPagination(d.data);
+                // Apply DB-driven hover effects to all dynamically created buttons
+                if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
+                    Admin.buttons.applyHoverEffects(tbody);
+                }
             } else {
                 tbody.innerHTML = '<tr><td colspan="10" class="text-center">' + t('table.no_records', 'No records found') + '</td></tr>';
                 document.getElementById('paginationInfo').textContent = '';
@@ -281,7 +328,7 @@ function openTranslationsModal(discountId) {
                         '<td>' + esc(tr_item.description || '') + '</td>' +
                         '<td>' + esc(tr_item.terms_conditions || '') + '</td>' +
                         '<td>' + esc(tr_item.marketing_badge || '') + '</td>' +
-                        '<td><button class="btn btn-sm btn-danger btn-delete-trans" data-id="' + tr_item.id + '">' + t('delete', 'Delete') + '</button></td>';
+                        '<td><button class="btn btn-sm btn-danger btn-delete-trans" data-btn-slug="danger" data-id="' + tr_item.id + '">' + t('delete', 'Delete') + '</button></td>';
                     tbody.appendChild(tr);
                 });
             }
@@ -375,7 +422,7 @@ function openScopesModal(discountId) {
                         '<td>' + esc(item.scope_type || '') + '</td>' +
                         '<td>' + esc(String(item.scope_id || '')) + '</td>' +
                         '<td class="scope-name-cell">...</td>' +
-                        '<td><button class="btn btn-sm btn-danger btn-delete-scope" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button></td>';
+                        '<td><button class="btn btn-sm btn-danger btn-delete-scope" data-btn-slug="danger" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button></td>';
                     tbody.appendChild(tr);
                     var nameCell = tr.querySelector('.scope-name-cell');
                     resolveScopeName(item.scope_type, item.scope_id, function(name){ nameCell.textContent = name; });
@@ -483,7 +530,7 @@ function openConditionsModal(discountId) {
                         '<td>' + esc(item.condition_type || '') + '</td>' +
                         '<td>' + esc(item.operator || '') + '</td>' +
                         '<td>' + esc(String(item.condition_value || item.value || '')) + '</td>' +
-                        '<td><button class="btn btn-sm btn-danger btn-delete-condition" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button></td>';
+                        '<td><button class="btn btn-sm btn-danger btn-delete-condition" data-btn-slug="danger" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button></td>';
                     tbody.appendChild(tr);
                 });
             }
@@ -551,7 +598,7 @@ function openActionsModal(discountId) {
                     tr.innerHTML =
                         '<td>' + esc(item.action_type || '') + '</td>' +
                         '<td>' + esc(String(item.action_value || '')) + '</td>' +
-                        '<td><button class="btn btn-sm btn-danger btn-delete-action" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button></td>';
+                        '<td><button class="btn btn-sm btn-danger btn-delete-action" data-btn-slug="danger" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button></td>';
                     tbody.appendChild(tr);
                 });
             }
@@ -615,7 +662,7 @@ function openExclusionsModal(discountId) {
                     var tr = document.createElement('tr');
                     tr.innerHTML =
                         '<td>' + esc(item.excluded_discount_name || String(item.excluded_discount_id || '')) + '</td>' +
-                        '<td><button class="btn btn-sm btn-danger btn-delete-exclusion" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button></td>';
+                        '<td><button class="btn btn-sm btn-danger btn-delete-exclusion" data-btn-slug="danger" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button></td>';
                     tbody.appendChild(tr);
                 });
             }
@@ -792,18 +839,18 @@ function verifyTenant() {
                 var name = tData.name || tData.domain || 'Tenant #' + tid;
                 nameEl.textContent = '✓ ' + name;
                 nameEl.style.display = 'block';
-                nameEl.style.color = 'var(--success-color,#28a745)';
+                nameEl.className = 'dc-tenant-name';
                 loadEntitiesByTenant(tid);
             } else {
                 nameEl.textContent = '✗ ' + t('tenant_not_found', 'Tenant not found');
                 nameEl.style.display = 'block';
-                nameEl.style.color = 'var(--danger-color,#dc3545)';
+                nameEl.className = 'dc-tenant-name error';
             }
         })
         .catch(function(){
             nameEl.textContent = '✗ ' + t('error', 'Error');
             nameEl.style.display = 'block';
-            nameEl.style.color = 'var(--danger-color,#dc3545)';
+            nameEl.className = 'dc-tenant-name error';
         });
 }
 
@@ -908,6 +955,11 @@ function init() {
 
     loadDiscounts(1);
 
+    // Apply DB-driven hover effects to all static buttons on the page
+    if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
+        Admin.buttons.applyHoverEffects(document.querySelector('.page-container'));
+    }
+
     // Add button
     document.getElementById('btnAddDiscount').addEventListener('click', function(){
         document.getElementById('discountForm').reset();
@@ -921,15 +973,10 @@ function init() {
         document.getElementById('discountCode').value = generateCode();
     });
 
-    // Close modals
-    document.getElementById('btnCloseModal').addEventListener('click', function(){ closeModal('discountModal'); });
-    document.getElementById('btnCancelModal').addEventListener('click', function(){ closeModal('discountModal'); });
-    document.getElementById('btnCloseTranslations').addEventListener('click', function(){ closeModal('translationsModal'); });
-    document.getElementById('btnCloseScopes').addEventListener('click', function(){ closeModal('scopesModal'); });
-    document.getElementById('btnCloseConditions').addEventListener('click', function(){ closeModal('conditionsModal'); });
-    document.getElementById('btnCloseActions').addEventListener('click', function(){ closeModal('actionsModal'); });
-    document.getElementById('btnCloseExclusions').addEventListener('click', function(){ closeModal('exclusionsModal'); });
-    document.getElementById('btnCloseRedemptions').addEventListener('click', function(){ closeModal('redemptionsModal'); });
+    // Close modals via btn-close-modal data-modal pattern
+    document.querySelectorAll('.btn-close-modal').forEach(function(btn) {
+        btn.addEventListener('click', function() { closeModal(btn.dataset.modal); });
+    });
 
     // Form submit
     document.getElementById('discountForm').addEventListener('submit', saveDiscount);
@@ -1000,7 +1047,15 @@ function init() {
     });
 }
 
-// Fragment-compatible init
+// ════════════════════════════════════════════════════════
+// REGISTER  — supports fragment navigation & direct load
+// ════════════════════════════════════════════════════════
+window.page = { run: init };
+
+if (window.Admin && window.Admin.page && window.Admin.page.register) {
+    window.Admin.page.register('discounts', init);
+}
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
 } else {
