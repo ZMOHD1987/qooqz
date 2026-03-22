@@ -57,7 +57,7 @@ function _smt(string $key, string $fallback = ''): string {
 <meta data-page="stock_movements"
       data-i18n-files="/languages/StockMovements/<?= rawurlencode($_smtLangCode) ?>.json">
 
-<div id="smPageContainer" class="page-container full-page-admin" dir="<?= $dir ?>">
+<div class="page-container full-page-admin" dir="<?= $dir ?>">
 
   <!-- Page Header -->
   <div class="page-header">
@@ -72,45 +72,48 @@ function _smt(string $key, string $fallback = ''): string {
     </div>
   </div>
 
-  <!-- Product Lookup Section -->
-  <div class="sm-lookup-section">
-    <h4><?= _smt('lookup.title', 'Product Lookup') ?></h4>
-    <div class="sm-lookup-methods">
-      <div class="sm-lookup-method">
-        <label><?= _smt('scan_barcode', 'Scan Barcode') ?></label>
-        <div class="input-group">
-          <input type="text" class="form-control" id="barcodeInput" placeholder="<?= _smt('scan_placeholder', 'Enter barcode...') ?>">
-          <button type="button" class="btn btn-sm btn-secondary" id="btnScanBarcode" data-btn-slug="secondary">
-            <i class="fas fa-barcode" aria-hidden="true"></i> <?= _smt('scan_btn', 'Scan') ?>
-          </button>
-        </div>
-      </div>
-      <div class="sm-lookup-method">
-        <label><?= _smt('lookup.sku', 'Search by SKU') ?></label>
-        <div class="input-group">
-          <input type="text" class="form-control" id="skuInput" placeholder="<?= _smt('lookup.sku_placeholder', 'Enter SKU...') ?>">
-          <button type="button" class="btn btn-sm btn-secondary" id="btnSearchSku" data-btn-slug="secondary">
-            <i class="fas fa-search" aria-hidden="true"></i> <?= _smt('lookup.search', 'Search') ?>
-          </button>
-        </div>
-      </div>
-      <div class="sm-lookup-method">
-        <label><?= _smt('lookup.camera', 'Camera Scanner') ?></label>
-        <button type="button" class="btn btn-sm btn-primary" id="btnCameraScanner" data-btn-slug="primary">
-          <i class="fas fa-camera" aria-hidden="true"></i> <?= _smt('lookup.open_camera', 'Open Camera') ?>
+  <!-- Product Lookup Strip (compact single-row, like entity-selector) -->
+  <div class="sm-lookup-strip">
+    <div class="form-group">
+      <label for="barcodeInput"><?= _smt('scan_barcode', 'Scan Barcode') ?></label>
+      <div class="input-group">
+        <input type="text" class="form-control" id="barcodeInput"
+               placeholder="<?= _smt('scan_placeholder', 'Enter barcode...') ?>">
+        <button type="button" class="btn btn-sm btn-secondary" id="btnScanBarcode"
+                data-btn-slug="secondary" title="<?= _smt('scan_btn', 'Scan') ?>" aria-label="<?= _smt('scan_btn', 'Scan') ?>">
+          <i class="fas fa-barcode" aria-hidden="true"></i>
         </button>
       </div>
     </div>
-    <small id="barcodeResult" class="sm-lookup-result" style="display:none"></small>
-    <!-- Camera Preview -->
-    <div class="sm-camera-container" id="cameraContainer" style="display:none">
-      <video id="cameraVideo" autoplay playsinline></video>
-      <canvas id="cameraCanvas" style="display:none"></canvas>
-      <div class="sm-camera-controls">
-        <button type="button" class="btn btn-sm btn-danger" id="btnStopCamera" data-btn-slug="danger">
-          <i class="fas fa-times" aria-hidden="true"></i> <?= _smt('lookup.stop_camera', 'Stop Camera') ?>
+    <div class="form-group">
+      <label for="skuInput"><?= _smt('lookup.sku', 'Search by SKU') ?></label>
+      <div class="input-group">
+        <input type="text" class="form-control" id="skuInput"
+               placeholder="<?= _smt('lookup.sku_placeholder', 'Enter SKU...') ?>">
+        <button type="button" class="btn btn-sm btn-secondary" id="btnSearchSku"
+                data-btn-slug="secondary" title="<?= _smt('lookup.search', 'Search') ?>" aria-label="<?= _smt('lookup.search', 'Search') ?>">
+          <i class="fas fa-search" aria-hidden="true"></i>
         </button>
       </div>
+    </div>
+    <div class="form-group">
+      <label>&nbsp;</label>
+      <button type="button" class="btn btn-sm btn-secondary" id="btnCameraScanner"
+              data-btn-slug="secondary" title="<?= _smt('lookup.open_camera', 'Open Camera') ?>" aria-label="<?= _smt('lookup.open_camera', 'Open Camera') ?>">
+        <i class="fas fa-camera" aria-hidden="true"></i>
+      </button>
+    </div>
+    <small id="barcodeResult" class="sm-lookup-result" style="display:none"></small>
+  </div>
+
+  <!-- Camera Preview (outside strip, below) -->
+  <div class="sm-camera-container" id="cameraContainer" style="display:none">
+    <video id="cameraVideo" autoplay playsinline></video>
+    <canvas id="cameraCanvas" style="display:none"></canvas>
+    <div class="sm-camera-controls">
+      <button type="button" class="btn btn-sm btn-danger" id="btnStopCamera" data-btn-slug="danger">
+        <i class="fas fa-times" aria-hidden="true"></i> <?= _smt('lookup.stop_camera', 'Stop Camera') ?>
+      </button>
     </div>
   </div>
 
@@ -269,7 +272,7 @@ function _smt(string $key, string $fallback = ''): string {
     </div>
   </div>
 
-</div><!-- /#smPageContainer -->
+</div><!-- /.page-container -->
 
 <script>
 window.STOCK_MOVEMENTS_CONFIG = {

@@ -411,7 +411,7 @@ function init() {
 
     // Apply DB-driven hover effects to static PHP buttons
     if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
-        Admin.buttons.applyHoverEffects(document.querySelector('#smPageContainer'));
+        Admin.buttons.applyHoverEffects(document.querySelector('.page-container'));
     }
 
     // Filter
