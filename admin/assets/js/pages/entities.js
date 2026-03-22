@@ -1480,7 +1480,7 @@
             el.mediaFrame.src = `${CONFIG.mediaStudioBase}?embedded=1&tenant_id=${state.tenantId}&lang=${state.language}&owner_id=${state.currentEntity.id}&image_type_id=${imageType}`;
 
             el.mediaFrame.dataset.imageType = imageType;
-            const first = el.mediaModal.querySelector('input:not([type="hidden"]), select, textarea, button');
+            const first = el.mediaModal.querySelector('input:not([type="hidden"]), textarea, select, button');
             if (first) setTimeout(() => first.focus(), 50);
         }
     }
