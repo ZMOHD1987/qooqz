@@ -17,6 +17,27 @@ declare(strict_types=1);
  */
 
 // ════════════════════════════════════════════════════════════
+// ASSET VERSIONING HELPER
+// ════════════════════════════════════════════════════════════
+if (!function_exists('assetVer')) {
+    /**
+     * Cache-busting: returns file mtime if path given, otherwise time()
+     */
+    function assetVer(string $path = ''): string
+    {
+        if ($path === '') {
+            return (string) time();
+        }
+        static $cache = [];
+        if (!isset($cache[$path])) {
+            $full         = $_SERVER['DOCUMENT_ROOT'] . $path;
+            $cache[$path] = file_exists($full) ? (string) filemtime($full) : '0';
+        }
+        return $cache[$path];
+    }
+}
+
+// ════════════════════════════════════════════════════════════
 // INITIALIZE ADMIN_UI FROM SESSION (ONCE)
 // ════════════════════════════════════════════════════════════
 if (!isset($GLOBALS['ADMIN_UI'])) {
