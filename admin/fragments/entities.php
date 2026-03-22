@@ -105,50 +105,14 @@ function __tr($key, $replacements = []) {
 // ════════════════════════════════════════════════════════════
 $apiBase = '/api';
 
-// Load server-side translations for initial render/config
-$_entSafeLang = preg_replace('/[^a-zA-Z0-9_-]/', '', $lang ?: 'en');
-$_entLangPath = __DIR__ . "/../../languages/Entities/{$_entSafeLang}.json";
-$_entStrings  = [];
-if (is_file($_entLangPath) && is_readable($_entLangPath)) {
-    $json = json_decode((string) file_get_contents($_entLangPath), true);
-    if (json_last_error() === JSON_ERROR_NONE && is_array($json)) {
-        $_entStrings = $json['strings'] ?? $json;
-        if (!is_array($_entStrings)) $_entStrings = [];
-    }
-}
-
-if (!function_exists('assetVer')) {
-    function assetVer(string $path): string
-    {
-        static $cache = [];
-        if (!isset($cache[$path])) {
-            $full = $_SERVER['DOCUMENT_ROOT'] . $path;
-            $cache[$path] = file_exists($full) ? (string) filemtime($full) : '0';
-        }
-        return $cache[$path];
-    }
-}
-
-if (!function_exists('ent_json_safe')) {
-    function ent_json_safe($value, int $flags = 0): string
-    {
-        $encoded = json_encode(
-            $value,
-            $flags | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
-        );
-        return ($encoded === false) ? 'null' : $encoded;
-    }
-}
-
 ?>
 <!-- Force load CSS if embedded -->
 <?php if ($isFragment): ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/entities.css?v=<?= assetVer('/admin/assets/css/pages/entities.css') ?>">
+<link rel="stylesheet" href="/admin/assets/css/pages/entities.css?v=<?= time() ?>">
 <?php endif; ?>
 
 <!-- Page Meta -->
 <meta data-page="entities"
-      data-assets-js="/admin/assets/js/pages/entities.js"
       data-i18n-files="/languages/Entities/<?= rawurlencode($lang) ?>.json">
 
 <!-- Page Container -->
@@ -174,8 +138,8 @@ if (!function_exists('ent_json_safe')) {
     <div id="entityFormContainer" class="card form-card" style="display:none">
         <div class="card-header">
             <h3 class="card-title" id="formTitle" data-i18n="form.add_title"><?= __t('form.add_title', 'Add Entity') ?></h3>
-            <button type="button" class="btn btn-secondary cancel-btn" id="btnCloseForm" aria-label="<?= __t('accessibility.close', 'Close') ?>">
-                <i class="fas fa-times" aria-hidden="true"></i>
+            <button type="button" class="btn btn-sm btn-outline" id="btnCloseForm" aria-label="<?= __t('accessibility.close', 'Close') ?>">
+                <i class="fas fa-times"></i>
             </button>
         </div>
         <div class="card-body">
@@ -716,8 +680,7 @@ if (!function_exists('ent_json_safe')) {
                         <i class="fas fa-save"></i>
                         <span data-i18n="form.buttons.save"><?= __t('form.buttons.save', 'Save') ?></span>
                     </button>
-                    <button type="button" class="btn btn-secondary cancel-btn" id="btnCancelForm" data-i18n="form.buttons.cancel">
-                        <i class="fas fa-times" aria-hidden="true"></i>
+                    <button type="button" class="btn btn-outline" id="btnCancelForm" data-i18n="form.buttons.cancel">
                         <?= __t('form.buttons.cancel', 'Cancel') ?>
                     </button>
                     <?php if ($canDelete): ?>
@@ -797,16 +760,13 @@ if (!function_exists('ent_json_safe')) {
                     </select>
                 </div>
 
-                <div class="filter-group">
-                    <label class="filter-label" aria-hidden="true">&nbsp;</label>
-                    <div class="filter-buttons">
+                <div class="filter-actions">
                     <button id="btnApplyFilters" class="btn btn-secondary" data-i18n="filters.apply">
                         <?= __t('filters.apply', 'Apply') ?>
                     </button>
                     <button id="btnResetFilters" class="btn btn-outline" data-i18n="filters.reset">
                         <?= __t('filters.reset', 'Reset') ?>
                     </button>
-                    </div>
                 </div>
             </div>
         </div>
@@ -823,12 +783,12 @@ if (!function_exists('ent_json_safe')) {
     <!-- Table -->
     <div class="card table-card">
         <div class="card-body">
-            <div id="entLoading" class="loading-state">
+            <div id="tableLoading" class="loading-state">
                 <div class="spinner"></div>
                 <p data-i18n="entities.loading"><?= __t('entities.loading', 'Loading...') ?></p>
             </div>
 
-            <div id="entTableContainer" class="table-responsive" style="display:none">
+            <div id="tableContainer" style="display:none">
                 <div class="table-responsive">
                     <table class="data-table" id="entitiesTable">
                         <thead>
@@ -861,7 +821,7 @@ if (!function_exists('ent_json_safe')) {
                 </div>
             </div>
 
-            <div id="entEmpty" class="empty-state" style="display:none">
+            <div id="emptyState" class="empty-state" style="display:none">
                 <div class="empty-icon">🏢</div>
                 <h3 data-i18n="table.empty.title">No Entities Found</h3>
                 <p data-i18n="table.empty.message">Start by adding your first entity</p>
@@ -873,89 +833,194 @@ if (!function_exists('ent_json_safe')) {
                 <?php endif; ?>
             </div>
 
-            <div id="entError" class="error-state" style="display:none">
+            <div id="errorState" class="error-state" style="display:none">
                 <div class="error-icon">⚠️</div>
                 <h3 data-i18n="messages.error.load_failed">Error Loading Data</h3>
-                <p id="entErrorMessage"></p>
-                <button id="btnRetry" class="btn btn-primary" data-i18n="entities.retry">Retry</button>
+                <p id="errorMessage"></p>
+                <button id="btnRetry" class="btn btn-secondary" data-i18n="entities.retry">Retry</button>
             </div>
         </div>
     </div>
 
     <!-- Media Studio Modal -->
-    <div id="mediaStudioModal"
-         class="ent-modal-backdrop"
-         role="dialog"
-         aria-modal="true"
-         aria-labelledby="mediaStudioTitle"
-         style="display:none">
-        <div class="ent-modal-panel ent-modal-panel--wide">
-            <div class="ent-modal-header">
-                <h3 id="mediaStudioTitle">Media Studio</h3>
-                <button type="button"
-                        class="btn-close-modal icon-btn"
-                        data-modal="mediaStudioModal"
-                        aria-label="Close">
-                    <i class="fas fa-times" aria-hidden="true"></i>
-                </button>
-            </div>
-            <div class="ent-modal-body">
-                <iframe id="mediaStudioFrame" style="width:100%; height:500px; border:none;"></iframe>
-            </div>
+    <div id="mediaStudioModal" class="modal" style="display:none">
+        <div class="modal-content">
+            <span class="close" id="mediaStudioClose">&times;</span>
+            <iframe id="mediaStudioFrame" style="width:100%; height:500px; border:none;"></iframe>
         </div>
     </div>
 
 </div>
 
+<!-- Expose client-side globals for the module -->
+<script type="text/javascript">
+window.APP_CONFIG = window.APP_CONFIG || {};
+window.APP_CONFIG.API_BASE = window.APP_CONFIG.API_BASE || '<?= $apiBase ?>';
+window.APP_CONFIG.TENANT_ID = window.APP_CONFIG.TENANT_ID || <?= $tenantId ?>;
+window.APP_CONFIG.CSRF_TOKEN = window.APP_CONFIG.CSRF_TOKEN || '<?= addslashes($csrf) ?>';
+window.APP_CONFIG.USER_ID = window.APP_CONFIG.USER_ID || <?= admin_user_id() ?>;
+
+window.USER_LANGUAGE = window.USER_LANGUAGE || '<?= addslashes($lang) ?>';
+window.USER_DIRECTION = window.USER_DIRECTION || '<?= addslashes($dir) ?>';
+window.CSRF_TOKEN = window.CSRF_TOKEN || '<?= addslashes($csrf) ?>';
+
+// Page permissions available to JS
+window.PAGE_PERMISSIONS = <?= json_encode([
+    'canCreate' => $canCreate,
+    'canEdit' => $canEdit,
+    'canDelete' => $canDelete,
+    'canViewAll' => $canViewAll,
+    'canViewOwn' => $canViewOwn,
+    'canViewTenant' => $canViewTenant,
+    'canEditAll' => $canEditAll,
+    'canEditOwn' => $canEditOwn,
+    'canDeleteAll' => $canDeleteAll,
+    'canDeleteOwn' => $canDeleteOwn,
+    'isSuperAdmin' => is_super_admin()
+], JSON_UNESCAPED_UNICODE) ?>;
+</script>
+
 <script type="text/javascript">
 window.ENTITIES_CONFIG = {
-    apiBase: <?= ent_json_safe($apiBase) ?>,
-    apiUrl: <?= ent_json_safe($apiBase . '/entities') ?>,
-    attributesApi: <?= ent_json_safe($apiBase . '/entities_attributes') ?>,
-    attributeValuesApi: <?= ent_json_safe($apiBase . '/entities_attribute_values') ?>,
-    settingsApi: <?= ent_json_safe($apiBase . '/entity_settings') ?>,
-    workingHoursApi: <?= ent_json_safe($apiBase . '/entities_working_hours') ?>,
-    languagesApi: <?= ent_json_safe($apiBase . '/languages') ?>,
-    timezonesApi: <?= ent_json_safe($apiBase . '/timezones') ?>,
-    tenantsApi: <?= ent_json_safe($apiBase . '/tenants') ?>,
-    entityTypesApi: <?= ent_json_safe($apiBase . '/entity_types') ?>,
-    addressesApi: <?= ent_json_safe($apiBase . '/addresses') ?>,
-    csrfToken: <?= ent_json_safe($csrf) ?>,
-    lang: <?= ent_json_safe($lang) ?>,
-    dir: <?= ent_json_safe($dir) ?>,
-    tenantId: <?= (int)$tenantId ?>,
-    userId: <?= (int)$userId ?>,
-    strings: <?= ent_json_safe($_entStrings) ?>,
-    canCreate: <?= ent_json_safe($canCreate) ?>,
-    canEdit: <?= ent_json_safe($canEdit) ?>,
-    canDelete: <?= ent_json_safe($canDelete) ?>,
-    isSuperAdmin: <?= ent_json_safe(is_super_admin()) ?>,
-    permissions: <?= ent_json_safe([
-        'canCreate' => $canCreate,
-        'canEdit' => $canEdit,
-        'canDelete' => $canDelete,
-        'canViewAll' => $canViewAll,
-        'canViewOwn' => $canViewOwn,
-        'canViewTenant' => $canViewTenant,
-        'canEditAll' => $canEditAll,
-        'canEditOwn' => $canEditOwn,
-        'canDeleteAll' => $canDeleteAll,
-        'canDeleteOwn' => $canDeleteOwn,
-        'isSuperAdmin' => is_super_admin()
-    ]) ?>,
+    apiUrl: '<?= $apiBase ?>/entities',
+    attributesApi: '<?= $apiBase ?>/entities_attributes',
+    attributeValuesApi: '<?= $apiBase ?>/entities_attribute_values',
+    settingsApi: '<?= $apiBase ?>/entity_settings',
+    workingHoursApi: '<?= $apiBase ?>/entities_working_hours',
+    languagesApi: '<?= $apiBase ?>/languages',
+    timezonesApi: '<?= $apiBase ?>/timezones',
+    tenantsApi: '<?= $apiBase ?>/tenants',
+    entityTypesApi: '<?= $apiBase ?>/entity_types',
+    addressesApi: '<?= $apiBase ?>/addresses',
+    csrfToken: '<?= addslashes($csrf) ?>',
+    lang: '<?= addslashes($lang) ?>',
     itemsPerPage: 25,
-    mediaStudioBase: <?= ent_json_safe('/admin/fragments/media_studio.php') ?>,
-    addressesFragment: <?= ent_json_safe('/admin/fragments/addresses.php') ?>
+    mediaStudioBase: '/admin/fragments/media_studio.php',
+    addressesFragment: '/admin/fragments/addresses.php'
 };
 </script>
 
-<script id="ENTITIES_INITIAL_PAYLOAD" type="application/json">
-<?= ent_json_safe(['items' => [], 'meta' => ['page' => 1, 'per_page' => 25, 'total' => 0]]) ?>
+<!-- Translation loader (runs early) -->
+<script type="text/javascript">
+(function(){
+    async function applyTranslations() {
+        try {
+            const lang = window.USER_LANGUAGE || 'en';
+            const url = `/languages/Entities/${encodeURIComponent(lang)}.json`;
+            console.log('[Entities] Loading translations from', url);
+            const res = await fetch(url, { credentials: 'same-origin' });
+            if (!res.ok) throw new Error('Translation fetch failed: ' + res.status);
+            const translations = await res.json();
+            window.ENTITIES_TRANSLATIONS = translations;
+            // apply translations to elements with data-i18n
+            const container = document.getElementById('entitiesPageContainer');
+            if (!container) return;
+            container.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                const txt = key.split('.').reduce((o,k) => (o && o[k] !== undefined) ? o[k] : null, translations);
+                if (txt !== null && txt !== undefined) {
+                    if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
+                        el.placeholder = txt;
+                    } else {
+                        el.textContent = txt;
+                    }
+                }
+            });
+            // placeholders
+            container.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+                const key = el.getAttribute('data-i18n-placeholder');
+                const txt = key.split('.').reduce((o,k) => (o && o[k] !== undefined) ? o[k] : null, translations);
+                if (txt !== null && txt !== undefined) el.placeholder = txt;
+            });
+            console.log('[Entities] Translations applied');
+        } catch (err) {
+            console.warn('[Entities] Translation load/apply failed:', err);
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', applyTranslations);
+    } else {
+        setTimeout(applyTranslations, 50);
+    }
+})();
 </script>
 
-<?php if ($isFragment): ?>
-<script src="/admin/assets/js/admin_framework.js?v=<?= assetVer('/admin/assets/js/admin_framework.js') ?>"></script>
-<?php endif; ?>
-<script src="/admin/assets/js/pages/entities.js?v=<?= assetVer('/admin/assets/js/pages/entities.js') ?>"></script>
+<!-- Page Permissions JSON for scripts that prefer it in DOM -->
+<script id="pagePermissions" type="application/json">
+<?= json_encode([
+    'canCreate' => $canCreate,
+    'canEdit' => $canEdit,
+    'canDelete' => $canDelete,
+    'canViewAll' => $canViewAll,
+    'canViewOwn' => $canViewOwn,
+    'canViewTenant' => $canViewTenant,
+    'canEditAll' => $canEditAll,
+    'canEditOwn' => $canEditOwn,
+    'canDeleteAll' => $canDeleteAll,
+    'canDeleteOwn' => $canDeleteOwn,
+    'isSuperAdmin' => is_super_admin()
+], JSON_UNESCAPED_UNICODE) ?>
+</script>
 
-<?php if (!$isFragment) require_once __DIR__ . '/../includes/footer.php'; ?>
+<script id="ENTITIES_INITIAL_PAYLOAD" type="application/json">
+<?= json_encode(['items' => [], 'meta' => ['page' => 1, 'per_page' => 25, 'total' => 0]]) ?>
+</script>
+
+<!-- Load AdminFramework + Page module when embedded; otherwise load normally -->
+<?php if ($isFragment): ?>
+<script src="/admin/assets/js/admin_framework.js?v=<?= time() ?>"></script>
+<script src="/admin/assets/js/pages/entities.js?v=<?= time() ?>"></script>
+
+<script>
+(function(){
+    console.log('[Entities] Embedded mode - waiting for module...');
+    var attempts = 0, maxAttempts = 50;
+    var interval = setInterval(function(){
+        attempts++;
+        if (window.Entities && typeof window.Entities.init === 'function') {
+            clearInterval(interval);
+            console.log('[Entities] Module ready - initializing (attempt ' + attempts + ')...');
+            try {
+                var maybePromise = window.Entities.init();
+                if (maybePromise && typeof maybePromise.then === 'function') {
+                    maybePromise.then(function(){
+                        console.log('[Entities] ✓ Initialized successfully');
+                    }).catch(function(e){
+                        console.error('[Entities] Init failed:', e);
+                    });
+                }
+            } catch (e) {
+                console.error('[Entities] Init threw:', e);
+            }
+        } else if (attempts > maxAttempts) {
+            clearInterval(interval);
+            console.error('[Entities] Timeout waiting for module after ' + (maxAttempts * 100) + 'ms');
+        }
+    }, 100);
+})();
+</script>
+<?php else: ?>
+<script src="/admin/assets/js/pages/entities.js?v=<?= time() ?>"></script>
+<script>
+// Standalone mode init
+(function(){
+    function tryInit() {
+        if (window.Entities && typeof window.Entities.init === 'function') {
+            window.Entities.init().catch(function(e){ console.error('[Entities] Init failed', e); });
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', tryInit);
+    } else {
+        tryInit();
+    }
+})();
+</script>
+<?php endif; ?>
+
+<?php
+// Load footer if standalone
+if (!$isFragment) {
+    require_once __DIR__ . '/../includes/footer.php';
+}
+?>
