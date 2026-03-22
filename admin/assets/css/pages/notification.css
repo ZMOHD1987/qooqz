@@ -342,24 +342,7 @@ select.form-control option {
     text-decoration: none;
 }
 
-.btn-primary {
-    background: var(--primary, #3b82f6);
-    color: #fff;
-}
-
-.btn-primary:hover {
-    background: #2563eb;
-}
-
-.btn-secondary {
-    background: var(--secondary-bg, #1e293b);
-    color: var(--text-primary, #fff);
-    border: 1px solid var(--border-color, #263044);
-}
-
-.btn-secondary:hover {
-    background: var(--hover-bg, #334155);
-}
+/* Buttons — colors come from DB button_styles via AdminUiThemeLoader */
 
 .btn-outline {
     background: transparent;
@@ -370,16 +353,6 @@ select.form-control option {
 .btn-outline:hover {
     background: var(--hover-bg, #0f1e3a);
     color: var(--text-primary, #fff);
-}
-
-.btn-danger {
-    background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
-    border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-.btn-danger:hover {
-    background: rgba(239, 68, 68, 0.3);
 }
 
 .btn-sm {
