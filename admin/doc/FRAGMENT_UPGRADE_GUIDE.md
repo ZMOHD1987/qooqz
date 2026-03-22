@@ -1,5 +1,5 @@
 # دليل توحيد ملفات الـ Fragments
-## النموذج المرجعي: `bad_words.php / .css / .js`
+## النموذج المرجعي: `entities.php/ .css / .js`
 
 ---
 
