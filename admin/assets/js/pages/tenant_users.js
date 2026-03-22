@@ -366,7 +366,7 @@
         }
 
         // Previous
-        html += `<button class="btn btn-sm btn-outline ${page === 1 ? 'disabled' : ''}" 
+        html += `<button class="btn btn-sm btn-outline ${page === 1 ? 'disabled' : ''}" data-btn-slug="outline"
                         ${page > 1 ? `onclick="TenantUsers.load(${page - 1})"` : ''}>
                     &laquo; ${t('pagination.previous', 'Previous')}
                  </button>`;
@@ -382,22 +382,22 @@
         }
 
         if (startPage > 1) {
-            html += `<button class="btn btn-sm btn-outline" onclick="TenantUsers.load(1)">1</button>`;
+            html += `<button class="btn btn-sm btn-outline" data-btn-slug="outline" onclick="TenantUsers.load(1)">1</button>`;
             if (startPage > 2) html += `<span class="page-ellipsis">...</span>`;
         }
 
         for (let i = startPage; i <= endPage; i++) {
-            html += `<button class="btn btn-sm ${i === page ? 'btn-primary' : 'btn-outline'}" 
+            html += `<button class="btn btn-sm ${i === page ? 'btn-primary' : 'btn-outline'}" data-btn-slug="${i === page ? 'primary' : 'outline'}"
                             onclick="TenantUsers.load(${i})">${i}</button>`;
         }
 
         if (endPage < pages) {
             if (endPage < pages - 1) html += `<span class="page-ellipsis">...</span>`;
-            html += `<button class="btn btn-sm btn-outline" onclick="TenantUsers.load(${pages})">${pages}</button>`;
+            html += `<button class="btn btn-sm btn-outline" data-btn-slug="outline" onclick="TenantUsers.load(${pages})">${pages}</button>`;
         }
 
         // Next
-        html += `<button class="btn btn-sm btn-outline ${page === pages ? 'disabled' : ''}" 
+        html += `<button class="btn btn-sm btn-outline ${page === pages ? 'disabled' : ''}" data-btn-slug="outline"
                         ${page < pages ? `onclick="TenantUsers.load(${page + 1})"` : ''}>
                     ${t('pagination.next', 'Next')} &raquo;
                  </button>`;
@@ -419,7 +419,7 @@
                     <div class="empty-icon">👥</div>
                     <h3>${t('table.empty.title')}</h3>
                     <p>${t('table.empty.message')}</p>
-                    ${state.permissions.canCreate ? `<button class="btn btn-primary" onclick="TenantUsers.add()">${t('table.empty.add_first')}</button>` : ''}
+                    ${state.permissions.canCreate ? `<button class="btn btn-primary" data-btn-slug="primary" onclick="TenantUsers.add()">${t('table.empty.add_first')}</button>` : ''}
                 `;
                 el.empty.style.display = 'block';
             }
@@ -468,8 +468,8 @@
                     </td>
                     <td>
                         <div class="table-actions">
-                            ${state.permissions.canEdit ? `<button class="btn btn-sm btn-outline" onclick="TenantUsers.edit(${item.id})">${t('table.actions.edit')}</button>` : ''}
-                            ${state.permissions.canDelete ? `<button class="btn btn-sm btn-danger" onclick="TenantUsers.remove(${item.id})">${t('table.actions.delete')}</button>` : ''}
+                            ${state.permissions.canEdit ? `<button class="btn btn-sm btn-outline" data-btn-slug="outline" onclick="TenantUsers.edit(${item.id})">${t('table.actions.edit')}</button>` : ''}
+                            ${state.permissions.canDelete ? `<button class="btn btn-sm btn-danger" data-btn-slug="danger" onclick="TenantUsers.remove(${item.id})">${t('table.actions.delete')}</button>` : ''}
                         </div>
                     </td>
                 </tr>
@@ -480,6 +480,12 @@
         if (el.container) el.container.style.display = 'block';
         if (el.empty) el.empty.style.display = 'none';
         if (el.error) el.error.style.display = 'none';
+
+        // Apply DB-driven button hover effects to newly rendered buttons
+        if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
+            Admin.buttons.applyHoverEffects(el.tbody);
+        }
+
         console.log('[TenantUsers] Table rendered successfully!');
     }
 
@@ -966,7 +972,7 @@
             if (el.container) el.container.style.display = 'none';
             if (el.empty) el.empty.style.display = 'none';
             if (el.error) {
-                el.error.innerHTML = `<div class="error-icon">⚠️</div><h3>${t('messages.error.load_failed')}</h3><p id="errorMessage">${err.message}</p><button id="btnRetry" class="btn btn-secondary">${t('tenant_users.retry')}</button>`;
+                el.error.innerHTML = `<div class="error-icon">⚠️</div><h3>${t('messages.error.load_failed')}</h3><p id="errorMessage">${err.message}</p><button id="btnRetry" class="btn btn-secondary" data-btn-slug="secondary">${t('tenant_users.retry')}</button>`;
                 el.error.style.display = 'block';
             }
             if (el.tbody) el.tbody.innerHTML = '';
@@ -1079,6 +1085,11 @@
         if (el.btnReset) el.btnReset.onclick = resetFilters;
         if (el.btnExport) el.btnExport.onclick = exportToExcel;
         if (el.btnRetry) el.btnRetry.onclick = () => load(state.page);
+
+        // Apply DB-driven button hover effects to static page buttons
+        if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
+            Admin.buttons.applyHoverEffects(document.querySelector('.page-container') || document.getElementById('tenantUsersPageContainer'));
+        }
 
         // Load initial data
         load();
