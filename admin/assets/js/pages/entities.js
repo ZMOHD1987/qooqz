@@ -11,7 +11,8 @@
     // CONFIGURATION & STATE
     // ════════════════════════════════════════════════════════════
     const CONFIG = window.ENTITIES_CONFIG || {};
-    const PERMS = CONFIG.permissions || window.PAGE_PERMISSIONS || {};
+    const AF = window.AdminFramework || {};
+    const PERMS = window.PAGE_PERMISSIONS || {};
 
     const API = {
         entities: CONFIG.apiUrl || '/api/entities',
@@ -46,11 +47,11 @@
         addressData: null,
         deletedTranslationIds: [],
         permissions: PERMS,
-        language: CONFIG.lang || window.USER_LANGUAGE || 'en',
-        direction: CONFIG.dir || window.USER_DIRECTION || 'ltr',
-        csrfToken: CONFIG.csrfToken || window.CSRF_TOKEN || '',
-        tenantId: Number(CONFIG.tenantId || window.APP_CONFIG?.TENANT_ID || 1),
-        userId: Number(CONFIG.userId || window.APP_CONFIG?.USER_ID || 0) || null
+        language: window.USER_LANGUAGE || CONFIG.lang || 'en',
+        direction: window.USER_DIRECTION || 'ltr',
+        csrfToken: window.CSRF_TOKEN || CONFIG.csrfToken || '',
+        tenantId: window.APP_CONFIG?.TENANT_ID || 1,
+        userId: window.APP_CONFIG?.USER_ID || null
     };
 
     let el = {}; // DOM elements cache
@@ -58,7 +59,6 @@
     let _messageListenerAdded = false; // prevent duplicate message listeners
     let _addressMessageListenerAdded = false; // prevent duplicate address message listeners
     let _currentImageType = null; // track current image type for media studio
-    let _escListenerAdded = false;
 
     // Days of week configuration
     const DAYS_OF_WEEK = [
@@ -649,8 +649,8 @@
                     <td>${verifiedBadge}</td>
                     <td>
                         <div class="table-actions">
-                            ${canEdit ? `<button class="btn btn-sm btn-primary edit-btn" data-id="${entity.id}" onclick="Entities.edit(${entity.id})" title="${t('table.actions.edit', 'Edit')}">
-                                <i class="fas fa-edit" aria-hidden="true"></i>
+                            ${canEdit ? `<button class="btn btn-sm btn-secondary" onclick="Entities.edit(${entity.id})" title="${t('table.actions.edit', 'Edit')}">
+                                <i class="fas fa-edit"></i>
                             </button>` : ''}
                             ${canDelete ? `<button class="btn btn-sm btn-danger" onclick="Entities.remove(${entity.id})" title="${t('table.actions.delete', 'Delete')}">
                                 <i class="fas fa-trash"></i>
@@ -1480,8 +1480,6 @@
             el.mediaFrame.src = `${CONFIG.mediaStudioBase}?embedded=1&tenant_id=${state.tenantId}&lang=${state.language}&owner_id=${state.currentEntity.id}&image_type_id=${imageType}`;
 
             el.mediaFrame.dataset.imageType = imageType;
-            const first = el.mediaModal.querySelector('input:not([type="hidden"]), textarea, select, button');
-            if (first) setTimeout(() => first.focus(), 50);
         }
     }
 
@@ -2095,65 +2093,57 @@
     // ════════════════════════════════════════════════════════════
     // UI STATE HELPERS
     // ════════════════════════════════════════════════════════════
-    function showState(nextState, errorMsg = '') {
-        const { loading, empty, error, container } = el;
-        [loading, empty, error, container].forEach((node) => {
-            if (node) node.style.display = 'none';
-        });
-
-        switch (nextState) {
-            case 'loading':
-                if (loading) loading.style.display = 'flex';
-                break;
-            case 'empty':
-                if (empty) empty.style.display = 'flex';
-                break;
-            case 'error':
-                if (error) error.style.display = 'flex';
-                if (errorMsg && el.errorMessage) el.errorMessage.textContent = errorMsg;
-                break;
-            default:
-                if (container) container.style.display = 'block';
-                break;
+    function showLoading() {
+        if (el.loading) {
+            el.loading.innerHTML = `<div class="spinner"></div><p>${t('entities.loading', 'Loading...')}</p>`;
+            el.loading.style.display = 'flex';
         }
+        if (el.container) el.container.style.display = 'none';
+        if (el.empty) el.empty.style.display = 'none';
+        if (el.error) el.error.style.display = 'none';
     }
 
-    function showLoading() { showState('loading'); }
-    function showTable()   { showState('table'); }
+    function showTable() {
+        if (el.loading) el.loading.style.display = 'none';
+        if (el.container) el.container.style.display = 'block';
+        if (el.empty) el.empty.style.display = 'none';
+        if (el.error) el.error.style.display = 'none';
+    }
+
     function showEmpty() {
-        showState('empty');
+        if (el.loading) el.loading.style.display = 'none';
+        if (el.container) el.container.style.display = 'none';
+        if (el.error) el.error.style.display = 'none';
+        if (el.empty) {
+            el.empty.innerHTML = `
+                <div class="empty-icon">🏢</div>
+                <h3>${t('table.empty.title', 'No Entities Found')}</h3>
+                <p>${t('table.empty.message', 'Start by adding your first entity')}</p>
+                ${state.permissions.canCreate ? `<button class="btn btn-primary" onclick="Entities.add()">
+                    <i class="fas fa-plus"></i> ${t('table.empty.add_first', 'Add First Entity')}
+                </button>` : ''}
+            `;
+            el.empty.style.display = 'flex';
+        }
         if (el.tbody) el.tbody.innerHTML = '';
     }
-    function showError(message) { showState('error', message); }
+
+    function showError(message) {
+        if (el.loading) el.loading.style.display = 'none';
+        if (el.container) el.container.style.display = 'none';
+        if (el.empty) el.empty.style.display = 'none';
+        if (el.error) {
+            if (el.errorMessage) el.errorMessage.textContent = message;
+            el.error.style.display = 'flex';
+        }
+    }
 
     function showNotification(message, type = 'info') {
-        let container = document.getElementById('entNotifications');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'entNotifications';
-            container.className = 'ent-notifications';
-            const page = document.getElementById('entitiesPageContainer');
-            (page || document.body).insertBefore(container, (page || document.body).firstChild);
+        if (AF.notify) {
+            AF.notify(message, type);
+        } else {
+            alert(message);
         }
-
-        const toast = document.createElement('div');
-        toast.className = `ent-toast ent-toast-${type}`;
-        toast.setAttribute('role', 'alert');
-        toast.setAttribute('aria-live', 'assertive');
-
-        const msg = document.createElement('span');
-        msg.textContent = message;
-        toast.appendChild(msg);
-
-        const close = document.createElement('button');
-        close.className = 'ent-toast-close';
-        close.setAttribute('aria-label', 'Close');
-        close.textContent = '\u00d7';
-        close.addEventListener('click', () => toast.remove());
-        toast.appendChild(close);
-
-        container.appendChild(toast);
-        setTimeout(() => toast && toast.remove && toast.remove(), 4500);
     }
 
     // ════════════════════════════════════════════════════════════
@@ -2176,11 +2166,11 @@
 
         el = {
             // Containers
-            container: $id('entTableContainer'),
-            loading: $id('entLoading'),
-            empty: $id('entEmpty'),
-            error: $id('entError'),
-            errorMessage: $id('entErrorMessage'),
+            container: $id('tableContainer'),
+            loading: $id('tableLoading'),
+            empty: $id('emptyState'),
+            error: $id('errorState'),
+            errorMessage: $id('errorMessage'),
 
             // Form
             formContainer: $id('entityFormContainer'),
@@ -2245,6 +2235,8 @@
             // Media
             mediaModal: $id('mediaStudioModal'),
             mediaFrame: $id('mediaStudioFrame'),
+            mediaClose: $id('mediaStudioClose'),
+
             // Address
             addressEmbeddedContainer: $id('addressEmbeddedContainer'),
 
@@ -2349,19 +2341,7 @@
         });
 
         // Media Studio close
-        document.querySelectorAll('.btn-close-modal').forEach((btn) => {
-            btn.onclick = () => closeMediaStudio();
-        });
-
-        if (!_escListenerAdded) {
-            _escListenerAdded = true;
-            document.addEventListener('keydown', (e) => {
-                if (e.key !== 'Escape') return;
-                if (el.mediaModal && el.mediaModal.style.display !== 'none') {
-                    closeMediaStudio();
-                }
-            });
-        }
+        if (el.mediaClose) el.mediaClose.onclick = closeMediaStudio;
 
         // Translations
         if (el.entityAddLangBtn) el.entityAddLangBtn.onclick = addTranslation;
@@ -2428,16 +2408,22 @@
         deleteImage: deleteEntityImage
     };
 
+    // Fragment support
     window.page = { run: init };
-    if (window.Admin?.page?.register) {
-        window.Admin.page.register('entities', init);
-    }
 
+    // Auto-init
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.AdminFramework && !window.page.__fragment_init) {
+                init().catch(function (e) { console.error('[Entities] Auto-init failed:', e); });
+            }
+        });
     } else {
-        init();
+        if (window.AdminFramework && !window.page.__fragment_init) {
+            init().catch(function (e) { console.error('[Entities] Auto-init failed:', e); });
+        }
     }
+    window.page.__fragment_init = false;
 
     console.log('[Entities] Module loaded');
 
