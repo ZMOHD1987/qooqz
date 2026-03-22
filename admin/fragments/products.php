@@ -1,65 +1,37 @@
 <?php
 declare(strict_types=1);
 
-/**
- * /admin/fragments/products.php
- * Production Version - Complete Rewrite based on Categories Pattern
- * 
- * ✅ Uses new permission system (role-based + resource-based)
- * ✅ Compatible with tenant_users table
- * ✅ Full multi-language translation support
- * ✅ Advanced product management (variants, attributes, images, categories, pricing)
- * ✅ Production-ready with all APIs integrated
- */
-
-// ════════════════════════════════════════════════════════════
-// DETECT REQUEST TYPE
-// ════════════════════════════════════════════════════════════
 $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
           strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 $isEmbedded = isset($_GET['embedded']) || isset($_POST['embedded']);
 $isFragment = $isAjax || $isEmbedded;
 
-// ════════════════════════════════════════════════════════════
-// LOAD CONTEXT / HEADER
-// ════════════════════════════════════════════════════════════
 if ($isFragment) {
     require_once __DIR__ . '/../includes/admin_context.php';
 } else {
     require_once __DIR__ . '/../includes/header.php';
 }
 
-// ════════════════════════════════════════════════════════════
-// VERIFY USER IS LOGGED IN
-// ════════════════════════════════════════════════════════════
 if (!is_admin_logged_in()) {
     if ($isFragment) {
         http_response_code(401);
+        header('Content-Type: application/json');
         echo json_encode(['error' => 'Not authenticated']);
         exit;
-    } else {
-        header('Location: /admin/login.php');
-        exit;
     }
+    header('Location: /admin/login.php');
+    exit;
 }
 
-// ════════════════════════════════════════════════════════════
-// GET USER CONTEXT & PERMISSIONS
-// ════════════════════════════════════════════════════════════
 $user = admin_user();
+$isSuperAdmin = is_super_admin();
 $lang = admin_lang();
-$dir = admin_dir();
+$dir = in_array($lang, ['ar', 'he', 'fa', 'ur'], true) ? 'rtl' : 'ltr';
 $csrf = admin_csrf();
 $tenantId = admin_tenant_id();
+$userId = admin_user_id();
 
-// ════════════════════════════════════════════════════════════
-// CHECK PERMISSIONS
-// ════════════════════════════════════════════════════════════
-
-// Method 1: Using role-based permissions
 $canManageProducts = can('products.manage') || can('products.create');
-
-// Method 2: Using resource-based permissions (recommended for granular control)
 $canViewAll = can_view_all('products');
 $canViewOwn = can_view_own('products');
 $canViewTenant = can_view_tenant('products');
@@ -75,60 +47,62 @@ $canEdit = $canEditAll || $canEditOwn || $canManageProducts;
 $canDelete = $canDeleteAll || $canDeleteOwn || $canManageProducts;
 $canDuplicate = $canCreate;
 
-// If user has no view permission at all, deny access
-if (!$canView && !is_super_admin()) {
+if (!$canView && !$isSuperAdmin) {
     if ($isFragment) {
         http_response_code(403);
+        header('Content-Type: application/json');
         echo json_encode(['error' => 'Access denied']);
         exit;
-    } else {
-        http_response_code(403);
-        die('Access denied: You do not have permission to view products');
     }
+    http_response_code(403);
+    exit('Access denied');
 }
 
-// ════════════════════════════════════════════════════════════
-// TRANSLATION HELPERS
-// ════════════════════════════════════════════════════════════
-function __t($key, $fallback = '') {
-    if (function_exists('i18n_get')) {
-        $v = i18n_get($key);
-        return $v ?? ($fallback ?? $key);
-    }
-    return $fallback ?? $key;
-}
-
-function __tr($key, $replacements = []) {
-    $text = __t($key, $key);
-    foreach ($replacements as $ph => $val) {
-        $text = str_replace("{" . $ph . "}", (string)$val, $text);
-    }
-    return $text;
-}
-
-// ════════════════════════════════════════════════════════════
-// API BASE
-// ════════════════════════════════════════════════════════════
 $apiBase = '/api';
 
-?>
-<!-- Structural layout CSS (uses only var() for all visual properties)
-     Button/card/color CSS comes from AdminUiThemeLoader::generateCss()
-     injected by header.php via <style id="dynamic-theme-db">. -->
-<?php
-if (!function_exists('prodAssetVer')) {
-    function prodAssetVer(string $path): string {
-        $full = $_SERVER['DOCUMENT_ROOT'] . $path;
-        return file_exists($full) ? (string)filemtime($full) : '1';
+$_prdStrings = [];
+$_prdAllowedLangs = ['ar','en','fr','tr','ur','de','es','fa','he','hi','zh','ja','ko','pt','ru','it','nl'];
+$_prdSafeLang = in_array($lang, $_prdAllowedLangs, true) ? $lang : 'en';
+$_prdLangFile = __DIR__ . '/../../languages/Product/' . $_prdSafeLang . '.json';
+if (file_exists($_prdLangFile)) {
+    $_prdJson = json_decode(file_get_contents($_prdLangFile), true);
+    if (isset($_prdJson['strings']) && is_array($_prdJson['strings'])) {
+        $_prdStrings = $_prdJson['strings'];
+    }
+}
+
+function _prd(string $key, string $fallback = ''): string
+{
+    global $_prdStrings;
+    $parts = explode('.', $key);
+    $val   = $_prdStrings;
+    foreach ($parts as $k) {
+        if (is_array($val) && array_key_exists($k, $val)) {
+            $val = $val[$k];
+        } else {
+            return $fallback !== '' ? $fallback : $key;
+        }
+    }
+    return is_string($val) ? $val : ($fallback !== '' ? $fallback : $key);
+}
+
+if (!function_exists('assetVer')) {
+    function assetVer(string $path): string
+    {
+        static $cache = [];
+        if (!isset($cache[$path])) {
+            $full = $_SERVER['DOCUMENT_ROOT'] . $path;
+            $cache[$path] = file_exists($full) ? (string) filemtime($full) : '0';
+        }
+        return $cache[$path];
     }
 }
 ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/products.css?v=<?= prodAssetVer('/admin/assets/css/pages/products.css') ?>">
+<link rel="stylesheet" href="/admin/assets/css/pages/products.css?v=<?= assetVer('/admin/assets/css/pages/products.css') ?>">
 
-<!-- Page Meta -->
 <meta data-page="products"
-      data-assets-css="/admin/assets/css/pages/products.css"
-      data-i18n-files="/languages/Product/<?= rawurlencode($lang) ?>.json">
+      data-assets-js="/admin/assets/js/pages/products.js"
+      data-i18n-files="/languages/Product/<?= rawurlencode($_prdSafeLang) ?>.json">
 
 <!-- Page Container -->
 <div class="page-container" id="productsPageContainer" dir="<?= htmlspecialchars($dir) ?>">
@@ -136,18 +110,18 @@ if (!function_exists('prodAssetVer')) {
     <!-- Page Header -->
     <div class="page-header">
         <div class="page-header-content">
-            <h1 class="page-title" data-i18n="products.title"><?= __t('products.title', 'Products') ?></h1>
-            <p class="page-subtitle" data-i18n="products.subtitle"><?= __t('products.subtitle', 'Manage your product catalog') ?></p>
+            <h1 class="page-title" data-i18n="products.title"><?= _prd('products.title', 'Products') ?></h1>
+            <p class="page-subtitle" data-i18n="products.subtitle"><?= _prd('products.subtitle', 'Manage your product catalog') ?></p>
         </div>
         <div class="page-header-actions">
             <?php if ($canCreate): ?>
             <button id="btnImportCsv" class="btn btn-secondary">
                 <i class="fas fa-file-csv"></i>
-                <span data-i18n="csv.import_button"><?= __t('csv.import_button', 'Import CSV') ?></span>
+                <span data-i18n="csv.import_button"><?= _prd('csv.import_button', 'Import CSV') ?></span>
             </button>
             <button id="btnAddProduct" class="btn btn-primary">
                 <i class="fas fa-plus"></i>
-                <span data-i18n="products.add_new"><?= __t('products.add_new', 'Add Product') ?></span>
+                <span data-i18n="products.add_new"><?= _prd('products.add_new', 'Add Product') ?></span>
             </button>
             <?php endif; ?>
         </div>
@@ -156,9 +130,9 @@ if (!function_exists('prodAssetVer')) {
     <!-- Form Container -->
     <div id="productFormContainer" class="card form-card" style="display:none">
         <div class="card-header">
-            <h3 class="card-title" id="formTitle" data-i18n="form.add_title"><?= __t('form.add_title', 'Add Product') ?></h3>
-            <button type="button" class="btn btn-sm btn-outline" id="btnCloseForm" aria-label="<?= __t('accessibility.close', 'Close') ?>">
-                <i class="fas fa-times"></i>
+            <h3 class="card-title" id="formTitle" data-i18n="form.add_title"><?= _prd('form.add_title', 'Add Product') ?></h3>
+            <button type="button" class="btn btn-secondary cancel-btn" id="btnCloseForm" aria-label="<?= _prd('accessibility.close', 'Close') ?>">
+                <i class="fas fa-times" aria-hidden="true"></i>
             </button>
         </div>
         <div class="card-body">
@@ -167,6 +141,7 @@ if (!function_exists('prodAssetVer')) {
                 <input type="hidden" id="formId" name="id">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
                 <input type="hidden" id="prodTenantId" name="tenant_id" value="<?= $tenantId ?>">
+                <input type="hidden" id="prodName" name="name" value=""><!-- synced from enProdName in products.js -->
                 <input type="hidden" id="prodTranslationsData" name="translations_data">
                 <input type="hidden" id="prodAttributesData" name="attributes_data">
                 <input type="hidden" id="prodVariantsData" name="variants_data">
@@ -176,27 +151,27 @@ if (!function_exists('prodAssetVer')) {
                 <div class="form-tabs">
                     <button type="button" class="tab-btn active" data-tab="general">
                         <i class="fas fa-info-circle"></i>
-                        <span data-i18n="tabs.general"><?= __t('tabs.general', 'General') ?></span>
+                        <span data-i18n="tabs.general"><?= _prd('tabs.general', 'General') ?></span>
                     </button>
                     <button type="button" class="tab-btn" data-tab="physical">
                         <i class="fas fa-ruler-combined"></i>
-                        <span data-i18n="tabs.physical"><?= __t('tabs.physical', 'Physical Attributes') ?></span>
+                        <span data-i18n="tabs.physical"><?= _prd('tabs.physical', 'Physical Attributes') ?></span>
                     </button>
                     <button type="button" class="tab-btn" data-tab="attributes">
                         <i class="fas fa-list-alt"></i>
-                        <span data-i18n="tabs.attributes"><?= __t('tabs.attributes', 'Attributes') ?></span>
+                        <span data-i18n="tabs.attributes"><?= _prd('tabs.attributes', 'Attributes') ?></span>
                     </button>
                     <button type="button" class="tab-btn" data-tab="variants">
                         <i class="fas fa-layer-group"></i>
-                        <span data-i18n="tabs.variants"><?= __t('tabs.variants', 'Variants') ?></span>
+                        <span data-i18n="tabs.variants"><?= _prd('tabs.variants', 'Variants') ?></span>
                     </button>
                     <button type="button" class="tab-btn" data-tab="images">
                         <i class="fas fa-images"></i>
-                        <span data-i18n="tabs.images"><?= __t('tabs.images', 'Images') ?></span>
+                        <span data-i18n="tabs.images"><?= _prd('tabs.images', 'Images') ?></span>
                     </button>
                     <button type="button" class="tab-btn" data-tab="translations">
                         <i class="fas fa-language"></i>
-                        <span data-i18n="tabs.translations"><?= __t('tabs.translations', 'Translations') ?></span>
+                        <span data-i18n="tabs.translations"><?= _prd('tabs.translations', 'Translations') ?></span>
                     </button>
                 </div>
 
@@ -205,38 +180,38 @@ if (!function_exists('prodAssetVer')) {
                     <div class="form-row">
                         <div class="form-group">
                             <label for="prodSku" data-i18n="form.fields.sku.label">
-                                <?= __t('form.fields.sku.label', 'SKU') ?>
+                                <?= _prd('form.fields.sku.label', 'SKU') ?>
                             </label>
                             <input type="text" id="prodSku" name="sku" class="form-control"
                                    data-i18n-placeholder="form.fields.sku.placeholder"
-                                   placeholder="<?= __t('form.fields.sku.placeholder', 'Auto-generated if empty') ?>">
+                                   placeholder="<?= _prd('form.fields.sku.placeholder', 'Auto-generated if empty') ?>">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label for="prodSlug" data-i18n="form.fields.slug.label">
-                                <?= __t('form.fields.slug.label', 'Slug') ?>
+                                <?= _prd('form.fields.slug.label', 'Slug') ?>
                             </label>
                             <input type="text" id="prodSlug" name="slug" class="form-control"
                                    data-i18n-placeholder="form.fields.slug.placeholder"
-                                   placeholder="<?= __t('form.fields.slug.placeholder', 'product-slug') ?>">
+                                   placeholder="<?= _prd('form.fields.slug.placeholder', 'product-slug') ?>">
                         </div>
 
                         <div class="form-group">
                             <label for="prodBarcode" data-i18n="form.fields.barcode.label">
-                                <?= __t('form.fields.barcode.label', 'Barcode') ?>
+                                <?= _prd('form.fields.barcode.label', 'Barcode') ?>
                             </label>
                             <input type="text" id="prodBarcode" name="barcode" class="form-control"
                                    data-i18n-placeholder="form.fields.barcode.placeholder"
-                                   placeholder="<?= __t('form.fields.barcode.placeholder', 'Enter barcode') ?>">
+                                   placeholder="<?= _prd('form.fields.barcode.placeholder', 'Enter barcode') ?>">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label for="prodType" data-i18n="form.fields.product_type.label">
-                                <?= __t('form.fields.product_type.label', 'Product Type') ?>
+                                <?= _prd('form.fields.product_type.label', 'Product Type') ?>
                             </label>
                             <select id="prodType" name="product_type_id" class="form-control">
                                 <option value="">Loading...</option>
@@ -245,7 +220,7 @@ if (!function_exists('prodAssetVer')) {
 
                         <div class="form-group">
                             <label for="prodBrand" data-i18n="form.fields.brand.label">
-                                <?= __t('form.fields.brand.label', 'Brand') ?>
+                                <?= _prd('form.fields.brand.label', 'Brand') ?>
                             </label>
                             <select id="prodBrand" name="brand_id" class="form-control">
                                 <option value="">Loading...</option>
@@ -256,35 +231,35 @@ if (!function_exists('prodAssetVer')) {
                     <div class="form-row">
                         <div class="form-group">
                             <label for="prodIsActive" data-i18n="form.fields.status.label">
-                                <?= __t('form.fields.status.label', 'Status') ?>
+                                <?= _prd('form.fields.status.label', 'Status') ?>
                             </label>
                             <select id="prodIsActive" name="is_active" class="form-control">
                                 <option value="1" data-i18n="form.fields.status.active">
-                                    <?= __t('form.fields.status.active', 'Active') ?>
+                                    <?= _prd('form.fields.status.active', 'Active') ?>
                                 </option>
                                 <option value="0" data-i18n="form.fields.status.inactive">
-                                    <?= __t('form.fields.status.inactive', 'Inactive') ?>
+                                    <?= _prd('form.fields.status.inactive', 'Inactive') ?>
                                 </option>
                             </select>
                         </div>
 
                         <div class="form-group">
                             <label for="prodIsFeatured" data-i18n="form.fields.featured.label">
-                                <?= __t('form.fields.featured.label', 'Featured') ?>
+                                <?= _prd('form.fields.featured.label', 'Featured') ?>
                             </label>
                             <select id="prodIsFeatured" name="is_featured" class="form-control">
                                 <option value="0" data-i18n="form.fields.featured.no">
-                                    <?= __t('form.fields.featured.no', 'No') ?>
+                                    <?= _prd('form.fields.featured.no', 'No') ?>
                                 </option>
                                 <option value="1" data-i18n="form.fields.featured.yes">
-                                    <?= __t('form.fields.featured.yes', 'Yes') ?>
+                                    <?= _prd('form.fields.featured.yes', 'Yes') ?>
                                 </option>
                             </select>
                         </div>
 
                         <div class="form-group">
                             <label for="prodIsBestseller" data-i18n="form.fields.bestseller.label">
-                                <?= __t('form.fields.bestseller.label', 'Bestseller') ?>
+                                <?= _prd('form.fields.bestseller.label', 'Bestseller') ?>
                             </label>
                             <select id="prodIsBestseller" name="is_bestseller" class="form-control">
                                 <option value="0" data-i18n="form.fields.bestseller.no">No</option>
@@ -294,7 +269,7 @@ if (!function_exists('prodAssetVer')) {
 
                         <div class="form-group">
                             <label for="prodIsNew" data-i18n="form.fields.new.label">
-                                <?= __t('form.fields.new.label', 'New') ?>
+                                <?= _prd('form.fields.new.label', 'New') ?>
                             </label>
                             <select id="prodIsNew" name="is_new" class="form-control">
                                 <option value="0" data-i18n="form.fields.new.no">No</option>
@@ -374,26 +349,26 @@ if (!function_exists('prodAssetVer')) {
                     <!-- Pricing (merged into General)                   -->
                     <!-- ═══════════════════════════════════════════════ -->
                     <h4 class="section-heading" data-i18n="tabs.pricing">
-                        <i class="fas fa-tag"></i> <?= __t('tabs.pricing', 'Pricing') ?>
+                        <i class="fas fa-tag"></i> <?= _prd('tabs.pricing', 'Pricing') ?>
                     </h4>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="prodPrice" data-i18n="form.fields.price.label">
-                                <?= __t('form.fields.price.label', 'Price') ?>
+                                <?= _prd('form.fields.price.label', 'Price') ?>
                             </label>
                             <input type="number" id="prodPrice" name="price" class="form-control" step="0.01" min="0">
                         </div>
 
                         <div class="form-group">
                             <label for="prodComparePrice" data-i18n="form.fields.compare_price.label">
-                                <?= __t('form.fields.compare_price.label', 'Compare at Price') ?>
+                                <?= _prd('form.fields.compare_price.label', 'Compare at Price') ?>
                             </label>
                             <input type="number" id="prodComparePrice" name="compare_at_price" class="form-control" step="0.01" min="0">
                         </div>
 
                         <div class="form-group">
                             <label for="prodCostPrice" data-i18n="form.fields.cost_price.label">
-                                <?= __t('form.fields.cost_price.label', 'Cost Price') ?>
+                                <?= _prd('form.fields.cost_price.label', 'Cost Price') ?>
                             </label>
                             <input type="number" id="prodCostPrice" name="cost_price" class="form-control" step="0.01" min="0">
                         </div>
@@ -402,16 +377,16 @@ if (!function_exists('prodAssetVer')) {
                     <div class="form-row">
                         <div class="form-group">
                             <label for="prodCurrency" data-i18n="form.fields.currency.label">
-                                <?= __t('form.fields.currency.label', 'Currency') ?>
+                                <?= _prd('form.fields.currency.label', 'Currency') ?>
                             </label>
                             <select id="prodCurrency" name="currency_code" class="form-control">
-                                <option value=""><?= __t('form.fields.currency.select', 'Select currency') ?></option>
+                                <option value=""><?= _prd('form.fields.currency.select', 'Select currency') ?></option>
                             </select>
                         </div>
 
                         <div class="form-group">
                             <label for="prodTaxRate" data-i18n="form.fields.tax_rate.label">
-                                <?= __t('form.fields.tax_rate.label', 'Tax Rate %') ?>
+                                <?= _prd('form.fields.tax_rate.label', 'Tax Rate %') ?>
                             </label>
                             <input type="number" id="prodTaxRate" name="tax_rate" class="form-control" step="0.01" min="0">
                         </div>
@@ -421,31 +396,31 @@ if (!function_exists('prodAssetVer')) {
                     <!-- Stock / Inventory (merged into General)         -->
                     <!-- ═══════════════════════════════════════════════ -->
                     <h4 class="section-heading" data-i18n="tabs.inventory">
-                        <i class="fas fa-boxes"></i> <?= __t('tabs.inventory', 'Inventory') ?>
+                        <i class="fas fa-boxes"></i> <?= _prd('tabs.inventory', 'Inventory') ?>
                     </h4>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="prodStockQty" data-i18n="form.fields.stock_quantity.label">
-                                <?= __t('form.fields.stock_quantity.label', 'Stock Quantity') ?>
+                                <?= _prd('form.fields.stock_quantity.label', 'Stock Quantity') ?>
                             </label>
                             <input type="number" id="prodStockQty" name="stock_quantity" class="form-control" value="0" min="0">
                         </div>
 
                         <div class="form-group">
                             <label for="prodLowStock" data-i18n="form.fields.low_stock_threshold.label">
-                                <?= __t('form.fields.low_stock_threshold.label', 'Low Stock Threshold') ?>
+                                <?= _prd('form.fields.low_stock_threshold.label', 'Low Stock Threshold') ?>
                             </label>
                             <input type="number" id="prodLowStock" name="low_stock_threshold" class="form-control" value="5" min="0">
                         </div>
 
                         <div class="form-group">
                             <label for="prodStockStatus" data-i18n="form.fields.stock_status.label">
-                                <?= __t('form.fields.stock_status.label', 'Stock Status') ?>
+                                <?= _prd('form.fields.stock_status.label', 'Stock Status') ?>
                             </label>
                             <select id="prodStockStatus" name="stock_status" class="form-control">
-                                <option value="in_stock" data-i18n="form.fields.stock_status.in_stock"><?= __t('form.fields.stock_status.in_stock', 'In Stock') ?></option>
-                                <option value="out_of_stock" data-i18n="form.fields.stock_status.out_of_stock"><?= __t('form.fields.stock_status.out_of_stock', 'Out of Stock') ?></option>
-                                <option value="on_backorder" data-i18n="form.fields.stock_status.on_backorder"><?= __t('form.fields.stock_status.on_backorder', 'On Backorder') ?></option>
+                                <option value="in_stock" data-i18n="form.fields.stock_status.in_stock"><?= _prd('form.fields.stock_status.in_stock', 'In Stock') ?></option>
+                                <option value="out_of_stock" data-i18n="form.fields.stock_status.out_of_stock"><?= _prd('form.fields.stock_status.out_of_stock', 'Out of Stock') ?></option>
+                                <option value="on_backorder" data-i18n="form.fields.stock_status.on_backorder"><?= _prd('form.fields.stock_status.on_backorder', 'On Backorder') ?></option>
                             </select>
                         </div>
                     </div>
@@ -453,21 +428,21 @@ if (!function_exists('prodAssetVer')) {
                     <div class="form-row">
                         <div class="form-group">
                             <label for="prodManageStock" data-i18n="form.fields.manage_stock.label">
-                                <?= __t('form.fields.manage_stock.label', 'Manage Stock') ?>
+                                <?= _prd('form.fields.manage_stock.label', 'Manage Stock') ?>
                             </label>
                             <select id="prodManageStock" name="manage_stock" class="form-control">
-                                <option value="1" data-i18n="form.fields.manage_stock.yes"><?= __t('form.fields.manage_stock.yes', 'Yes') ?></option>
-                                <option value="0" data-i18n="form.fields.manage_stock.no"><?= __t('form.fields.manage_stock.no', 'No') ?></option>
+                                <option value="1" data-i18n="form.fields.manage_stock.yes"><?= _prd('form.fields.manage_stock.yes', 'Yes') ?></option>
+                                <option value="0" data-i18n="form.fields.manage_stock.no"><?= _prd('form.fields.manage_stock.no', 'No') ?></option>
                             </select>
                         </div>
 
                         <div class="form-group">
                             <label for="prodAllowBackorder" data-i18n="form.fields.allow_backorder.label">
-                                <?= __t('form.fields.allow_backorder.label', 'Allow Backorder') ?>
+                                <?= _prd('form.fields.allow_backorder.label', 'Allow Backorder') ?>
                             </label>
                             <select id="prodAllowBackorder" name="allow_backorder" class="form-control">
-                                <option value="0" data-i18n="form.fields.allow_backorder.no"><?= __t('form.fields.allow_backorder.no', 'No') ?></option>
-                                <option value="1" data-i18n="form.fields.allow_backorder.yes"><?= __t('form.fields.allow_backorder.yes', 'Yes') ?></option>
+                                <option value="0" data-i18n="form.fields.allow_backorder.no"><?= _prd('form.fields.allow_backorder.no', 'No') ?></option>
+                                <option value="1" data-i18n="form.fields.allow_backorder.yes"><?= _prd('form.fields.allow_backorder.yes', 'Yes') ?></option>
                             </select>
                         </div>
                     </div>
@@ -476,8 +451,26 @@ if (!function_exists('prodAssetVer')) {
                     <!-- Categories (merged into General)                -->
                     <!-- ═══════════════════════════════════════════════ -->
                     <h4 class="section-heading" data-i18n="tabs.categories">
-                        <i class="fas fa-folder-tree"></i> <?= __t('tabs.categories', 'Categories') ?>
+                        <i class="fas fa-folder-tree"></i> <?= _prd('tabs.categories', 'Categories') ?>
                     </h4>
+                    <div class="form-row" hidden><!-- legacy hooks required by products.js category cascade -->
+                        <div class="form-group">
+                            <label for="prodMainCategory" data-i18n="form.fields.main_category.label">
+                                <?= _prd('form.fields.main_category.label', 'Main Category') ?>
+                            </label>
+                            <select id="prodMainCategory" class="form-control">
+                                <option value=""><?= _prd('form.fields.main_category.select', 'Select main category') ?></option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="prodSubCategory" data-i18n="form.fields.sub_category.label">
+                                <?= _prd('form.fields.sub_category.label', 'Sub Category') ?>
+                            </label>
+                            <select id="prodSubCategory" class="form-control">
+                                <option value=""><?= _prd('form.fields.sub_category.select', 'Select sub category') ?></option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <div id="prodCategoriesTree" class="categories-tree"></div>
                     </div>
@@ -488,14 +481,14 @@ if (!function_exists('prodAssetVer')) {
                     <div class="form-row">
                         <div class="form-group">
                             <label for="prodWeight" data-i18n="form.fields.weight.label">
-                                <?= __t('form.fields.weight.label', 'Weight') ?>
+                                <?= _prd('form.fields.weight.label', 'Weight') ?>
                             </label>
                             <input type="number" id="prodWeight" name="weight" class="form-control" step="0.001" min="0">
                         </div>
 
                         <div class="form-group">
                             <label for="prodWeightUnit" data-i18n="form.fields.weight_unit.label">
-                                <?= __t('form.fields.weight_unit.label', 'Weight Unit') ?>
+                                <?= _prd('form.fields.weight_unit.label', 'Weight Unit') ?>
                             </label>
                             <select id="prodWeightUnit" name="weight_unit" class="form-control">
                                 <option value="kg">kg</option>
@@ -508,28 +501,28 @@ if (!function_exists('prodAssetVer')) {
                     <div class="form-row">
                         <div class="form-group">
                             <label for="prodLength" data-i18n="form.fields.length.label">
-                                <?= __t('form.fields.length.label', 'Length') ?>
+                                <?= _prd('form.fields.length.label', 'Length') ?>
                             </label>
                             <input type="number" id="prodLength" name="length" class="form-control" step="0.01" min="0">
                         </div>
 
                         <div class="form-group">
                             <label for="prodWidth" data-i18n="form.fields.width.label">
-                                <?= __t('form.fields.width.label', 'Width') ?>
+                                <?= _prd('form.fields.width.label', 'Width') ?>
                             </label>
                             <input type="number" id="prodWidth" name="width" class="form-control" step="0.01" min="0">
                         </div>
 
                         <div class="form-group">
                             <label for="prodHeight" data-i18n="form.fields.height.label">
-                                <?= __t('form.fields.height.label', 'Height') ?>
+                                <?= _prd('form.fields.height.label', 'Height') ?>
                             </label>
                             <input type="number" id="prodHeight" name="height" class="form-control" step="0.01" min="0">
                         </div>
 
                         <div class="form-group">
                             <label for="prodDimensionUnit" data-i18n="form.fields.dimension_unit.label">
-                                <?= __t('form.fields.dimension_unit.label', 'Dimension Unit') ?>
+                                <?= _prd('form.fields.dimension_unit.label', 'Dimension Unit') ?>
                             </label>
                             <select id="prodDimensionUnit" name="dimension_unit" class="form-control">
                                 <option value="cm">cm</option>
@@ -545,7 +538,7 @@ if (!function_exists('prodAssetVer')) {
                     <div class="attrs-controls">
                         <select id="attrSelect" class="form-control"></select>
                         <button type="button" id="btnAddAttribute" class="btn btn-primary" data-i18n="form.buttons.add_attribute">
-                            <?= __t('form.buttons.add_attribute', 'Add Attribute') ?>
+                            <?= _prd('form.buttons.add_attribute', 'Add Attribute') ?>
                         </button>
                     </div>
                     <div id="prodAttributesList"></div>
@@ -555,10 +548,10 @@ if (!function_exists('prodAssetVer')) {
                 <div class="tab-content" id="tab-variants" style="display:none">
                     <div class="variant-controls">
                         <button type="button" id="btnGenerateVariants" class="btn btn-secondary" data-i18n="form.buttons.generate_variants">
-                            <?= __t('form.buttons.generate_variants', 'Generate Variants from Attributes') ?>
+                            <?= _prd('form.buttons.generate_variants', 'Generate Variants from Attributes') ?>
                         </button>
                         <button type="button" id="btnAddVariant" class="btn btn-primary" data-i18n="form.buttons.add_variant">
-                            <?= __t('form.buttons.add_variant', 'Add Variant Manually') ?>
+                            <?= _prd('form.buttons.add_variant', 'Add Variant Manually') ?>
                         </button>
                     </div>
                     <div id="prodVariantsList"></div>
@@ -568,11 +561,11 @@ if (!function_exists('prodAssetVer')) {
                 <div class="tab-content" id="tab-images" style="display:none">
                     <div class="form-group">
                         <label data-i18n="form.fields.images.label">
-                            <?= __t('form.fields.images.label', 'Product Images') ?>
+                            <?= _prd('form.fields.images.label', 'Product Images') ?>
                         </label>
                         <div class="image-upload-section">
                             <button type="button" id="prodSelectImageBtn" class="btn btn-secondary btn-full-width" data-i18n="common.select_image">
-                                <?= __t('common.select_image', 'Select Images from Studio') ?>
+                                <?= _prd('common.select_image', 'Select Images from Studio') ?>
                             </button>
                             <div id="prodImagesPreview" class="images-grid"></div>
                         </div>
@@ -607,15 +600,16 @@ if (!function_exists('prodAssetVer')) {
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary" id="btnSubmitForm">
                         <i class="fas fa-save"></i>
-                        <span data-i18n="form.buttons.save"><?= __t('form.buttons.save', 'Save') ?></span>
+                        <span data-i18n="form.buttons.save"><?= _prd('form.buttons.save', 'Save') ?></span>
                     </button>
-                    <button type="button" class="btn btn-outline" id="btnCancelForm" data-i18n="form.buttons.cancel">
-                        <?= __t('form.buttons.cancel', 'Cancel') ?>
+                    <button type="button" class="btn btn-secondary cancel-btn" id="btnCancelForm" data-i18n="form.buttons.cancel">
+                        <i class="fas fa-times" aria-hidden="true"></i>
+                        <?= _prd('form.buttons.cancel', 'Cancel') ?>
                     </button>
                     <?php if ($canDelete): ?>
                     <button type="button" id="btnDeleteProduct" class="btn btn-danger" style="display:none">
                         <i class="fas fa-trash"></i>
-                        <span data-i18n="table.actions.delete"><?= __t('table.actions.delete', 'Delete') ?></span>
+                        <span data-i18n="table.actions.delete"><?= _prd('table.actions.delete', 'Delete') ?></span>
                     </button>
                     <?php endif; ?>
                 </div>
@@ -628,42 +622,42 @@ if (!function_exists('prodAssetVer')) {
         <div class="card-body">
             <div class="filters-grid">
                 <div class="filter-group">
-                    <label for="searchInput" data-i18n="filters.search">
-                        <?= __t('filters.search', 'Search') ?>
+                    <label class="filter-label" for="searchInput" data-i18n="filters.search">
+                        <?= _prd('filters.search', 'Search') ?>
                     </label>
                     <input type="text" id="searchInput" class="form-control"
                            data-i18n-placeholder="filters.search_placeholder"
-                           placeholder="<?= __t('filters.search_placeholder', 'Search products...') ?>">
+                           placeholder="<?= _prd('filters.search_placeholder', 'Search products...') ?>">
                 </div>
 
                 <?php if (is_super_admin()): ?>
                 <div class="filter-group">
-                    <label for="tenantFilter" data-i18n="filters.tenant_id">
-                        <?= __t('filters.tenant_id', 'Tenant ID') ?>
+                    <label class="filter-label" for="tenantFilter" data-i18n="filters.tenant_id">
+                        <?= _prd('filters.tenant_id', 'Tenant ID') ?>
                     </label>
                     <input type="number" id="tenantFilter" class="form-control" value="<?= $tenantId ?>"
                            data-i18n-placeholder="filters.tenant_placeholder"
-                           placeholder="<?= __t('filters.tenant_placeholder', 'Filter by tenant') ?>">
+                           placeholder="<?= _prd('filters.tenant_placeholder', 'Filter by tenant') ?>">
                 </div>
                 <?php endif; ?>
 
                 <div class="filter-group">
-                    <label for="typeFilter" data-i18n="filters.product_type">Product Type</label>
+                    <label class="filter-label" for="typeFilter" data-i18n="filters.product_type">Product Type</label>
                     <select id="typeFilter" class="form-control">
                         <option value="">All Types</option>
                     </select>
                 </div>
 
                 <div class="filter-group">
-                    <label for="brandFilter" data-i18n="filters.brand">Brand</label>
+                    <label class="filter-label" for="brandFilter" data-i18n="filters.brand">Brand</label>
                     <select id="brandFilter" class="form-control">
                         <option value="">All Brands</option>
                     </select>
                 </div>
 
                 <div class="filter-group">
-                    <label for="statusFilter" data-i18n="filters.status">
-                        <?= __t('filters.status', 'Status') ?>
+                    <label class="filter-label" for="statusFilter" data-i18n="filters.status">
+                        <?= _prd('filters.status', 'Status') ?>
                     </label>
                     <select id="statusFilter" class="form-control">
                         <option value="" data-i18n="filters.status_options.all">All Status</option>
@@ -672,13 +666,16 @@ if (!function_exists('prodAssetVer')) {
                     </select>
                 </div>
 
-                <div class="filter-actions">
-                    <button id="btnApplyFilters" class="btn btn-secondary" data-i18n="filters.apply">
-                        <?= __t('filters.apply', 'Apply') ?>
-                    </button>
-                    <button id="btnResetFilters" class="btn btn-outline" data-i18n="filters.reset">
-                        <?= __t('filters.reset', 'Reset') ?>
-                    </button>
+                <div class="filter-group">
+                    <label class="filter-label" aria-hidden="true">&nbsp;</label>
+                    <div class="filter-buttons">
+                        <button id="btnApplyFilters" class="btn btn-primary" data-i18n="filters.apply">
+                            <?= _prd('filters.apply', 'Apply') ?>
+                        </button>
+                        <button id="btnResetFilters" class="btn btn-secondary" data-i18n="filters.reset">
+                            <?= _prd('filters.reset', 'Reset') ?>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -695,12 +692,12 @@ if (!function_exists('prodAssetVer')) {
     <!-- Table -->
     <div class="card table-card">
         <div class="card-body">
-            <div id="tableLoading" class="loading-state">
+            <div id="pageLoading" class="loading-state" style="display:none;">
                 <div class="spinner"></div>
-                <p data-i18n="products.loading"><?= __t('products.loading', 'Loading...') ?></p>
+                <p data-i18n="products.loading"><?= _prd('products.loading', 'Loading...') ?></p>
             </div>
 
-            <div id="tableContainer" style="display:none">
+            <div id="pageTableContainer" class="table-responsive" style="display:none;">
                 <div class="table-responsive">
                     <table class="data-table" id="productsTable">
                         <thead>
@@ -732,7 +729,7 @@ if (!function_exists('prodAssetVer')) {
                 </div>
             </div>
 
-            <div id="emptyState" class="empty-state" style="display:none">
+            <div id="pageEmpty" class="empty-state" style="display:none;">
                 <div class="empty-icon">📦</div>
                 <h3 data-i18n="table.empty.title">No Products Found</h3>
                 <p data-i18n="table.empty.message">Start by adding your first product</p>
@@ -744,86 +741,94 @@ if (!function_exists('prodAssetVer')) {
                 <?php endif; ?>
             </div>
 
-            <div id="errorState" class="error-state" style="display:none">
+            <div id="pageError" class="error-state" style="display:none;">
                 <div class="error-icon">⚠️</div>
                 <h3 data-i18n="messages.error.load_failed">Error Loading Data</h3>
-                <p id="errorMessage"></p>
+                <p id="pageErrorMessage"></p>
                 <button id="btnRetry" class="btn btn-secondary" data-i18n="products.retry">Retry</button>
             </div>
         </div>
     </div>
 
-    <!-- Media Studio Modal -->
-    <div id="prodMediaStudioModal" class="modal" style="display:none">
-        <div class="modal-content">
-            <span class="close" id="prodMediaStudioClose">&times;</span>
-            <iframe id="prodMediaStudioFrame" class="media-studio-iframe" src="/admin/fragments/media_studio.php?embedded=1&tenant_id=<?= $tenantId ?>&lang=<?= $lang ?>"></iframe>
+    <div id="prodMediaStudioModal"
+         class="prd-modal-backdrop"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="prodMediaStudioTitle"
+         style="display:none;">
+        <div class="prd-modal-panel prd-modal-panel--wide">
+            <div class="prd-modal-header">
+                <h3 id="prodMediaStudioTitle" data-i18n="tabs.images"><?= _prd('tabs.images', 'Images') ?></h3>
+                <button type="button" id="prodMediaStudioClose" class="btn-close-modal icon-btn" aria-label="Close">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="prd-modal-body">
+                <iframe id="prodMediaStudioFrame" class="media-studio-iframe" src="/admin/fragments/media_studio.php?embedded=1&tenant_id=<?= (int)$tenantId ?>&lang=<?= rawurlencode($_prdSafeLang) ?>"></iframe>
+            </div>
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <!-- CSV Import Modal -->
-    <!-- ═══════════════════════════════════════════════════════════ -->
-    <div id="csvImportModal" class="modal" style="display:none;">
-        <div class="modal-content csv-modal-content">
-            <!-- Header -->
-            <div class="csv-modal-header">
-                <h3>
+    <div id="csvImportModal"
+         class="prd-modal-backdrop"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="csvImportTitle"
+         style="display:none;">
+        <div class="prd-modal-panel csv-modal-content">
+            <div class="prd-modal-header">
+                <h3 id="csvImportTitle">
                     <i class="fas fa-file-csv"></i>
-                    <span data-i18n="csv.title"><?= __t('csv.title', 'Import Products via CSV') ?></span>
+                    <span data-i18n="csv.title"><?= _prd('csv.title', 'Import Products via CSV') ?></span>
                 </h3>
-                <button type="button" id="csvImportClose" class="csv-modal-close">&times;</button>
-            </div>
-
-            <!-- Instructions -->
-            <div class="info-hint-box csv-instructions">
-                <p>
-                    <i class="fas fa-info-circle"></i>
-                    <span data-i18n="csv.instructions"><?= __t('csv.instructions', 'Upload a CSV file to bulk-import products with English translations. Each row = one product. Max recommended: 1000 rows per file.') ?></span>
-                </p>
-            </div>
-
-            <!-- Download Sample -->
-            <div class="csv-download-section">
-                <button type="button" id="btnDownloadSample" class="btn btn-outline btn-full-width">
-                    <i class="fas fa-download"></i>
-                    <span data-i18n="csv.download_sample"><?= __t('csv.download_sample', 'Download Sample CSV Template') ?></span>
+                <button type="button" id="csvImportClose" class="btn-close-modal icon-btn" aria-label="Close">
+                    <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
             </div>
-
-            <!-- File Input -->
-            <div class="form-group csv-file-group">
-                <label data-i18n="csv.choose_file"><?= __t('csv.choose_file', 'Select CSV File') ?></label>
-                <input type="file" id="csvFileInput" accept=".csv,text/csv" class="form-control">
-            </div>
-
-            <!-- Preview Info -->
-            <div id="csvPreviewInfo" class="csv-preview-info" style="display:none;">
-                <span id="csvRowCount"></span>
-            </div>
-
-            <!-- Progress -->
-            <div id="csvProgressArea" class="csv-progress-area" style="display:none;">
-                <div class="csv-progress-header">
-                    <span id="csvProgressLabel" class="csv-progress-label" data-i18n="csv.importing"><?= __t('csv.importing', 'Importing…') ?></span>
-                    <span id="csvProgressPct" class="csv-progress-pct">0%</span>
+            <div class="prd-modal-body">
+                <div class="info-hint-box csv-instructions">
+                    <p>
+                        <i class="fas fa-info-circle"></i>
+                        <span data-i18n="csv.instructions"><?= _prd('csv.instructions', 'Upload a CSV file to bulk-import products with English translations. Each row = one product. Max recommended: 1000 rows per file.') ?></span>
+                    </p>
                 </div>
-                <div class="csv-progress-track">
-                    <div id="csvProgressBar" class="csv-progress-bar"></div>
+
+                <div class="csv-download-section">
+                    <button type="button" id="btnDownloadSample" class="btn btn-outline btn-full-width">
+                        <i class="fas fa-download"></i>
+                        <span data-i18n="csv.download_sample"><?= _prd('csv.download_sample', 'Download Sample CSV Template') ?></span>
+                    </button>
                 </div>
-                <div id="csvProgressLog" class="csv-progress-log"></div>
-            </div>
 
-            <!-- Result Summary -->
-            <div id="csvResultSummary" class="csv-result-summary" style="display:none;"></div>
+                <div class="form-group csv-file-group">
+                    <label data-i18n="csv.choose_file"><?= _prd('csv.choose_file', 'Select CSV File') ?></label>
+                    <input type="file" id="csvFileInput" accept=".csv,text/csv" class="form-control">
+                </div>
 
-            <!-- Actions -->
-            <div class="csv-actions">
-                <button type="button" id="csvImportCancel" class="btn btn-outline" data-i18n="csv.cancel"><?= __t('csv.cancel', 'Cancel') ?></button>
-                <button type="button" id="csvImportStart" class="btn btn-primary" disabled>
-                    <i class="fas fa-upload"></i>
-                    <span data-i18n="csv.import"><?= __t('csv.import', 'Start Import') ?></span>
-                </button>
+                <div id="csvPreviewInfo" class="csv-preview-info" style="display:none;">
+                    <span id="csvRowCount"></span>
+                </div>
+
+                <div id="csvProgressArea" class="csv-progress-area" style="display:none;">
+                    <div class="csv-progress-header">
+                        <span id="csvProgressLabel" class="csv-progress-label" data-i18n="csv.importing"><?= _prd('csv.importing', 'Importing…') ?></span>
+                        <span id="csvProgressPct" class="csv-progress-pct">0%</span>
+                    </div>
+                    <div class="csv-progress-track">
+                        <div id="csvProgressBar" class="csv-progress-bar"></div>
+                    </div>
+                    <div id="csvProgressLog" class="csv-progress-log"></div>
+                </div>
+
+                <div id="csvResultSummary" class="csv-result-summary" style="display:none;"></div>
+
+                <div class="csv-actions">
+                    <button type="button" id="csvImportCancel" class="btn btn-secondary" data-i18n="csv.cancel"><?= _prd('csv.cancel', 'Cancel') ?></button>
+                    <button type="button" id="csvImportStart" class="btn btn-primary" disabled>
+                        <i class="fas fa-upload"></i>
+                        <span data-i18n="csv.import"><?= _prd('csv.import', 'Start Import') ?></span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -831,181 +836,49 @@ if (!function_exists('prodAssetVer')) {
 </div>
 
 <!-- Expose client-side globals for the module -->
-<script type="text/javascript">
-window.APP_CONFIG = window.APP_CONFIG || {};
-window.APP_CONFIG.API_BASE = window.APP_CONFIG.API_BASE || '<?= $apiBase ?>';
-window.APP_CONFIG.TENANT_ID = window.APP_CONFIG.TENANT_ID || <?= $tenantId ?>;
-window.APP_CONFIG.CSRF_TOKEN = window.APP_CONFIG.CSRF_TOKEN || '<?= addslashes($csrf) ?>';
-window.APP_CONFIG.USER_ID = window.APP_CONFIG.USER_ID || <?= admin_user_id() ?>;
-
-window.USER_LANGUAGE = window.USER_LANGUAGE || '<?= addslashes($lang) ?>';
-window.USER_DIRECTION = window.USER_DIRECTION || '<?= addslashes($dir) ?>';
-window.CSRF_TOKEN = window.CSRF_TOKEN || '<?= addslashes($csrf) ?>';
-
-// Inject ADMIN_UI with DB theme data (colors, fonts, cards, buttons, design settings)
-if (!window.ADMIN_UI) {
-    window.ADMIN_UI = <?= json_encode($GLOBALS['ADMIN_UI'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
-}
-
-// Page permissions available to JS
-window.PAGE_PERMISSIONS = <?= json_encode([
-    'canCreate' => $canCreate,
-    'canEdit' => $canEdit,
-    'canDelete' => $canDelete,
-    'canDuplicate' => $canDuplicate,
-    'canViewAll' => $canViewAll,
-    'canViewOwn' => $canViewOwn,
-    'canViewTenant' => $canViewTenant,
-    'canEditAll' => $canEditAll,
-    'canEditOwn' => $canEditOwn,
-    'canDeleteAll' => $canDeleteAll,
-    'canDeleteOwn' => $canDeleteOwn,
-    'isSuperAdmin' => is_super_admin()
-], JSON_UNESCAPED_UNICODE) ?>;
-</script>
-
-<script type="text/javascript">
-window.PRODUCTS_CONFIG = {
-    apiUrl: '<?= $apiBase ?>/products',
-    categoriesApi: '<?= $apiBase ?>/categories',
-    brandsApi: '<?= $apiBase ?>/brands',
-    productTypesApi: '<?= $apiBase ?>/product_types',
-    attributesApi: '<?= $apiBase ?>/product_attributes',
-    attributeValuesApi: '<?= $apiBase ?>/product_attribute_values',
-    currenciesApi: '<?= $apiBase ?>/currencies',
-    languagesApi: '<?= $apiBase ?>/languages',
-    imagesApi: '<?= $apiBase ?>/images',
-    tenantsApi: '<?= $apiBase ?>/tenants',
-    csrfToken: '<?= addslashes($csrf) ?>',
-    lang: '<?= addslashes($lang) ?>',
-    itemsPerPage: 25
+<script>
+window.PAGE_NAME_CONFIG = {
+    csrfToken: <?= json_encode($csrf) ?>,
+    strings: <?= json_encode($_prdStrings, JSON_UNESCAPED_UNICODE) ?>,
+    canCreate: <?= json_encode($canCreate) ?>,
+    canEdit: <?= json_encode($canEdit) ?>,
+    canDelete: <?= json_encode($canDelete) ?>
 };
-</script>
 
-<!-- Translation loader (runs early) -->
-<script type="text/javascript">
-(function(){
-    async function applyTranslations() {
-        try {
-            const lang = window.USER_LANGUAGE || '<?= $lang ?>';
-            const url = `/languages/Product/${encodeURIComponent(lang)}.json`;
-            console.log('[Products] Loading translations from', url);
-            const res = await fetch(url, { credentials: 'same-origin' });
-            if (!res.ok) throw new Error('Translation fetch failed: ' + res.status);
-            const data = await res.json();
-            // Support both flat and nested (strings key) format
-            const translations = data.strings || data;
-            window.PRODUCTS_TRANSLATIONS = translations;
-            // apply translations to elements with data-i18n
-            const container = document.getElementById('productsPageContainer');
-            if (!container) return;
-            container.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                const txt = key.split('.').reduce((o,k) => (o && o[k] !== undefined) ? o[k] : null, translations);
-                if (txt !== null && txt !== undefined) {
-                    if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
-                        el.placeholder = txt;
-                    } else {
-                        el.textContent = txt;
-                    }
-                }
-            });
-            // placeholders
-            container.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
-                const key = el.getAttribute('data-i18n-placeholder');
-                const txt = key.split('.').reduce((o,k) => (o && o[k] !== undefined) ? o[k] : null, translations);
-                if (txt !== null && txt !== undefined) el.placeholder = txt;
-            });
-            console.log('[Products] Translations applied');
-        } catch (err) {
-            console.warn('[Products] Translation load/apply failed:', err);
-        }
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', applyTranslations);
-    } else {
-        setTimeout(applyTranslations, 50);
-    }
-})();
+window.PRODUCTS_CONFIG = Object.assign({}, window.PAGE_NAME_CONFIG, {
+    apiBase: <?= json_encode($apiBase, JSON_UNESCAPED_SLASHES) ?>,
+    apiUrl: <?= json_encode($apiBase . '/products', JSON_UNESCAPED_SLASHES) ?>,
+    categoriesApi: <?= json_encode($apiBase . '/categories', JSON_UNESCAPED_SLASHES) ?>,
+    brandsApi: <?= json_encode($apiBase . '/brands', JSON_UNESCAPED_SLASHES) ?>,
+    productTypesApi: <?= json_encode($apiBase . '/product_types', JSON_UNESCAPED_SLASHES) ?>,
+    attributesApi: <?= json_encode($apiBase . '/product_attributes', JSON_UNESCAPED_SLASHES) ?>,
+    attributeValuesApi: <?= json_encode($apiBase . '/product_attribute_values', JSON_UNESCAPED_SLASHES) ?>,
+    currenciesApi: <?= json_encode($apiBase . '/currencies', JSON_UNESCAPED_SLASHES) ?>,
+    languagesApi: <?= json_encode($apiBase . '/languages', JSON_UNESCAPED_SLASHES) ?>,
+    imagesApi: <?= json_encode($apiBase . '/images', JSON_UNESCAPED_SLASHES) ?>,
+    tenantsApi: <?= json_encode($apiBase . '/tenants', JSON_UNESCAPED_SLASHES) ?>,
+    csrfToken: <?= json_encode($csrf) ?>,
+    lang: <?= json_encode($_prdSafeLang) ?>,
+    dir: <?= json_encode($dir) ?>,
+    tenantId: <?= (int)$tenantId ?>,
+    userId: <?= (int)$userId ?>,
+    itemsPerPage: 25,
+    permissions: <?= json_encode([
+        'canCreate' => $canCreate,
+        'canEdit' => $canEdit,
+        'canDelete' => $canDelete,
+        'canDuplicate' => $canDuplicate,
+        'canViewAll' => $canViewAll,
+        'canViewOwn' => $canViewOwn,
+        'canViewTenant' => $canViewTenant,
+        'canEditAll' => $canEditAll,
+        'canEditOwn' => $canEditOwn,
+        'canDeleteAll' => $canDeleteAll,
+        'canDeleteOwn' => $canDeleteOwn,
+        'isSuperAdmin' => $isSuperAdmin,
+    ], JSON_UNESCAPED_UNICODE) ?>
+});
 </script>
+<script src="/admin/assets/js/pages/products.js?v=<?= assetVer('/admin/assets/js/pages/products.js') ?>"></script>
 
-<!-- Page Permissions JSON for scripts that prefer it in DOM -->
-<script id="pagePermissions" type="application/json">
-<?= json_encode([
-    'canCreate' => $canCreate,
-    'canEdit' => $canEdit,
-    'canDelete' => $canDelete,
-    'canDuplicate' => $canDuplicate,
-    'canViewAll' => $canViewAll,
-    'canViewOwn' => $canViewOwn,
-    'canViewTenant' => $canViewTenant,
-    'canEditAll' => $canEditAll,
-    'canEditOwn' => $canEditOwn,
-    'canDeleteAll' => $canDeleteAll,
-    'canDeleteOwn' => $canDeleteOwn,
-    'isSuperAdmin' => is_super_admin()
-], JSON_UNESCAPED_UNICODE) ?>
-</script>
-
-<script id="PRODUCTS_INITIAL_PAYLOAD" type="application/json">
-<?= json_encode(['items' => [], 'meta' => ['page' => 1, 'per_page' => 25, 'total' => 0]]) ?>
-</script>
-
-<!-- Load AdminFramework + Page module when embedded; otherwise load normally -->
-<?php if ($isFragment): ?>
-<script src="/admin/assets/js/admin_framework.js?v=<?= prodAssetVer('/admin/assets/js/admin_framework.js') ?>"></script>
-<script src="/admin/assets/js/pages/products.js?v=<?= prodAssetVer('/admin/assets/js/pages/products.js') ?>"></script>
-
-<script>
-(function(){
-    console.log('[Products] Embedded mode - waiting for module...');
-    var attempts = 0, maxAttempts = 50;
-    var interval = setInterval(function(){
-        attempts++;
-        if (window.Products && typeof window.Products.init === 'function') {
-            clearInterval(interval);
-            console.log('[Products] Module ready - initializing (attempt ' + attempts + ')...');
-            try {
-                var maybePromise = window.Products.init();
-                if (maybePromise && typeof maybePromise.then === 'function') {
-                    maybePromise.then(function(){
-                        console.log('[Products] ✓ Initialized successfully');
-                    }).catch(function(e){
-                        console.error('[Products] Init failed:', e);
-                    });
-                }
-            } catch (e) {
-                console.error('[Products] Init threw:', e);
-            }
-        } else if (attempts > maxAttempts) {
-            clearInterval(interval);
-            console.error('[Products] Timeout waiting for module after ' + (maxAttempts * 100) + 'ms');
-        }
-    }, 100);
-})();
-</script>
-<?php else: ?>
-<script src="/admin/assets/js/pages/products.js?v=<?= prodAssetVer('/admin/assets/js/pages/products.js') ?>"></script>
-<script>
-// Standalone mode init
-(function(){
-    function tryInit() {
-        if (window.Products && typeof window.Products.init === 'function') {
-            window.Products.init().catch(function(e){ console.error('[Products] Init failed', e); });
-        }
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', tryInit);
-    } else {
-        tryInit();
-    }
-})();
-</script>
-<?php endif; ?>
-
-<?php
-// Load footer if standalone
-if (!$isFragment) {
-    require_once __DIR__ . '/../includes/footer.php';
-}
-?>
+<?php if (!$isFragment) require_once __DIR__ . '/../includes/footer.php'; ?>

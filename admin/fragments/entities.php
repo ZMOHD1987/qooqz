@@ -548,7 +548,7 @@ $apiBase = '/api';
                         </div>
                         
                         <div class="form-actions" style="margin-top: 20px;">
-                            <button type="button" id="btnApplyToAll" class="btn btn-secondary" data-i18n="form.buttons.apply_to_all">
+                            <button type="button" id="btnApplyToAll" class="btn btn-primary" data-i18n="form.buttons.apply_to_all">
                                 <?= __t('form.buttons.apply_to_all', 'Apply to All Days') ?>
                             </button>
                             <button type="button" id="btnResetHours" class="btn btn-outline" data-i18n="form.buttons.reset_hours">
@@ -577,7 +577,7 @@ $apiBase = '/api';
                             <?= __t('form.sections.logo', 'Entity Logo') ?>
                         </h5>
                         <div class="image-upload-section">
-                            <button type="button" data-image-type="4" class="btnSelectMedia btn btn-secondary" style="margin-bottom: 15px;" data-i18n="common.select_image">
+                            <button type="button" data-image-type="4" class="btnSelectMedia btn btn-primary" style="margin-bottom: 15px;" data-i18n="common.select_image">
                                 <?= __t('common.select_image', 'Select Logo from Studio') ?>
                             </button>
                             <div id="logoPreview" class="single-image-preview">
@@ -596,7 +596,7 @@ $apiBase = '/api';
                             <?= __t('form.sections.cover', 'Entity Cover Image') ?>
                         </h5>
                         <div class="image-upload-section">
-                            <button type="button" data-image-type="5" class="btnSelectMedia btn btn-secondary" style="margin-bottom: 15px;" data-i18n="common.select_image">
+                            <button type="button" data-image-type="5" class="btnSelectMedia btn btn-primary" style="margin-bottom: 15px;" data-i18n="common.select_image">
                                 <?= __t('common.select_image', 'Select Cover from Studio') ?>
                             </button>
                             <div id="coverPreview" class="single-image-preview">
@@ -615,7 +615,7 @@ $apiBase = '/api';
                             <?= __t('form.sections.license', 'Entity License') ?>
                         </h5>
                         <div class="image-upload-section">
-                            <button type="button" data-image-type="6" class="btnSelectMedia btn btn-secondary" style="margin-bottom: 15px;" data-i18n="common.select_image">
+                            <button type="button" data-image-type="6" class="btnSelectMedia btn btn-primary" style="margin-bottom: 15px;" data-i18n="common.select_image">
                                 <?= __t('common.select_image', 'Select License from Studio') ?>
                             </button>
                             <div id="licensePreview" class="single-image-preview">
@@ -761,7 +761,7 @@ $apiBase = '/api';
                 </div>
 
                 <div class="filter-actions">
-                    <button id="btnApplyFilters" class="btn btn-secondary" data-i18n="filters.apply">
+                    <button id="btnApplyFilters" class="btn btn-primary" data-i18n="filters.apply">
                         <?= __t('filters.apply', 'Apply') ?>
                     </button>
                     <button id="btnResetFilters" class="btn btn-outline" data-i18n="filters.reset">
@@ -837,7 +837,7 @@ $apiBase = '/api';
                 <div class="error-icon">⚠️</div>
                 <h3 data-i18n="messages.error.load_failed">Error Loading Data</h3>
                 <p id="errorMessage"></p>
-                <button id="btnRetry" class="btn btn-secondary" data-i18n="entities.retry">Retry</button>
+                <button id="btnRetry" class="btn btn-primary" data-i18n="entities.retry">Retry</button>
             </div>
         </div>
     </div>

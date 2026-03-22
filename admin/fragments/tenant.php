@@ -140,8 +140,8 @@ if (!function_exists('__t')) {
                 <i class="fas fa-building"></i>
                 <span data-i18n="form.add_title"><?= __t('form.add_title', 'Add Tenant') ?></span>
             </h3>
-            <button type="button" class="btn btn-sm btn-outline" id="btnCloseForm" aria-label="Close">
-                <i class="fas fa-times"></i>
+            <button type="button" class="btn btn-secondary cancel-btn" id="btnCloseForm" aria-label="Close">
+                <i class="fas fa-times" aria-hidden="true"></i>
             </button>
         </div>
         <div class="card-body">
@@ -249,8 +249,8 @@ if (!function_exists('__t')) {
                                 <?= __t('form.buttons.save', 'Save Tenant') ?>
                             </span>
                         </button>
-                        <button type="button" id="btnCancelForm" class="btn btn-outline">
-                            <i class="fas fa-times"></i>
+                        <button type="button" id="btnCancelForm" class="btn btn-secondary cancel-btn">
+                            <i class="fas fa-times" aria-hidden="true"></i>
                             <span data-i18n="form.buttons.cancel">
                                 <?= __t('form.buttons.cancel', 'Cancel') ?>
                             </span>
@@ -433,8 +433,8 @@ if (!function_exists('__t')) {
                                     <i class="fas fa-save"></i>
                                     <span data-i18n="domains.buttons.save"><?= __t('domains.buttons.save', 'Save Domain') ?></span>
                                 </button>
-                                <button type="button" id="btnCancelDomain" class="btn btn-outline btn-sm">
-                                    <i class="fas fa-times"></i>
+                                <button type="button" id="btnCancelDomain" class="btn btn-secondary cancel-btn">
+                                    <i class="fas fa-times" aria-hidden="true"></i>
                                     <span data-i18n="domains.buttons.cancel"><?= __t('domains.buttons.cancel', 'Cancel') ?></span>
                                 </button>
                             </div>

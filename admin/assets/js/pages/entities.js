@@ -629,7 +629,7 @@
                 (state.permissions.canDeleteOwn && entity.user_id == state.userId);
 
             const typeBadge = (entity.parent_id !== null && entity.parent_id !== undefined && entity.parent_id !== '' && parseInt(entity.parent_id, 10) > 0)
-                ? `<span class="badge badge-info">${t('form.fields.entity_type.branch', 'Branch')}</span><br><small style="color:var(--text-secondary,#94a3b8);">#${esc(entity.parent_id)}</small>`
+                ? `<span class="badge badge-info">${t('form.fields.entity_type.branch', 'Branch')}</span><br><small class="ent-muted-text">#${esc(entity.parent_id)}</small>`
                 : `<span class="badge badge-primary">${t('form.fields.entity_type.main', 'Main')}</span>`;
 
             return `
@@ -637,9 +637,9 @@
                     <td>${esc(entity.id)}</td>
                     ${isSuperAdmin ? `<td>${esc(entity.tenant_id || '')}</td>` : ''}
                     <td>
-                        ${logo ? `<img src="${esc(logo)}" alt="${esc(name)}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;">` : '🏢'}
+                        ${logo ? `<img src="${esc(logo)}" alt="${esc(name)}" class="ent-table-logo">` : '🏢'}
                     </td>
-                    <td><strong>${esc(name)}</strong><br><small style="color:var(--text-secondary,#94a3b8);">${esc(entity.branch_code || '')}</small></td>
+                    <td><strong>${esc(name)}</strong><br><small class="ent-muted-text">${esc(entity.branch_code || '')}</small></td>
                     <td>${typeBadge}</td>
                     <td>${esc(entity.branch_code || '-')}</td>
                     <td>${esc(entity.vendor_type || '-')}</td>
@@ -649,7 +649,7 @@
                     <td>${verifiedBadge}</td>
                     <td>
                         <div class="table-actions">
-                            ${canEdit ? `<button class="btn btn-sm btn-secondary" onclick="Entities.edit(${entity.id})" title="${t('table.actions.edit', 'Edit')}">
+                            ${canEdit ? `<button class="btn btn-sm btn-primary edit-btn" onclick="Entities.edit(${entity.id})" title="${t('table.actions.edit', 'Edit')}">
                                 <i class="fas fa-edit"></i>
                             </button>` : ''}
                             ${canDelete ? `<button class="btn btn-sm btn-danger" onclick="Entities.remove(${entity.id})" title="${t('table.actions.delete', 'Delete')}">
@@ -1500,18 +1500,18 @@
         if (previewEl) {
             if (imageUrl) {
                 const wrapper = document.createElement('div');
-                wrapper.style.cssText = 'position:relative; display:inline-block;';
+                wrapper.className = 'ent-image-preview-wrapper';
 
                 const img = document.createElement('img');
                 img.src = imageUrl;
-                img.style.cssText = 'max-width:100%; max-height:200px; border-radius:4px;';
+                img.className = 'ent-image-preview-img';
                 wrapper.appendChild(img);
 
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.textContent = '✕';
                 btn.title = t('form.media.delete', 'Delete image');
-                btn.style.cssText = 'position:absolute; top:4px; right:4px; background:rgba(220,38,38,0.9); color:#fff; border:none; border-radius:50%; width:28px; height:28px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center;';
+                btn.className = 'ent-image-remove-btn';
                 btn.addEventListener('click', () => deleteEntityImage(imageType));
                 wrapper.appendChild(btn);
 
@@ -1757,7 +1757,7 @@
                 <div class="error-state" style="display:flex;flex-direction:column;align-items:center;padding:20px;gap:8px;">
                     <div style="font-size:2rem;">⚠️</div>
                     <p>${esc(err.message)}</p>
-                    <button class="btn btn-secondary" onclick="Entities.reloadAddress()">
+                    <button class="btn btn-primary" onclick="Entities.reloadAddress()">
                         <i class="fas fa-redo"></i> Retry
                     </button>
                 </div>`;
