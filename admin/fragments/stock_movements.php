@@ -59,15 +59,13 @@ function _smt(string $key, string $fallback = ''): string {
 
 <div class="page-container full-page-admin" dir="<?= $dir ?>">
 
-  <!-- Page Header -->
+  <!-- Page Header (single line: title + action button) -->
   <div class="page-header">
-    <div>
-      <h2><?= _smt('title', 'Stock Movements') ?></h2>
-      <p class="page-subtitle"><?= _smt('subtitle', 'Track product inventory - restock, sales, returns, adjustments') ?></p>
-    </div>
+    <h2><?= _smt('title', 'Stock Movements') ?></h2>
     <div class="page-header-actions">
-      <button class="btn btn-primary" id="btnAddMovement" data-btn-slug="primary">
-        <i class="fas fa-plus" aria-hidden="true"></i> <?= _smt('add_movement', 'Add Movement') ?>
+      <button class="btn btn-sm btn-icon btn-primary" id="btnAddMovement" data-btn-slug="primary"
+              title="<?= _smt('add_movement', 'Add Movement') ?>" aria-label="<?= _smt('add_movement', 'Add Movement') ?>">
+        <i class="fas fa-plus" aria-hidden="true"></i>
       </button>
     </div>
   </div>
@@ -111,8 +109,9 @@ function _smt(string $key, string $fallback = ''): string {
     <video id="cameraVideo" autoplay playsinline></video>
     <canvas id="cameraCanvas" style="display:none"></canvas>
     <div class="sm-camera-controls">
-      <button type="button" class="btn btn-sm btn-danger" id="btnStopCamera" data-btn-slug="danger">
-        <i class="fas fa-times" aria-hidden="true"></i> <?= _smt('lookup.stop_camera', 'Stop Camera') ?>
+      <button type="button" class="btn btn-sm btn-icon btn-danger" id="btnStopCamera"
+              data-btn-slug="danger" title="<?= _smt('lookup.stop_camera', 'Stop Camera') ?>" aria-label="<?= _smt('lookup.stop_camera', 'Stop Camera') ?>">
+        <i class="fas fa-times" aria-hidden="true"></i>
       </button>
     </div>
   </div>
