@@ -50,8 +50,25 @@ function _dt(string $key, string $fallback = ''): string {
     }
     return is_string($val) ? $val : ($fallback ?: $key);
 }
+
+// assetVer() مُعرَّفة في header.php — نُعرِّفها هنا فقط عند fragment مستقل
+if (!function_exists('assetVer')) {
+    function assetVer(string $path): string
+    {
+        static $cache = [];
+        if (!isset($cache[$path])) {
+            $full         = $_SERVER['DOCUMENT_ROOT'] . $path;
+            $cache[$path] = file_exists($full) ? (string) filemtime($full) : '0';
+        }
+        return $cache[$path];
+    }
+}
 ?>
-<link rel="stylesheet" href="/admin/assets/css/pages/discounts.css?v=<?= time() ?>">
+<link rel="stylesheet"
+      href="/admin/assets/css/pages/discounts.css?v=<?= assetVer('/admin/assets/css/pages/discounts.css') ?>">
+
+<meta data-page="discounts"
+      data-i18n-files="/languages/Discounts/<?= rawurlencode($_dtLangCode) ?>.json">
 
 <div class="page-container" dir="<?= $dir ?>">
   <div class="page-header">
@@ -65,20 +82,20 @@ function _dt(string $key, string $fallback = ''): string {
   </div>
 
   <!-- Tenant/Entity Cascade Selector -->
-  <div class="entity-selector" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px">
+  <div class="entity-selector">
     <?php if ($isSuperAdmin): ?>
-    <div class="form-group" style="margin:0">
+    <div class="form-group">
       <label><?= _dt('tenant_id', 'Tenant ID') ?></label>
-      <div style="display:flex;gap:6px">
-        <input type="number" class="form-control" id="tenantIdInput" placeholder="<?= _dt('enter_tenant_id', 'Enter Tenant ID') ?>" min="1" style="width:140px">
+      <div class="dc-tenant-input-row">
+        <input type="number" class="form-control dc-tenant-input" id="tenantIdInput" placeholder="<?= _dt('enter_tenant_id', 'Enter Tenant ID') ?>" min="1">
         <button class="btn btn-secondary btn-sm" id="btnVerifyTenant"><?= _dt('verify', 'Verify') ?></button>
       </div>
-      <small id="tenantName" style="display:none;color:var(--success-color,#28a745);margin-top:4px"></small>
+      <small id="tenantName" class="dc-tenant-name" style="display:none"></small>
     </div>
     <?php endif; ?>
-    <div class="form-group" style="margin:0">
+    <div class="form-group">
       <label><?= _dt('entity_selector', 'Entity') ?></label>
-      <select class="form-control" id="entitySelector" style="min-width:200px">
+      <select class="form-control dc-entity-select" id="entitySelector">
         <option value=""><?= _dt('all_entities', 'All Entities') ?></option>
       </select>
     </div>
@@ -117,7 +134,7 @@ function _dt(string $key, string $fallback = ''): string {
 
   <!-- Data Table -->
   <div class="card">
-    <div class="card-body" style="overflow-x:auto">
+    <div class="card-body dc-table-overflow">
       <table class="data-table" id="discountsTable">
         <thead>
           <tr>
@@ -147,11 +164,11 @@ function _dt(string $key, string $fallback = ''): string {
   </div>
 
   <!-- Create/Edit Discount Modal -->
-  <div class="modal" id="discountModal" style="display:none">
-    <div class="modal-content modal-lg">
-      <div class="modal-header">
+  <div class="dc-modal-backdrop" id="discountModal" style="display:none">
+    <div class="dc-modal-panel dc-modal-panel--wide">
+      <div class="dc-modal-header">
         <h3 id="modalTitle"><?= _dt('modal.add_title', 'Add Discount') ?></h3>
-        <button class="modal-close" id="btnCloseModal">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="discountModal" id="btnCloseModal">&times;</button>
       </div>
       <form id="discountForm">
         <input type="hidden" id="discountId" value="">
@@ -237,7 +254,7 @@ function _dt(string $key, string $fallback = ''): string {
           </select>
         </div>
         <div class="form-actions">
-          <button type="button" class="btn btn-secondary" id="btnCancelModal"><?= _dt('cancel', 'Cancel') ?></button>
+          <button type="button" class="btn btn-outline btn-close-modal" data-modal="discountModal" id="btnCancelModal"><?= _dt('cancel', 'Cancel') ?></button>
           <button type="submit" class="btn btn-primary"><?= _dt('save', 'Save') ?></button>
         </div>
       </form>
@@ -245,13 +262,13 @@ function _dt(string $key, string $fallback = ''): string {
   </div>
 
   <!-- Translations Modal -->
-  <div class="modal" id="translationsModal" style="display:none">
-    <div class="modal-content modal-lg">
-      <div class="modal-header">
+  <div class="dc-modal-backdrop" id="translationsModal" style="display:none">
+    <div class="dc-modal-panel dc-modal-panel--wide">
+      <div class="dc-modal-header">
         <h3><?= _dt('translations.title', 'Discount Translations') ?></h3>
-        <button class="modal-close" id="btnCloseTranslations">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="translationsModal" id="btnCloseTranslations">&times;</button>
       </div>
-      <div class="modal-body">
+      <div class="dc-modal-body">
         <input type="hidden" id="transDiscountId">
         <div class="form-row">
           <div class="form-group">
@@ -276,7 +293,7 @@ function _dt(string $key, string $fallback = ''): string {
           <input type="text" class="form-control" id="transMarketingBadge">
         </div>
         <button class="btn btn-primary btn-sm" id="btnSaveTranslation"><?= _dt('translations.save', 'Save Translation') ?></button>
-        <table class="data-table" style="margin-top:10px">
+        <table class="data-table dc-sub-table">
           <thead>
             <tr>
               <th><?= _dt('translations.language', 'Language') ?></th>
@@ -294,13 +311,13 @@ function _dt(string $key, string $fallback = ''): string {
   </div>
 
   <!-- Scopes Modal -->
-  <div class="modal" id="scopesModal" style="display:none">
-    <div class="modal-content modal-lg">
-      <div class="modal-header">
+  <div class="dc-modal-backdrop" id="scopesModal" style="display:none">
+    <div class="dc-modal-panel dc-modal-panel--wide">
+      <div class="dc-modal-header">
         <h3><?= _dt('scopes.title', 'Discount Scopes') ?></h3>
-        <button class="modal-close" id="btnCloseScopes">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="scopesModal" id="btnCloseScopes">&times;</button>
       </div>
-      <div class="modal-body">
+      <div class="dc-modal-body">
         <input type="hidden" id="scopesDiscountId">
         <div class="form-row">
           <div class="form-group">
@@ -325,7 +342,7 @@ function _dt(string $key, string $fallback = ''): string {
             <button class="btn btn-primary btn-sm" id="btnAddScope">+ <?= _dt('scopes.add', 'Add Scope') ?></button>
           </div>
         </div>
-        <table class="data-table" style="margin-top:10px">
+        <table class="data-table dc-sub-table">
           <thead>
             <tr>
               <th><?= _dt('scopes.scope_type', 'Scope Type') ?></th>
@@ -341,13 +358,13 @@ function _dt(string $key, string $fallback = ''): string {
   </div>
 
   <!-- Conditions Modal -->
-  <div class="modal" id="conditionsModal" style="display:none">
-    <div class="modal-content modal-lg">
-      <div class="modal-header">
+  <div class="dc-modal-backdrop" id="conditionsModal" style="display:none">
+    <div class="dc-modal-panel dc-modal-panel--wide">
+      <div class="dc-modal-header">
         <h3><?= _dt('conditions.title', 'Discount Conditions') ?></h3>
-        <button class="modal-close" id="btnCloseConditions">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="conditionsModal" id="btnCloseConditions">&times;</button>
       </div>
-      <div class="modal-body">
+      <div class="dc-modal-body">
         <input type="hidden" id="conditionsDiscountId">
         <div class="form-row">
           <div class="form-group">
@@ -387,7 +404,7 @@ function _dt(string $key, string $fallback = ''): string {
             <button class="btn btn-primary btn-sm" id="btnAddCondition">+ <?= _dt('conditions.add', 'Add Condition') ?></button>
           </div>
         </div>
-        <table class="data-table" style="margin-top:10px">
+        <table class="data-table dc-sub-table">
           <thead>
             <tr>
               <th><?= _dt('conditions.condition_type', 'Condition Type') ?></th>
@@ -403,13 +420,13 @@ function _dt(string $key, string $fallback = ''): string {
   </div>
 
   <!-- Actions Modal -->
-  <div class="modal" id="actionsModal" style="display:none">
-    <div class="modal-content modal-lg">
-      <div class="modal-header">
+  <div class="dc-modal-backdrop" id="actionsModal" style="display:none">
+    <div class="dc-modal-panel dc-modal-panel--wide">
+      <div class="dc-modal-header">
         <h3><?= _dt('actions.title', 'Discount Actions') ?></h3>
-        <button class="modal-close" id="btnCloseActions">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="actionsModal" id="btnCloseActions">&times;</button>
       </div>
-      <div class="modal-body">
+      <div class="dc-modal-body">
         <input type="hidden" id="actionsDiscountId">
         <div class="form-row">
           <div class="form-group">
@@ -429,7 +446,7 @@ function _dt(string $key, string $fallback = ''): string {
             <button class="btn btn-primary btn-sm" id="btnAddAction">+ <?= _dt('actions.add', 'Add Action') ?></button>
           </div>
         </div>
-        <table class="data-table" style="margin-top:10px">
+        <table class="data-table dc-sub-table">
           <thead>
             <tr>
               <th><?= _dt('actions.action_type', 'Action Type') ?></th>
@@ -444,13 +461,13 @@ function _dt(string $key, string $fallback = ''): string {
   </div>
 
   <!-- Exclusions Modal -->
-  <div class="modal" id="exclusionsModal" style="display:none">
-    <div class="modal-content modal-lg">
-      <div class="modal-header">
+  <div class="dc-modal-backdrop" id="exclusionsModal" style="display:none">
+    <div class="dc-modal-panel dc-modal-panel--wide">
+      <div class="dc-modal-header">
         <h3><?= _dt('exclusions.title', 'Discount Exclusions') ?></h3>
-        <button class="modal-close" id="btnCloseExclusions">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="exclusionsModal" id="btnCloseExclusions">&times;</button>
       </div>
-      <div class="modal-body">
+      <div class="dc-modal-body">
         <input type="hidden" id="exclusionsDiscountId">
         <div class="form-row">
           <div class="form-group">
@@ -463,7 +480,7 @@ function _dt(string $key, string $fallback = ''): string {
             <button class="btn btn-primary btn-sm" id="btnAddExclusion">+ <?= _dt('exclusions.add', 'Add Exclusion') ?></button>
           </div>
         </div>
-        <table class="data-table" style="margin-top:10px">
+        <table class="data-table dc-sub-table">
           <thead>
             <tr>
               <th><?= _dt('exclusions.excluded_discount', 'Excluded Discount') ?></th>
@@ -477,13 +494,13 @@ function _dt(string $key, string $fallback = ''): string {
   </div>
 
   <!-- Redemptions Modal -->
-  <div class="modal" id="redemptionsModal" style="display:none">
-    <div class="modal-content modal-lg">
-      <div class="modal-header">
+  <div class="dc-modal-backdrop" id="redemptionsModal" style="display:none">
+    <div class="dc-modal-panel dc-modal-panel--wide">
+      <div class="dc-modal-header">
         <h3><?= _dt('redemptions.title', 'Discount Redemptions') ?></h3>
-        <button class="modal-close" id="btnCloseRedemptions">&times;</button>
+        <button class="dc-modal-close btn-close-modal" data-modal="redemptionsModal" id="btnCloseRedemptions">&times;</button>
       </div>
-      <div class="modal-body">
+      <div class="dc-modal-body">
         <input type="hidden" id="redemptionsDiscountId">
         <table class="data-table">
           <thead>
@@ -508,20 +525,21 @@ function _dt(string $key, string $fallback = ''): string {
 
 <script>
 window.DISCOUNTS_CONFIG = {
-    csrf: <?= json_encode($csrf) ?>,
-    lang: <?= json_encode($lang) ?>,
-    dir: <?= json_encode($dir) ?>,
-    canManage: <?= json_encode($canManage) ?>,
-    canCreate: <?= json_encode($canCreate) ?>,
-    canEdit: <?= json_encode($canEdit) ?>,
-    canDelete: <?= json_encode($canDelete) ?>,
-    isSuperAdmin: <?= json_encode($isSuperAdmin) ?>,
-    tenantId: <?= json_encode((int)$tenantId) ?>,
-    entityId: <?= json_encode((int)$entityId) ?>,
-    userId: <?= json_encode((int)$userId) ?>,
-    strings: <?= json_encode($_dtStrings) ?>
+    apiBase:      <?= json_encode('/api', JSON_UNESCAPED_SLASHES) ?>,
+    csrfToken:    <?= json_encode($csrf) ?>,
+    lang:         <?= json_encode($_dtLangCode) ?>,
+    dir:          <?= json_encode($dir) ?>,
+    tenantId:     <?= (int) $tenantId ?>,
+    entityId:     <?= (int) $entityId ?>,
+    userId:       <?= (int) $userId ?>,
+    strings:      <?= json_encode($_dtStrings, JSON_UNESCAPED_UNICODE) ?>,
+    canManage:    <?= json_encode($canManage) ?>,
+    canCreate:    <?= json_encode($canCreate) ?>,
+    canEdit:      <?= json_encode($canEdit) ?>,
+    canDelete:    <?= json_encode($canDelete) ?>,
+    isSuperAdmin: <?= json_encode($isSuperAdmin) ?>
 };
 </script>
-<script src="/admin/assets/js/pages/discounts.js?v=<?= time() ?>"></script>
+<script src="/admin/assets/js/pages/discounts.js?v=<?= assetVer('/admin/assets/js/pages/discounts.js') ?>"></script>
 
 <?php if (!$isFragment) require_once __DIR__ . '/../includes/footer.php'; ?>
