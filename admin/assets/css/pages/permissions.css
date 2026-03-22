@@ -190,7 +190,7 @@
     border-radius: var(--_radius-lg);
     margin-bottom: 1.5rem;
     overflow: hidden;
-    box-shadow: 0 1px 2px color-mix(in srgb, #000 30%, transparent);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--_bg-main) 50%, transparent);
 }
 
 #permissionsPageContainer .card-header {
@@ -291,7 +291,7 @@
     text-align: left;
     z-index: 11;
     min-width: 250px;
-    box-shadow: 2px 0 4px color-mix(in srgb, #000 10%, transparent);
+    box-shadow: 2px 0 4px color-mix(in srgb, var(--_bg-main) 25%, transparent);
 }
 
 #permissionsPageContainer .resource-table th.sticky-col {
@@ -428,7 +428,7 @@
     display: none;
     position: fixed;
     inset: 0;
-    background: color-mix(in srgb, #000 75%, transparent);
+    background: color-mix(in srgb, var(--_bg-main) 85%, transparent);
     z-index: 12000;
     align-items: center;
     justify-content: center;
@@ -452,7 +452,7 @@
     max-height: 90vh;
     overflow-y: auto;
     animation: pn-modalIn 0.3s ease;
-    box-shadow: 0 20px 25px color-mix(in srgb, #000 40%, transparent);
+    box-shadow: 0 20px 25px color-mix(in srgb, var(--_bg-main) 55%, transparent);
 }
 
 @keyframes pn-modalIn {
@@ -618,7 +618,7 @@
 #permissionsPageContainer .role-key {
     font-size: 0.75rem;
     color: var(--_text-muted);
-    font-family: 'Courier New', monospace;
+    font-family: var(--mono-font-family, var(--code-font-family, 'Courier New', monospace));
 }
 
 /* ════════════════════════════════════════════════════════════
