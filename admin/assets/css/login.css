@@ -1,0 +1,92 @@
+/* Minimal, clean styles for admin login/register forms */
+
+:root {
+    --bg: #f4f6f8;
+    --card: #ffffff;
+    --accent: #0d6efd;
+    --text: #222;
+    --muted: #6b7280;
+}
+
+* { box-sizing: border-box; }
+html,body { height:100%; margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background: var(--bg); color:var(--text); }
+
+.login-wrapper {
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+}
+
+.login-box {
+    width: 380px;
+    background: var(--card);
+    border-radius:8px;
+    box-shadow: 0 6px 24px rgba(15,23,42,0.08);
+    padding:20px;
+}
+
+.tabs {
+    display:flex;
+    gap:8px;
+    margin-bottom:16px;
+}
+
+.tab {
+    flex:1;
+    padding:8px 12px;
+    background:#f1f5f9;
+    border-radius:6px;
+    border: none;
+    cursor:pointer;
+    font-weight:600;
+    color:var(--muted);
+}
+
+.tab.active {
+    background:#fff;
+    color:var(--accent);
+    box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.form { display:block; }
+.form.hidden { display:none; }
+
+.form h2 { margin:0 0 12px 0; font-size:18px; color:var(--text); }
+.form-group { margin-bottom:12px; }
+.form-group label { display:block; margin-bottom:6px; font-size:13px; color:var(--muted); }
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="email"] {
+    width:100%;
+    padding:10px 12px;
+    border:1px solid #e6edf3;
+    border-radius:6px;
+    background:#fafbfd;
+    font-size:14px;
+    outline:none;
+    transition: box-shadow .12s ease, border-color .12s ease;
+}
+.form-group input:focus {
+    border-color: rgba(13,110,253,0.3);
+    box-shadow: 0 0 0 4px rgba(13,110,253,0.06);
+}
+
+.form-actions { margin-top:8px; display:flex; justify-content:flex-end; }
+.btn {
+    background: var(--accent);
+    color:#fff;
+    border:none;
+    padding:10px 14px;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:600;
+}
+.btn:hover { filter:brightness(.95); }
+
+.result { margin-top:12px; min-height:28px; }
+.result-ok { color: #064e3b; background: #ecfdf5; padding:8px; border-radius:6px; }
+.result-err { color: #7f1d1d; background:#fff1f2; padding:8px; border-radius:6px; }
+
+.error { color:#b91c1c; font-size:13px; margin-top:6px; }
