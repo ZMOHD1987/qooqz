@@ -158,7 +158,7 @@
             html += '<td>' + esc(c.coupon_code || '-') + '</td>';
             html += '<td>' + formatDate(c.last_activity_at) + '</td>';
             html += '<td class="actions-cell">';
-            html += '<button class="btn btn-sm btn-info btn-view-cart" data-id="' + c.id + '" title="View"><i class="fas fa-eye"></i></button>';
+            html += '<button class="btn btn-sm btn-secondary btn-view-cart" data-btn-slug="secondary" data-id="' + c.id + '" title="View"><i class="fas fa-eye"></i></button>';
             if (CAN_EDIT) html += ' <button class="btn btn-sm btn-warning btn-edit-cart" data-id="' + c.id + '" title="Edit"><i class="fas fa-edit"></i></button>';
             if (CAN_DELETE) html += ' <button class="btn btn-sm btn-danger btn-delete-cart" data-id="' + c.id + '" title="Delete"><i class="fas fa-trash"></i></button>';
             html += '</td>';

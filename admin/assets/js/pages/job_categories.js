@@ -443,7 +443,7 @@
                     <td><span class="badge ${statusClass}">${statusText}</span></td>
                     <td>
                         <div class="table-actions">
-                            <button class="btn btn-sm btn-outline" onclick="window.JobCategoriesApp.editCategory(${cat.id})" title="${t('table.actions.edit')}">
+                            <button class="btn btn-sm btn-secondary" data-btn-slug="secondary" onclick="window.JobCategoriesApp.editCategory(${cat.id})" title="${t('table.actions.edit')}">
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button class="btn btn-sm btn-danger" onclick="window.JobCategoriesApp.deleteCategory(${cat.id})" title="${t('table.actions.delete')}">

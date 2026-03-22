@@ -271,7 +271,7 @@
                     var tr = document.createElement('tr');
                     var actionsHtml = '';
                     if(CAN_EDIT){
-                        actionsHtml += '<button class="btn btn-sm btn-info edit-payment-btn" data-id="' + esc(p.id) + '">' + t('table.edit', 'Edit') + '</button> ';
+                        actionsHtml += '<button class="btn btn-sm btn-secondary edit-payment-btn" data-btn-slug="secondary" data-id="' + esc(p.id) + '">' + t('table.edit', 'Edit') + '</button> ';
                     }
                     if(CAN_DELETE){
                         actionsHtml += '<button class="btn btn-sm btn-danger delete-payment-btn" data-id="' + esc(p.id) + '">' + t('table.delete', 'Delete') + '</button>';
@@ -332,7 +332,7 @@
                     var tr = document.createElement('tr');
                     var actionsHtml = '';
                     if(CAN_EDIT){
-                        actionsHtml += '<button class="btn btn-sm btn-info edit-bank-btn" data-id="' + esc(b.id) + '">' + t('table.edit', 'Edit') + '</button> ';
+                        actionsHtml += '<button class="btn btn-sm btn-secondary edit-bank-btn" data-btn-slug="secondary" data-id="' + esc(b.id) + '">' + t('table.edit', 'Edit') + '</button> ';
                     }
                     if(CAN_DELETE){
                         actionsHtml += '<button class="btn btn-sm btn-danger delete-bank-btn" data-id="' + esc(b.id) + '">' + t('table.delete', 'Delete') + '</button>';

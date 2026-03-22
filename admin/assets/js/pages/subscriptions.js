@@ -163,7 +163,7 @@ function loadPlans(page) {
                         '<td>' + esc(String(item.price || 0)) + ' ' + esc(item.currency_code || '') + '</td>' +
                         '<td>' + (parseInt(item.is_active) ? '<span class="badge badge-success">' + t('yes', 'Yes') + '</span>' : '<span class="badge badge-secondary">' + t('no', 'No') + '</span>') + '</td>' +
                         '<td class="actions-cell">' +
-                            '<button class="btn btn-sm btn-info btn-plan-trans" data-id="' + item.id + '">' + t('translations.title', 'Translations') + '</button> ' +
+                            '<button class="btn btn-sm btn-secondary btn-plan-trans" data-btn-slug="secondary" data-id="' + item.id + '">' + t('translations.title', 'Translations') + '</button> ' +
                             '<button class="btn btn-sm btn-primary btn-plan-edit" data-id="' + item.id + '">' + t('edit', 'Edit') + '</button> ' +
                             '<button class="btn btn-sm btn-danger btn-plan-delete" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button>' +
                         '</td>';
