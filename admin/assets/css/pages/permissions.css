@@ -1,0 +1,26 @@
+/* admin/assets/css/pages/permissions.css
+   Minimal styling for Permissions admin page - leverages same CSS vars as theme
+*/
+:root {
+  --pn-bg: var(--theme-background, #fff);
+  --pn-text: var(--theme-text-primary, #111);
+  --pn-border: var(--theme-border, #e5e7eb);
+  --pn-primary: var(--theme-primary, #3b82f6);
+}
+
+#adminPermissions { max-width:1200px; margin:16px auto; padding:12px; font-family:var(--theme-font-primary, Inter, system-ui); color:var(--pn-text); background:var(--pn-bg); }
+
+.tools { display:flex; gap:8px; align-items:center; margin-bottom:10px; }
+.tools input[type="search"] { padding:8px; border:1px solid var(--pn-border); border-radius:6px; width:300px; }
+.btn { padding:8px 12px; border-radius:6px; border:1px solid var(--pn-border); background:transparent; cursor:pointer; }
+.btn.primary { background:var(--pn-primary); color:#fff; border-color:transparent; }
+
+.table-wrap { border:1px solid var(--pn-border); border-radius:8px; overflow:auto; margin-top:8px; }
+#permTable { width:100%; border-collapse:collapse; font-size:14px; }
+#permTable thead th { padding:10px; background:var(--theme-card, #f8fafc); text-align:left; border-bottom:1px solid var(--pn-border); }
+#permTable tbody td { padding:10px; border-bottom:1px solid var(--pn-border); }
+
+.form-wrap { margin-top:12px; padding:12px; border:1px solid var(--pn-border); border-radius:8px; background:var(--theme-card,#fff); }
+
+.status { margin:8px 0; color:var(--pn-primary); }
+.alert { background:#fff5f5; border:1px solid #fca5a5; padding:8px; border-radius:6px; color:#7f1d1d; }

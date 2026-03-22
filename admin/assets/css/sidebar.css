@@ -1,0 +1,268 @@
+/*!
+ * /admin/assets/css/sidebar.css
+ * Sidebar Navigation — Production v2.0
+ *
+ * ─ القواعد ────────────────────────────────────────────────────
+ * • لا hardcoded colors — كل شيء من CSS vars مُعيَّنة في header.php
+ * • لا تعريف :root هنا — header.php هو المصدر الوحيد
+ * • المتغيرات المستخدمة:
+ *     --sidebar-background / --sidebar_background
+ *     --sidebar-text       / --sidebar_text
+ *     --sidebar-hover      / --sidebar_hover      (اختياري — يُستخدم fallback)
+ *     --sidebar-active     / --sidebar_active     (اختياري)
+ *     --primary-color
+ *     --border-color
+ *     --text-secondary
+ *     --body-font-family
+ *     --border-radius
+ * ─────────────────────────────────────────────────────────────
+ */
+
+/* ════════════════════════════════════════════════════════════
+   SIDEBAR WRAPPER
+   ════════════════════════════════════════════════════════════ */
+.admin-sidebar-nav {
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 0.5rem 0;
+    font-family: var(--body-font-family, system-ui, sans-serif);
+    font-size: 0.9375rem;
+    user-select: none;
+    /* scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color, #334155) transparent;
+}
+.admin-sidebar-nav::-webkit-scrollbar {
+    width: 4px;
+}
+.admin-sidebar-nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+.admin-sidebar-nav::-webkit-scrollbar-thumb {
+    background: var(--border-color, #334155);
+    border-radius: 2px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   LIST
+   ════════════════════════════════════════════════════════════ */
+.sidebar-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Level 1+ (submenus) — مخفية بالافتراضي */
+.sidebar-list--1,
+.sidebar-list--2 {
+    display: none;
+    overflow: hidden;
+    /* خلفية خافتة للتمييز */
+    background: color-mix(in srgb, var(--sidebar-background, var(--sidebar_background, #1e2533)) 80%, #000);
+}
+
+.menu-item.has-children.is-open > .sidebar-list--1,
+.menu-item.has-children.is-open > .sidebar-list--2 {
+    display: block;
+}
+
+/* ════════════════════════════════════════════════════════════
+   LINK BASE
+   ════════════════════════════════════════════════════════════ */
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    margin: 2px 8px;
+    border-radius: var(--border-radius, 8px);
+    color: var(--sidebar-text, var(--sidebar_text, #cbd5e1));
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease, padding-inline-start 0.18s ease;
+    position: relative;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/* Hover */
+.sidebar-link:hover {
+    background: color-mix(in srgb, var(--primary-color, #3b82f6) 12%, transparent);
+    color: var(--text-primary, #fff);
+}
+
+/* Active */
+.sidebar-link.active {
+    background: var(--sidebar-active, var(--primary-color, #3b82f6));
+    color: #fff;
+    font-weight: 500;
+}
+.sidebar-link.active .sidebar-icon { color: #fff; }
+
+/* Focus (accessibility) */
+.sidebar-link:focus-visible {
+    outline: 2px solid var(--primary-color, #3b82f6);
+    outline-offset: -2px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   ICON
+   ════════════════════════════════════════════════════════════ */
+.sidebar-icon {
+    width: 20px;
+    min-width: 20px;
+    text-align: center;
+    font-size: 1rem;
+    color: var(--text-secondary, var(--sidebar-text, #94a3b8));
+    transition: color 0.18s ease;
+    flex-shrink: 0;
+}
+.sidebar-link:hover .sidebar-icon {
+    color: var(--primary-color, #3b82f6);
+}
+.sidebar-link.active .sidebar-icon {
+    color: #fff;
+}
+
+/* ════════════════════════════════════════════════════════════
+   TITLE
+   ════════════════════════════════════════════════════════════ */
+.sidebar-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 0.2s ease, width 0.2s ease;
+}
+
+/* ════════════════════════════════════════════════════════════
+   ARROW (submenu toggle)
+   ════════════════════════════════════════════════════════════ */
+.sidebar-arrow {
+    font-size: 0.7rem;
+    color: var(--text-secondary, #94a3b8);
+    transition: transform 0.25s ease, color 0.18s ease;
+    flex-shrink: 0;
+    margin-inline-start: auto;
+}
+.menu-item.has-children.is-open > .sidebar-link > .sidebar-arrow {
+    transform: rotate(90deg);
+    color: var(--primary-color, #3b82f6);
+}
+
+/* ════════════════════════════════════════════════════════════
+   SUBMENU INDENTATION
+   ════════════════════════════════════════════════════════════ */
+.sidebar-list--1 > .menu-item > .sidebar-link {
+    padding-inline-start: 2.5rem;
+    font-size: 0.875rem;
+}
+.sidebar-list--2 > .menu-item > .sidebar-link {
+    padding-inline-start: 3.5rem;
+    font-size: 0.85rem;
+}
+
+/* ════════════════════════════════════════════════════════════
+   COLLAPSED SIDEBAR (desktop — body.sidebar-collapsed)
+   هذه القواعد تعمل مع admin-overrides.css الذي يُضيَّق الـ sidebar
+   ════════════════════════════════════════════════════════════ */
+@media (min-width: 769px) {
+    body.sidebar-collapsed .sidebar-title,
+    body.sidebar-collapsed .sidebar-arrow {
+        opacity: 0;
+        width: 0;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    body.sidebar-collapsed .sidebar-link {
+        justify-content: center;
+        padding: 0.75rem 0;
+        gap: 0;
+        margin: 2px 4px;
+    }
+
+    body.sidebar-collapsed .sidebar-icon {
+        width: 22px;
+        min-width: 22px;
+        font-size: 1.1rem;
+    }
+
+    /* إخفاء submenus في الوضع المُصغَّر */
+    body.sidebar-collapsed .sidebar-list--1,
+    body.sidebar-collapsed .sidebar-list--2 {
+        display: none !important;
+    }
+
+    /* Tooltip عبر data-tooltip في admin-overrides.css */
+}
+
+/* ════════════════════════════════════════════════════════════
+   HOME BUTTON — تمييز بصري طفيف
+   ════════════════════════════════════════════════════════════ */
+.js-home-link {
+    font-weight: 500;
+}
+.js-home-link .sidebar-icon {
+    color: var(--primary-color, #3b82f6);
+}
+.js-home-link:hover .sidebar-icon,
+.js-home-link.active .sidebar-icon {
+    color: #fff;
+}
+
+/* فاصل بصري بعد زر الرئيسية */
+.sidebar-list--0 > .menu-item:first-child {
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color, #334155) 50%, transparent);
+}
+
+/* ════════════════════════════════════════════════════════════
+   RTL
+   ════════════════════════════════════════════════════════════ */
+[dir="rtl"] .sidebar-link {
+    flex-direction: row-reverse;
+}
+[dir="rtl"] .sidebar-arrow {
+    margin-inline-start: 0;
+    margin-inline-end: auto;
+}
+[dir="rtl"] .menu-item.has-children.is-open > .sidebar-link > .sidebar-arrow {
+    transform: rotate(-90deg);
+}
+[dir="rtl"] .sidebar-list--1 > .menu-item > .sidebar-link {
+    padding-inline-end: 2.5rem;
+    padding-inline-start: 1rem;
+}
+[dir="rtl"] .sidebar-list--2 > .menu-item > .sidebar-link {
+    padding-inline-end: 3.5rem;
+    padding-inline-start: 1rem;
+}
+[dir="rtl"] .admin-sidebar-nav.rtl .sidebar-link {
+    direction: rtl;
+}
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .admin-sidebar-nav {
+        padding-top: 1rem;
+    }
+    .sidebar-link {
+        padding: 0.875rem 1rem;
+    }
+    .sidebar-list--1 > .menu-item > .sidebar-link {
+        padding-inline-start: 2.25rem;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   PRINT
+   ════════════════════════════════════════════════════════════ */
+@media print {
+    .admin-sidebar-nav { display: none !important; }
+}

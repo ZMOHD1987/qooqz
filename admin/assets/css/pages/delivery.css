@@ -1,0 +1,552 @@
+/* /admin/assets/css/pages/delivery.css
+   Complete Delivery Management Workspace styles
+   Uses admin theme CSS variables for dark/light theme compatibility */
+
+/* ── Page header ──────────────────────────────────────────── */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+.page-title  { font-size: 1.5rem; font-weight: 700; margin: 0; color: var(--text-primary, #fff); }
+.page-subtitle { color: var(--text-secondary, #94a3b8); margin: 0.25rem 0 0; font-size: 0.9rem; }
+
+/* ── Workspace tabs ───────────────────────────────────────── */
+.workspace-tabs {
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 2px solid var(--border-color, #263044);
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+.tab-btn {
+    padding: 0.6rem 1.1rem;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary, #94a3b8);
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    border-radius: 6px 6px 0 0;
+    white-space: nowrap;
+    transition: color 0.2s, background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+}
+.tab-btn:hover { background: color-mix(in srgb, var(--text-primary, #fff) 5%, transparent); color: var(--text-primary, #fff); }
+.tab-btn.active {
+    color: var(--primary-color, #3b82f6);
+    border-bottom-color: var(--primary-color, #3b82f6);
+    background: transparent;
+}
+
+/* ── Zones workspace: sidebar + map ──────────────────────── */
+.zones-workspace {
+    display: flex;
+    gap: 1rem;
+    min-height: 540px;
+    align-items: flex-start;
+}
+
+.zones-sidebar {
+    width: 300px;
+    min-width: 260px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background: var(--card-bg, var(--background-secondary, #1a2035));
+    border: 1px solid var(--border-color, #263044);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.zones-sidebar-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: color-mix(in srgb, #000 15%, transparent);
+    border-bottom: 1px solid var(--border-color, #263044);
+}
+.zones-sidebar-header .form-control { font-size: 0.8rem; padding: 0.35rem 0.6rem; }
+
+.sidebar-filter-actions {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.zones-list {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 400px;
+}
+
+.zone-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border-color, #263044);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.zone-list-item:hover { background: color-mix(in srgb, var(--text-primary, #fff) 4%, transparent); }
+.zone-list-item.inactive { opacity: 0.55; }
+
+.zone-item-info { flex: 1; min-width: 0; }
+.zone-item-info strong {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--text-primary, #fff);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.zone-item-meta { font-size: 0.75rem; color: var(--text-secondary, #94a3b8); margin-top: 2px; }
+
+.zone-item-actions { display: flex; gap: 0.25rem; flex-shrink: 0; }
+
+.zones-sidebar-footer {
+    padding: 0.75rem;
+    border-top: 1px solid var(--border-color, #263044);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.btn-block { width: 100%; justify-content: center; }
+
+/* ── Zones map panel — desktop ────────────────────────────── */
+.zones-map-panel {
+    flex: 1;
+    min-height: 540px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border-color, #263044);
+    display: flex;
+    flex-direction: column;
+    /* Explicit height anchor so child height:100% resolves correctly */
+    height: 540px;
+}
+
+.zones-map-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid var(--border-color, #263044);
+    background: color-mix(in srgb, #000 18%, transparent);
+    flex-shrink: 0;
+    /* Measured height used as CSS variable for child calc() */
+    --toolbar-h: 52px;
+}
+.zones-map-toolbar .btn {
+    padding-inline: 0.75rem;
+}
+
+.zones-map-canvas {
+    flex: 1;
+    min-height: 320px;
+    height: calc(540px - 52px);
+    /* position:relative is the anchor for delivery-map's inset:0 */
+    position: relative;
+}
+
+.delivery-map {
+    /* absolute fill — height never driven by content or flex ancestor */
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 0 0 10px 10px;
+}
+
+/* ── Fullscreen mode ──────────────────────────────────────── */
+.zones-map-panel.is-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 10020;
+    border-radius: 0;
+    border: none;
+    height: 100vh;
+    min-height: 100vh;
+}
+.zones-map-panel.is-fullscreen .zones-map-canvas {
+    height: calc(100vh - 52px);
+    min-height: 0;
+}
+.zones-map-panel.is-fullscreen .delivery-map {
+    min-height: 0;
+}
+
+/* Zone GeoJSON textarea */
+.zone-geojson {
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
+    resize: vertical;
+}
+
+/* ── Cards — only delivery-specific overrides ─────────────── */
+/* (Base .card, .card-header, .card-body etc. are in admin_framework.css) */
+
+/* ── Filters ──────────────────────────────────────────────── */
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.8rem;
+    align-items: flex-end;
+}
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+.filter-group--search {
+    --search-filter-span: 2;
+    grid-column: span var(--search-filter-span);
+}
+.filter-group label { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary, #94a3b8); }
+.filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+    padding-bottom: 1px;
+    flex-wrap: wrap;
+}
+
+.filter-card .card-body {
+    padding-top: 0.9rem;
+    padding-bottom: 0.9rem;
+}
+
+/* ── Forms — delivery-specific overrides ──────────────────── */
+/* (Base .form-control is in admin_framework.css) */
+.form-row { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.5rem; }
+.form-group { display: flex; flex-direction: column; gap: 0.25rem; }
+.form-group.col-3 { flex: 0 0 calc(25% - 0.6rem); min-width: 120px; }
+.form-group.col-4 { flex: 0 0 calc(33.333% - 0.5rem); min-width: 140px; }
+.form-group.col-6 { flex: 0 0 calc(50% - 0.375rem); min-width: 180px; }
+.form-group label { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary, #94a3b8); }
+.form-group label.required::after { content: ' *'; color: var(--danger-color, #ef4444); }
+.checkbox-label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; cursor: pointer; color: var(--text-primary, #fff); }
+
+.form-actions-footer {
+    display: flex;
+    gap: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color, #263044);
+    margin-top: 0.75rem;
+}
+
+/* (Buttons .btn/.btn-* are in admin_framework.css — do NOT redefine here) */
+/* (Badges .badge/.badge-* are in admin_framework.css — do NOT redefine here) */
+/* (Tables .data-table are in admin_framework.css — do NOT redefine here) */
+/* (Loading/empty/error states are in admin_framework.css — do NOT redefine here) */
+/* (Pagination .pagination-* is in admin_framework.css — do NOT redefine here) */
+
+.actions { display: flex; gap: 0.35rem; align-items: center; }
+
+/* ── RTL support ──────────────────────────────────────────── */
+[dir="rtl"] .tab-btn         { font-family: 'Inter', 'Noto Sans Arabic', 'Segoe UI', sans-serif; }
+[dir="rtl"] .pagination-wrapper { flex-direction: row-reverse; }
+[dir="rtl"] .card-header     { flex-direction: row-reverse; }
+[dir="rtl"] .zones-workspace { flex-direction: row-reverse; }
+
+/* ── Responsive — tablet (≤ 900px) ───────────────────────── */
+@media (max-width: 900px) {
+    /*
+     * KEY FIX: switch workspace to display:block so every child becomes
+     * an independent block element — the sidebar no longer competes with
+     * the map panel for flex space, and the map's height is iron-clad.
+     */
+    .zones-workspace {
+        display: block;
+        min-height: auto;
+    }
+
+    /* Sidebar: independent block, auto height based on content */
+    .zones-sidebar {
+        width: 100%;
+        min-width: auto;
+        margin-bottom: 1rem;
+        /* Limit list height so sidebar doesn't overflow */
+    }
+    .zones-list { max-height: 280px; }
+
+    /* Map panel: standalone block with explicit pixel height
+       — completely unaffected by the sidebar above it */
+    .zones-map-panel {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        /* Explicit height — no parent needed to resolve it */
+        height: 420px;
+        min-height: 420px;
+        flex: none;
+    }
+    .zones-map-canvas {
+        flex: none;
+        /* 52px = toolbar measured height */
+        height: calc(420px - 52px);
+        min-height: 0;
+        position: relative;
+    }
+    /* delivery-map uses position:absolute so it fills canvas exactly */
+    .delivery-map {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        border-radius: 0 0 10px 10px;
+    }
+
+    .zones-map-toolbar .btn { flex: 1; justify-content: center; }
+
+    .form-group.col-3,
+    .form-group.col-4,
+    .form-group.col-6   { flex: 1 1 100%; }
+    .filters-grid       { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .filter-group--search { grid-column: span 2; }
+}
+
+/* ── Responsive — mobile (≤ 700px) ───────────────────────── */
+@media (max-width: 700px) {
+    .zones-map-panel  { height: 380px; min-height: 380px; }
+    .zones-map-canvas { height: calc(380px - 52px); }
+    .filters-grid { grid-template-columns: 1fr; }
+    .filter-group--search { grid-column: span 1; }
+    .filter-buttons .btn { flex: 1; justify-content: center; }
+    .zones-sidebar-header { gap: 0.6rem; }
+    .zones-list { max-height: 240px; }
+}
+
+/* ── Responsive — small mobile (≤ 600px) ─────────────────── */
+@media (max-width: 600px) {
+    .workspace-tabs { gap: 0.2rem; }
+    .tab-btn        { padding: 0.5rem 0.7rem; font-size: 0.78rem; }
+    .tab-btn span   { display: none; }
+    .zones-map-panel  { height: 340px; min-height: 340px; }
+    .zones-map-canvas { height: calc(340px - 52px); }
+    .zones-list { max-height: 200px; }
+}
+
+/* ── Provider ID Lookup ───────────────────────────────────── */
+.provider-lookup {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.provider-lookup .form-control { flex: 1; min-width: 100px; }
+.provider-name-badge {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--text-primary, #fff) 6%, transparent);
+    color: var(--text-secondary, #94a3b8);
+    white-space: nowrap;
+    transition: background 0.2s, color 0.2s;
+}
+.provider-name-badge.loading  { background: color-mix(in srgb, var(--warning-color, #f59e0b) 20%, transparent); color: var(--warning-color, #fcd34d); }
+.provider-name-badge.found    { background: color-mix(in srgb, var(--success-color, #22c55e) 20%, transparent); color: var(--success-color, #86efac); }
+.provider-name-badge.not-found{ background: color-mix(in srgb, var(--danger-color, #ef4444) 20%, transparent);  color: var(--danger-color, #fca5a5); }
+
+/* ── Coordinate input wrapper (lat/lng + map button) ─────── */
+.coord-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.coord-input-wrap .form-control { flex: 1; }
+.btn-pick-map {
+    flex-shrink: 0;
+    padding: 0.3rem 0.55rem;
+    white-space: nowrap;
+    color: var(--primary-color, #3b82f6);
+    border-color: var(--primary-color, #3b82f6);
+}
+.btn-pick-map:hover { background: color-mix(in srgb, var(--primary-color, #3b82f6) 15%, transparent); }
+.btn-use-gps {
+    flex-shrink: 0;
+    padding: 0.3rem 0.55rem;
+    white-space: nowrap;
+    color: #16a34a;
+    border-color: #16a34a;
+}
+.btn-use-gps:hover  { background: color-mix(in srgb, var(--success-color, #16a34a) 15%, transparent); }
+.btn-use-gps.loading{ opacity: 0.6; pointer-events: none; }
+
+/* ── Coordinate Picker Modal — dl-modal-* namespace (z-index 12000) ── */
+.dl-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: color-mix(in srgb, var(--background-main, #000) 70%, transparent);
+    z-index: 12000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(8px, 2vw, 16px);
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+.dl-modal-panel {
+    background: var(--card-bg, var(--background-secondary, #1e293b));
+    border: 1px solid var(--border-color, #334155);
+    border-radius: var(--card-border-radius, 12px);
+    box-shadow: 0 12px 40px color-mix(in srgb, #000 40%, transparent);
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+.dl-modal-panel--wide { max-width: 760px; }
+.dl-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(12px, 1.5vw, 16px) clamp(14px, 2vw, 20px);
+    border-bottom: 1px solid var(--border-color, #334155);
+    background: var(--surface-color, var(--background-secondary, #1e293b));
+    flex-shrink: 0;
+}
+.dl-modal-header h3 {
+    margin: 0;
+    font-size: clamp(1rem, 1.3vw, 1.125rem);
+    font-weight: 600;
+    color: var(--text-primary, #fff);
+    font-family: var(--body-font-family, inherit);
+}
+.dl-modal-body {
+    padding: clamp(14px, 2vw, 20px);
+    overflow-y: auto;
+    flex: 1;
+}
+.dl-coord-search {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+.dl-coord-search .form-control { flex: 1; }
+.dl-coord-map {
+    height: 400px;
+    width: 100%;
+}
+.dl-coord-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color, #263044);
+    margin-top: 0.75rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary, #94a3b8);
+}
+.coord-display {
+    font-family: monospace;
+    background: color-mix(in srgb, var(--text-primary, #fff) 7%, transparent);
+    color: var(--text-primary, #fff);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+
+/* ── Leaflet map: force light background so tiles are visible ── */
+.leaflet-container {
+    background: #ddd !important;
+}
+.leaflet-tile-pane {
+    isolation: isolate;
+}
+.leaflet-tile,
+.leaflet-tile-container img {
+    filter: none !important;
+    mix-blend-mode: normal !important;
+    opacity: 1;
+}
+.leaflet-control-container .leaflet-top,
+.leaflet-control-container .leaflet-bottom {
+    z-index: 800;
+}
+.leaflet-control-attribution {
+    background: rgba(255,255,255,0.85) !important;
+    color: #333 !important;
+}
+.leaflet-control-attribution a { color: #0078a8 !important; }
+
+/* ── Delivery Toast — dl-toast namespace ──────────────────── */
+.dl-toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 99999;
+    padding: 0.7rem 1.4rem;
+    border-radius: var(--border-radius, 8px);
+    font-size: 0.9rem;
+    color: #fff;
+    background: var(--card-bg, #1e293b);
+    box-shadow: 0 4px 20px color-mix(in srgb, #000 40%, transparent);
+    min-width: 200px;
+    text-align: center;
+    pointer-events: none;
+}
+.dl-toast--error   { background: var(--danger-color, #dc2626); }
+.dl-toast--success { background: var(--success-color, #16a34a); }
+.dl-toast--info    { background: var(--info-color, var(--primary-color, #2563eb)); }
+
+/* ── Table error row ─────────────────────────────────────── */
+.table-error-row {
+    color: var(--danger-color, #fca5a5);
+    padding: 1rem;
+    text-align: center;
+    font-size: 0.875rem;
+}
+
+/* ── RTL adjustments ─────────────────────────────────────── */
+[dir="rtl"] .provider-lookup    { flex-direction: row-reverse; }
+[dir="rtl"] .coord-input-wrap   { flex-direction: row-reverse; }
+[dir="rtl"] .dl-modal-backdrop  { direction: rtl; }
+[dir="rtl"] .dl-modal-header    { flex-direction: row-reverse; }
+[dir="rtl"] .dl-coord-search    { flex-direction: row-reverse; }
+[dir="rtl"] .dl-coord-footer    { flex-direction: row-reverse; }
+[dir="rtl"] .zones-map-toolbar  { justify-content: flex-start; }
+[dir="rtl"] .filter-buttons     { flex-direction: row-reverse; }
+[dir="rtl"] .page-header-actions { flex-direction: row-reverse; }
+
+/* ── Responsive — modal ──────────────────────────────────── */
+@media (max-width: 768px) {
+    .filter-buttons       { flex-direction: column; }
+    .filter-buttons .btn  { width: 100%; justify-content: center; }
+
+    /* Sheet from bottom on mobile */
+    .dl-modal-backdrop   { align-items: flex-end; padding: 0; }
+    .dl-modal-panel {
+        max-width: 100%;
+        max-height: 92vh;
+        border-radius: var(--card-border-radius, 12px) var(--card-border-radius, 12px) 0 0;
+        border-bottom: none;
+    }
+}
+
+/* ── Print ────────────────────────────────────────────────── */
+@media print {
+    .page-header-actions,
+    .filter-buttons,
+    .sidebar-filter-actions,
+    .form-actions-footer,
+    .dl-toast,
+    .dl-modal-backdrop,
+    .pagination-wrapper { display: none !important; }
+    .page-container     { padding: 0; }
+}

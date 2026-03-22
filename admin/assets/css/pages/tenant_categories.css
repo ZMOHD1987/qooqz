@@ -1,0 +1,244 @@
+/*!
+ * /admin/assets/css/pages/tenant_categories.css — Production v2.0
+ *
+ * ─ القواعد ────────────────────────────────────────────────────
+ * • كل لون من CSS variable مُعيَّنة في header.php (:root)
+ * • لا hardcoded colors — الـ fallback للحالات الطارئة فقط
+ * • لا تعريف :root هنا
+ * • tc- prefix لـ components الخاصة بهذه الصفحة
+ * • لا إعادة تعريف .btn/.card/.form-control — تأتي من framework
+ * ─────────────────────────────────────────────────────────────
+ */
+
+/* ════════════════════════════════════════════════════════════
+   PAGE HEADER
+   ════════════════════════════════════════════════════════════ */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: clamp(8px, 1.5vw, 16px);
+    padding: clamp(12px, 2vw, 20px);
+    margin-bottom: clamp(12px, 2vw, 20px);
+    background: var(--card-bg, var(--background-secondary, #1e293b));
+    border: 1px solid var(--border-color, #334155);
+    border-radius: var(--card-border-radius, 12px);
+}
+.page-header-content { flex: 1 1 200px; min-width: 0; }
+.page-title {
+    margin: 0 0 4px;
+    font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+    font-weight: 700;
+    color: var(--text-primary, #fff);
+    line-height: 1.2;
+    font-family: var(--body-font-family, inherit);
+}
+.page-subtitle {
+    margin: 0;
+    font-size: clamp(0.78rem, 1.2vw, 0.9rem);
+    color: var(--text-secondary, #94a3b8);
+    font-family: var(--body-font-family, inherit);
+}
+.page-header-actions {
+    display: flex;
+    gap: clamp(6px, 1vw, 12px);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+/* ════════════════════════════════════════════════════════════
+   FORM CARD ANIMATION
+   ════════════════════════════════════════════════════════════ */
+.tc-form-card { animation: tcFormIn 0.2s ease; }
+@keyframes tcFormIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.tc-delete-btn { margin-inline-start: auto; }
+
+/* ════════════════════════════════════════════════════════════
+   FILTERS GRID
+   ════════════════════════════════════════════════════════════ */
+.filter-label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: clamp(0.78rem, 1.1vw, 0.875rem);
+    color: var(--text-secondary, #94a3b8);
+    font-weight: 500;
+    font-family: var(--body-font-family, inherit);
+}
+.filter-buttons {
+    display: flex;
+    gap: clamp(6px, 1vw, 10px);
+    flex-wrap: wrap;
+    align-items: center;
+    padding-top: 1px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   TABLE — page-specific overrides
+   ════════════════════════════════════════════════════════════ */
+#tenantCategoriesTable thead {
+    background: var(--thead-bg, var(--surface-color, #0f172a));
+}
+#tenantCategoriesTable th {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    color: var(--text-secondary, #94a3b8);
+}
+#tenantCategoriesTable tbody tr:hover {
+    background: color-mix(in srgb, var(--primary-color, #3b82f6) 4%, transparent);
+}
+
+/* Status toggle button — page-specific sizes */
+.tc-toggle-btn {
+    padding: 3px 10px;
+    font-size: 0.78rem;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-family: var(--body-font-family, inherit);
+    transition: filter 0.2s;
+}
+.tc-toggle-active {
+    background: color-mix(in srgb, var(--success-color, #10b981) 15%, transparent);
+    color: var(--success-color, #10b981);
+    border: 1px solid color-mix(in srgb, var(--success-color, #10b981) 35%, transparent);
+}
+.tc-toggle-inactive {
+    background: color-mix(in srgb, var(--danger-color, #ef4444) 15%, transparent);
+    color: var(--danger-color, #ef4444);
+    border: 1px solid color-mix(in srgb, var(--danger-color, #ef4444) 35%, transparent);
+}
+.tc-toggle-active:hover,
+.tc-toggle-inactive:hover { filter: brightness(1.15); }
+
+/* ════════════════════════════════════════════════════════════
+   RESULTS COUNT  (page-specific component)
+   ════════════════════════════════════════════════════════════ */
+.tc-results-count {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    margin-bottom: 12px;
+    background: color-mix(in srgb, var(--primary-color, #3b82f6) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--primary-color, #3b82f6) 20%, transparent);
+    border-radius: var(--border-radius, 8px);
+    color: var(--text-secondary, #94a3b8);
+    font-size: 0.875rem;
+    font-family: var(--body-font-family, inherit);
+}
+.tc-results-count i { color: var(--primary-color, #3b82f6); }
+
+/* ════════════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS  (tc- prefix)
+   ════════════════════════════════════════════════════════════ */
+.tc-notifications {
+    position: fixed;
+    top: clamp(12px, 2vh, 20px);
+    inset-inline-end: clamp(12px, 2vw, 20px);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: min(380px, 90vw);
+    pointer-events: none;
+}
+.tc-toast {
+    padding: clamp(10px, 1.5vw, 12px) clamp(32px, 4vw, 40px)
+             clamp(10px, 1.5vw, 12px) clamp(14px, 2vw, 16px);
+    border-radius: var(--border-radius, 8px);
+    color: #fff;
+    font-size: clamp(0.8rem, 1vw, 0.9rem);
+    font-family: var(--body-font-family, inherit);
+    box-shadow: 0 4px 16px color-mix(in srgb, #000 35%, transparent);
+    animation: tcToastIn 0.25s ease;
+    position: relative;
+    word-break: break-word;
+    pointer-events: auto;
+}
+.tc-toast-success { background: var(--success-color, #10b981); }
+.tc-toast-error   { background: var(--danger-color, var(--error-color, #ef4444)); }
+.tc-toast-warning {
+    background: var(--warning-color, #f59e0b);
+    color: color-mix(in srgb, var(--warning-color, #f59e0b) 10%, #000);
+}
+.tc-toast-info { background: var(--info-color, var(--primary-color, #3b82f6)); }
+
+.tc-toast-close {
+    position: absolute;
+    top: 50%;
+    inset-inline-end: 10px;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 1.25rem;
+    line-height: 1;
+    opacity: 0.75;
+    transition: opacity 0.2s;
+    background: none;
+    border: none;
+    color: inherit;
+    padding: 0 4px;
+}
+.tc-toast-close:hover { opacity: 1; }
+
+@keyframes tcToastIn {
+    from { opacity: 0; transform: translateX(12px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ════════════════════════════════════════════════════════════
+   RTL
+   ════════════════════════════════════════════════════════════ */
+[dir="rtl"] .page-header         { flex-direction: row-reverse; }
+[dir="rtl"] .page-header-actions { flex-direction: row-reverse; }
+[dir="rtl"] .filter-buttons      { flex-direction: row-reverse; }
+[dir="rtl"] .form-actions        { flex-direction: row-reverse; }
+[dir="rtl"] .tc-delete-btn       { margin-inline-start: 0; margin-inline-end: auto; }
+[dir="rtl"] .tc-results-count    { flex-direction: row-reverse; }
+[dir="rtl"] .tc-notifications    { inset-inline-end: auto; inset-inline-start: clamp(12px, 2vw, 20px); }
+[dir="rtl"] .tc-toast            { animation-name: tcToastInRtl; }
+[dir="rtl"] .tc-toast-close      { inset-inline-end: auto; inset-inline-start: 10px; }
+[dir="rtl"] #tenantCategoriesTable { direction: rtl; }
+
+@keyframes tcToastInRtl {
+    from { opacity: 0; transform: translateX(-12px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .page-header              { flex-direction: column; align-items: stretch; }
+    .page-header-actions      { width: 100%; }
+    .page-header-actions .btn { flex: 1; justify-content: center; }
+    .filter-buttons           { flex-direction: column; }
+    .filter-buttons .btn      { width: 100%; justify-content: center; }
+    .tc-delete-btn            { margin-inline-start: 0 !important; }
+    .tc-notifications         { inset-inline-end: 8px; inset-inline-start: 8px; max-width: calc(100% - 16px); }
+
+    .pagination-wrapper       { flex-direction: column; align-items: stretch; }
+    .pagination               { justify-content: center; flex-wrap: wrap; }
+}
+@media (max-width: 480px) {
+    .page-container { padding: 8px; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   PRINT
+   ════════════════════════════════════════════════════════════ */
+@media print {
+    .page-header-actions,
+    .filter-buttons,
+    .form-actions,
+    .tc-form-card,
+    .tc-notifications,
+    .pagination-wrapper { display: none !important; }
+    .page-container { padding: 0; }
+}

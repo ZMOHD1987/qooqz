@@ -1,0 +1,475 @@
+/* admin/assets/css/admin.css - Production Fixed */
+
+/* ════════════════════════════════════════════════════════════
+   BASE & RESET
+   ════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+
+body {
+    font-family: var(--body-font-family, 'Inter', sans-serif);
+    font-size: 16px;
+    line-height: 1.6;
+    background: var(--background-main, #0A0A0A);
+    color: var(--text-primary, #FFF);
+    overflow-x: hidden;
+    width: 100%;
+}
+
+/* ════════════════════════════════════════════════════════════
+   TYPOGRAPHY
+   ════════════════════════════════════════════════════════════ */
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+}
+
+h1 { font-size: 2rem; }
+h2 { font-size: 1.75rem; }
+h3 { font-size: 1.5rem; }
+
+p { margin-bottom: 1rem; }
+
+.text-muted {
+    color: var(--text-secondary, #94A3B8);
+    font-size: 0.9375rem;
+}
+
+a {
+    color: var(--primary-color, #3B82F6);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+/* ════════════════════════════════════════════════════════════
+   LAYOUT — الإصلاح الجوهري
+   ════════════════════════════════════════════════════════════ */
+
+.admin-layout {
+    display: flex;
+    min-height: calc(100vh - 70px);
+    width: 100%;
+    /* يمنع أي عنصر داخلي من كسر العرض */
+    overflow-x: hidden;
+}
+
+.admin-main {
+    flex: 1;
+    /*
+     * min-width:0 هو المفتاح:
+     * بدونه flex-item يمتد لأبعد من حاوية الـ flex
+     * مما يجعل الصفحة أعرض من الشاشة على الموبايل
+     */
+    min-width: 0;
+    overflow-x: hidden;
+    padding: 2rem;
+    background: var(--background-main);
+    min-height: calc(100vh - 70px);
+}
+
+.container {
+    width: 100%;
+    /* لا max-width ثابت — يتحكم به DB عبر --container-width */
+    max-width: var(--container-width, 100%);
+    margin: 0 auto;
+}
+
+/* ── Full-page admin mode ──────────────────────────────────────
+   Apply .full-page-admin on the page-container (or body) to remove
+   all padding/margins so the page fills the entire viewport.
+   Uses DB-driven colors via CSS vars — no hardcoded values.
+   ────────────────────────────────────────────────────────────── */
+.full-page-admin {
+    width: 100%;
+    height: 100%;
+    min-height: calc(100vh - 70px);
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--background-main);
+    color: var(--text-primary, #fff);
+}
+
+.full-page-admin .admin-main,
+.admin-main.full-page-admin {
+    padding: 0;
+}
+
+.full-page-admin .page-container {
+    width: 100%;
+    height: 100%;
+    min-height: calc(100vh - 70px);
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ════════════════════════════════════════════════════════════
+   HEADER
+   ════════════════════════════════════════════════════════════ */
+
+.admin-header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--header-background, var(--background-main, #0d0d0d));
+    color: var(--header-text, var(--text-primary, #FFF));
+    border-bottom: 1px solid var(--border-color, #333333);
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 70px;
+    gap: 1rem;
+    width: 100%;
+}
+
+.header-left,
+.header-center,
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-center {
+    flex: 1;
+    justify-content: center;
+    max-width: 600px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: inherit;
+    font-weight: 700;
+    font-size: 1.25rem;
+    white-space: nowrap;
+}
+
+.brand-logo {
+    max-height: 36px;
+    max-width: 140px;
+    width: auto;
+    object-fit: contain;
+}
+
+.icon-btn {
+    background: transparent;
+    border: 1px solid color-mix(in srgb, #fff 20%, transparent);
+    color: inherit;
+    padding: 0;
+    border-radius: var(--border-radius, 6px);
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.icon-btn:hover {
+    background: color-mix(in srgb, #fff 10%, transparent);
+}
+
+#sidebarToggle {
+    background: var(--sidebar-toggle-bg, var(--primary-color, #3B82F6));
+    border-color: var(--sidebar-toggle-bg, var(--primary-color, #3B82F6));
+    color: #fff;
+}
+
+.search-wrap {
+    display: flex;
+    background: color-mix(in srgb, #000 20%, transparent);
+    border: 1px solid color-mix(in srgb, #fff 10%, transparent);
+    border-radius: var(--border-radius, 8px);
+    padding: 0.25rem;
+    width: 100%;
+    max-width: 500px;
+}
+
+#adminSearch {
+    background: transparent;
+    border: none;
+    color: inherit;
+    padding: 0.5rem;
+    outline: none;
+    flex: 1;
+    min-width: 0;
+}
+
+#adminSearch::placeholder {
+    color: color-mix(in srgb, currentColor 50%, transparent);
+}
+
+.user-menu {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid color-mix(in srgb, #fff 30%, transparent);
+    flex-shrink: 0;
+}
+
+.username  { font-weight: 600; font-size: 0.9375rem; }
+.user-role { font-size: 0.8125rem; opacity: 0.7; }
+
+.btn-logout {
+    background: transparent;
+    border: 1px solid color-mix(in srgb, #fff 20%, transparent);
+    color: inherit;
+    padding: 0;
+    border-radius: var(--border-radius, 6px);
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.btn-logout:hover {
+    background: var(--error-color, #EF4444);
+    border-color: var(--error-color, #EF4444);
+}
+
+/* ════════════════════════════════════════════════════════════
+   RTL — Header
+   ════════════════════════════════════════════════════════════ */
+
+[dir="rtl"] .header-right,
+[dir="rtl"] .user-menu {
+    flex-direction: row-reverse;
+}
+
+/* ════════════════════════════════════════════════════════════
+   SIDEBAR
+   ════════════════════════════════════════════════════════════ */
+
+.admin-sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    background: var(--sidebar-background, #4B0082);
+    color: var(--sidebar-text, #FFF);
+    border-right: 1px solid var(--border-color, #334155);
+    padding: 1rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: width 0.26s ease, transform 0.3s ease, padding 0.26s ease;
+    will-change: transform, width;
+}
+
+[dir="rtl"] .admin-sidebar {
+    border-right: none;
+    border-left: 1px solid var(--border-color, #334155);
+}
+
+/* Desktop: sticky */
+@media (min-width: 769px) {
+    .admin-sidebar {
+        position: sticky;
+        top: 70px;
+        height: calc(100vh - 70px);
+        z-index: 900;
+        transform: none !important;
+    }
+}
+
+/* Mobile: drawer */
+@media (max-width: 768px) {
+    .admin-sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        z-index: 1001;
+        transform: translateX(-100%);
+        box-shadow: 4px 0 16px color-mix(in srgb, #000 40%, transparent);
+    }
+
+    [dir="rtl"] .admin-sidebar {
+        left: auto;
+        right: 0;
+        transform: translateX(100%);
+        box-shadow: -4px 0 16px color-mix(in srgb, #000 40%, transparent);
+    }
+
+    body.sidebar-open .admin-sidebar {
+        transform: translateX(0);
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   SIDEBAR LINKS
+   ════════════════════════════════════════════════════════════ */
+
+.sidebar-list { list-style: none; margin: 0; padding: 0; }
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    color: inherit;
+    text-decoration: none;
+    border-radius: var(--border-radius, 8px);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.sidebar-link:hover  { background: color-mix(in srgb, #fff 10%, transparent); }
+.sidebar-link.active { background: var(--primary-color, #3B82F6); }
+
+/* ════════════════════════════════════════════════════════════
+   SIDEBAR BACKDROP
+   ════════════════════════════════════════════════════════════ */
+
+.sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: color-mix(in srgb, #000 55%, transparent);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    pointer-events: none;
+}
+
+/* Desktop: never show */
+@media (min-width: 769px) {
+    .sidebar-backdrop { display: none !important; }
+}
+
+/* Mobile: show only when sidebar open */
+@media (max-width: 768px) {
+    body.sidebar-open .sidebar-backdrop {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   FOOTER
+   ════════════════════════════════════════════════════════════ */
+
+.admin-footer {
+    background: var(--header-background, var(--background-secondary, #4f4f4f));
+    color: var(--text-secondary, #B0B0B0);
+    border-top: 1px solid var(--border-color, #333);
+    padding: 1.5rem;
+    text-align: center;
+    font-size: 0.875rem;
+    width: 100%;
+}
+
+/* ════════════════════════════════════════════════════════════
+   SCROLLBAR
+   ════════════════════════════════════════════════════════════ */
+
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--background-main); }
+::-webkit-scrollbar-thumb { background: var(--border-color, #334155); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--primary-color); }
+
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE — TABLET 1024px
+   ════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1024px) {
+    .admin-main { padding: 1.5rem; }
+    .admin-sidebar { width: 240px; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE — MOBILE 768px
+   ════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+    .admin-header {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 0.75rem 1rem;
+        gap: 0.5rem;
+    }
+
+    .header-left  { order: 1; flex: 0 0 auto; }
+    .header-right { order: 2; flex: 0 0 auto; margin-left: auto; }
+
+    [dir="rtl"] .header-right { margin-left: 0; margin-right: auto; }
+
+    .header-center {
+        order: 3;
+        flex: 1 1 100%;
+        max-width: 100%;
+        margin-top: 0.25rem;
+    }
+
+    .search-wrap,
+    #adminSearch { width: 100%; max-width: 100%; }
+
+    .user-info { display: none; }
+
+    /*
+     * ✅ الإصلاح الجوهري للموبايل:
+     * السايدبار صار fixed → يخرج من الـ flow
+     * admin-main يجب أن يأخذ العرض كامل
+     */
+    .admin-main {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 1rem !important;
+        overflow-x: hidden !important;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE — SMALL MOBILE 480px
+   ════════════════════════════════════════════════════════════ */
+
+@media (max-width: 480px) {
+    .admin-header { padding: 0.5rem 0.75rem; }
+    .header-left, .header-right { gap: 0.5rem; }
+    .brand { font-size: 1rem; }
+    .brand-logo { max-height: 28px; }
+    .admin-main { padding: 0.75rem !important; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   PRINT
+   ════════════════════════════════════════════════════════════ */
+
+@media print {
+    .admin-header,
+    .admin-sidebar,
+    .sidebar-backdrop,
+    .admin-footer { display: none !important; }
+    .admin-main   { padding: 0 !important; }
+}
