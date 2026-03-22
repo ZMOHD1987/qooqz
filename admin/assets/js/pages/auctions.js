@@ -3,74 +3,67 @@
 
     /**
      * /admin/assets/js/pages/auctions.js
-     * Auctions Management Module - Production Ready
-     * Based on Products pattern adapted for Auctions
+     * Auctions Management — Production v2.0
+     * ─ All config from AUCTIONS_CONFIG (no separate globals)
+     * ─ Admin.page.register for fragment re-navigation
      */
 
     // ════════════════════════════════════════════════════════════
     // CONFIGURATION & STATE
     // ════════════════════════════════════════════════════════════
-    const CONFIG = window.AUCTIONS_CONFIG || {};
-    const AF     = window.AdminFramework  || {};
-    const PERMS  = window.PAGE_PERMISSIONS || {};
+    let CFG, STRINGS, API;
 
-    const API = {
-        auctions:     CONFIG.apiUrl          || '/api/auctions',
-        bids:         CONFIG.bidsApi         || '/api/auction_bids',
-        translations: CONFIG.translationsApi || '/api/auction_translations',
-        products:     CONFIG.productsApi     || '/api/products',
-        currencies:   CONFIG.currenciesApi   || '/api/currencies',
-        languages:    CONFIG.languagesApi    || '/api/languages',
-        entities:     CONFIG.entitiesApi     || '/api/entities'
-    };
+    function reloadConfig() {
+        CFG     = window.AUCTIONS_CONFIG || {};
+        STRINGS = CFG.strings || {};
+        API = {
+            auctions:     (CFG.urls && CFG.urls.auctions)     || '/api/auctions',
+            bids:         (CFG.urls && CFG.urls.bids)         || '/api/auction_bids',
+            translations: (CFG.urls && CFG.urls.translations) || '/api/auction_translations',
+            products:     (CFG.urls && CFG.urls.products)     || '/api/products',
+            currencies:   (CFG.urls && CFG.urls.currencies)   || '/api/currencies',
+            languages:    (CFG.urls && CFG.urls.languages)    || '/api/languages',
+            entities:     (CFG.urls && CFG.urls.entities)     || '/api/entities'
+        };
+    }
 
     const state = {
         page:           1,
-        perPage:        CONFIG.itemsPerPage || 25,
+        perPage:        25,
         total:          0,
         auctions:       [],
         languages:      [],
         currencies:     [],
-        currencyMap:    {}, // keyed by code for fast lookup
+        currencyMap:    {},
         products:       [],
         entities:       [],
         filters:        {},
         currentAuction: null,
-        permissions:    PERMS,
-        language:       window.USER_LANGUAGE  || CONFIG.lang || 'en',
-        direction:      window.USER_DIRECTION || 'ltr',
-        csrfToken:      window.CSRF_TOKEN     || CONFIG.csrfToken || '',
-        tenantId:       window.APP_CONFIG?.TENANT_ID || 1
+        permissions:    {}
     };
 
     let el = {};           // DOM element cache
-    let translations = {}; // i18n map
 
     // ════════════════════════════════════════════════════════════
     // TRANSLATIONS
     // ════════════════════════════════════════════════════════════
-    function t(key, fallback = '') {
+    function t(key, fallback) {
         const parts = key.split('.');
-        let val = translations;
-        for (const k of parts) {
-            if (val && typeof val === 'object' && k in val) { val = val[k]; }
-            else { return fallback || key; }
+        let val = STRINGS;
+        for (let i = 0; i < parts.length; i++) {
+            if (val && typeof val === 'object' && parts[i] in val) {
+                val = val[parts[i]];
+            } else {
+                return fallback || key;
+            }
         }
-        return (val !== undefined && val !== null) ? String(val) : (fallback || key);
+        return typeof val === 'string' ? val : (fallback || key);
     }
 
-    async function loadTranslations(lang) {
-        try {
-            const url = `/languages/Auctions/${encodeURIComponent(lang || state.language)}.json`;
-            const res = await fetch(url, { credentials: 'same-origin' });
-            if (!res.ok) throw new Error('Translation fetch failed: ' + res.status);
-            const raw = await res.json();
-            translations = raw.strings || raw;
-            applyTranslations();
-        } catch (err) {
-            console.warn('[Auctions] Translation load failed:', err);
-            translations = {};
-        }
+    async function loadTranslations() {
+        // Translations are server-side loaded via AUCTIONS_CONFIG.strings
+        // Just apply to DOM elements
+        applyTranslations();
     }
 
     function applyTranslations() {
@@ -103,7 +96,7 @@
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         };
         if (options.method && options.method !== 'GET') {
-            defaults.headers['X-CSRF-Token'] = state.csrfToken;
+            defaults.headers['X-CSRF-Token'] = CFG.csrfToken || '';
         }
         const config = { ...defaults, ...options };
         if (options.headers) config.headers = { ...defaults.headers, ...options.headers };
@@ -136,8 +129,8 @@
             const params = new URLSearchParams({
                 page:      page,
                 limit:     state.perPage,
-                tenant_id: state.tenantId,
-                lang:      state.language,
+                tenant_id: CFG.tenantId || 1,
+                lang:      CFG.lang || 'en',
                 format:    'json'
             });
 
@@ -198,7 +191,7 @@
 
         // Products (for product selector)
         try {
-            const res = await apiCall(`${API.products}?format=json&tenant_id=${state.tenantId}&lang=${state.language}&limit=500`);
+            const res = await apiCall(`${API.products}?format=json&tenant_id=${CFG.tenantId || 1}&lang=${CFG.lang || 'en'}&limit=500`);
             if (res.success) {
                 const data = res.data?.items || (Array.isArray(res.data) ? res.data : []);
                 state.products = data;
@@ -212,7 +205,7 @@
 
         // Entities (for entity selector)
         try {
-            const res = await apiCall(`${API.entities}?format=json&tenant_id=${state.tenantId}&lang=${state.language}&limit=500`);
+            const res = await apiCall(`${API.entities}?format=json&tenant_id=${CFG.tenantId || 1}&lang=${CFG.lang || 'en'}&limit=500`);
             if (res.success) {
                 const data = res.data?.items || (Array.isArray(res.data) ? res.data : []);
                 state.entities = Array.isArray(data) ? data : [];
@@ -287,14 +280,14 @@
             const totalBids      = a.total_bids      || 0;
             const endDate        = a.end_date ? new Date(a.end_date).toLocaleString() : '—';
             const title          = a.translated_title || a.title || `Auction #${a.id}`;
-            const featured       = a.is_featured == 1 ? ' <i class="fas fa-star" style="color:#f59e0b;font-size:0.75rem;" title="Featured"></i>' : '';
+            const featured       = a.is_featured == 1 ? ' <i class="fas fa-star featured-star" title="Featured"></i>' : '';
             const entityName     = a.entity_name  || `#${a.entity_id || ''}`;
             const tenantDisplay  = a.tenant_name  || `#${a.tenant_id || ''}`;
 
             const canEdit   = state.permissions.canEdit   || state.permissions.canEditAll   ||
-                              (state.permissions.canEditOwn && a.created_by == window.APP_CONFIG?.USER_ID);
+                              (state.permissions.canEditOwn && a.created_by == CFG.userId);
             const canDelete = state.permissions.canDelete || state.permissions.canDeleteAll ||
-                              (state.permissions.canDeleteOwn && a.created_by == window.APP_CONFIG?.USER_ID);
+                              (state.permissions.canDeleteOwn && a.created_by == CFG.userId);
 
             return `
                 <tr data-id="${esc(a.id)}">
@@ -303,16 +296,16 @@
                     <td>${esc(entityName)}</td>
                     <td>
                         <strong>${esc(title)}${featured}</strong>
-                        <br><small style="color:var(--text-secondary,#94a3b8);">${esc(a.slug||'')}</small>
+                        <br><small class="slug-text">${esc(a.slug||'')}</small>
                     </td>
                     <td>${typeBadge}</td>
                     <td>${statusBadge}</td>
-                    <td class="price-current" style="font-weight:700;">${currentPrice}</td>
+                    <td class="price-current">${currentPrice}</td>
                     <td>${esc(totalBids)}</td>
                     <td><small>${esc(endDate)}</small></td>
                     <td>
                         <div class="table-actions">
-                            ${canEdit ? `<button class="btn btn-sm btn-secondary" onclick="Auctions.edit(${a.id})" title="Edit">
+                            ${canEdit ? `<button class="btn btn-sm btn-primary" onclick="Auctions.edit(${a.id})" title="Edit">
                                 <i class="fas fa-edit"></i>
                             </button>` : ''}
                             ${canDelete ? `<button class="btn btn-sm btn-danger" onclick="Auctions.remove(${a.id})" title="Delete">
@@ -412,7 +405,7 @@
         } else {
             if (el.auctionFormTitle) el.auctionFormTitle.textContent = t('form.add_title', 'Add Auction');
             if (el.auctionFormId)    el.auctionFormId.value           = '';
-            if (el.auctionTenantId)  el.auctionTenantId.value         = state.tenantId;
+            if (el.auctionTenantId)  el.auctionTenantId.value         = CFG.tenantId || 1;
             if (el.btnDeleteAuction) el.btnDeleteAuction.style.display = 'none';
         }
 
@@ -455,7 +448,7 @@
             const isEdit    = !!auctionId;
 
             const data = {
-                tenant_id:             state.tenantId,
+                tenant_id:             CFG.tenantId || 1,
                 entity_id:             parseInt(formData.get('entity_id'), 10) || null,
                 title:                 formData.get('title') || '',
                 slug:                  formData.get('slug')  || generateSlug(formData.get('title') || ''),
@@ -480,7 +473,7 @@
                 shipping_cost:         formData.get('shipping_cost')  || '0.00',
                 payment_deadline_hours:formData.get('payment_deadline_hours') || '48',
                 notes:                 formData.get('notes') || null,
-                created_by:            window.APP_CONFIG?.USER_ID || null
+                created_by:            CFG.userId || null
             };
 
             if (isEdit) data.id = auctionId;
@@ -741,7 +734,7 @@
     function resetFilters() {
         state.filters = {};
         if (el.auctionSearch)        el.auctionSearch.value        = '';
-        if (el.auctionTenantFilter)  el.auctionTenantFilter.value  = state.tenantId;
+        if (el.auctionTenantFilter)  el.auctionTenantFilter.value  = CFG.tenantId || 1;
         if (el.auctionStatusFilter)  el.auctionStatusFilter.value  = '';
         if (el.auctionTypeFilter)    el.auctionTypeFilter.value    = '';
         if (el.auctionFeaturedFilter) el.auctionFeaturedFilter.value = '';
@@ -859,7 +852,23 @@
     // INITIALIZATION
     // ════════════════════════════════════════════════════════════
     async function init() {
+        reloadConfig();
         console.log('[Auctions] Initializing...');
+
+        state.permissions = {
+            canCreate:    !!CFG.canCreate,
+            canEdit:      !!CFG.canEdit,
+            canDelete:    !!CFG.canDelete,
+            canViewAll:   !!CFG.canViewAll,
+            canViewOwn:   !!CFG.canViewOwn,
+            canViewTenant:!!CFG.canViewTenant,
+            canEditAll:   !!CFG.canEditAll,
+            canEditOwn:   !!CFG.canEditOwn,
+            canDeleteAll: !!CFG.canDeleteAll,
+            canDeleteOwn: !!CFG.canDeleteOwn,
+            isSuperAdmin: !!CFG.isSuperAdmin,
+        };
+
         const $id = id => document.getElementById(id);
 
         el = {
@@ -939,8 +948,8 @@
             resultsCountText:  $id('auctionResultsCountText')
         };
 
-        // Try translations (non-fatal)
-        await loadTranslations(state.language);
+        // Apply server-loaded translations to DOM
+        applyTranslations();
 
         // Wire up event handlers (onXxx prevents duplicate listeners on re-init)
         if (el.form)          el.form.onsubmit          = saveAuction;
@@ -985,7 +994,7 @@
         edit: async (id) => {
             try {
                 const safeId = encodeURIComponent(id);
-                const result = await apiCall(`${API.auctions}?id=${safeId}&lang=${state.language}&tenant_id=${state.tenantId}&format=json`);
+                const result = await apiCall(`${API.auctions}?id=${safeId}&lang=${CFG.lang || 'en'}&tenant_id=${CFG.tenantId || 1}&format=json`);
                 if (result.success && result.data) {
                     showForm(result.data);
                 } else {
@@ -998,27 +1007,24 @@
         },
         remove: deleteAuction,
         setLanguage: async (lang) => {
-            state.language = lang;
-            await loadTranslations(lang);
+            // Language changes require page reload with new AUCTIONS_CONFIG
             loadAuctions(state.page);
         }
     };
 
+    // ════════════════════════════════════════════════════════════
+    // REGISTER  — supports fragment navigation & direct load
+    // ════════════════════════════════════════════════════════════
     window.page = { run: init };
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-            if (window.AdminFramework && !window.page.__fragment_init) {
-                init().catch(e => console.error('[Auctions] Auto-init failed:', e));
-            }
-        });
-    } else {
-        if (window.AdminFramework && !window.page.__fragment_init) {
-            init().catch(e => console.error('[Auctions] Auto-init failed:', e));
-        }
+    if (window.Admin?.page?.register) {
+        window.Admin.page.register('auctions', init);
     }
-    window.page.__fragment_init = false;
 
-    console.log('[Auctions] Module loaded');
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
 
-})();
+}());
