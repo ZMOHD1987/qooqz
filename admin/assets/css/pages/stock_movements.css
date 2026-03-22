@@ -34,7 +34,7 @@
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    padding: clamp(12px, 2vw, 16px);
+    padding: 8px clamp(12px, 2vw, 16px);
     margin: 0;
     background: var(--background-secondary, #0f1724);
     border-bottom: 1px solid var(--border-color, #263044);
