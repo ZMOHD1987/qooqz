@@ -247,7 +247,7 @@
                         <span class="badge-status ${sslCls}">${sslLabel}</span>
                     </div>
                     <div class="domain-row-actions">
-                        <button class="btn btn-sm btn-outline" onclick="Tenants.editDomain(${d.id})" title="${t('domains.edit', 'Edit')}"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-primary edit-btn" data-id="${d.id}" onclick="Tenants.editDomain(${d.id})" title="${t('domains.edit', 'Edit')}"><i class="fas fa-edit" aria-hidden="true"></i></button>
                         ${!d.is_verified ? `<button class="btn btn-sm btn-outline" onclick="Tenants.verifyDomain(${d.id})" title="${t('domains.verify', 'Mark Verified')}"><i class="fas fa-check"></i></button>` : ''}
                         ${d.type !== 'primary' ? `<button class="btn btn-sm btn-danger" onclick="Tenants.removeDomain(${d.id})" title="${t('domains.delete', 'Delete')}"><i class="fas fa-trash"></i></button>` : ''}
                     </div>
@@ -914,7 +914,7 @@
                     <td>
                         <div class="table-actions">
                             ${state.permissions.canEdit
-                                ? `<button class="btn btn-sm btn-outline" onclick="Tenants.edit(${item.id})">${t('table.actions.edit', 'Edit')}</button>`
+                                ? `<button class="btn btn-sm btn-primary edit-btn" data-id="${item.id}" onclick="Tenants.edit(${item.id})" title="${t('table.actions.edit', 'Edit')}"><i class="fas fa-edit" aria-hidden="true"></i></button>`
                                 : ''}
                             ${state.permissions.canDelete
                                 ? `<button class="btn btn-sm btn-danger" onclick="Tenants.remove(${item.id})">${t('table.actions.delete', 'Delete')}</button>`
