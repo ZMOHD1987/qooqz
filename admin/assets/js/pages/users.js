@@ -232,6 +232,13 @@
                 }
             }
 
+            var statusCell = permissions.canEdit
+                ? '<td><label class="toggle-switch" title="' + statusText + '">' +
+                      '<input type="checkbox" class="usr-status-toggle" data-user-id="' + user.id + '"' + (user.is_active ? ' checked' : '') + '>' +
+                      '<span class="toggle-slider"></span>' +
+                  '</label></td>'
+                : '<td><span class="badge ' + statusClass + '">' + statusText + '</span></td>';
+
             tr.innerHTML =
                 '<td>' + user.id + '</td>' +
                 '<td><strong>' + escapeHtml(user.username) + '</strong></td>' +
@@ -239,7 +246,7 @@
                 '<td>' + escapeHtml(langName) + '</td>' +
                 '<td>' + escapeHtml(user.phone || t('na', 'N/A')) + '</td>' +
                 '<td>' + formatDate(user.created_at) + '</td>' +
-                '<td><span class="badge ' + statusClass + '">' + statusText + '</span></td>' +
+                statusCell +
                 '<td class="actions-cell">' +
                     (permissions.canEdit ? '<button onclick="Users.edit(' + user.id + ')" class="btn btn-sm btn-icon btn-primary" title="' + t('edit', 'Edit') + '" aria-label="' + t('edit', 'Edit') + '"><i class="fas fa-edit" aria-hidden="true"></i></button>' : '') +
                     (permissions.canDelete ? '<button onclick="Users.delete(' + user.id + ')" class="btn btn-sm btn-icon btn-danger" title="' + t('delete', 'Delete') + '" aria-label="' + t('delete', 'Delete') + '"><i class="fas fa-trash" aria-hidden="true"></i></button>' : '') +
@@ -251,6 +258,54 @@
         // Apply DB-driven hover effects on table action buttons
         if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
             Admin.buttons.applyHoverEffects(tbody);
+        }
+
+        // Bind toggle switch events
+        tbody.querySelectorAll('.usr-status-toggle').forEach(function(toggle) {
+            toggle.addEventListener('change', function() {
+                var userId = parseInt(this.dataset.userId);
+                var newStatus = this.checked ? 1 : 0;
+                toggleUserStatus(userId, newStatus, this);
+            });
+        });
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // TOGGLE USER STATUS
+    // ════════════════════════════════════════════════════════════
+
+    async function toggleUserStatus(id, newStatus, toggleEl) {
+        try {
+            var csrfToken = window.CSRF_TOKEN || safeGetValue('csrf_token') || '';
+
+            var result = await apiFetch('/api/users_account', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({ id: id, is_active: newStatus })
+            });
+
+            if (result.success) {
+                var msg = newStatus
+                    ? t('messages.user_activated', 'User activated!')
+                    : t('messages.user_deactivated', 'User deactivated!');
+                showNotification(msg, 'success');
+                // Update toggle title
+                if (toggleEl && toggleEl.parentElement) {
+                    toggleEl.parentElement.title = newStatus ? t('active', 'Active') : t('inactive', 'Inactive');
+                }
+            } else {
+                // Revert toggle on failure
+                if (toggleEl) toggleEl.checked = !newStatus;
+                throw new Error(result.message || t('messages.save_failed', 'Save failed'));
+            }
+        } catch (error) {
+            console.error('[Users] toggleUserStatus:', error);
+            // Revert toggle on error
+            if (toggleEl) toggleEl.checked = !newStatus;
+            showNotification(t('messages.status_error', 'Failed to update status: ') + error.message, 'error');
         }
     }
 
