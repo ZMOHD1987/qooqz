@@ -329,10 +329,7 @@ $apiBase = '/api';
                         <?= __t('form.buttons.cancel', 'Cancel') ?>
                     </button>
                     <?php if ($canDelete): ?>
-                    <button type="button" id="btnDeleteTenantUser" class="btn btn-danger" data-btn-slug="danger" style="display:none">
-                        <i class="fas fa-trash"></i>
-                        <span data-i18n="table.actions.delete"><?= __t('table.actions.delete', 'Delete') ?></span>
-                    </button>
+                    <button type="button" id="btnDeleteTenantUser" class="btn btn-sm btn-icon btn-danger" data-btn-slug="danger" title="<?= __t('table.actions.delete', 'Delete') ?>" aria-label="<?= __t('table.actions.delete', 'Delete') ?>" style="display:none"><i class="fas fa-trash" aria-hidden="true"></i></button>
                     <?php endif; ?>
                 </div>
             </form>
