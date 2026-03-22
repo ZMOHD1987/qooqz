@@ -211,8 +211,8 @@
                 .map(d => d.slice(0, 10))
                 .join(' → ') || '—';
 
-            const editBtn   = CAN_EDIT   ? `<button class="btn btn-sm btn-outline btn-edit"   data-id="${banner.id}"><i class="fas fa-edit"></i></button>`   : '';
-            const deleteBtn = CAN_DELETE ? `<button class="btn btn-sm btn-danger btn-delete"  data-id="${banner.id}"><i class="fas fa-trash"></i></button>` : '';
+            const editBtn   = CAN_EDIT   ? `<button class="btn btn-sm btn-icon btn-secondary btn-edit" data-btn-slug="secondary" data-id="${banner.id}" title="${esc(t('table.actions.edit', 'Edit'))}" aria-label="${esc(t('table.actions.edit', 'Edit'))}"><i class="fas fa-edit" aria-hidden="true"></i></button>` : '';
+            const deleteBtn = CAN_DELETE ? `<button class="btn btn-sm btn-icon btn-danger btn-delete" data-btn-slug="danger" data-id="${banner.id}" title="${esc(t('table.actions.delete', 'Delete'))}" aria-label="${esc(t('table.actions.delete', 'Delete'))}"><i class="fas fa-trash" aria-hidden="true"></i></button>` : '';
 
             return `<tr data-id="${banner.id}">
                 <td style="padding:10px 12px;">${esc(banner.id)}</td>
@@ -236,6 +236,9 @@
 
         tbody.innerHTML = rows.join('');
         bindTableActions();
+        if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
+            Admin.buttons.applyHoverEffects(tbody);
+        }
     }
 
     function bindTableActions() {
@@ -765,6 +768,9 @@
             loadLanguages(),
             loadButtonStyles()
         ]);
+        if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
+            Admin.buttons.applyHoverEffects(document.querySelector('#bannersPageContainer'));
+        }
         console.log('[Banners] ✓ Initialized');
     }
 
