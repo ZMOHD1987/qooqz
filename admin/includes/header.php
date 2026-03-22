@@ -341,8 +341,11 @@ function _header_safe_json(array $data): string
 /**
  * Cache-busting: يُرجع timestamp الملف أو '0' إذا غير موجود
  */
-function assetVer(string $path): string
+function assetVer(string $path = ''): string
 {
+    if ($path === '') {
+        return (string) time();
+    }
     static $cache = [];
     if (!isset($cache[$path])) {
         $full         = $_SERVER['DOCUMENT_ROOT'] . $path;
