@@ -129,8 +129,8 @@ if (!function_exists('assetVer')) {
     }
 }
 
-if (!function_exists('__ent_json')) {
-    function __ent_json($value, int $flags = 0): string
+if (!function_exists('ent_json_safe')) {
+    function ent_json_safe($value, int $flags = 0): string
     {
         $encoded = json_encode(
             $value,
@@ -909,28 +909,28 @@ if (!function_exists('__ent_json')) {
 
 <script type="text/javascript">
 window.ENTITIES_CONFIG = {
-    apiBase: <?= __ent_json($apiBase) ?>,
-    apiUrl: <?= __ent_json($apiBase . '/entities') ?>,
-    attributesApi: <?= __ent_json($apiBase . '/entities_attributes') ?>,
-    attributeValuesApi: <?= __ent_json($apiBase . '/entities_attribute_values') ?>,
-    settingsApi: <?= __ent_json($apiBase . '/entity_settings') ?>,
-    workingHoursApi: <?= __ent_json($apiBase . '/entities_working_hours') ?>,
-    languagesApi: <?= __ent_json($apiBase . '/languages') ?>,
-    timezonesApi: <?= __ent_json($apiBase . '/timezones') ?>,
-    tenantsApi: <?= __ent_json($apiBase . '/tenants') ?>,
-    entityTypesApi: <?= __ent_json($apiBase . '/entity_types') ?>,
-    addressesApi: <?= __ent_json($apiBase . '/addresses') ?>,
-    csrfToken: <?= __ent_json($csrf) ?>,
-    lang: <?= __ent_json($lang) ?>,
-    dir: <?= __ent_json($dir) ?>,
+    apiBase: <?= ent_json_safe($apiBase) ?>,
+    apiUrl: <?= ent_json_safe($apiBase . '/entities') ?>,
+    attributesApi: <?= ent_json_safe($apiBase . '/entities_attributes') ?>,
+    attributeValuesApi: <?= ent_json_safe($apiBase . '/entities_attribute_values') ?>,
+    settingsApi: <?= ent_json_safe($apiBase . '/entity_settings') ?>,
+    workingHoursApi: <?= ent_json_safe($apiBase . '/entities_working_hours') ?>,
+    languagesApi: <?= ent_json_safe($apiBase . '/languages') ?>,
+    timezonesApi: <?= ent_json_safe($apiBase . '/timezones') ?>,
+    tenantsApi: <?= ent_json_safe($apiBase . '/tenants') ?>,
+    entityTypesApi: <?= ent_json_safe($apiBase . '/entity_types') ?>,
+    addressesApi: <?= ent_json_safe($apiBase . '/addresses') ?>,
+    csrfToken: <?= ent_json_safe($csrf) ?>,
+    lang: <?= ent_json_safe($lang) ?>,
+    dir: <?= ent_json_safe($dir) ?>,
     tenantId: <?= (int)$tenantId ?>,
     userId: <?= (int)$userId ?>,
-    strings: <?= __ent_json($_entStrings) ?>,
-    canCreate: <?= __ent_json($canCreate) ?>,
-    canEdit: <?= __ent_json($canEdit) ?>,
-    canDelete: <?= __ent_json($canDelete) ?>,
-    isSuperAdmin: <?= __ent_json(is_super_admin()) ?>,
-    permissions: <?= __ent_json([
+    strings: <?= ent_json_safe($_entStrings) ?>,
+    canCreate: <?= ent_json_safe($canCreate) ?>,
+    canEdit: <?= ent_json_safe($canEdit) ?>,
+    canDelete: <?= ent_json_safe($canDelete) ?>,
+    isSuperAdmin: <?= ent_json_safe(is_super_admin()) ?>,
+    permissions: <?= ent_json_safe([
         'canCreate' => $canCreate,
         'canEdit' => $canEdit,
         'canDelete' => $canDelete,
@@ -944,13 +944,13 @@ window.ENTITIES_CONFIG = {
         'isSuperAdmin' => is_super_admin()
     ]) ?>,
     itemsPerPage: 25,
-    mediaStudioBase: <?= __ent_json('/admin/fragments/media_studio.php') ?>,
-    addressesFragment: <?= __ent_json('/admin/fragments/addresses.php') ?>
+    mediaStudioBase: <?= ent_json_safe('/admin/fragments/media_studio.php') ?>,
+    addressesFragment: <?= ent_json_safe('/admin/fragments/addresses.php') ?>
 };
 </script>
 
 <script id="ENTITIES_INITIAL_PAYLOAD" type="application/json">
-<?= __ent_json(['items' => [], 'meta' => ['page' => 1, 'per_page' => 25, 'total' => 0]]) ?>
+<?= ent_json_safe(['items' => [], 'meta' => ['page' => 1, 'per_page' => 25, 'total' => 0]]) ?>
 </script>
 
 <?php if ($isFragment): ?>
