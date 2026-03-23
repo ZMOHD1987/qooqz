@@ -10,20 +10,6 @@ declare(strict_types=1);
  */
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
-    // Ensure the same session storage path as the main API bootstrap (session.php).
-    // This block runs only when auth.php is loaded without the full API bootstrap
-    // (e.g. in tests or edge cases). Without this, sessions land on PHP's default
-    // path while the rest of the app uses api/storage/sessions → user appears
-    // logged out on next request.
-    $authSessionPath = dirname(__DIR__, 2) . '/storage/sessions';
-    if (!is_dir($authSessionPath)) {
-        @mkdir($authSessionPath, 0700, true);
-    }
-    if (is_dir($authSessionPath)) {
-        ini_set('session.save_path', $authSessionPath);
-    }
-    unset($authSessionPath);
-
     // Defensive session cookie params — adjust domain as needed
     $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
     $cookieParams = [
@@ -184,7 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ? $routeAction
         : ($postAction ?: ($routeAction ?: 'login'));
 
-    if ($effectiveAction !== 'login' && $effectiveAction !== 'register') {
+    if (!in_array($effectiveAction, ['login', 'register', 'verify_otp', 'resend_verification'], true)) {
         ResponseFormatter::notFound('Auth POST route not found');
         exit;
     }
@@ -221,33 +207,280 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $hash = password_hash($regPassword, PASSWORD_DEFAULT);
             $ins  = $pdo->prepare(
                 'INSERT INTO users (username, email, password_hash, phone, preferred_language, is_active, created_at)
-                 VALUES (?, ?, ?, ?, ?, 1, NOW())'
+                 VALUES (?, ?, ?, ?, ?, 0, NOW())'
             );
             $ins->execute([$regUsername, $regEmail, $hash, $regPhone ?: null, $regLang ?: 'en']);
             $newId = (int)$pdo->lastInsertId();
 
+            // ---- Device-bound verification link (token never shown to user) ----
+            // Raw token: 32 random bytes as hex (64 chars). Only the hash is stored.
+            $rawToken    = bin2hex(random_bytes(32));
+            $tokenHash   = hash('sha256', $rawToken);
+
+            // Device token: stored in an httpOnly cookie so we can verify the same
+            // browser/device opens the activation link.
+            $rawDevice   = bin2hex(random_bytes(16));
+            $deviceHash  = hash('sha256', $rawDevice);
+
+            $expiresAt   = date('Y-m-d H:i:s', time() + 900); // 15 minutes
+            $userAgent   = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 512);
+            $clientIp    = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+
+            // Store verification record (no OTP is persisted in plain text anywhere)
+            $insV = $pdo->prepare(
+                'INSERT INTO user_phone_verifications
+                    (user_id, token_hash, device_hash, user_agent, ip, expires_at)
+                 VALUES (?, ?, ?, ?, ?, ?)'
+            );
+            $insV->execute([$newId, $tokenHash, $deviceHash, $userAgent, $clientIp, $expiresAt]);
+
+            // Set device cookie (httpOnly, SameSite=Lax, expires with verification window)
+            $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+            if (!headers_sent()) {
+                if (PHP_VERSION_ID >= 70300) {
+                    setcookie('qz_dvt', $rawDevice,
+                        ['expires' => time() + 900, 'path' => '/', 'httponly' => true,
+                         'samesite' => 'Lax', 'secure' => $secure]);
+                } else {
+                    setcookie('qz_dvt', $rawDevice, time() + 900, '/', '', $secure, true);
+                }
+            }
+
+            // Build activation link and send via SMS (link contains raw token, never the code itself)
+            $appUrl  = defined('APP_URL') ? APP_URL
+                     : (($secure ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+            $activationLink = $appUrl . '/frontend/verify_phone.php?t=' . urlencode($rawToken);
+
+            // Send SMS with the activation link
+            if ($regPhone) {
+                try {
+                    if (file_exists(__DIR__ . '/../../../shared/helpers/sms.php')) {
+                        require_once __DIR__ . '/../../../shared/helpers/sms.php';
+                    }
+                    if (class_exists('SMS')) {
+                        SMS::setPDO($pdo);
+                        SMS::sendVerificationLink($regPhone, $activationLink, $regLang ?: 'ar');
+                    }
+                } catch (Throwable $smsErr) {
+                    if (class_exists('Logger')) Logger::error('SMS send error: ' . $smsErr->getMessage());
+                }
+            }
+
+            // Store pending user_id and activation link in session (no OTP in session anymore)
             session_regenerate_id(true);
+            $_SESSION['pending_user_id']      = $newId;
+            // Only store the link if it passes URL validation (defense-in-depth)
+            $_SESSION['pending_verify_link']  = filter_var($activationLink, FILTER_VALIDATE_URL) !== false
+                ? $activationLink : '';
+            unset($_SESSION['user_id'], $_SESSION['user'], $_SESSION['pending_otp']);
+
             $user = [
                 'id'                 => $newId,
                 'name'               => $regUsername,
                 'username'           => $regUsername,
                 'email'              => $regEmail,
+                'phone'              => $regPhone ?: null,
                 'role_id'            => null,
                 'preferred_language' => $regLang ?: 'en',
+                'is_active'          => false,
+                'permissions'        => [],
+                'roles'              => [],
+                'permissions_count'  => 0,
+                'roles_count'        => 0,
+            ];
+
+            if (!headers_sent()) {
+                header('Content-Type: application/json; charset=utf-8');
+                header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+            }
+            // Never return the token or any secret — only tell the user to check their SMS
+            echo json_encode([
+                'ok'      => true,
+                'message' => ($regLang === 'ar')
+                    ? 'تم إنشاء الحساب. تحقق من رسائل SMS لتفعيل حسابك.'
+                    : 'Account created. Check your SMS to activate your account.',
+                'user'    => $user,
+            ]);
+            exit;
+        } catch (Throwable $e) {
+            if (class_exists('Logger')) Logger::error('Register error: ' . $e->getMessage());
+            ResponseFormatter::serverError(app_env('debug') ? $e->getMessage() : 'Registration failed');
+        }
+        exit;
+    }
+
+    // ---------------- RESEND VERIFICATION SMS ----------------
+    if ($effectiveAction === 'resend_verification') {
+        $pendingId = $_SESSION['pending_user_id'] ?? null;
+        if (!$pendingId) {
+            ResponseFormatter::error('No pending registration found. Please register first.', 400);
+            exit;
+        }
+
+        try {
+            // Fetch user phone
+            $uRow = $pdo->prepare('SELECT phone, preferred_language FROM users WHERE id = ? AND is_active = 0 LIMIT 1');
+            $uRow->execute([(int)$pendingId]);
+            $uData = $uRow->fetch(PDO::FETCH_ASSOC);
+
+            if (!$uData || empty($uData['phone'])) {
+                ResponseFormatter::error('User not found or already activated.', 400);
+                exit;
+            }
+
+            // Rate-limit: max 1 resend per 60 seconds
+            $recent = $pdo->prepare(
+                'SELECT COUNT(*) FROM user_phone_verifications
+                  WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 60 SECOND)'
+            );
+            $recent->execute([(int)$pendingId]);
+            if ((int)$recent->fetchColumn() > 0) {
+                ResponseFormatter::error('Please wait 60 seconds before requesting another SMS.', 429);
+                exit;
+            }
+
+            $rawToken  = bin2hex(random_bytes(32));
+            $tokenHash = hash('sha256', $rawToken);
+            $rawDevice = bin2hex(random_bytes(16));
+            $deviceHash = hash('sha256', $rawDevice);
+            $expiresAt = date('Y-m-d H:i:s', time() + 900);
+            $userAgent = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 512);
+            $clientIp  = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+
+            $insV = $pdo->prepare(
+                'INSERT INTO user_phone_verifications
+                    (user_id, token_hash, device_hash, user_agent, ip, expires_at)
+                 VALUES (?, ?, ?, ?, ?, ?)'
+            );
+            $insV->execute([(int)$pendingId, $tokenHash, $deviceHash, $userAgent, $clientIp, $expiresAt]);
+
+            $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+            if (!headers_sent()) {
+                if (PHP_VERSION_ID >= 70300) {
+                    setcookie('qz_dvt', $rawDevice,
+                        ['expires' => time() + 900, 'path' => '/', 'httponly' => true,
+                         'samesite' => 'Lax', 'secure' => $secure]);
+                } else {
+                    setcookie('qz_dvt', $rawDevice, time() + 900, '/', '', $secure, true);
+                }
+            }
+
+            $appUrl = defined('APP_URL') ? APP_URL
+                    : (($secure ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+            $activationLink = $appUrl . '/frontend/verify_phone.php?t=' . urlencode($rawToken);
+
+            $resendLang= preg_replace('/[^a-z\-]/', '', strtolower($uData['preferred_language'] ?: 'ar'));
+            if (file_exists(__DIR__ . '/../../../shared/helpers/sms.php')) {
+                require_once __DIR__ . '/../../../shared/helpers/sms.php';
+            }
+            if (class_exists('SMS')) {
+                SMS::setPDO($pdo);
+                SMS::sendVerificationLink($uData['phone'], $activationLink, $resendLang);
+            }
+
+            if (!headers_sent()) {
+                header('Content-Type: application/json; charset=utf-8');
+            }
+            // Update session link with the newly generated one
+            $_SESSION['pending_verify_link'] = filter_var($activationLink, FILTER_VALIDATE_URL) !== false
+                ? $activationLink : '';
+            echo json_encode(['ok' => true, 'message' => 'Verification SMS sent.', 'activation_link' => $activationLink, 'phone' => $uData['phone'] ?? '']);
+        } catch (Throwable $e) {
+            if (class_exists('Logger')) Logger::error('Resend verification error: ' . $e->getMessage());
+            ResponseFormatter::serverError('Failed to resend verification SMS.');
+        }
+        exit;
+    }
+
+    // ---------------- VERIFY OTP ----------------
+    if ($effectiveAction === 'verify_otp') {
+        $submittedOtp = trim((string)($payload['otp'] ?? ''));
+
+        if ($submittedOtp === '' || !preg_match('/^\d{6}$/', $submittedOtp)) {
+            ResponseFormatter::error('OTP must be a 6-digit number', 422);
+            exit;
+        }
+
+        $sessionOtp     = $_SESSION['pending_otp']          ?? null;
+        $sessionUserId  = $_SESSION['pending_user_id']       ?? null;
+        $otpExpires     = $_SESSION['pending_otp_expires']   ?? 0;
+        $attempts       = (int)($_SESSION['pending_otp_attempts'] ?? 0);
+
+        if (!$sessionOtp || !$sessionUserId) {
+            ResponseFormatter::error('No pending verification found. Please register again.', 400);
+            exit;
+        }
+
+        // Check expiry (15 minutes)
+        if (time() > $otpExpires) {
+            unset($_SESSION['pending_otp'], $_SESSION['pending_user_id'],
+                  $_SESSION['pending_otp_expires'], $_SESSION['pending_otp_attempts']);
+            ResponseFormatter::error('OTP has expired. Please register again.', 400);
+            exit;
+        }
+
+        // Brute-force protection: max 5 attempts
+        if ($attempts >= 5) {
+            unset($_SESSION['pending_otp'], $_SESSION['pending_user_id'],
+                  $_SESSION['pending_otp_expires'], $_SESSION['pending_otp_attempts']);
+            ResponseFormatter::error('Too many incorrect attempts. Please register again.', 429);
+            exit;
+        }
+
+        if ($submittedOtp !== $sessionOtp) {
+            $_SESSION['pending_otp_attempts'] = $attempts + 1;
+            $remaining = 5 - ($attempts + 1);
+            ResponseFormatter::error('Invalid OTP. ' . $remaining . ' attempt(s) remaining.', 401);
+            exit;
+        }
+
+        try {
+            // Activate the user account
+            $upd = $pdo->prepare('UPDATE users SET is_active = 1, updated_at = NOW() WHERE id = ? AND is_active = 0');
+            $upd->execute([$sessionUserId]);
+
+            if ($upd->rowCount() === 0) {
+                // User might already be active or not found
+                ResponseFormatter::error('Account could not be activated. It may already be active.', 409);
+                exit;
+            }
+
+            // Fetch the now-active user
+            $rowStmt = $pdo->prepare('SELECT id, username, email, phone, preferred_language, role_id, is_active FROM users WHERE id = ?');
+            $rowStmt->execute([$sessionUserId]);
+            $userData = $rowStmt->fetch(PDO::FETCH_ASSOC);
+
+            // Clear pending OTP from session and log the user in
+            unset($_SESSION['pending_otp'], $_SESSION['pending_user_id'],
+                  $_SESSION['pending_otp_expires'], $_SESSION['pending_otp_attempts']);
+            session_regenerate_id(true);
+
+            $user = [
+                'id'                 => (int)$userData['id'],
+                'name'               => $userData['username'],
+                'username'           => $userData['username'],
+                'email'              => $userData['email'],
+                'phone'              => $userData['phone'],
+                'role_id'            => $userData['role_id'],
+                'preferred_language' => $userData['preferred_language'],
                 'is_active'          => true,
                 'permissions'        => [],
                 'roles'              => [],
                 'permissions_count'  => 0,
                 'roles_count'        => 0,
             ];
-            $_SESSION['user_id'] = $newId;
-            $_SESSION['user']    = $user;
-            $GLOBALS['ADMIN_USER'] = $user;
+            $_SESSION['user_id']       = $user['id'];
+            $_SESSION['user']          = $user;
+            $GLOBALS['ADMIN_USER']     = $user;
 
-            ResponseFormatter::success(['ok' => true, 'message' => 'Registration successful', 'user' => $user]);
+            if (!headers_sent()) {
+                header('Content-Type: application/json; charset=utf-8');
+                header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+            }
+            echo json_encode(['ok' => true, 'message' => 'Account verified and activated', 'user' => $user]);
         } catch (Throwable $e) {
-            if (class_exists('Logger')) Logger::error('Register error: ' . $e->getMessage());
-            ResponseFormatter::serverError(app_env('debug') ? $e->getMessage() : 'Registration failed');
+            if (class_exists('Logger')) Logger::error('Verify OTP error: ' . $e->getMessage());
+            ResponseFormatter::serverError(app_env('debug') ? $e->getMessage() : 'Verification failed');
         }
         exit;
     }
