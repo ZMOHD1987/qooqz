@@ -1,8 +1,16 @@
 <?php
 declare(strict_types=1);
 /**
- * frontend/partials/header.php
+ * frontend/partials/header.php — Production v3.0
  * QOOQZ — Public Interface Header
+ *
+ * ─ Design Principles (mirrors admin/includes/header.php) ───────
+ *   1. Single source of CSS variables → set HERE, no JS overrides
+ *   2. No !important on colors      → natural cascade specificity wins
+ *   3. No race condition             → all CSS injected before <body>
+ *   4. No duplication of vars        → underscore + hyphen in one pass
+ *   5. generated_css from DB         → button/card concrete classes
+ * ───────────────────────────────────────────────────────────────
  *
  * Responsibilities:
  *   1. HTML <head> with public CSS, fonts, meta tags, SEO
@@ -52,15 +60,23 @@ if (!function_exists('t')) {
 }
 
 // ════════════════════════════════════════════════════════════
-// 3. Theme → CSS custom properties (matches admin/includes/header.php approach)
+// 3. Theme → CSS custom properties
+//    Full DB theme injection pipeline (matches admin/includes/header.php)
 //    Processes: color_settings, font_settings, design_settings
 //    Creates both underscore AND hyphen variants in a single pass
 // ════════════════════════════════════════════════════════════
 
-/** Validate a CSS value — only safe colors, lengths, font names allowed */
+/**
+ * Sanitize a CSS value — strip injection vectors while allowing valid CSS.
+ * Matches admin's AdminUiThemeLoader::generateCss() approach: removes { } ; `
+ * Also does basic validation for safety.
+ */
 if (!function_exists('_pub_safe_css_val')) {
     function _pub_safe_css_val(string $v): string {
         $v = trim($v);
+        if ($v === '') return '';
+        // Strip dangerous characters that could break out of CSS context
+        $v = preg_replace('/[{};`]/', '', $v);
         if ($v === '') return '';
         // hex color
         if (preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/', $v)) return $v;
@@ -70,10 +86,10 @@ if (!function_exists('_pub_safe_css_val')) {
         if (preg_match('/^[a-zA-Z]{2,30}$/', $v)) return $v;
         // CSS variable reference
         if (preg_match('/^var\(--[a-zA-Z0-9_-]+\)$/', $v)) return $v;
-        // CSS length (e.g. 16px, 1.5rem, 100%)
-        if (preg_match('/^[\d.]+(px|em|rem|%|vh|vw|pt|ch|ex)$/', $v)) return $v;
-        // Numeric (e.g. font-weight 400, 700)
-        if (preg_match('/^\d{1,4}$/', $v)) return $v;
+        // CSS length (e.g. 16px, 1.5rem, 100%, multi-value shorthand like "20px 16px")
+        if (preg_match('/^[\d.]+(px|em|rem|%|vh|vw|pt|ch|ex)(\s+[\d.]+(px|em|rem|%|vh|vw|pt|ch|ex))*$/', $v)) return $v;
+        // Numeric (e.g. font-weight 400, 700, line-height 1.5)
+        if (preg_match('/^[\d.]{1,6}$/', $v)) return $v;
         // Quoted font name
         if (preg_match('/^"[a-zA-Z0-9\s\-]{1,60}"$/', $v)) return $v;
         // Font stack (comma-separated, alphanumeric + spaces + quotes)
@@ -84,6 +100,10 @@ if (!function_exists('_pub_safe_css_val')) {
 
 $_cssVars = []; // ['--var-name' => 'value'] map
 
+/**
+ * Set a CSS custom property in both underscore and hyphen forms.
+ * Values are validated through _pub_safe_css_val().
+ */
 $_setVar = function (string $key, string $value) use (&$_cssVars): void {
     if ($value === '') return;
     $safe = _pub_safe_css_val($value);
@@ -124,7 +144,7 @@ foreach ($theme['design_settings'] ?? [] as $d) {
     }
 }
 
-// ── Alias vars for compatibility (same as admin _header_build_alias_vars) ──
+// ── Alias vars for compatibility (matches admin _header_build_alias_vars) ──
 $_aliasVars = [];
 $_getVar = function (string ...$names) use (&$_cssVars): string {
     foreach ($names as $n) {
@@ -138,18 +158,33 @@ $_alias = function (string $target, string ...$sources) use (&$_cssVars, $_getVa
     if ($v !== '') $_aliasVars[$target] = $v;
 };
 
+// Surface / background
 $_alias('--surface-color',       '--surface_color', '--background-secondary', '--background_secondary');
 $_alias('--card-bg',             '--card_bg',       '--surface-color', '--background-secondary');
 $_alias('--input-bg',            '--input_bg',      '--surface-color', '--background-secondary');
+$_alias('--input-background',    '--input_background', '--input-bg', '--input_bg');
+$_alias('--background-tertiary', '--background_tertiary', '--background-secondary');
+
+// Colors
 $_alias('--danger-color',        '--danger_color',  '--error-color',   '--error_color');
 $_alias('--error-color',         '--error_color',   '--danger-color',  '--danger_color');
 $_alias('--info-color',          '--info_color',    '--primary-color', '--primary_color');
+
+// Text
 $_alias('--text-secondary',      '--text_secondary', '--text-muted', '--text-light');
+$_alias('--text-tertiary',       '--text_tertiary',  '--text-secondary', '--text_secondary');
+
+// Border
 $_alias('--border-color',        '--border_color',  '--border', '--divider-color');
+
+// Input placeholder
+$_alias('--input-placeholder',   '--input_placeholder', '--text-secondary', '--text_secondary');
+
+// Sidebar hover / active (fall back to primary-color if not set in DB)
 $_alias('--sidebar-hover',       '--sidebar_hover',  '--primary-color', '--primary_color');
 $_alias('--sidebar-active',      '--sidebar_active', '--primary-color', '--primary_color');
 
-// Build the :root CSS block
+// Build the :root CSS block string
 $_themeVars = '';
 $_allVars = array_merge($_cssVars, $_aliasVars);
 if (!empty($_allVars)) {
@@ -168,9 +203,17 @@ $_fontUrl = $dir === 'rtl'
     ? 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap'
     : 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
 
-// Collect additional font URLs from DB font_settings
+// Collect additional font URLs from DB font_settings (matches admin _header_collect_font_links)
 $_dbFontLinks = [];
-$_systemFonts = ['system-ui','sans-serif','serif','monospace','arial','verdana','helvetica','georgia','times','courier','tahoma','inherit','initial','unset'];
+$_systemFonts = [
+    'system-ui','ui-sans-serif','ui-serif','ui-monospace',
+    'sans-serif','serif','monospace','cursive','fantasy',
+    'inherit','initial','unset',
+    'arial','verdana','helvetica','helvetica neue','georgia',
+    'times','times new roman','courier','courier new',
+    'impact','trebuchet ms','comic sans ms','tahoma',
+    'lucida','palatino','garamond',
+];
 $_trustedFontHosts = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 foreach ($theme['font_settings'] ?? [] as $_f) {
     if (empty($_f['font_family'])) continue;
@@ -222,8 +265,15 @@ if (!function_exists('_pub_asset_ver')) {
 }
 
 // ════════════════════════════════════════════════════════════
-// 7. (Reserved — nav/notification removed; all navigation in menu.php)
+// 7. Resolve theme-color for PWA meta tag from DB
 // ════════════════════════════════════════════════════════════
+$_themeColor = $_allVars['--primary-color'] ?? $_allVars['--primary_color']
+            ?? ($theme['primary'] ?? '#2d8cf0');
+// Ensure it's a valid hex or named color (no CSS vars in meta tag)
+if (!preg_match('/^#[0-9a-fA-F]{3,8}$/', $_themeColor) && !preg_match('/^[a-zA-Z]{2,20}$/', $_themeColor)) {
+    $_themeColor = '#2d8cf0';
+}
+
 ?>
 <!doctype html>
 <html lang="<?= e($lang) ?>" dir="<?= e($dir) ?>">
@@ -249,7 +299,7 @@ if (!function_exists('_pub_asset_ver')) {
     <meta name="mobile-web-app-capable"               content="yes">
     <meta name="apple-mobile-web-app-capable"         content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="theme-color" content="#2d8cf0">
+    <meta name="theme-color" content="<?= e($_themeColor) ?>">
 
     <!-- DNS / Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -266,22 +316,54 @@ if (!function_exists('_pub_asset_ver')) {
     <?php endforeach; ?>
 
     <!-- ════════════════════════════════════════════════════
-         Public Stylesheet — loaded FIRST so DB theme :root overrides its defaults
+         CSS VARIABLES (single source of truth)
+         Everything after this reads from these vars.
+         Mirrors admin/includes/header.php approach.
+         ════════════════════════════════════════════════════ -->
+    <style id="pub-theme-vars">
+:root {
+<?php if ($_themeVars): ?>
+<?= $_themeVars . "\n" ?>
+<?php endif; ?>
+}
+
+/* ── Baseline rules that depend only on CSS vars ── */
+body {
+    background:  var(--pub-bg, var(--background-main, var(--background_main, #ffffff)));
+    color:       var(--pub-text, var(--text-primary, var(--text_primary, #222831)));
+    font-family: var(--body-font-family, var(--body_font-family, "Cairo", "Inter", system-ui, sans-serif));
+    margin: 0;
+    padding: 0;
+}
+
+.pub-header {
+    background: var(--pub-header-bg, var(--header-background, var(--header_background, var(--pub-primary, #2d8cf0))));
+    color:      var(--pub-header-text, var(--header-text, var(--header_text, #ffffff)));
+}
+
+.pub-sidebar {
+    background: var(--pub-sidebar-bg, var(--sidebar-background, var(--sidebar_background, var(--pub-header-bg, var(--pub-primary, #2d8cf0)))));
+    color:      var(--pub-sidebar-text, var(--sidebar-text, var(--sidebar_text, #ffffff)));
+}
+
+.pub-footer {
+    background: var(--pub-footer-bg, var(--footer-background, var(--footer_background, #1e2a38)));
+    color:      var(--pub-footer-text, var(--footer-text, var(--footer_text, rgba(255,255,255,0.8))));
+}
+    </style>
+
+    <!-- ════════════════════════════════════════════════════
+         Public Stylesheet — loaded AFTER theme-vars so its
+         :root defaults are OVERRIDDEN by DB variables above
          ════════════════════════════════════════════════════ -->
     <link rel="stylesheet"
           href="/frontend/assets/css/public.css?v=<?= _pub_asset_ver('/frontend/assets/css/public.css') ?>">
 
     <!-- ════════════════════════════════════════════════════
-         Theme CSS Variables (DB-driven) — loaded AFTER public.css
-         so DB colors override the CSS default values
+         Generated CSS (DB-driven button/card/font styles)
+         Loaded LAST — concrete .btn-{slug}, .card-{slug} classes
+         and additional :root vars from generated_css
          ════════════════════════════════════════════════════ -->
-    <?php if ($_themeVars): ?>
-    <style id="pub-theme-vars">
-:root {
-<?= $_themeVars . "\n" ?>}
-    </style>
-    <?php endif; ?>
-
     <?php if (!empty($theme['generated_css'])): ?>
     <style id="pub-theme-generated"><?= $theme['generated_css'] ?></style>
     <?php endif; ?>
