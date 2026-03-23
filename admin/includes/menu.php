@@ -341,12 +341,25 @@ echo '</nav>';
 // -----------------------
 echo '<script>
 document.addEventListener("DOMContentLoaded", function() {
-    // 1. Toggle expand/collapse for categories
+    // 1. Toggle expand/collapse for categories (accordion behavior)
     document.querySelectorAll(".js-toggle").forEach(btn => {
         btn.addEventListener("click", function(e) {
             e.preventDefault();     // Prevents any URL change (href="#")
             e.stopPropagation();
-            this.closest(".menu-item").classList.toggle("is-open");
+            const currentItem = this.closest(".menu-item");
+            const parentList  = currentItem.parentElement;
+            const isOpening   = !currentItem.classList.contains("is-open");
+
+            // Accordion: close all other open siblings at the same level
+            if (isOpening && parentList) {
+                parentList.querySelectorAll(":scope > .menu-item.has-children.is-open").forEach(sibling => {
+                    if (sibling !== currentItem) {
+                        sibling.classList.remove("is-open");
+                    }
+                });
+            }
+
+            currentItem.classList.toggle("is-open");
         });
     });
 
@@ -354,7 +367,7 @@ document.addEventListener("DOMContentLoaded", function() {
     document.querySelectorAll(".js-home-link").forEach(link => {
         link.addEventListener("click", function(e) {
             e.preventDefault();
-            window.location.href = "/admin/dashboard.php";
+            window.location.reload();
         });
     });
 

@@ -271,6 +271,10 @@ function _header_build_alias_vars(array $vars): array
     $alias('--input-placeholder', '--input_placeholder',
            '--text-secondary', '--text_secondary');
 
+    // Sidebar hover / active (fall back to primary-color if not set in DB)
+    $alias('--sidebar-hover',  '--sidebar_hover',  '--primary-color', '--primary_color');
+    $alias('--sidebar-active', '--sidebar_active',  '--primary-color', '--primary_color');
+
     return $aliases;
 }
 
