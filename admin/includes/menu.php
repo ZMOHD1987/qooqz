@@ -118,7 +118,7 @@ function sortMenuByOrder(&$items) {
 function render_menu_items($items, $level = 0) {
     global $isRtl;
     if (!is_array($items) || empty($items)) return '';
-    $ulClass = 'sidebar-list level-' . (int)$level;
+    $ulClass = 'sidebar-list sidebar-list--' . (int)$level;
     if ($isRtl) $ulClass .= ' rtl';
     $out = '<ul class="' . h($ulClass) . '" role="' . ($level === 0 ? 'menu' : 'group') . '">';
     foreach ($items as $item) {
@@ -141,11 +141,13 @@ function render_menu_items($items, $level = 0) {
         }
         
         $out .= '<li class="menu-item' . ($hasChildren ? ' has-children' : '') . '">';
-        $out .= '<a href="' . $href . '" class="sidebar-link' . ($hasChildren ? ' js-toggle' : ' js-ajax-link') . '" data-load-url="' . h($item['url'] ?? '') . '" role="menuitem">';
+        $isHome = ($item['url'] ?? '') === 'dashboard.php';
+        $linkClass = $hasChildren ? ' js-toggle' : ($isHome ? ' js-home-link' : ' js-ajax-link');
+        $out .= '<a href="' . $href . '" class="sidebar-link' . $linkClass . '" data-load-url="' . h($item['url'] ?? '') . '" role="menuitem">';
         $out .= $iconHtml;
         $out .= '<span class="sidebar-title" data-i18n="' . h($i18nKey) . '">' . h($titleText) . '</span>';
         if ($hasChildren) {
-            $out .= '<span class="arrow">' . ($isRtl ? '❮' : '❯') . '</span>';
+            $out .= '<span class="sidebar-arrow">' . ($isRtl ? '❮' : '❯') . '</span>';
         }
         $out .= '</a>';
         if ($hasChildren) {
@@ -324,113 +326,8 @@ sortMenuByOrder($ADMIN_MENU);
 // -----------------------
 // Dynamic CSS from DB
 // -----------------------
-$sidebarBg = getMenuThemeValue('color_settings', 'sidebar_background', '#1f2937');
-$sidebarText = getMenuThemeValue('color_settings', 'sidebar_text', '#9ca3af');
-$sidebarHover = getMenuThemeValue('color_settings', 'sidebar_hover', '#374151');
-$sidebarActive = getMenuThemeValue('color_settings', 'sidebar_active', '#2563eb');
-$primaryColor = getMenuThemeValue('color_settings', 'primary_color', '#3b82f6');
-$dangerColor = getMenuThemeValue('color_settings', 'danger_color', '#ef4444');
-
-echo '<style>
-:root {
-    --sidebar-bg: ' . h($sidebarBg) . ';
-    --sidebar-text: ' . h($sidebarText) . ';
-    --sidebar-hover: ' . h($sidebarHover) . ';
-    --sidebar-active: ' . h($sidebarActive) . ';
-    --primary-color: ' . h($primaryColor) . ';
-    --danger-color: ' . h($dangerColor) . ';
-}
-
-.admin-sidebar-nav {
-    width: 260px;
-    background-color: var(--sidebar-bg);
-    color: var(--sidebar-text);
-    min-height: 100vh;
-    user-select: none;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-}
-
-.sidebar-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.sidebar-link {
-    display: flex;
-    align-items: center;
-    padding: 12px 20px;
-    color: inherit;
-    text-decoration: none;
-    transition: 0.2s;
-    border-radius: 8px;
-    margin: 2px 10px;
-    gap: 12px;
-}
-
-.sidebar-link:hover {
-    background-color: var(--sidebar-hover);
-    color: #fff;
-}
-
-.sidebar-icon {
-    width: 24px;
-    text-align: center;
-    font-size: 1.1rem;
-}
-
-.sidebar-title {
-    flex: 1;
-}
-
-.arrow {
-    margin-left: auto;
-    font-size: 0.7rem;
-    transition: transform 0.3s;
-}
-
-/* Submenus */
-.level-1 {
-    display: none;
-    background: rgba(0,0,0,0.2);
-    padding: 5px 0;
-}
-
-.menu-item.has-children.is-open > .level-1 {
-    display: block;
-}
-
-.menu-item.has-children.is-open > .sidebar-link .arrow {
-    transform: rotate(90deg);
-}
-
-.level-1 .sidebar-link {
-    padding-left: 45px;
-    font-size: 0.9rem;
-}
-
-/* Active page highlighting */
-.sidebar-link.active {
-    background-color: var(--sidebar-active);
-    color: #fff;
-}
-
-/* RTL adjustments */
-' . ($isRtl ? '
-.rtl .sidebar-icon {
-    margin-right: 0;
-    margin-left: 12px;
-}
-.rtl .arrow {
-    margin-left: 0;
-    margin-right: auto;
-}
-.rtl .level-1 .sidebar-link {
-    padding-right: 45px;
-    padding-left: 20px;
-}
-' : '') . '
-</style>';
+// Sidebar CSS is fully DB-driven via AdminUiThemeLoader (header.php) + sidebar.css.
+// No inline styles needed — all colors come from :root CSS variables.
 
 // -----------------------
 // Render the sidebar
@@ -444,16 +341,49 @@ echo '</nav>';
 // -----------------------
 echo '<script>
 document.addEventListener("DOMContentLoaded", function() {
-    // 1. Toggle expand/collapse for categories
+    // 1. Toggle expand/collapse for categories (accordion behavior)
+    function closeDescendants(item) {
+        item.querySelectorAll(".menu-item.has-children.is-open").forEach(function(desc) {
+            desc.classList.remove("is-open");
+        });
+    }
+
     document.querySelectorAll(".js-toggle").forEach(btn => {
         btn.addEventListener("click", function(e) {
             e.preventDefault();     // Prevents any URL change (href="#")
             e.stopPropagation();
-            this.closest(".menu-item").classList.toggle("is-open");
+            const currentItem = this.closest(".menu-item");
+            const parentList  = currentItem.parentElement;
+            const isOpening   = !currentItem.classList.contains("is-open");
+
+            // Accordion: close all other open siblings at the same level
+            if (isOpening && parentList) {
+                parentList.querySelectorAll(":scope > .menu-item.has-children.is-open").forEach(sibling => {
+                    if (sibling !== currentItem) {
+                        closeDescendants(sibling);
+                        sibling.classList.remove("is-open");
+                    }
+                });
+            }
+
+            // Closing: also close all open descendants inside this item
+            if (!isOpening) {
+                closeDescendants(currentItem);
+            }
+
+            currentItem.classList.toggle("is-open");
         });
     });
 
-    // 2. AJAX loading for fragment links – NEVER changes the browser URL
+    // 2. Dashboard / Home link – reloads the page (clears filters)
+    document.querySelectorAll(".js-home-link").forEach(link => {
+        link.addEventListener("click", function(e) {
+            e.preventDefault();
+            window.location.reload();
+        });
+    });
+
+    // 3. AJAX loading for fragment links – NEVER changes the browser URL
     document.querySelectorAll(".js-ajax-link").forEach(link => {
         link.addEventListener("click", function(e) {
             e.preventDefault();     // Prevents navigation away from dashboard.php
