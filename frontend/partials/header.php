@@ -90,6 +90,10 @@ if (!function_exists('_pub_safe_css_val')) {
         if (preg_match('/^[\d.]+(px|em|rem|%|vh|vw|pt|ch|ex)(\s+[\d.]+(px|em|rem|%|vh|vw|pt|ch|ex))*$/', $v)) return $v;
         // Numeric (e.g. font-weight 400, 700, line-height 1.5)
         if (preg_match('/^[\d.]{1,6}$/', $v)) return $v;
+        // Box-shadow value: numeric offsets + optional rgba/hex color
+        // e.g. "0 4px 20px rgba(255,99,71,0.2)" or "0 6px 24px rgba(14,165,233,0.25)"
+        if (preg_match('/^[\d\s.]+(px|em|rem)?\s+(rgba?\([\d\s%,.\/]+\))$/i', $v)) return $v;
+        if (preg_match('/^[\d.]+(px)?\s+[\d.]+(px)?\s+[\d.]+(px)?(\s+[\d.]+(px)?)?\s+(rgba?\([\d\s%,.\/]+\)|#[0-9a-fA-F]{3,8})$/i', $v)) return $v;
         // Quoted font name
         if (preg_match('/^"[a-zA-Z0-9\s\-]{1,60}"$/', $v)) return $v;
         // Font stack (comma-separated, alphanumeric + spaces + quotes)
@@ -142,6 +146,40 @@ foreach ($theme['design_settings'] ?? [] as $d) {
     if ($k !== '' && $v !== '' && $k !== 'logo_url') {
         $_setVar($k, $v);
     }
+}
+
+// ── Button styles → CSS variables (--btn-{slug}-*) ───────
+// Matches db-theme-bridge.css variable naming convention
+foreach ($theme['buttons'] ?? [] as $b) {
+    $slug = trim($b['slug'] ?? '');
+    if ($slug === '') continue;
+    $slug = preg_replace('/[^a-z0-9-]/', '-', strtolower($slug));
+    if (!empty($b['background_color']))       $_setVar("btn-{$slug}-bg",           (string)$b['background_color']);
+    if (!empty($b['text_color']))             $_setVar("btn-{$slug}-color",        (string)$b['text_color']);
+    if (!empty($b['border_color']))           $_setVar("btn-{$slug}-border",       (string)$b['border_color']);
+    if (isset($b['border_width']))            $_setVar("btn-{$slug}-border-width", (int)$b['border_width'] . 'px');
+    if (isset($b['border_radius']))           $_setVar("btn-{$slug}-radius",       (int)$b['border_radius'] . 'px');
+    if (!empty($b['padding']))                $_setVar("btn-{$slug}-padding",      (string)$b['padding']);
+    if (!empty($b['font_size']))              $_setVar("btn-{$slug}-font-size",    (is_numeric($b['font_size']) ? $b['font_size'] . 'px' : (string)$b['font_size']));
+    if (!empty($b['font_weight']))            $_setVar("btn-{$slug}-font-weight",  (string)$b['font_weight']);
+    if (!empty($b['hover_background_color'])) $_setVar("btn-{$slug}-hover-bg",     (string)$b['hover_background_color']);
+    if (!empty($b['hover_text_color']))       $_setVar("btn-{$slug}-hover-color",  (string)$b['hover_text_color']);
+    if (!empty($b['hover_border_color']))     $_setVar("btn-{$slug}-hover-border", (string)$b['hover_border_color']);
+}
+
+// ── Card styles → CSS variables (--card-{slug}-*) ────────
+// Matches db-theme-bridge.css variable naming convention
+foreach ($theme['cards'] ?? [] as $c) {
+    $slug = trim($c['slug'] ?? '');
+    if ($slug === '') continue;
+    $slug = preg_replace('/[^a-z0-9-]/', '-', strtolower($slug));
+    if (!empty($c['background_color'])) $_setVar("card-{$slug}-bg",           (string)$c['background_color']);
+    if (!empty($c['border_color']))     $_setVar("card-{$slug}-border",       (string)$c['border_color']);
+    if (isset($c['border_width']))      $_setVar("card-{$slug}-border-width", (int)$c['border_width'] . 'px');
+    if (isset($c['border_radius']))     $_setVar("card-{$slug}-radius",       (int)$c['border_radius'] . 'px');
+    if (!empty($c['shadow_style']))     $_setVar("card-{$slug}-shadow",       (string)$c['shadow_style']);
+    if (!empty($c['padding']))          $_setVar("card-{$slug}-padding",      (string)$c['padding']);
+    if (!empty($c['text_color']))       $_setVar("card-{$slug}-text",         (string)$c['text_color']);
 }
 
 // ── Alias vars for compatibility (matches admin _header_build_alias_vars) ──
@@ -316,8 +354,16 @@ if (!preg_match('/^#[0-9a-fA-F]{3,8}$/', $_themeColor) && !preg_match('/^[a-zA-Z
     <?php endforeach; ?>
 
     <!-- ════════════════════════════════════════════════════
-         CSS VARIABLES (single source of truth)
-         Everything after this reads from these vars.
+         Design Tokens (variables.css) — loaded FIRST
+         Provides defaults & --color-*→--pub-* bridge.
+         DB values injected AFTER this will override defaults.
+         ════════════════════════════════════════════════════ -->
+    <link rel="stylesheet"
+          href="/frontend/assets/css/variables.css?v=<?= _pub_asset_ver('/frontend/assets/css/variables.css') ?>">
+
+    <!-- ════════════════════════════════════════════════════
+         CSS VARIABLES (single source of truth from DB)
+         Overrides variables.css defaults with real DB values.
          Mirrors admin/includes/header.php approach.
          ════════════════════════════════════════════════════ -->
     <style id="pub-theme-vars">
@@ -362,7 +408,7 @@ body {
     <!-- ════════════════════════════════════════════════════
          Generated CSS (DB-driven button/card/font styles)
          Loaded LAST — concrete .btn-{slug}, .card-{slug} classes
-         and additional :root vars from generated_css
+         using var() references to :root variables above
          ════════════════════════════════════════════════════ -->
     <?php if (!empty($theme['generated_css'])): ?>
     <style id="pub-theme-generated"><?= $theme['generated_css'] ?></style>

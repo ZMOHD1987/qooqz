@@ -612,6 +612,32 @@ if (!function_exists('pub_load_theme')) {
                     }
                     // Map button_type to .pub-btn-- class names used in HTML
                     $pubBtnTypeMap = ['transpa' => 'ghost', 'transparent' => 'ghost'];
+                    // Emit --btn-{slug}-* CSS variables inside a :root block and generate
+                    // .btn-{slug} classes that reference those vars (db-theme-bridge.css pattern)
+                    $css .= ":root {\n";
+                    foreach ($buttons as $b) {
+                        if (empty($b['slug'])) continue;
+                        $slugB    = preg_replace('/[^a-z0-9_\-]/', '-', (string)$b['slug']);
+                        $btnType  = strtolower(trim((string)($b['button_type'] ?? '')));
+                        $pubClass = $pubBtnTypeMap[$btnType] ?? $btnType;
+                        $isDisabled = strpos($slugB, '-disabled') !== false;
+
+                        // ── :root CSS variables for this button ──
+                        if (!empty($b['background_color']))       $css .= "  --btn-{$slugB}-bg: "           . $cssEsc((string)$b['background_color'])       . ";\n";
+                        if (!empty($b['text_color']))             $css .= "  --btn-{$slugB}-color: "        . $cssEsc((string)$b['text_color'])             . ";\n";
+                        if (!empty($b['border_color']))           $css .= "  --btn-{$slugB}-border: "       . $cssEsc((string)$b['border_color'])           . ";\n";
+                        if (isset($b['border_width']))            $css .= "  --btn-{$slugB}-border-width: " . (int)$b['border_width']                       . "px;\n";
+                        if (isset($b['border_radius']))           $css .= "  --btn-{$slugB}-radius: "       . (int)$b['border_radius']                      . "px;\n";
+                        if (!empty($b['padding']))                $css .= "  --btn-{$slugB}-padding: "      . $cssEsc((string)$b['padding'])                . ";\n";
+                        if (!empty($b['font_size']))              $css .= "  --btn-{$slugB}-font-size: "    . $cssEsc((string)$b['font_size']) . (is_numeric($b['font_size']) ? 'px' : '') . ";\n";
+                        if (!empty($b['font_weight']))            $css .= "  --btn-{$slugB}-font-weight: "  . $cssEsc((string)$b['font_weight'])            . ";\n";
+                        if (!empty($b['hover_background_color'])) $css .= "  --btn-{$slugB}-hover-bg: "     . $cssEsc((string)$b['hover_background_color']) . ";\n";
+                        if (!empty($b['hover_text_color']))       $css .= "  --btn-{$slugB}-hover-color: "  . $cssEsc((string)$b['hover_text_color'])       . ";\n";
+                        if (!empty($b['hover_border_color']))     $css .= "  --btn-{$slugB}-hover-border: " . $cssEsc((string)$b['hover_border_color'])     . ";\n";
+                    }
+                    $css .= "}\n";
+
+                    // ── .btn-{slug} classes using var() references ──
                     foreach ($buttons as $b) {
                         if (empty($b['slug'])) continue;
                         $slugB    = preg_replace('/[^a-z0-9_\-]/', '-', (string)$b['slug']);
@@ -624,27 +650,27 @@ if (!function_exists('pub_load_theme')) {
                             $sel .= ", .pub-btn--{$pubClass}";
                         }
                         $css .= "{$sel} {\n";
-                        if (!empty($b['background_color'])) $css .= '  background-color: ' . $cssEsc((string)$b['background_color']) . ";\n";
-                        if (!empty($b['text_color']))       $css .= '  color: '            . $cssEsc((string)$b['text_color'])       . ";\n";
-                        if (!empty($b['border_color']))     $css .= '  border: '           . (int)$b['border_width'] . 'px solid ' . $cssEsc((string)$b['border_color']) . ";\n";
-                        if (isset($b['border_radius']))     $css .= '  border-radius: '    . (int)$b['border_radius'] . "px;\n";
-                        if (!empty($b['padding']))          $css .= '  padding: '          . $cssEsc((string)$b['padding'])          . ";\n";
-                        if (!empty($b['font_size']))        $css .= '  font-size: '        . $cssEsc((string)$b['font_size'])        . ";\n";
-                        if (!empty($b['font_weight']))      $css .= '  font-weight: '      . $cssEsc((string)$b['font_weight'])      . ";\n";
+                        if (!empty($b['background_color'])) $css .= "  background-color: var(--btn-{$slugB}-bg);\n";
+                        if (!empty($b['text_color']))       $css .= "  color:            var(--btn-{$slugB}-color);\n";
+                        if (!empty($b['border_color']))     $css .= "  border:           var(--btn-{$slugB}-border-width, " . (int)$b['border_width'] . "px) solid var(--btn-{$slugB}-border);\n";
+                        if (isset($b['border_radius']))     $css .= "  border-radius:    var(--btn-{$slugB}-radius);\n";
+                        if (!empty($b['padding']))          $css .= "  padding:          var(--btn-{$slugB}-padding);\n";
+                        if (!empty($b['font_size']))        $css .= "  font-size:        var(--btn-{$slugB}-font-size);\n";
+                        if (!empty($b['font_weight']))      $css .= "  font-weight:      var(--btn-{$slugB}-font-weight);\n";
                         $css .= "  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;\n";
                         $css .= "}\n";
                         $hasHover = !empty($b['hover_background_color'])
                                  || !empty($b['hover_text_color'])
                                  || !empty($b['hover_border_color']);
                         if ($hasHover) {
-                            $hoverSel = ".btn-{$slugB}:hover";
+                            $hoverSel = ".btn-{$slugB}:hover, .btn-{$slugB}:focus-visible";
                             if (!$isDisabled && $pubClass && preg_match('/^[a-z][a-z0-9\-]*$/', $pubClass)) {
-                                $hoverSel .= ", .pub-btn--{$pubClass}:hover";
+                                $hoverSel .= ", .pub-btn--{$pubClass}:hover, .pub-btn--{$pubClass}:focus-visible";
                             }
                             $css .= "{$hoverSel} {\n";
-                            if (!empty($b['hover_background_color'])) $css .= '  background-color: ' . $cssEsc((string)$b['hover_background_color']) . ";\n";
-                            if (!empty($b['hover_text_color']))       $css .= '  color: '             . $cssEsc((string)$b['hover_text_color']) . ";\n";
-                            if (!empty($b['hover_border_color']))     $css .= '  border-color: '      . $cssEsc((string)$b['hover_border_color']) . ";\n";
+                            if (!empty($b['hover_background_color'])) $css .= "  background-color: var(--btn-{$slugB}-hover-bg);\n";
+                            if (!empty($b['hover_text_color']))       $css .= "  color:            var(--btn-{$slugB}-hover-color);\n";
+                            if (!empty($b['hover_border_color']))     $css .= "  border-color:     var(--btn-{$slugB}-hover-border);\n";
                             $css .= "}\n";
                         }
                     }
@@ -653,11 +679,11 @@ if (!function_exists('pub_load_theme')) {
                         $slugC = preg_replace('/[^a-z0-9_\-]/', '-', (string)$c['slug']);
                         $hoverEffect = strtolower(trim((string)($c['hover_effect'] ?? '')));
                         $css .= ".card-{$slugC} {\n";
-                        if (!empty($c['background_color'])) $css .= '  background-color: ' . $cssEsc((string)$c['background_color']) . ";\n";
-                        if (!empty($c['border_color']))     $css .= '  border: '           . (int)$c['border_width'] . 'px solid ' . $cssEsc((string)$c['border_color']) . ";\n";
-                        if (isset($c['border_radius']))     $css .= '  border-radius: '    . (int)$c['border_radius'] . "px;\n";
-                        if (!empty($c['shadow_style']))     $css .= '  box-shadow: '       . $cssEsc((string)$c['shadow_style'])     . ";\n";
-                        if (!empty($c['padding']))          $css .= '  padding: '          . $cssEsc((string)$c['padding'])          . ";\n";
+                        if (!empty($c['background_color'])) $css .= "  background-color: var(--card-{$slugC}-bg);\n";
+                        if (!empty($c['border_color']))     $css .= "  border:           var(--card-{$slugC}-border-width, " . (int)$c['border_width'] . "px) solid var(--card-{$slugC}-border);\n";
+                        if (isset($c['border_radius']))     $css .= "  border-radius:    var(--card-{$slugC}-radius);\n";
+                        if (!empty($c['shadow_style']))     $css .= "  box-shadow:       var(--card-{$slugC}-shadow);\n";
+                        if (!empty($c['padding']))          $css .= "  padding:          var(--card-{$slugC}-padding);\n";
                         if (!empty($c['text_align']))       $css .= '  text-align: '       . $cssEsc((string)$c['text_align'])       . ";\n";
                         // Only add transition when a hover effect is configured
                         if ($hoverEffect && $hoverEffect !== 'none') {
