@@ -12,14 +12,14 @@
    1. CSS Custom properties — overridable by JS/theme API
    ----------------------------------------------------- */
 :root {
-  --pub-primary:       var(--color-primary, #2d8cf0);
-  --pub-secondary:     var(--color-secondary, #6c757d);
-  --pub-accent:        var(--color-accent, #f39c12);
-  --pub-bg:            #ffffff;
-  --pub-surface:       #f8f9fb;
-  --pub-text:          #222831;
-  --pub-muted:         #6c757d;
-  --pub-border:        #e6e9ee;
+  --pub-primary:       var(--primary-color, var(--primary_color, var(--color-primary, #2d8cf0)));
+  --pub-secondary:     var(--secondary-color, var(--secondary_color, var(--color-secondary, #6c757d)));
+  --pub-accent:        var(--accent-color, var(--accent_color, var(--color-accent, #f39c12)));
+  --pub-bg:            var(--background-main, var(--background_main, #ffffff));
+  --pub-surface:       var(--background-secondary, var(--background_secondary, #f8f9fb));
+  --pub-text:          var(--text-primary, var(--text_primary, #222831));
+  --pub-muted:         var(--text-secondary, var(--text_secondary, #6c757d));
+  --pub-border:        var(--border-color, var(--border_color, #e6e9ee));
   --pub-radius:        10px;
   --pub-radius-sm:     6px;
   --pub-shadow:        0 2px 12px rgba(33,37,41,0.08);

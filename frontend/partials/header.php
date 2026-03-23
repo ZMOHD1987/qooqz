@@ -266,7 +266,14 @@ if (!function_exists('_pub_asset_ver')) {
     <?php endforeach; ?>
 
     <!-- ════════════════════════════════════════════════════
-         Theme CSS Variables (DB-driven)
+         Public Stylesheet — loaded FIRST so DB theme :root overrides its defaults
+         ════════════════════════════════════════════════════ -->
+    <link rel="stylesheet"
+          href="/frontend/assets/css/public.css?v=<?= _pub_asset_ver('/frontend/assets/css/public.css') ?>">
+
+    <!-- ════════════════════════════════════════════════════
+         Theme CSS Variables (DB-driven) — loaded AFTER public.css
+         so DB colors override the CSS default values
          ════════════════════════════════════════════════════ -->
     <?php if ($_themeVars): ?>
     <style id="pub-theme-vars">
@@ -278,12 +285,6 @@ if (!function_exists('_pub_asset_ver')) {
     <?php if (!empty($theme['generated_css'])): ?>
     <style id="pub-theme-generated"><?= $theme['generated_css'] ?></style>
     <?php endif; ?>
-
-    <!-- ════════════════════════════════════════════════════
-         Public Stylesheet (single entry — imports variables, base, layout, etc.)
-         ════════════════════════════════════════════════════ -->
-    <link rel="stylesheet"
-          href="/frontend/assets/css/public.css?v=<?= _pub_asset_ver('/frontend/assets/css/public.css') ?>">
 
     <!-- Homepage engine JS (deferred) -->
     <script defer

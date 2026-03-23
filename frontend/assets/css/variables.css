@@ -4,21 +4,21 @@
 */
 
 :root {
-  /* --- Colors --- */
-  --color-primary: #2d8cf0;
+  /* --- Colors (var fallbacks allow DB theme to override via --setting_key) --- */
+  --color-primary: var(--primary-color, var(--primary_color, #2d8cf0));
   --color-primary-600: #1f6fd1;
-  --color-secondary: #95a5a6;
-  --color-accent: #f39c12;
+  --color-secondary: var(--secondary-color, var(--secondary_color, #95a5a6));
+  --color-accent: var(--accent-color, var(--accent_color, #f39c12));
   --color-success: #2ecc71;
   --color-danger:  #e74c3c;
   --color-warning: #f1c40f;
 
-  --color-bg: #ffffff;
-  --color-surface: #f8f9fb;
+  --color-bg: var(--background-main, var(--background_main, #ffffff));
+  --color-surface: var(--background-secondary, var(--background_secondary, #f8f9fb));
   --color-muted: #7f8c8d;
-  --color-text: #222831;
+  --color-text: var(--text-primary, var(--text_primary, #222831));
   --color-inverse-text: #ffffff;
-  --color-border: #e6e9ee;
+  --color-border: var(--border-color, var(--border_color, #e6e9ee));
   --color-shadow: rgba(33, 37, 41, 0.06);
 
   /* --- Semantic / UI variables --- */
