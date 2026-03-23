@@ -1,672 +1,314 @@
 <?php
 declare(strict_types=1);
-
 /**
- * /admin/includes/header.php
- * Production v3.0 — Single Source of Truth
+ * frontend/partials/header.php
+ * QOOQZ — Public Interface Header
  *
- * ─ مبادئ التصميم ─────────────────────────────────────────────
- * 1. مصدر واحد للـ CSS variables  → يُعيَّن هنا فقط، لا في JS ولا في theme_injector
- * 2. لا !important على colors     → القواعد الديناميكية تفوز بالـ specificity الطبيعي
- * 3. لا race condition            → كل CSS يُحقن قبل <body>
- * 4. لا تكرار للـ vars            → underscore + hyphen في مرور واحد
- * 5. generateComponentStyles() في JS للقراءة فقط من المتغيرات المُعيَّنة هنا
- * ─────────────────────────────────────────────────────────────
+ * Responsibilities:
+ *   1. HTML <head> with public CSS, fonts, meta tags, SEO
+ *   2. <header> bar: logo + hamburger toggle (NO menus — menus live in menu.php)
+ *   3. Opens <div class="pub-layout"> and includes menu.php sidebar
+ *   4. Opens <main class="pub-main-content"> for page content
+ *
+ * The footer.php closes </main> and </div>.
+ * Menu.php renders the sidebar navigation independently.
  */
 
 // ════════════════════════════════════════════════════════════
-// 0. حماية: لا تشغيل من CLI ولا من /api/
+// 0. Guard: no CLI, no direct /api/ access
 // ════════════════════════════════════════════════════════════
 if (php_sapi_name() === 'cli') {
     return;
 }
-
 if (str_starts_with($_SERVER['REQUEST_URI'] ?? '', '/api/')) {
     http_response_code(403);
     exit('Direct access denied');
 }
 
 // ════════════════════════════════════════════════════════════
-// 1. SESSION
+// 1. Context — loaded by public_context.php before this file
 // ════════════════════════════════════════════════════════════
-if (session_status() === PHP_SESSION_NONE) {
-    $sessionConfig = $_SERVER['DOCUMENT_ROOT'] . '/api/shared/config/session.php';
-    if (file_exists($sessionConfig)) {
-        require_once $sessionConfig;
-    } else {
-        session_start([
-            'cookie_secure'   => !empty($_SERVER['HTTPS']),
-            'cookie_httponly' => true,
-            'cookie_samesite' => 'Lax',
-            'use_strict_mode' => true,
-        ]);
-    }
+$_ctx      = $GLOBALS['PUB_CONTEXT'] ?? [];
+$lang      = $_ctx['lang'] ?? 'ar';
+$dir       = $_ctx['dir']  ?? 'rtl';
+$theme     = $_ctx['theme'] ?? [];
+$_seo      = $_ctx['seo']  ?? [];
+$_user     = $_ctx['user'] ?? [];
+$_isLoggedIn = !empty($_user['id']);
+$_appName   = $GLOBALS['PUB_APP_NAME']  ?? 'QOOQZ';
+$_pageTitle = $GLOBALS['PUB_PAGE_TITLE'] ?? ($_seo['title'] ?? $_appName);
+$_pageDesc  = $GLOBALS['PUB_PAGE_DESC']  ?? ($_seo['description'] ?? '');
+$_basePath  = rtrim($GLOBALS['PUB_BASE_PATH'] ?? '/frontend/public', '/');
+
+// ════════════════════════════════════════════════════════════
+// 2. Helpers
+// ════════════════════════════════════════════════════════════
+if (!function_exists('e')) {
+    function e($v): string { return htmlspecialchars((string)$v, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8'); }
+}
+if (!function_exists('t')) {
+    function t(string $key, array $r = []): string { return $key; }
 }
 
 // ════════════════════════════════════════════════════════════
-// 2. CSRF TOKEN
+// 3. Theme colors → CSS custom properties
 // ════════════════════════════════════════════════════════════
-if (empty($_SESSION['csrf_token'])) {
-    try {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-    } catch (Throwable) {
-        $_SESSION['csrf_token'] = bin2hex(openssl_random_pseudo_bytes(32));
-    }
-}
-$csrfToken = htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8');
-
-// ════════════════════════════════════════════════════════════
-// 3. BOOTSTRAP — يُحمّل ADMIN_UI من DB مرة واحدة
-// ════════════════════════════════════════════════════════════
-$bootstrapPath = $_SERVER['DOCUMENT_ROOT'] . '/api/bootstrap_admin_ui.php';
-if (file_exists($bootstrapPath)) {
-    require_once $bootstrapPath;
-}
-
-// ════════════════════════════════════════════════════════════
-// 4. PAYLOAD — مع قيم افتراضية آمنة
-// ════════════════════════════════════════════════════════════
-$payload = $GLOBALS['ADMIN_UI'] ?? [];
-
-if (empty($payload) || !is_array($payload)) {
-    $payload = _header_fallback_payload($csrfToken);
-}
-
-// حقن CSRF في الـ payload
-$payload['csrf_token'] = $csrfToken;
-
-// ════════════════════════════════════════════════════════════
-// 5. مسار الترجمة — يُحدَّد من URL
-// ════════════════════════════════════════════════════════════
-$payload['translation_path'] = _header_resolve_translation_path($_SERVER['REQUEST_URI'] ?? '');
-
-// ════════════════════════════════════════════════════════════
-// 6. استخراج البيانات الأساسية
-// ════════════════════════════════════════════════════════════
-$user  = $payload['user']  ?? [];
-$lang  = $payload['lang']  ?? 'en';
-$dir   = $payload['direction'] ?? 'ltr';
-$theme = $payload['theme'] ?? [];
-
-// ════════════════════════════════════════════════════════════
-// 7. بناء CSS Variables بشكل موحّد (مرور واحد)
-// ════════════════════════════════════════════════════════════
-$cssVars   = _header_build_css_vars($theme);        // المتغيرات الأساسية
-$aliasVars = _header_build_alias_vars($cssVars);    // المتغيرات البديلة (إزالة التعارضات)
-$fontLinks = _header_collect_font_links($theme);    // روابط Google Fonts
-$logo      = _header_extract_logo($theme);
-
-// ════════════════════════════════════════════════════════════
-// 8. JSON آمن للـ ADMIN_UI
-// ════════════════════════════════════════════════════════════
-$jsonPayload = _header_safe_json($payload);
-
-// ════════════════════════════════════════════════════════════
-// HELPER FUNCTIONS
-// ════════════════════════════════════════════════════════════
-
-function _header_fallback_payload(string $csrfToken): array
-{
-    $lang = $_SESSION['preferred_language'] ?? 'en';
-    return [
-        'user' => [
-            'id'                 => $_SESSION['user_id']   ?? 0,
-            'username'           => $_SESSION['username']  ?? 'guest',
-            'email'              => $_SESSION['email']     ?? '',
-            'roles'              => $_SESSION['roles']     ?? [],
-            'permissions'        => $_SESSION['permissions'] ?? [],
-            'resource_permissions' => $_SESSION['resource_permissions'] ?? [],
-            'avatar'             => '/admin/assets/img/default-avatar.png',
-            'preferred_language' => $lang,
-            'timezone'           => 'UTC',
-            'is_active'          => false,
-        ],
-        'lang'             => $lang,
-        'direction'        => in_array($lang, ['ar','fa','he','ur'], true) ? 'rtl' : 'ltr',
-        'csrf_token'       => $csrfToken,
-        'tenant_id'        => (int)($_SESSION['tenant_id'] ?? 1),
-        'is_super_admin'   => false,
-        'theme' => [
-            'color_settings'  => [],
-            'font_settings'   => [],
-            'design_settings' => [],
-            'button_styles'   => [],
-            'card_styles'     => [],
-            'generated_css'   => '',
-        ],
-        'strings'          => [],
-        'settings'         => [],
-        'translation_path' => '/languages/admin/',
-    ];
-}
-
-function _header_resolve_translation_path(string $uri): string
-{
-    $map = [
-        '/users'        => '/languages/Users/',
-        '/tenant_users' => '/languages/TenantUsers/',
-        '/dashboard'    => '/languages/Dashboard/',
-    ];
-    foreach ($map as $segment => $path) {
-        if (str_contains($uri, $segment)) {
-            return $path;
-        }
-    }
-    return '/languages/admin/';
-}
-
-/**
- * يبني مصفوفة ['--var-name' => 'value'] من إعدادات الـ Theme
- * ─ يُعيَّن كل مفتاح بشكلَيه (underscore + hyphen) في مرور واحد
- * ─ لا يُصدر !important
- */
-function _header_build_css_vars(array $theme): array
-{
-    $vars = [];
-
-    $set = function (string $key, string $value) use (&$vars): void {
-        if ($value === '') {
-            return;
-        }
-        $keyU = '--' . str_replace('-', '_', $key);
-        $keyH = '--' . str_replace('_', '-', $key);
-        $vars[$keyU] = $value;
-        if ($keyH !== $keyU) {
-            $vars[$keyH] = $value;
-        }
-    };
-
-    // ── Color settings ────────────────────────────────────────
-    foreach ($theme['color_settings'] ?? [] as $c) {
-        $k = trim($c['setting_key'] ?? '');
-        $v = trim($c['color_value']  ?? '');
-        if ($k !== '' && $v !== '') {
-            $set($k, $v);
-        }
-    }
-
-    // ── Font settings ─────────────────────────────────────────
-    foreach ($theme['font_settings'] ?? [] as $f) {
-        $k = trim($f['setting_key'] ?? '');
-        if ($k === '') {
-            continue;
-        }
-        if (!empty($f['font_family'])) {
-            $set("{$k}_family", $f['font_family']);
-        }
-        if (!empty($f['font_size'])) {
-            $set("{$k}_size", $f['font_size']);
-        }
-        if (!empty($f['font_weight'])) {
-            $set("{$k}_weight", (string) $f['font_weight']);
-        }
-    }
-
-    // ── Design settings ───────────────────────────────────────
-    foreach ($theme['design_settings'] ?? [] as $d) {
-        $k = trim($d['setting_key']   ?? '');
-        $v = trim($d['setting_value'] ?? '');
-        if ($k !== '' && $v !== '') {
-            $set($k, $v);
-        }
-    }
-
-    return $vars;
-}
-
-/**
- * يبني المتغيرات البديلة (aliases) لضمان توافق أسماء الـ CSS vars
- * عبر كل ملفات CSS القديمة — بدون تعارض مع ما يُعيَّن من DB.
- */
-function _header_build_alias_vars(array $vars): array
-{
-    $aliases = [];
-
-    $get = static function (string ...$names) use ($vars): string {
-        foreach ($names as $n) {
-            if (isset($vars[$n]) && $vars[$n] !== '') {
-                return $vars[$n];
+$_themeVars = '';
+if (!empty($theme['color_settings']) && is_array($theme['color_settings'])) {
+    $parts = [];
+    foreach ($theme['color_settings'] as $cs) {
+        $key = $cs['setting_key'] ?? '';
+        $val = $cs['color_value']  ?? ($cs['setting_value'] ?? '');
+        if ($key !== '' && $val !== '') {
+            $safeKey = preg_replace('/[^a-zA-Z0-9_-]/', '', $key);
+            $safeVal = preg_replace('/[^a-zA-Z0-9#(),.\/ %_-]/', '', $val);
+            if ($safeKey && $safeVal) {
+                $parts[] = '    --' . $safeKey . ': ' . $safeVal . ';';
+                // Also set hyphenated variant
+                $hk = str_replace('_', '-', $safeKey);
+                if ($hk !== $safeKey) {
+                    $parts[] = '    --' . $hk . ': ' . $safeVal . ';';
+                }
             }
         }
-        return '';
-    };
-
-    $alias = static function (string $target, string ...$sources) use ($vars, $get, &$aliases): void {
-        // لا تُعيَّن alias إذا كانت مُعيَّنة بالفعل من DB
-        if (isset($vars[$target]) && $vars[$target] !== '') {
-            return;
-        }
-        $v = $get(...$sources);
-        if ($v !== '') {
-            $aliases[$target] = $v;
-        }
-    };
-
-    // Surface / background
-    $bg2 = $get('--background_secondary', '--background-secondary',
-                '--background_primary',   '--background-primary',
-                '--background_main',      '--background-main');
-
-    $alias('--surface-color',      '--surface_color', '--background-secondary', '--background_secondary');
-    $alias('--card-bg',            '--card_bg',       '--surface-color', '--background-secondary');
-    $alias('--input-bg',           '--input_bg',      '--surface-color', '--background-secondary');
-    $alias('--input-background',   '--input_background', '--input-bg', '--input_bg');
-    $alias('--thead-bg',           '--thead_bg',      '--background-tertiary', '--background_tertiary',
-                                                      '--background-secondary', '--background_secondary');
-    $alias('--background-tertiary','--background_tertiary', '--background-secondary');
-
-    // Colors
-    $alias('--danger-color',  '--danger_color',  '--error-color',   '--error_color');
-    $alias('--error-color',   '--error_color',   '--danger-color',  '--danger_color');
-    $alias('--info-color',    '--info_color',    '--primary-color', '--primary_color');
-
-    // Text
-    $alias('--text-secondary', '--text_secondary', '--text-muted', '--text-light');
-    $alias('--text-tertiary',  '--text_tertiary',  '--text-secondary', '--text_secondary');
-
-    // Border
-    $alias('--border-color', '--border_color', '--border', '--divider-color');
-
-    // Input placeholder
-    $alias('--input-placeholder', '--input_placeholder',
-           '--text-secondary', '--text_secondary');
-
-    // Sidebar hover / active (fall back to primary-color if not set in DB)
-    $alias('--sidebar-hover',  '--sidebar_hover',  '--primary-color', '--primary_color');
-    $alias('--sidebar-active', '--sidebar_active',  '--primary-color', '--primary_color');
-
-    return $aliases;
-}
-
-/**
- * يجمع روابط Google Fonts بدون تكرار
- */
-function _header_collect_font_links(array $theme): array
-{
-    static $systemFonts = [
-        'system-ui','ui-sans-serif','ui-serif','ui-monospace',
-        'sans-serif','serif','monospace','cursive','fantasy',
-        'inherit','initial','unset',
-        'arial','verdana','helvetica','helvetica neue','georgia',
-        'times','times new roman','courier','courier new',
-        'impact','trebuchet ms','comic sans ms','tahoma',
-        'lucida','palatino','garamond',
-    ];
-
-    $links   = [];
-    $loaded  = [];
-
-    foreach ($theme['font_settings'] ?? [] as $f) {
-        if (empty($f['font_family'])) {
-            continue;
-        }
-
-        if (!empty($f['font_url'])) {
-            $url = $f['font_url'];
-        } else {
-            // استخرج الخط الأول فقط من المكدّس
-            $primary = trim(explode(',', $f['font_family'])[0], " \"'");
-            if ($primary === '' || in_array(strtolower($primary), $systemFonts, true)) {
-                continue;
-            }
-            $url = 'https://fonts.googleapis.com/css2?family='
-                 . urlencode(str_replace(' ', '+', $primary))
-                 . ':wght@400;500;600;700&display=swap';
-        }
-
-        if (!in_array($url, $loaded, true)) {
-            $loaded[] = $url;
-            $links[]  = $url;
-        }
     }
-
-    return $links;
+    if ($parts) {
+        $_themeVars = implode("\n", $parts);
+    }
 }
 
-function _header_extract_logo(array $theme): string
-{
-    foreach ($theme['design_settings'] ?? [] as $d) {
+// ════════════════════════════════════════════════════════════
+// 4. Font detection
+// ════════════════════════════════════════════════════════════
+$_fontUrl = $dir === 'rtl'
+    ? 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap'
+    : 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
+
+// ════════════════════════════════════════════════════════════
+// 5. Logo
+// ════════════════════════════════════════════════════════════
+$_logoUrl = '';
+if (!empty($theme['design_settings']) && is_array($theme['design_settings'])) {
+    foreach ($theme['design_settings'] as $d) {
         if (($d['setting_key'] ?? '') === 'logo_url' && !empty($d['setting_value'])) {
-            return $d['setting_value'];
+            $_logoUrl = $d['setting_value'];
+            break;
         }
     }
-    return '';
 }
-
-function _header_safe_json(array $data): string
-{
-    $json = json_encode(
-        $data,
-        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP
-    );
-    return ($json !== false) ? $json : '{}';
-}
-
-/**
- * Cache-busting: يُرجع timestamp الملف أو '0' إذا غير موجود
- */
-function assetVer(string $path): string
-{
-    static $cache = [];
-    if (!isset($cache[$path])) {
-        $full         = $_SERVER['DOCUMENT_ROOT'] . $path;
-        $cache[$path] = file_exists($full) ? (string) filemtime($full) : '0';
+// Fallback: check for static logo files
+if (empty($_logoUrl)) {
+    foreach (['logo.png', 'logo.svg', 'logo.webp'] as $_lf) {
+        if (@file_exists(FRONTEND_BASE . '/assets/images/' . $_lf)) {
+            $_logoUrl = '/frontend/assets/images/' . $_lf;
+            break;
+        }
     }
-    return $cache[$path];
 }
 
 // ════════════════════════════════════════════════════════════
-// بناء كتلة :root CSS — فصل الـ vars الأساسية عن الـ aliases
+// 6. Cache-busting helper
 // ════════════════════════════════════════════════════════════
-ob_start();
-foreach ($cssVars as $name => $value) {
-    echo '    ' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8')
-       . ': '   . htmlspecialchars($value, ENT_QUOTES, 'UTF-8')
-       . ";\n";
+if (!function_exists('_pub_asset_ver')) {
+    function _pub_asset_ver(string $path): string {
+        $full = ($_SERVER['DOCUMENT_ROOT'] ?? '') . $path;
+        return file_exists($full) ? (string)filemtime($full) : '1';
+    }
 }
-// Aliases — مُعيَّنة فقط إذا لم تُوجد من DB
-foreach ($aliasVars as $name => $value) {
-    echo '    ' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8')
-       . ': '   . htmlspecialchars($value, ENT_QUOTES, 'UTF-8')
-       . ";\n";
-}
-$rootVarsBlock = ob_get_clean();
 
+// ════════════════════════════════════════════════════════════
+// 7. Notification data for bell icon
+// ════════════════════════════════════════════════════════════
+$_pubNotifJson = ['items' => [], 'unread' => 0];
+if ($_isLoggedIn) {
+    $apiBase = function_exists('pub_api_url') ? pub_api_url('') : '/api/';
+    $nResp = function_exists('pub_fetch')
+        ? pub_fetch($apiBase . 'notifications?user_id=' . (int)$_user['id'] . '&per=5')
+        : ['data' => []];
+    $_pubNotifJson = [
+        'items'  => $nResp['data']['data'] ?? [],
+        'unread' => (int)($nResp['data']['meta']['unread'] ?? 0),
+    ];
+}
+
+// ════════════════════════════════════════════════════════════
+// 8. Nav items (used only for desktop nav, NOT in sidebar)
+// ════════════════════════════════════════════════════════════
+$_navItems = [
+    t('nav.home')       => $_basePath . '/index.php',
+    t('nav.products')   => $_basePath . '/products.php',
+    t('nav.categories') => $_basePath . '/categories.php',
+    t('nav.offers')     => $_basePath . '/discounts.php',
+    t('nav.jobs')       => $_basePath . '/jobs.php',
+    t('nav.entities')   => $_basePath . '/entities.php',
+    t('nav.tenants')    => $_basePath . '/tenants.php',
+    t('nav.auctions')   => $_basePath . '/auctions.php',
+];
+$_cartUrl   = $_basePath . '/cart.php';
+$_cartLabel = e(t('nav.cart'));
 ?>
-<!DOCTYPE html>
-<html lang="<?= htmlspecialchars($lang, ENT_QUOTES, 'UTF-8') ?>"
-      dir="<?= htmlspecialchars($dir, ENT_QUOTES, 'UTF-8') ?>">
+<!doctype html>
+<html lang="<?= e($lang) ?>" dir="<?= e($dir) ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="robots" content="index, follow">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
 
-    <!-- Security / Meta -->
-    <meta name="csrf-token"      content="<?= $csrfToken ?>">
-    <meta name="robots"          content="noindex, nofollow">
-    <meta name="referrer"        content="strict-origin">
+    <!-- SEO -->
+    <title><?= e($_pageTitle) ?></title>
+    <?php if ($_pageDesc): ?>
+    <meta name="description" content="<?= e($_pageDesc) ?>">
+    <?php endif; ?>
 
-    <!-- i18n -->
-    <meta name="i18n-primary-file"
-          content="<?= htmlspecialchars($payload['translation_path'] . $lang . '.json', ENT_QUOTES, 'UTF-8') ?>">
+    <!-- Open Graph -->
+    <meta property="og:title"       content="<?= e($_pageTitle) ?>">
+    <meta property="og:description" content="<?= e($_pageDesc) ?>">
+    <meta property="og:type"        content="website">
+    <meta property="og:site_name"   content="<?= e($_appName) ?>">
 
     <!-- PWA / Mobile -->
     <meta name="mobile-web-app-capable"               content="yes">
     <meta name="apple-mobile-web-app-capable"         content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title"           data-i18n="brand" content="Admin">
-    <meta name="application-name"                     data-i18n="brand" content="Admin">
-    <meta name="theme-color"                          content="#1e2533">
-    <link rel="manifest" href="/admin/manifest.json">
-
-    <title data-i18n="brand">Admin Panel</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#2d8cf0">
 
     <!-- DNS / Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+
+    <!-- Fonts -->
+    <link rel="preload" href="<?= e($_fontUrl) ?>" as="style"
+          onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="<?= e($_fontUrl) ?>"></noscript>
 
     <!-- ════════════════════════════════════════════════════
-         CSS VARIABLES  (مصدر الحقيقة الوحيد)
-         كل ما يأتي بعده يقرأ من هنا — لا JS ولا ملف آخر
+         Theme CSS Variables (DB-driven)
          ════════════════════════════════════════════════════ -->
-    <style id="theme-root-vars">
+    <?php if ($_themeVars): ?>
+    <style id="pub-theme-vars">
 :root {
-<?= $rootVarsBlock ?>}
-
-/* ── القواعد الأساسية التي تعتمد فقط على vars ── */
-*,
-*::before,
-*::after {
-    box-sizing: border-box;
-}
-
-body {
-    background:  var(--background-main, var(--background_main, #0a0a0a));
-    color:       var(--text-primary, var(--text_primary, #ffffff));
-    font-family: var(--body-font-family, var(--body_font-family, system-ui, sans-serif));
-    margin: 0;
-    padding: 0;
-}
-
-.admin-header {
-    background:   var(--header-background, var(--header_background,
-                      var(--background-secondary, var(--background_secondary, #1e2533))));
-    color:        var(--header-text, var(--header_text,
-                      var(--text-primary, #ffffff)));
-    border-bottom: 1px solid var(--border-color, var(--border_color, #334155));
-}
-
-.admin-sidebar {
-    background: var(--sidebar-background, var(--sidebar_background, #4B0082));
-    color:      var(--sidebar-text,       var(--sidebar_text,       #ffffff));
-}
-    </style>
-
-    <?php if (!empty($theme['generated_css'])): ?>
-    <!-- ── CSS مُولَّد من DB (Button/Card styles) ── -->
-    <style id="theme-generated">
-<?= $theme['generated_css'] ?>
+<?= $_themeVars . "\n" ?>}
     </style>
     <?php endif; ?>
 
-    <!-- ════════════════════════════════════════════════════
-         GOOGLE FONTS (بعد الـ vars لضمان تطابق الخطوط)
-         ════════════════════════════════════════════════════ -->
-    <?php foreach ($fontLinks as $fontUrl): ?>
-    <link rel="preload"
-          href="<?= htmlspecialchars($fontUrl, ENT_QUOTES, 'UTF-8') ?>"
-          as="style"
-          onload="this.onload=null;this.rel='stylesheet'">
-    <noscript>
-        <link rel="stylesheet" href="<?= htmlspecialchars($fontUrl, ENT_QUOTES, 'UTF-8') ?>">
-    </noscript>
-    <?php endforeach; ?>
+    <?php if (!empty($theme['generated_css'])): ?>
+    <style id="pub-theme-generated"><?= $theme['generated_css'] ?></style>
+    <?php endif; ?>
 
     <!-- ════════════════════════════════════════════════════
-         STYLESHEETS
+         Public Stylesheet (single entry — imports variables, base, layout, etc.)
          ════════════════════════════════════════════════════ -->
     <link rel="stylesheet"
-          href="/admin/assets/css/admin.css?v=<?= assetVer('/admin/assets/css/admin.css') ?>">
-    <link rel="stylesheet"
-          href="/admin/assets/css/admin-overrides.css?v=<?= assetVer('/admin/assets/css/admin-overrides.css') ?>">
-    <link rel="stylesheet"
-          href="/admin/assets/css/modal.css?v=<?= assetVer('/admin/assets/css/modal.css') ?>">
-    <link rel="stylesheet"
-          href="/admin/assets/css/color-slider.css?v=<?= assetVer('/admin/assets/css/color-slider.css') ?>">
-    <link rel="stylesheet"
-          href="/admin/assets/css/mobile-responsive.css?v=<?= assetVer('/admin/assets/css/mobile-responsive.css') ?>">
-    <link rel="stylesheet"
-          href="/admin/assets/css/admin_framework.css?v=<?= assetVer('/admin/assets/css/admin_framework.css') ?>">
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-          crossorigin="anonymous"
-          referrerpolicy="no-referrer">
-          <link rel="stylesheet" href="/admin/assets/css/sidebar.css?v=<?= assetVer('/admin/assets/css/sidebar.css') ?>">
-          <script defer src="/admin/assets/js/sidebar-toggle.js?v=<?= assetVer('/admin/assets/js/sidebar-toggle.js') ?>">
-</script>
+          href="/frontend/assets/css/public.css?v=<?= _pub_asset_ver('/frontend/assets/css/public.css') ?>">
 
-    <!-- Admin Framework JS (يجب قبل admin_core.js لأنه يُعرِّف AdminFramework) -->
-    <script src="/admin/assets/js/admin_framework.js?v=<?= assetVer('/admin/assets/js/admin_framework.js') ?>"></script>
-
-    <!-- ════════════════════════════════════════════════════
-         ADMIN_UI INJECTION
-         يُحقن مرة واحدة — JS يقرأ منه ولا يُعدِّل vars الـ CSS
-         ════════════════════════════════════════════════════ -->
-    <script id="admin-ui-injection">
-(function () {
-    'use strict';
-
-    /* ── البيانات ── */
-    window.ADMIN_UI    = <?= $jsonPayload ?>;
-    window.ADMIN_LANG  = <?= json_encode($lang) ?>;
-    window.ADMIN_DIR   = <?= json_encode($dir) ?>;
-    window.CSRF_TOKEN  = <?= json_encode($csrfToken) ?>;
-    window.ADMIN_USER  = window.ADMIN_UI.user || {};
-
-    /* ── HTML attributes ── */
-    document.documentElement.lang = window.ADMIN_LANG;
-    document.documentElement.dir  = window.ADMIN_DIR;
-
-    /*
-     * ⚠ CSS variables مُعيَّنة بالكامل في <style id="theme-root-vars"> أعلاه.
-     * admin_core.js لا يحتاج لإعادة تعيينها على :root.
-     * generateComponentStyles() تقرأ من window.ADMIN_UI.theme فقط لتوليد
-     * قواعد .btn-{slug} و .card-{slug} التي تعتمد على بيانات button_styles/card_styles
-     * وليس على CSS variables مباشرة.
-     */
-    window.__THEME_VARS_INJECTED = true;
-
-<?php if (defined('ADMIN_DEBUG') && ADMIN_DEBUG): ?>
-    console.groupCollapsed('%c✓ ADMIN_UI', 'color:#10B981;font-weight:bold');
-    console.log('Lang:',        window.ADMIN_LANG);
-    console.log('Dir:',         window.ADMIN_DIR);
-    console.log('User:',        window.ADMIN_USER.username);
-    console.log('Tenant:',      window.ADMIN_UI.tenant_id);
-    console.log('Super Admin:', window.ADMIN_UI.is_super_admin);
-    console.log('Colors:',      window.ADMIN_UI?.theme?.color_settings?.length  ?? 0);
-    console.log('Buttons:',     window.ADMIN_UI?.theme?.button_styles?.length   ?? 0);
-    console.log('Trans Path:',  window.ADMIN_UI.translation_path);
-    console.groupEnd();
-<?php endif; ?>
-}());
-    </script>
-
-    <!-- ════════════════════════════════════════════════════
-         CORE SCRIPTS (defer — لا يُعطّل عرض الصفحة)
-         ════════════════════════════════════════════════════ -->
+    <!-- Homepage engine JS (deferred) -->
     <script defer
-            src="/admin/assets/js/admin_core.js?v=<?= assetVer('/admin/assets/js/admin_core.js') ?>">
+            src="/frontend/assets/js/homepage-engine.js?v=<?= _pub_asset_ver('/frontend/assets/js/homepage-engine.js') ?>">
     </script>
+
+    <!-- Slider JS (deferred) -->
     <script defer
-            src="/admin/assets/js/sidebar-toggle.js?v=<?= assetVer('/admin/assets/js/sidebar-toggle.js') ?>">
+            src="/frontend/assets/js/slider.js?v=<?= _pub_asset_ver('/frontend/assets/js/slider.js') ?>">
     </script>
-    <script defer
-            src="/admin/assets/js/modal.js?v=<?= assetVer('/admin/assets/js/modal.js') ?>">
-    </script>
+
+    <!-- Notification data for bell icon -->
+    <script type="application/json" id="pubNotifData"><?= json_encode($_pubNotifJson, JSON_HEX_TAG | JSON_UNESCAPED_UNICODE) ?></script>
 </head>
 
-<body class="admin<?= ($dir === 'rtl') ? ' rtl' : '' ?>">
+<body class="pub-body <?= e($dir) ?>">
 
-<!-- ════════════════════════════════════════════════════════════
-     HEADER
-     ════════════════════════════════════════════════════════════ -->
-<header class="admin-header" role="banner">
+<!-- =============================================
+     HEADER — Clean bar: logo + nav + actions
+     Menus are in menu.php (sidebar), NOT here.
+============================================= -->
+<header class="pub-header" role="banner">
+    <div class="pub-container pub-header-inner">
 
-    <div class="header-left">
-        <!-- زر فتح/إغلاق السايدبار -->
-        <button id="sidebarToggle"
-                class="icon-btn"
-                type="button"
-                aria-controls="adminSidebar"
-                aria-expanded="false"
-                aria-label="Toggle sidebar"
-                data-i18n-aria-label="toggle_sidebar">
-            <i class="fas fa-bars" aria-hidden="true"></i>
-        </button>
-
-        <!-- الشعار / الاسم -->
-        <a class="brand" href="/admin/" aria-label="Admin Home">
-            <?php
-            $logoValid = $logo !== ''
-                && (
-                    filter_var($logo, FILTER_VALIDATE_URL)
-                    || file_exists($_SERVER['DOCUMENT_ROOT'] . $logo)
-                );
-            ?>
-            <?php if ($logoValid): ?>
-                <img src="<?= htmlspecialchars($logo, ENT_QUOTES, 'UTF-8') ?>"
-                     alt="Logo"
-                     class="brand-logo"
-                     width="140"
-                     height="40"
-                     loading="eager"
-                     decoding="async">
+        <!-- Logo -->
+        <a href="<?= e($_basePath . '/index.php') ?>" class="pub-logo" aria-label="<?= e($_appName) ?>">
+            <?php if (!empty($_logoUrl)): ?>
+                <img src="<?= e($_logoUrl) ?>" alt="<?= e($_appName) ?>" class="pub-logo-img"
+                     loading="eager" decoding="async">
+                <span class="pub-logo-name"><?= e($_appName) ?></span>
             <?php else: ?>
-                <span class="brand-text" data-i18n="brand">Admin Panel</span>
+                <span class="pub-logo-icon" aria-hidden="true">🌐</span>
+                <span class="pub-logo-name"><?= e($_appName) ?></span>
             <?php endif; ?>
         </a>
-    </div>
 
-    <div class="header-right">
-        <!-- إشعارات -->
-        <button id="notifBtn"
-                class="icon-btn"
-                type="button"
-                aria-label="Notifications"
-                data-i18n-aria-label="notifications">
-            <i class="fas fa-bell" aria-hidden="true"></i>
-            <span id="notifCount"
-                  class="badge badge-danger"
-                  style="display:none;"
-                  aria-live="polite">0</span>
-        </button>
-
-        <!-- قائمة المستخدم -->
-        <div class="user-menu" role="navigation" aria-label="User menu">
-            <a href="/admin/profile.php"
-               class="user-link"
-               aria-label="View profile">
-                <img class="avatar"
-                     src="<?= htmlspecialchars($user['avatar'] ?? '/admin/assets/img/default-avatar.png', ENT_QUOTES, 'UTF-8') ?>"
-                     alt="<?= htmlspecialchars($user['username'] ?? 'User', ENT_QUOTES, 'UTF-8') ?>"
-                     width="36"
-                     height="36"
-                     loading="lazy"
-                     decoding="async"
-                     onerror="this.src='/admin/assets/img/default-avatar.png'">
+        <!-- Desktop navigation links (hidden on mobile, visible ≥768px) -->
+        <nav class="pub-nav" aria-label="<?= e(t('nav.main_navigation')) ?>">
+            <?php foreach ($_navItems as $label => $href): ?>
+                <a href="<?= e($href) ?>"><?= e($label) ?></a>
+            <?php endforeach; ?>
+            <a href="<?= e($_cartUrl) ?>" class="pub-cart-nav-link">
+                🛒 <?= $_cartLabel ?>
+                <span id="pubCartCount" class="pub-nav-badge" style="display:none;"></span>
             </a>
+        </nav>
 
-            <div class="user-info" aria-hidden="true">
-                <div class="username">
-                    <?= htmlspecialchars($user['username'] ?? 'Guest', ENT_QUOTES, 'UTF-8') ?>
-                </div>
-                <div class="user-role">
-                    <?= htmlspecialchars($user['roles'][0] ?? 'User', ENT_QUOTES, 'UTF-8') ?>
+        <!-- Header actions: notification + login + hamburger -->
+        <div class="pub-header-actions">
+            <!-- Notification bell -->
+            <div class="pub-notif-wrap" id="pubNotifWrap">
+                <button class="pub-notif-btn" id="pubNotifBtn"
+                        aria-label="<?= e(t('nav.notifications', ['default' => 'Notifications'])) ?>"
+                        aria-haspopup="true" aria-expanded="false">
+                    🔔
+                    <span class="pub-notif-badge" id="pubNotifBadge"></span>
+                </button>
+                <div class="pub-notif-dropdown" id="pubNotifDropdown" role="dialog"
+                     aria-label="<?= e(t('nav.notifications', ['default' => 'Notifications'])) ?>">
+                    <div class="pub-notif-header">
+                        <span><?= e(t('nav.notifications', ['default' => 'Notifications'])) ?></span>
+                        <button class="pub-notif-mark-all" id="pubNotifMarkAll">
+                            <?= e(t('notifications.mark_all_read', ['default' => 'Mark all read'])) ?>
+                        </button>
+                    </div>
+                    <div class="pub-notif-list" id="pubNotifList">
+                        <div class="pub-notif-empty"><?= e(t('notifications.empty', ['default' => 'No notifications'])) ?></div>
+                    </div>
+                    <div class="pub-notif-footer">
+                        <a href="/frontend/public/notifications.php"><?= e(t('notifications.view_all', ['default' => 'View all'])) ?></a>
+                    </div>
                 </div>
             </div>
 
-            <!-- تسجيل الخروج -->
-            <form method="POST"
-                  action="/admin/logout.php"
-                  style="display:inline;"
-                  onsubmit="return confirm('Logout?')">
-                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
-                <button type="submit"
-                        class="btn-logout icon-btn"
-                        aria-label="Logout"
-                        data-i18n-aria-label="logout">
-                    <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
-                </button>
-            </form>
+            <!-- Login / User -->
+            <?php if ($_isLoggedIn): ?>
+                <a href="/frontend/profile.php" class="pub-login-btn">
+                    <?= e($_user['name'] ?? $_user['username'] ?? t('nav.account')) ?>
+                </a>
+            <?php else: ?>
+                <a href="/frontend/login.php" class="pub-login-btn"><?= e(t('nav.login')) ?></a>
+            <?php endif; ?>
+
+            <!-- Hamburger toggle (controls sidebar in menu.php) -->
+            <button class="pub-hamburger" id="pubHamburger"
+                    aria-label="<?= e(t('nav.menu_open')) ?>"
+                    aria-expanded="false" aria-controls="pubSidebar">
+                <span></span><span></span><span></span>
+            </button>
         </div>
     </div>
 </header>
 
-<!-- ════════════════════════════════════════════════════════════
-     LAYOUT
-     ════════════════════════════════════════════════════════════ -->
-<div class="admin-layout">
+<!-- =============================================
+     LAYOUT: sidebar (from menu.php) + main content
+============================================= -->
+<div class="pub-layout">
 
-    <!-- السايدبار -->
-    <aside id="adminSidebar"
-           class="admin-sidebar"
-           role="navigation"
-           aria-label="Main navigation">
-        <?php
-        $menuFile = __DIR__ . '/menu.php';
-        if (is_readable($menuFile)) {
-            include $menuFile;
-        } else {
-            echo '<p style="padding:1rem;color:var(--sidebar-text,var(--sidebar_text,#fff));"'
-               . ' data-i18n="menu_unavailable">Menu not available</p>';
-        }
-        ?>
-    </aside>
+    <?php
+    // Include the sidebar menu — completely separate from header
+    $menuFile = __DIR__ . '/menu.php';
+    if (is_readable($menuFile)) {
+        include $menuFile;
+    }
+    ?>
 
-    <!-- Backdrop (موبايل فقط — يُخفى بـ CSS على الـ desktop) -->
-    <div class="sidebar-backdrop" aria-hidden="true"></div>
+    <!-- Mobile sidebar backdrop -->
+    <div class="pub-sidebar-backdrop" id="pubSidebarOverlay" aria-hidden="true"></div>
 
-    <!-- المحتوى الرئيسي -->
-    <main id="adminMainContent"
-          class="admin-main"
-          role="main">
+    <!-- Main content area — page content goes here -->
+    <main class="pub-main-content">

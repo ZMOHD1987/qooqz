@@ -1133,6 +1133,24 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   /* Menu button stays visible on desktop too */
 }
 
+/* Nav badge (cart count in desktop nav) */
+.pub-nav-badge {
+  background: var(--pub-accent, #F59E0B);
+  color: #000;
+  border-radius: 50%;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+  margin-inline-start: 4px;
+}
+
+/* Cart nav link in header */
+.pub-cart-nav-link { position: relative; }
+
 /* On mobile: hide login/logout buttons from header bar (they live in the drawer).
    This prevents the header from overflowing on narrow screens when a logo is present. */
 @media (max-width: 767px) {
