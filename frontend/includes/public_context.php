@@ -254,6 +254,7 @@ if (!function_exists('pub_load_theme')) {
         // Defaults (fallback when DB is unreachable)
         $defaults = [
             'primary'    => '#03874e',
+            'primary_hover' => '#00ff00',
             'secondary'  => '#10B981',
             'accent'     => '#F59E0B',
             'background' => '#0d0d0d',
@@ -265,6 +266,19 @@ if (!function_exists('pub_load_theme')) {
             'header_text_color'=> '#FFFFFF',
             'footer_bg'        => '#1e2a38',
             'footer_text_color'=> '#B0B0B0',
+            'sidebar_bg'          => '#3f363f',
+            'sidebar_text'        => '#e8e8e8',
+            'sidebar_toggle'      => '#633b3b',
+            'sidebar_toggle_hover'=> '#c49121',
+            'sidebar_card_bg'     => '#3f363f',
+            'sidebar_card_text'   => '#de1717',
+            'success'    => '#10b981',
+            'warning'    => '#f59e0b',
+            'danger'     => '#ef4444',
+            'error'      => '#EF4444',
+            'info'       => '#22C55E',
+            'input_text'       => '#494646',
+            'input_placeholder'=> '#6B7280',
             'logo_url'   => '',          // set from design_settings WHERE setting_key='logo_url'
             'generated_css' => '',
             'fonts'      => [],
@@ -338,6 +352,7 @@ if (!function_exists('pub_load_theme')) {
                     // Covers both possible naming conventions (noun_adjective vs adjective_noun)
                     $colorMap = [
                         'primary_color'        => 'primary',
+                        'primary_hover'        => 'primary_hover',
                         'secondary_color'      => 'secondary',
                         'accent_color'         => 'accent',
                         // "Main Background" — try both naming variants
@@ -367,6 +382,22 @@ if (!function_exists('pub_load_theme')) {
                         'footer_background'    => 'footer_bg',
                         'footer_text'          => 'footer_text_color',
                         'footer_text_color'    => 'footer_text_color',
+                        // Sidebar
+                        'sidebar_background'      => 'sidebar_bg',
+                        'sidebar_text'            => 'sidebar_text',
+                        'sidebar_toggle_bg'       => 'sidebar_toggle',
+                        'sidebar_toggle_bg_hover' => 'sidebar_toggle_hover',
+                        'sidebar_card_background' => 'sidebar_card_bg',
+                        'sidebar_card_text'       => 'sidebar_card_text',
+                        // Status
+                        'success_color'        => 'success',
+                        'warning_color'        => 'warning',
+                        'danger_color'         => 'danger',
+                        'error_color'          => 'error',
+                        'info_color'           => 'info',
+                        // Input
+                        'input_text'           => 'input_text',
+                        'input_placeholder'    => 'input_placeholder',
                     ];
                     foreach ($colorRows as $row) {
                         $k = $row['setting_key'] ?? '';
@@ -458,6 +489,7 @@ if (!function_exists('pub_load_theme')) {
                     // DB colours render correctly without relying solely on the PHP bridge.
                     $pubAliases = [
                         'primary_color'        => ['color-primary',  'pub-primary'],
+                        'primary_hover'        => ['color-primary-hover', 'pub-primary-hover'],
                         'secondary_color'      => ['color-secondary', 'pub-secondary'],
                         'accent_color'         => ['color-accent',    'pub-accent'],
                         'background_main'      => ['pub-bg'],
@@ -478,6 +510,22 @@ if (!function_exists('pub_load_theme')) {
                         'header_text_color'    => ['pub-header-text'],
                         'footer_text'          => ['pub-footer-text'],
                         'footer_text_color'    => ['pub-footer-text'],
+                        // Sidebar — bridge DB keys to --pub-sidebar-* and --color-sidebar-*
+                        'sidebar_background'      => ['pub-sidebar-bg',       'color-sidebar-bg'],
+                        'sidebar_text'            => ['pub-sidebar-text',     'color-sidebar-text'],
+                        'sidebar_toggle_bg'       => ['pub-sidebar-toggle-bg','color-sidebar-toggle'],
+                        'sidebar_toggle_bg_hover' => ['pub-sidebar-hover',    'color-sidebar-toggle-hover'],
+                        'sidebar_card_background' => ['pub-sidebar-card-bg',  'color-sidebar-card-bg'],
+                        'sidebar_card_text'       => ['pub-sidebar-card-text','color-sidebar-card-text'],
+                        // Status colors — bridge to --pub-* and --color-*
+                        'success_color'        => ['pub-success', 'color-success'],
+                        'warning_color'        => ['pub-warning', 'color-warning'],
+                        'danger_color'         => ['pub-danger',  'color-danger'],
+                        'error_color'          => ['pub-error',   'color-error'],
+                        'info_color'           => ['pub-info',    'color-info'],
+                        // Input
+                        'input_text'           => ['pub-input-text',       'color-input-text'],
+                        'input_placeholder'    => ['pub-input-placeholder','color-input-placeholder'],
                     ];
                     foreach ($pubAliases as $srcKey => $aliases) {
                         if (empty($colors[$srcKey])) continue;
@@ -539,6 +587,7 @@ if (!function_exists('pub_load_theme')) {
                     // mapped $theme values.  This guarantees correct colors regardless of
                     // which setting_key name the DB used (e.g. main_background vs background_main).
                     $css .= '  --pub-primary: '     . $cssEsc($theme['primary'])            . ";\n";
+                    $css .= '  --pub-primary-hover: '. $cssEsc($theme['primary_hover'])     . ";\n";
                     $css .= '  --pub-secondary: '   . $cssEsc($theme['secondary'])          . ";\n";
                     $css .= '  --pub-accent: '      . $cssEsc($theme['accent'])             . ";\n";
                     $css .= '  --pub-bg: '          . $cssEsc($theme['background'])         . ";\n";
@@ -550,14 +599,42 @@ if (!function_exists('pub_load_theme')) {
                     $css .= '  --pub-header-text: ' . $cssEsc($theme['header_text_color'])  . ";\n";
                     $css .= '  --pub-footer-bg: '   . $cssEsc($theme['footer_bg'])          . ";\n";
                     $css .= '  --pub-footer-text: ' . $cssEsc($theme['footer_text_color'])  . ";\n";
+                    // Sidebar resolved vars
+                    $css .= '  --pub-sidebar-bg: '          . $cssEsc($theme['sidebar_bg'])           . ";\n";
+                    $css .= '  --pub-sidebar-text: '        . $cssEsc($theme['sidebar_text'])         . ";\n";
+                    $css .= '  --pub-sidebar-toggle-bg: '   . $cssEsc($theme['sidebar_toggle'])       . ";\n";
+                    $css .= '  --pub-sidebar-hover: '       . $cssEsc($theme['sidebar_toggle_hover']) . ";\n";
+                    $css .= '  --pub-sidebar-active: '      . $cssEsc($theme['primary'])              . ";\n";
+                    $css .= '  --pub-sidebar-card-bg: '     . $cssEsc($theme['sidebar_card_bg'])      . ";\n";
+                    $css .= '  --pub-sidebar-card-text: '   . $cssEsc($theme['sidebar_card_text'])    . ";\n";
+                    // Status resolved vars
+                    $css .= '  --pub-success: '     . $cssEsc($theme['success'])            . ";\n";
+                    $css .= '  --pub-warning: '     . $cssEsc($theme['warning'])            . ";\n";
+                    $css .= '  --pub-danger: '      . $cssEsc($theme['danger'])             . ";\n";
+                    $css .= '  --pub-error: '       . $cssEsc($theme['error'])              . ";\n";
+                    $css .= '  --pub-info: '        . $cssEsc($theme['info'])               . ";\n";
                     // Also set --color-* aliases so slider.php and other partials resolve correctly
                     $css .= '  --color-primary: '   . $cssEsc($theme['primary'])            . ";\n";
+                    $css .= '  --color-primary-hover: '. $cssEsc($theme['primary_hover'])   . ";\n";
                     $css .= '  --color-secondary: ' . $cssEsc($theme['secondary'])          . ";\n";
                     $css .= '  --color-accent: '    . $cssEsc($theme['accent'])             . ";\n";
                     $css .= '  --color-bg: '        . $cssEsc($theme['background'])         . ";\n";
                     $css .= '  --color-surface: '   . $cssEsc($theme['surface'])            . ";\n";
                     $css .= '  --color-text: '      . $cssEsc($theme['text'])               . ";\n";
                     $css .= '  --color-border: '    . $cssEsc($theme['border'])             . ";\n";
+                    // Sidebar --color-* aliases for variables.css bridge
+                    $css .= '  --color-sidebar-bg: '           . $cssEsc($theme['sidebar_bg'])           . ";\n";
+                    $css .= '  --color-sidebar-text: '         . $cssEsc($theme['sidebar_text'])         . ";\n";
+                    $css .= '  --color-sidebar-toggle: '       . $cssEsc($theme['sidebar_toggle'])       . ";\n";
+                    $css .= '  --color-sidebar-toggle-hover: ' . $cssEsc($theme['sidebar_toggle_hover']) . ";\n";
+                    $css .= '  --color-sidebar-card-bg: '      . $cssEsc($theme['sidebar_card_bg'])      . ";\n";
+                    $css .= '  --color-sidebar-card-text: '    . $cssEsc($theme['sidebar_card_text'])    . ";\n";
+                    // Status --color-* aliases
+                    $css .= '  --color-success: '   . $cssEsc($theme['success'])            . ";\n";
+                    $css .= '  --color-warning: '   . $cssEsc($theme['warning'])            . ";\n";
+                    $css .= '  --color-danger: '    . $cssEsc($theme['danger'])             . ";\n";
+                    $css .= '  --color-error: '     . $cssEsc($theme['error'])              . ";\n";
+                    $css .= '  --color-info: '      . $cssEsc($theme['info'])               . ";\n";
                     // --pub-card-bg: generic fallback used by CSS files for cards that have no
                     // card_styles DB entry. pub_card_inline_style() uses the DB background_color
                     // directly so per-card colours from the database are applied correctly.
