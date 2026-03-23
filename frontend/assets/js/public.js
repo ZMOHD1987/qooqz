@@ -11,38 +11,63 @@
   'use strict';
 
   /* -------------------------------------------------------
-   * 1. Mobile nav toggle
+   * 1. Sidebar menu toggle (replaces old mobile-only nav)
    * ----------------------------------------------------- */
-  function initMobileNav() {
-    var toggle = document.getElementById('pubHamburger');
-    var drawer = document.getElementById('pubMobileNav');
-    var overlay = document.getElementById('pubMobileNav');
+  function initSidebar() {
+    var toggle  = document.getElementById('pubHamburger');
+    var sidebar = document.getElementById('pubSidebar');
+    var overlay = document.getElementById('pubSidebarOverlay');
+    var closeBtn = document.getElementById('pubSidebarClose');
 
-    if (!toggle || !drawer) return;
+    if (!toggle || !sidebar) return;
+
+    function openSidebar() {
+      sidebar.classList.add('open');
+      if (overlay) overlay.classList.add('open');
+      toggle.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      if (overlay) overlay.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+    }
 
     toggle.addEventListener('click', function () {
-      var isOpen = drawer.classList.toggle('open');
-      toggle.setAttribute('aria-expanded', String(isOpen));
-      document.body.style.overflow = isOpen ? 'hidden' : '';
+      if (sidebar.classList.contains('open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
     });
 
     // Close on overlay click
-    drawer.addEventListener('click', function (e) {
-      if (e.target === drawer) {
-        drawer.classList.remove('open');
-        toggle.setAttribute('aria-expanded', 'false');
-        document.body.style.overflow = '';
-      }
-    });
+    if (overlay) {
+      overlay.addEventListener('click', closeSidebar);
+    }
+
+    // Close button inside sidebar
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeSidebar);
+    }
 
     // Close on Escape key
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && drawer.classList.contains('open')) {
-        drawer.classList.remove('open');
-        toggle.setAttribute('aria-expanded', 'false');
-        document.body.style.overflow = '';
+      if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+        closeSidebar();
       }
     });
+
+    // Highlight active link based on current URL
+    var currentPath = window.location.pathname;
+    var links = sidebar.querySelectorAll('.pub-sidebar-link');
+    for (var i = 0; i < links.length; i++) {
+      if (links[i].getAttribute('href') === currentPath) {
+        links[i].classList.add('active');
+      }
+    }
   }
 
   /* -------------------------------------------------------
@@ -265,7 +290,7 @@
   function initCartBadge() {
     var badges = [
       document.getElementById('pubCartCount'),
-      document.getElementById('pubCartCountMobile'),
+      document.getElementById('pubCartCountSidebar'),
     ];
     var cart = [];
     try { cart = JSON.parse(localStorage.getItem('pub_cart') || '[]'); } catch (e) {}
@@ -464,7 +489,7 @@
    * ----------------------------------------------------- */
   document.addEventListener('DOMContentLoaded', function () {
     applyTheme();
-    initMobileNav();
+    initSidebar();
     markActiveNav();
     lazyLoadImages();
     initSearch();
@@ -567,7 +592,7 @@ function pubAddToCart(btn) {
 
   // ── 3. Update header cart count badges ───────────────────────────────────
   var total = cart.reduce(function (s, i) { return s + (Math.max(1, parseInt(i.qty, 10) || 1)); }, 0);
-  [document.getElementById('pubCartCount'), document.getElementById('pubCartCountMobile')]
+  [document.getElementById('pubCartCount'), document.getElementById('pubCartCountSidebar')]
     .forEach(function (badge) {
       if (!badge) return;
       badge.textContent = total;
@@ -637,7 +662,7 @@ function pubRefreshWishlistBadge() {
     // Update badge
     var badge = document.getElementById('pubWishlistCount');
     if (badge) { badge.textContent = count; badge.style.display = count ? 'inline-flex' : 'none'; }
-    var badgeMob = document.getElementById('pubWishlistCountMobile');
+    var badgeMob = document.getElementById('pubWishlistCountSidebar');
     if (badgeMob) { badgeMob.textContent = count; badgeMob.style.display = count ? 'inline-flex' : 'none'; }
     // Update heart buttons on page
     document.querySelectorAll('.pub-wishlist-btn').forEach(function (btn) {

@@ -333,50 +333,96 @@ $_fontUrl = $dir === 'rtl'
                 <a href="/frontend/login.php" class="pub-login-btn"><?= e(t('nav.login')) ?></a>
             <?php endif; ?>
 
-            <!-- Hamburger (mobile) -->
+            <!-- Menu toggle button (visible on all screen sizes) -->
             <button class="pub-hamburger" id="pubHamburger"
                     aria-label="<?= e(t('nav.menu_open')) ?>"
-                    aria-expanded="false" aria-controls="pubMobileNav">
+                    aria-expanded="false" aria-controls="pubSidebar">
                 <span></span><span></span><span></span>
             </button>
         </div>
     </div>
 </header>
 
-<!-- Mobile nav drawer -->
-<div class="pub-mobile-nav" id="pubMobileNav" role="dialog" aria-modal="true"
-     aria-label="<?= e(t('nav.menu_open')) ?>">
-    <nav class="pub-mobile-nav-inner">
-        <?php foreach ($_navItems as $label => $href): ?>
-            <a href="<?= e($href) ?>"><?= e($label) ?></a>
-        <?php endforeach; ?>
-        <!-- Cart link -->
-        <a href="<?= e($_cartUrl) ?>">
-            🛒 <?= $_cartLabel ?>
-            <span id="pubCartCountMobile"
-                  style="display:none;background:var(--pub-accent,#F59E0B);color:#000;
-                         border-radius:50%;min-width:18px;height:18px;padding:0 4px;
-                         font-size:0.7rem;font-weight:800;line-height:18px;
-                         text-align:center;vertical-align:middle;margin-inline-start:4px;"></span>
+<!-- Sidebar overlay -->
+<div class="pub-sidebar-overlay" id="pubSidebarOverlay"></div>
+
+<!-- Sidebar navigation menu -->
+<aside class="pub-sidebar" id="pubSidebar" role="navigation" aria-label="<?= e(t('nav.menu_open')) ?>">
+    <div class="pub-sidebar-header">
+        <a href="<?= e($_basePath . '/index.php') ?>" class="pub-sidebar-logo">
+            <span class="pub-sidebar-logo-icon">🌐</span>
+            <span><?= e($_appName) ?></span>
         </a>
-        <!-- Wishlist link -->
-        <a href="/frontend/public/wishlist.php">
-            ♡ <?= e(t('nav.wishlist')) ?>
-            <span id="pubWishlistCountMobile"></span>
+        <button class="pub-sidebar-close" id="pubSidebarClose" aria-label="<?= e(t('nav.menu_close', ['default' => 'Close'])) ?>">✕</button>
+    </div>
+    <nav class="pub-sidebar-nav">
+        <a href="<?= e($_basePath . '/index.php') ?>" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">🏠</span><?= e(t('nav.home')) ?>
         </a>
-        <hr style="border-color:rgba(255,255,255,0.15);margin:12px 0;">
+        <a href="<?= e($_basePath . '/products.php') ?>" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">🛍️</span><?= e(t('nav.products')) ?>
+        </a>
+        <a href="<?= e($_basePath . '/categories.php') ?>" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">📂</span><?= e(t('nav.categories')) ?>
+        </a>
+        <a href="<?= e($_basePath . '/discounts.php') ?>" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">🏷️</span><?= e(t('nav.offers')) ?>
+        </a>
+        <a href="<?= e($_basePath . '/jobs.php') ?>" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">💼</span><?= e(t('nav.jobs')) ?>
+        </a>
+        <a href="<?= e($_basePath . '/entities.php') ?>" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">🏢</span><?= e(t('nav.entities')) ?>
+        </a>
+        <a href="<?= e($_basePath . '/tenants.php') ?>" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">🏪</span><?= e(t('nav.tenants')) ?>
+        </a>
+        <a href="<?= e($_basePath . '/auctions.php') ?>" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">🔨</span><?= e(t('nav.auctions')) ?>
+        </a>
+
+        <div class="pub-sidebar-divider"></div>
+
+        <a href="<?= e($_cartUrl) ?>" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">🛒</span><?= e(t('nav.cart')) ?>
+            <span id="pubCartCountSidebar" class="pub-sidebar-badge" style="display:none;"></span>
+        </a>
+        <a href="/frontend/public/wishlist.php" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">♡</span><?= e(t('nav.wishlist')) ?>
+            <span id="pubWishlistCountSidebar" class="pub-sidebar-badge"></span>
+        </a>
+        <a href="/frontend/public/compare.php" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">⚖️</span><?= e(t('nav.compare', ['default' => 'Compare'])) ?>
+        </a>
+
         <?php if ($_isLoggedIn): ?>
-            <a href="/frontend/public/orders.php">📦 <?= e(t('nav.orders')) ?></a>
-            <a href="/frontend/public/tickets.php">🎫 <?= e(t('nav.tickets')) ?></a>
-            <a href="/frontend/public/returns.php">↩ <?= e(t('nav.returns')) ?></a>
-            <a href="/frontend/profile.php">👤 <?= e($_user['name'] ?? $_user['username'] ?? t('nav.account')) ?></a>
-            <a href="/frontend/logout.php"><?= e(t('nav.logout')) ?></a>
+        <div class="pub-sidebar-divider"></div>
+        <a href="/frontend/public/orders.php" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">📦</span><?= e(t('nav.orders')) ?>
+        </a>
+        <a href="/frontend/public/tickets.php" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">🎫</span><?= e(t('nav.tickets')) ?>
+        </a>
+        <a href="/frontend/public/returns.php" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">↩</span><?= e(t('nav.returns')) ?>
+        </a>
+        <a href="/frontend/profile.php" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">👤</span><?= e($_user['name'] ?? $_user['username'] ?? t('nav.account')) ?>
+        </a>
+        <a href="/frontend/logout.php" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">🚪</span><?= e(t('nav.logout')) ?>
+        </a>
         <?php else: ?>
-            <a href="/frontend/login.php"><?= e(t('nav.login')) ?></a>
-            <a href="/frontend/login.php?tab=register"><?= e(t('nav.register')) ?></a>
+        <div class="pub-sidebar-divider"></div>
+        <a href="/frontend/login.php" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">🔑</span><?= e(t('nav.login')) ?>
+        </a>
+        <a href="/frontend/login.php?tab=register" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">📝</span><?= e(t('nav.register')) ?>
+        </a>
         <?php endif; ?>
     </nav>
-</div>
+</aside>
 
 <!-- =============================================
      PAGE CONTENT START

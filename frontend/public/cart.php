@@ -169,7 +169,7 @@ include dirname(__DIR__) . '/partials/header.php';
   function saveLocalCart(cart) {
     try { localStorage.setItem('pub_cart', JSON.stringify(cart)); } catch (e) {}
     var total = cart.reduce(function(s,i){ return s + Math.max(1, parseInt(i.qty,10)||1); }, 0);
-    ['pubCartCount','pubCartCountMobile'].forEach(function(id){
+    ['pubCartCount','pubCartCountSidebar'].forEach(function(id){
       var el = document.getElementById(id);
       if (!el) return;
       el.textContent = total;

@@ -308,46 +308,122 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   transition: transform 0.25s ease, opacity 0.2s ease;
 }
 
-/* Mobile drawer */
-.pub-mobile-nav {
+/* Sidebar overlay */
+.pub-sidebar-overlay {
   display: none;
   position: fixed;
-  top: var(--pub-header-h);
+  top: 0;
   right: 0;
   bottom: 0;
   left: 0;
   background: rgba(0,0,0,0.45);
-  z-index: 99;
+  z-index: 199;
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
-.pub-mobile-nav.open { display: flex; align-items: flex-start; }
-/* RTL: panel slides in from right */
-[dir="rtl"] .pub-mobile-nav.open { justify-content: flex-end; }
-.pub-mobile-nav-inner {
-  background: var(--pub-primary);
-  width: 280px;
+.pub-sidebar-overlay.open { display: block; }
+
+/* Sidebar menu */
+.pub-sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 270px;
   max-width: 85vw;
-  height: 100%;
-  padding: 20px 16px;
+  background: var(--pub-header-bg, var(--pub-primary));
+  z-index: 200;
   display: flex;
   flex-direction: column;
-  gap: 4px;
   box-shadow: 4px 0 20px rgba(0,0,0,0.25);
   overflow-y: auto;
+  transition: transform 0.3s ease;
 }
+/* LTR: sidebar on the left, hidden off-screen by default */
+.pub-sidebar { left: 0; transform: translateX(-100%); }
+.pub-sidebar.open { transform: translateX(0); }
+/* RTL: sidebar on the right */
+[dir="rtl"] .pub-sidebar { left: auto; right: 0; transform: translateX(100%); box-shadow: -4px 0 20px rgba(0,0,0,0.25); }
+[dir="rtl"] .pub-sidebar.open { transform: translateX(0); }
 
-.pub-mobile-nav-inner a {
-  display: block;
-  color: rgba(255,255,255,0.92);
-  padding: 11px 14px;
-  border-radius: var(--pub-radius-sm);
+.pub-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+.pub-sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: none;
+}
+.pub-sidebar-logo-icon { font-size: 1.4rem; }
+.pub-sidebar-close {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
+}
+.pub-sidebar-close:hover { background: rgba(255,255,255,0.15); color: #fff; }
+.pub-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 10px;
+  flex: 1;
+}
+.pub-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255,255,255,0.9);
+  padding: 10px 14px;
+  border-radius: var(--pub-radius-sm, 6px);
   font-size: 0.95rem;
   font-weight: 500;
-  transition: background var(--pub-transition);
+  text-decoration: none;
+  transition: background 0.2s;
 }
-.pub-mobile-nav-inner a:hover,
-.pub-mobile-nav-inner a.active { background: rgba(255,255,255,0.2); color: #fff; }
+.pub-sidebar-link:hover,
+.pub-sidebar-link.active {
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+}
+.pub-sidebar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.pub-sidebar-badge {
+  margin-inline-start: auto;
+  background: var(--pub-accent, #F59E0B);
+  color: #000;
+  border-radius: 50%;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 20px;
+  text-align: center;
+}
+.pub-sidebar-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.12);
+  margin: 8px 14px;
+}
 
 /* -------------------------------------------------------
    5. Hero / Banner
@@ -950,7 +1026,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
    ----------------------------------------------------- */
 @media (min-width: 768px) {
   .pub-nav { display: flex; }
-  .pub-hamburger { display: none; }
+  /* Menu button stays visible on desktop too */
 }
 
 /* On mobile: hide login/logout buttons from header bar (they live in the drawer).
@@ -1048,7 +1124,6 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
    21. RTL adjustments
    ----------------------------------------------------- */
 [dir="rtl"] .pub-section-title::before { margin-inline-end: 0; margin-inline-start: 4px; }
-[dir="rtl"] .pub-mobile-nav-inner { box-shadow: -4px 0 20px rgba(0,0,0,0.25); border-right: 1px solid rgba(255,255,255,0.1); }
 
 /* -------------------------------------------------------
    22. Print / accessibility helpers
@@ -1508,7 +1583,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   display: inline-flex;
   align-items: center;
 }
-#pubWishlistCount, #pubWishlistCountMobile {
+#pubWishlistCount, #pubWishlistCountSidebar {
   display: none;
   background: var(--pub-primary,#03874e);
   color: #fff;
@@ -1583,7 +1658,7 @@ button, .pub-btn, a.pub-btn, input[type="submit"], input[type="button"] {
 }
 
 /* ---- Responsive nav badges ---- */
-#pubWishlistCount, #pubWishlistCountMobile,
+#pubWishlistCount, #pubWishlistCountSidebar,
 #pubCompareCount,  #pubCompareCountMobile {
   display: inline-flex;
 }
