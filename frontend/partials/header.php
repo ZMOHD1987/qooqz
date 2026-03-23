@@ -343,86 +343,114 @@ $_fontUrl = $dir === 'rtl'
     </div>
 </header>
 
-<!-- Sidebar overlay -->
-<div class="pub-sidebar-overlay" id="pubSidebarOverlay"></div>
+<!-- =============================================
+     LAYOUT (sidebar + main content, like admin-layout)
+============================================= -->
+<div class="pub-layout">
 
-<!-- Sidebar navigation menu -->
-<aside class="pub-sidebar" id="pubSidebar" role="navigation" aria-label="<?= e(t('nav.menu_open')) ?>">
-    <div class="pub-sidebar-header">
-        <a href="<?= e($_basePath . '/index.php') ?>" class="pub-sidebar-logo">
-            <span class="pub-sidebar-logo-icon">🌐</span>
-            <span><?= e($_appName) ?></span>
-        </a>
-        <button class="pub-sidebar-close" id="pubSidebarClose" aria-label="<?= e(t('nav.menu_close', ['default' => 'Close'])) ?>">✕</button>
-    </div>
-    <nav class="pub-sidebar-nav">
-        <a href="<?= e($_basePath . '/index.php') ?>" class="pub-sidebar-link">
-            <span class="pub-sidebar-icon">🏠</span><?= e(t('nav.home')) ?>
-        </a>
-        <a href="<?= e($_basePath . '/products.php') ?>" class="pub-sidebar-link">
-            <span class="pub-sidebar-icon">🛍️</span><?= e(t('nav.products')) ?>
-        </a>
-        <a href="<?= e($_basePath . '/categories.php') ?>" class="pub-sidebar-link">
-            <span class="pub-sidebar-icon">📂</span><?= e(t('nav.categories')) ?>
-        </a>
-        <a href="<?= e($_basePath . '/discounts.php') ?>" class="pub-sidebar-link">
-            <span class="pub-sidebar-icon">🏷️</span><?= e(t('nav.offers')) ?>
-        </a>
-        <a href="<?= e($_basePath . '/jobs.php') ?>" class="pub-sidebar-link">
-            <span class="pub-sidebar-icon">💼</span><?= e(t('nav.jobs')) ?>
-        </a>
-        <a href="<?= e($_basePath . '/entities.php') ?>" class="pub-sidebar-link">
-            <span class="pub-sidebar-icon">🏢</span><?= e(t('nav.entities')) ?>
-        </a>
-        <a href="<?= e($_basePath . '/tenants.php') ?>" class="pub-sidebar-link">
-            <span class="pub-sidebar-icon">🏪</span><?= e(t('nav.tenants')) ?>
-        </a>
-        <a href="<?= e($_basePath . '/auctions.php') ?>" class="pub-sidebar-link">
-            <span class="pub-sidebar-icon">🔨</span><?= e(t('nav.auctions')) ?>
-        </a>
+    <!-- Sidebar navigation (persistent on desktop, slide-out on mobile) -->
+    <aside class="pub-sidebar" id="pubSidebar" role="navigation"
+           aria-label="<?= e(t('nav.menu_open')) ?>">
+        <div class="pub-sidebar-header">
+            <a href="<?= e($_basePath . '/index.php') ?>" class="pub-sidebar-logo">
+                <span class="pub-sidebar-logo-icon">🌐</span>
+                <span class="pub-sidebar-title"><?= e($_appName) ?></span>
+            </a>
+            <button class="pub-sidebar-close" id="pubSidebarClose"
+                    aria-label="<?= e(t('nav.menu_close', ['default' => 'Close'])) ?>">✕</button>
+        </div>
+        <nav class="pub-sidebar-nav">
+            <a href="<?= e($_basePath . '/index.php') ?>" class="pub-sidebar-link">
+                <span class="pub-sidebar-icon">🏠</span>
+                <span class="pub-sidebar-text"><?= e(t('nav.home')) ?></span>
+            </a>
+            <a href="<?= e($_basePath . '/products.php') ?>" class="pub-sidebar-link">
+                <span class="pub-sidebar-icon">🛍️</span>
+                <span class="pub-sidebar-text"><?= e(t('nav.products')) ?></span>
+            </a>
+            <a href="<?= e($_basePath . '/categories.php') ?>" class="pub-sidebar-link">
+                <span class="pub-sidebar-icon">📂</span>
+                <span class="pub-sidebar-text"><?= e(t('nav.categories')) ?></span>
+            </a>
+            <a href="<?= e($_basePath . '/discounts.php') ?>" class="pub-sidebar-link">
+                <span class="pub-sidebar-icon">🏷️</span>
+                <span class="pub-sidebar-text"><?= e(t('nav.offers')) ?></span>
+            </a>
+            <a href="<?= e($_basePath . '/jobs.php') ?>" class="pub-sidebar-link">
+                <span class="pub-sidebar-icon">💼</span>
+                <span class="pub-sidebar-text"><?= e(t('nav.jobs')) ?></span>
+            </a>
+            <a href="<?= e($_basePath . '/entities.php') ?>" class="pub-sidebar-link">
+                <span class="pub-sidebar-icon">🏢</span>
+                <span class="pub-sidebar-text"><?= e(t('nav.entities')) ?></span>
+            </a>
+            <a href="<?= e($_basePath . '/tenants.php') ?>" class="pub-sidebar-link">
+                <span class="pub-sidebar-icon">🏪</span>
+                <span class="pub-sidebar-text"><?= e(t('nav.tenants')) ?></span>
+            </a>
+            <a href="<?= e($_basePath . '/auctions.php') ?>" class="pub-sidebar-link">
+                <span class="pub-sidebar-icon">🔨</span>
+                <span class="pub-sidebar-text"><?= e(t('nav.auctions')) ?></span>
+            </a>
 
-        <div class="pub-sidebar-divider"></div>
+            <div class="pub-sidebar-divider"></div>
 
-        <a href="<?= e($_cartUrl) ?>" class="pub-sidebar-link">
-            <span class="pub-sidebar-icon">🛒</span><?= e(t('nav.cart')) ?>
-            <span id="pubCartCountSidebar" class="pub-sidebar-badge" style="display:none;"></span>
-        </a>
-        <a href="/frontend/public/wishlist.php" class="pub-sidebar-link">
-            <span class="pub-sidebar-icon">♡</span><?= e(t('nav.wishlist')) ?>
-            <span id="pubWishlistCountSidebar" class="pub-sidebar-badge"></span>
-        </a>
-        <a href="/frontend/public/compare.php" class="pub-sidebar-link">
-            <span class="pub-sidebar-icon">⚖️</span><?= e(t('nav.compare', ['default' => 'Compare'])) ?>
-        </a>
+            <a href="<?= e($_cartUrl) ?>" class="pub-sidebar-link">
+                <span class="pub-sidebar-icon">🛒</span>
+                <span class="pub-sidebar-text"><?= e(t('nav.cart')) ?></span>
+                <span id="pubCartCountSidebar" class="pub-sidebar-badge" style="display:none;"></span>
+            </a>
+            <a href="/frontend/public/wishlist.php" class="pub-sidebar-link">
+                <span class="pub-sidebar-icon">♡</span>
+                <span class="pub-sidebar-text"><?= e(t('nav.wishlist')) ?></span>
+                <span id="pubWishlistCountSidebar" class="pub-sidebar-badge"></span>
+            </a>
+            <a href="/frontend/public/compare.php" class="pub-sidebar-link">
+                <span class="pub-sidebar-icon">⚖️</span>
+                <span class="pub-sidebar-text"><?= e(t('nav.compare', ['default' => 'Compare'])) ?></span>
+            </a>
 
-        <?php if ($_isLoggedIn): ?>
-        <div class="pub-sidebar-divider"></div>
-        <a href="/frontend/public/orders.php" class="pub-sidebar-link">
-            <span class="pub-sidebar-icon">📦</span><?= e(t('nav.orders')) ?>
-        </a>
-        <a href="/frontend/public/tickets.php" class="pub-sidebar-link">
-            <span class="pub-sidebar-icon">🎫</span><?= e(t('nav.tickets')) ?>
-        </a>
-        <a href="/frontend/public/returns.php" class="pub-sidebar-link">
-            <span class="pub-sidebar-icon">↩</span><?= e(t('nav.returns')) ?>
-        </a>
-        <a href="/frontend/profile.php" class="pub-sidebar-link">
-            <span class="pub-sidebar-icon">👤</span><?= e($_user['name'] ?? $_user['username'] ?? t('nav.account')) ?>
-        </a>
-        <a href="/frontend/logout.php" class="pub-sidebar-link">
-            <span class="pub-sidebar-icon">🚪</span><?= e(t('nav.logout')) ?>
-        </a>
-        <?php else: ?>
-        <div class="pub-sidebar-divider"></div>
-        <a href="/frontend/login.php" class="pub-sidebar-link">
-            <span class="pub-sidebar-icon">🔑</span><?= e(t('nav.login')) ?>
-        </a>
-        <a href="/frontend/login.php?tab=register" class="pub-sidebar-link">
-            <span class="pub-sidebar-icon">📝</span><?= e(t('nav.register')) ?>
-        </a>
-        <?php endif; ?>
-    </nav>
-</aside>
+            <?php if ($_isLoggedIn): ?>
+            <div class="pub-sidebar-divider"></div>
+            <a href="/frontend/public/orders.php" class="pub-sidebar-link">
+                <span class="pub-sidebar-icon">📦</span>
+                <span class="pub-sidebar-text"><?= e(t('nav.orders')) ?></span>
+            </a>
+            <a href="/frontend/public/tickets.php" class="pub-sidebar-link">
+                <span class="pub-sidebar-icon">🎫</span>
+                <span class="pub-sidebar-text"><?= e(t('nav.tickets')) ?></span>
+            </a>
+            <a href="/frontend/public/returns.php" class="pub-sidebar-link">
+                <span class="pub-sidebar-icon">↩</span>
+                <span class="pub-sidebar-text"><?= e(t('nav.returns')) ?></span>
+            </a>
+            <a href="/frontend/profile.php" class="pub-sidebar-link">
+                <span class="pub-sidebar-icon">👤</span>
+                <span class="pub-sidebar-text"><?= e($_user['name'] ?? $_user['username'] ?? t('nav.account')) ?></span>
+            </a>
+            <a href="/frontend/logout.php" class="pub-sidebar-link">
+                <span class="pub-sidebar-icon">🚪</span>
+                <span class="pub-sidebar-text"><?= e(t('nav.logout')) ?></span>
+            </a>
+            <?php else: ?>
+            <div class="pub-sidebar-divider"></div>
+            <a href="/frontend/login.php" class="pub-sidebar-link">
+                <span class="pub-sidebar-icon">🔑</span>
+                <span class="pub-sidebar-text"><?= e(t('nav.login')) ?></span>
+            </a>
+            <a href="/frontend/login.php?tab=register" class="pub-sidebar-link">
+                <span class="pub-sidebar-icon">📝</span>
+                <span class="pub-sidebar-text"><?= e(t('nav.register')) ?></span>
+            </a>
+            <?php endif; ?>
+        </nav>
+    </aside>
+
+    <!-- Mobile sidebar backdrop -->
+    <div class="pub-sidebar-backdrop" id="pubSidebarOverlay" aria-hidden="true"></div>
+
+    <!-- Main content area -->
+    <main class="pub-main-content">
 
 <!-- =============================================
      PAGE CONTENT START

@@ -11,54 +11,94 @@
   'use strict';
 
   /* -------------------------------------------------------
-   * 1. Sidebar menu toggle (replaces old mobile-only nav)
+   * 1. Sidebar toggle (persistent on desktop, slide-out on mobile)
+   *    Desktop: collapse/expand (body.pub-sidebar-collapsed), persisted in localStorage
+   *    Mobile: slide-out overlay (sidebar.open + backdrop.open)
    * ----------------------------------------------------- */
   function initSidebar() {
-    var toggle  = document.getElementById('pubHamburger');
-    var sidebar = document.getElementById('pubSidebar');
-    var overlay = document.getElementById('pubSidebarOverlay');
+    var toggle   = document.getElementById('pubHamburger');
+    var sidebar  = document.getElementById('pubSidebar');
+    var backdrop = document.getElementById('pubSidebarOverlay');
     var closeBtn = document.getElementById('pubSidebarClose');
 
     if (!toggle || !sidebar) return;
 
-    function openSidebar() {
+    var STORAGE_KEY = 'pub_sidebar_collapsed';
+    var MOBILE_BP   = 768; // matches CSS breakpoint
+
+    function isMobile() {
+      return window.innerWidth <= MOBILE_BP;
+    }
+
+    // ── Desktop: collapse / expand ──
+    function restoreDesktopState() {
+      if (isMobile()) return;
+      try {
+        if (localStorage.getItem(STORAGE_KEY) === '1') {
+          document.body.classList.add('pub-sidebar-collapsed');
+        }
+      } catch (e) {}
+    }
+
+    function toggleDesktop() {
+      var collapsed = document.body.classList.toggle('pub-sidebar-collapsed');
+      try { localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0'); } catch (e) {}
+    }
+
+    // ── Mobile: slide-out overlay ──
+    function openMobile() {
       sidebar.classList.add('open');
-      if (overlay) overlay.classList.add('open');
+      if (backdrop) backdrop.classList.add('open');
       toggle.setAttribute('aria-expanded', 'true');
       document.body.style.overflow = 'hidden';
     }
 
-    function closeSidebar() {
+    function closeMobile() {
       sidebar.classList.remove('open');
-      if (overlay) overlay.classList.remove('open');
+      if (backdrop) backdrop.classList.remove('open');
       toggle.setAttribute('aria-expanded', 'false');
       document.body.style.overflow = '';
     }
 
+    // ── Toggle click: desktop vs mobile ──
     toggle.addEventListener('click', function () {
-      if (sidebar.classList.contains('open')) {
-        closeSidebar();
+      if (isMobile()) {
+        if (sidebar.classList.contains('open')) {
+          closeMobile();
+        } else {
+          openMobile();
+        }
       } else {
-        openSidebar();
+        toggleDesktop();
       }
     });
 
-    // Close on overlay click
-    if (overlay) {
-      overlay.addEventListener('click', closeSidebar);
+    // Close on backdrop click (mobile)
+    if (backdrop) {
+      backdrop.addEventListener('click', closeMobile);
     }
 
-    // Close button inside sidebar
+    // Close button inside sidebar (mobile)
     if (closeBtn) {
-      closeBtn.addEventListener('click', closeSidebar);
+      closeBtn.addEventListener('click', closeMobile);
     }
 
-    // Close on Escape key
+    // Escape key closes mobile sidebar
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && sidebar.classList.contains('open')) {
-        closeSidebar();
+        closeMobile();
       }
     });
+
+    // On resize: if going from mobile→desktop while sidebar is open, close mobile state
+    window.addEventListener('resize', function () {
+      if (!isMobile() && sidebar.classList.contains('open')) {
+        closeMobile();
+      }
+    });
+
+    // Restore desktop collapsed state from localStorage
+    restoreDesktopState();
 
     // Highlight active link based on current URL (first match only)
     var currentPath = window.location.pathname;
@@ -110,7 +150,7 @@
    * ----------------------------------------------------- */
   function markActiveNav() {
     var path = window.location.pathname;
-    var links = document.querySelectorAll('.pub-nav a, .pub-mobile-nav-inner a');
+    var links = document.querySelectorAll('.pub-nav a, .pub-sidebar-link');
     links.forEach(function (a) {
       if (a.getAttribute('href') && path.indexOf(a.getAttribute('href')) !== -1) {
         a.classList.add('active');
