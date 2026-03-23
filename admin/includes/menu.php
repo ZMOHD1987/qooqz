@@ -342,6 +342,12 @@ echo '</nav>';
 echo '<script>
 document.addEventListener("DOMContentLoaded", function() {
     // 1. Toggle expand/collapse for categories (accordion behavior)
+    function closeDescendants(item) {
+        item.querySelectorAll(".menu-item.has-children.is-open").forEach(function(desc) {
+            desc.classList.remove("is-open");
+        });
+    }
+
     document.querySelectorAll(".js-toggle").forEach(btn => {
         btn.addEventListener("click", function(e) {
             e.preventDefault();     // Prevents any URL change (href="#")
@@ -354,9 +360,15 @@ document.addEventListener("DOMContentLoaded", function() {
             if (isOpening && parentList) {
                 parentList.querySelectorAll(":scope > .menu-item.has-children.is-open").forEach(sibling => {
                     if (sibling !== currentItem) {
+                        closeDescendants(sibling);
                         sibling.classList.remove("is-open");
                     }
                 });
+            }
+
+            // Closing: also close all open descendants inside this item
+            if (!isOpening) {
+                closeDescendants(currentItem);
             }
 
             currentItem.classList.toggle("is-open");
