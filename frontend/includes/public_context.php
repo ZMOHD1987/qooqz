@@ -536,7 +536,7 @@ if (!function_exists('pub_load_theme')) {
                         }
                     }
                     // Always emit the resolved --pub-* vars last in :root {} from the
-                    // mapped $theme values.  This guarantees correct colours regardless of
+                    // mapped $theme values.  This guarantees correct colors regardless of
                     // which setting_key name the DB used (e.g. main_background vs background_main).
                     $css .= '  --pub-primary: '     . $cssEsc($theme['primary'])            . ";\n";
                     $css .= '  --pub-secondary: '   . $cssEsc($theme['secondary'])          . ";\n";
