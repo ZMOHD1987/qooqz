@@ -48,6 +48,17 @@ function pub_section_data(string $type, int $limit, string $lang, int $tenantId,
 }
 
 /* -------------------------------------------------------
+ * Pre-fetch hero slider banners from DB
+ * ----------------------------------------------------- */
+$heroBannersResp = pub_fetch($apiBase . 'public/banners?tenant_id=' . $tenantId . '&position=homepage_main');
+$heroBanners     = $heroBannersResp['data']['data'] ?? $heroBannersResp['data'] ?? [];
+// Fallback: if no homepage_main banners, try all active banners
+if (empty($heroBanners)) {
+    $heroBannersResp = pub_fetch($apiBase . 'public/banners?tenant_id=' . $tenantId);
+    $heroBanners     = $heroBannersResp['data']['data'] ?? $heroBannersResp['data'] ?? [];
+}
+
+/* -------------------------------------------------------
  * Pre-fetch stats (independent of sections)
  * ----------------------------------------------------- */
 $rProd = pub_fetch($apiBase . 'public/products?lang=' . urlencode($lang) . '&per=1&page=1&tenant_id=' . $tenantId);
@@ -84,8 +95,56 @@ $_imgCategory   = pub_card_img_style('category');
 ?>
 
 <!-- =============================================
-     HERO
+     HERO SLIDER (DB-driven banners)
 ============================================= -->
+<?php if (!empty($heroBanners)): ?>
+<section class="pub-hero-slider-wrap">
+    <div class="pub-banner-slider pub-hero-banner-slider">
+        <?php foreach ($heroBanners as $_bi => $_b):
+            $_bBg    = $_b['background_color'] ?? '';
+            $_bTxt   = $_b['text_color'] ?? '';
+            $_bImg   = $_b['image_url'] ?? '';
+            $_bMoImg = $_b['mobile_image_url'] ?? '';
+            $_bStyle = '';
+            if ($_bBg)  $_bStyle .= 'background-color:' . e($_bBg) . ';';
+            if ($_bTxt) $_bStyle .= 'color:' . e($_bTxt) . ';';
+        ?>
+        <div class="pub-banner-slide<?= $_bi === 0 ? ' active' : '' ?>"<?= $_bStyle ? ' style="' . $_bStyle . '"' : '' ?>>
+            <?php if ($_bImg || $_bMoImg): ?>
+            <a href="<?= e($_b['link_url'] ?? '#') ?>" tabindex="<?= $_bi === 0 ? '0' : '-1' ?>">
+                <picture>
+                    <?php if ($_bMoImg): ?>
+                    <source media="(max-width:600px)" srcset="<?= e(pub_img($_bMoImg)) ?>">
+                    <?php endif; ?>
+                    <img src="<?= e(pub_img($_bImg ?: $_bMoImg)) ?>"
+                         alt="<?= e($_b['title'] ?? '') ?>"
+                         class="pub-banner-img"
+                         loading="<?= $_bi === 0 ? 'eager' : 'lazy' ?>">
+                </picture>
+            </a>
+            <?php endif; ?>
+            <?php if (!empty($_b['title']) || !empty($_b['subtitle'])): ?>
+            <div class="pub-banner-caption"<?= $_bTxt ? ' style="color:' . e($_bTxt) . ';"' : '' ?>>
+                <?php if (!empty($_b['title'])): ?>
+                <h3><?= e($_b['title']) ?></h3>
+                <?php endif; ?>
+                <?php if (!empty($_b['subtitle'])): ?>
+                <p><?= e($_b['subtitle']) ?></p>
+                <?php endif; ?>
+                <?php if (!empty($_b['link_url']) && !empty($_b['link_text'])): ?>
+                <a href="<?= e($_b['link_url']) ?>" class="pub-btn pub-btn--primary pub-btn--sm"
+                   <?php if (!empty($_b['button_style'])): ?>style="background:<?= e($_b['button_style']) ?>;"<?php endif; ?>>
+                    <?= e($_b['link_text']) ?>
+                </a>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</section>
+<?php else: ?>
+<!-- Fallback static hero when no banners in DB -->
 <section class="pub-hero">
     <div class="pub-container">
         <h1><?= e(t('hero.title')) ?></h1>
@@ -100,6 +159,7 @@ $_imgCategory   = pub_card_img_style('category');
         </div>
     </div>
 </section>
+<?php endif; ?>
 
 <!-- =============================================
      SEARCH BAR

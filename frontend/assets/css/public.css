@@ -358,6 +358,51 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   padding: 52px 16px 48px;
   text-align: center;
 }
+
+/* Hero slider wrapper — full-width banner slider at page top */
+.pub-hero-slider-wrap {
+  width: 100%;
+  margin-bottom: 0;
+}
+.pub-hero-slider-wrap .pub-banner-slider {
+  border-radius: 0;
+  min-height: 240px;
+}
+.pub-hero-slider-wrap .pub-banner-img {
+  max-height: 500px;
+  min-height: 240px;
+}
+.pub-hero-slider-wrap .pub-banner-caption {
+  padding: 24px 28px;
+}
+.pub-hero-slider-wrap .pub-banner-caption h3 {
+  font-size: clamp(1.1rem, 3vw, 1.6rem);
+  font-weight: 800;
+  margin: 0 0 6px;
+}
+.pub-hero-slider-wrap .pub-banner-caption p {
+  font-size: clamp(0.88rem, 2vw, 1.05rem);
+  margin: 0 0 12px;
+}
+.pub-hero-slider-wrap .pub-slider-btn {
+  width: 42px;
+  height: 42px;
+  font-size: 1.4rem;
+}
+@media (max-width: 600px) {
+  .pub-hero-slider-wrap .pub-banner-img {
+    max-height: 300px;
+    min-height: 180px;
+  }
+  .pub-hero-slider-wrap .pub-banner-caption {
+    padding: 14px 16px;
+  }
+  .pub-hero-slider-wrap .pub-slider-btn {
+    width: 34px;
+    height: 34px;
+    font-size: 1.1rem;
+  }
+}
 .pub-hero h1 {
   font-size: clamp(1.6rem, 4vw, 2.6rem);
   font-weight: 800;
