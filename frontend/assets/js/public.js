@@ -60,12 +60,13 @@
       }
     });
 
-    // Highlight active link based on current URL
+    // Highlight active link based on current URL (first match only)
     var currentPath = window.location.pathname;
     var links = sidebar.querySelectorAll('.pub-sidebar-link');
     for (var i = 0; i < links.length; i++) {
       if (links[i].getAttribute('href') === currentPath) {
         links[i].classList.add('active');
+        break;
       }
     }
   }
