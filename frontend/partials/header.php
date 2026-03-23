@@ -88,8 +88,9 @@ $_setVar = function (string $key, string $value) use (&$_cssVars): void {
     if ($value === '') return;
     $safe = _pub_safe_css_val($value);
     if ($safe === '') return;
-    $keyU = '--' . str_replace('-', '_', preg_replace('/[^a-zA-Z0-9_-]/', '', $key));
-    $keyH = '--' . str_replace('_', '-', preg_replace('/[^a-zA-Z0-9_-]/', '', $key));
+    $sanitized = preg_replace('/[^a-zA-Z0-9_-]/', '', $key);
+    $keyU = '--' . str_replace('-', '_', $sanitized);
+    $keyH = '--' . str_replace('_', '-', $sanitized);
     $_cssVars[$keyU] = $safe;
     if ($keyH !== $keyU) {
         $_cssVars[$keyH] = $safe;
@@ -170,10 +171,14 @@ $_fontUrl = $dir === 'rtl'
 // Collect additional font URLs from DB font_settings
 $_dbFontLinks = [];
 $_systemFonts = ['system-ui','sans-serif','serif','monospace','arial','verdana','helvetica','georgia','times','courier','tahoma','inherit','initial','unset'];
+$_trustedFontHosts = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 foreach ($theme['font_settings'] ?? [] as $_f) {
     if (empty($_f['font_family'])) continue;
     if (!empty($_f['font_url'])) {
         $_url = $_f['font_url'];
+        // Validate font URL points to trusted source only
+        $_urlHost = parse_url($_url, PHP_URL_HOST);
+        if (!$_urlHost || !in_array($_urlHost, $_trustedFontHosts, true)) continue;
     } else {
         $_primary = trim(explode(',', $_f['font_family'])[0], " \"'");
         if ($_primary === '' || in_array(strtolower($_primary), $_systemFonts, true)) continue;
