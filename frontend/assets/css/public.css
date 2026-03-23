@@ -355,11 +355,11 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   overflow: hidden;
 }
 .pub-sidebar-link:hover {
-  background: var(--sidebar-hover, rgba(255,255,255,0.15));
+  background: var(--pub-sidebar-hover, rgba(255,255,255,0.15));
   color: var(--pub-sidebar-text, #fff);
 }
 .pub-sidebar-link.active {
-  background: var(--sidebar-active, rgba(255,255,255,0.22));
+  background: var(--pub-sidebar-active, rgba(255,255,255,0.22));
   color: var(--pub-sidebar-text, #fff);
   font-weight: 600;
 }

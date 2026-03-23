@@ -473,5 +473,22 @@ body {
     <!-- Mobile sidebar backdrop -->
     <div class="pub-sidebar-backdrop" id="pubSidebarOverlay" aria-hidden="true"></div>
 
+    <!-- Inline fallback: ensure hamburger opens sidebar even if public.js fails -->
+    <script>
+    (function(){
+        var h=document.getElementById('pubHamburger'),
+            s=document.getElementById('pubSidebar'),
+            b=document.getElementById('pubSidebarOverlay'),
+            c=document.getElementById('pubSidebarClose');
+        if(!h||!s)return;
+        if(h.dataset.bound)return; h.dataset.bound='1';
+        function open(){s.classList.add('open');if(b)b.classList.add('open');h.setAttribute('aria-expanded','true');document.body.style.overflow='hidden';}
+        function close(){s.classList.remove('open');if(b)b.classList.remove('open');h.setAttribute('aria-expanded','false');document.body.style.overflow='';}
+        h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+        if(b)b.addEventListener('click',close);
+        if(c)c.addEventListener('click',close);
+    })();
+    </script>
+
     <!-- Main content area — page content goes here -->
     <main class="pub-main-content">
