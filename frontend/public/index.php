@@ -94,6 +94,23 @@ $_imgProduct    = pub_card_img_style('product');
 $_imgCategory   = pub_card_img_style('category');
 ?>
 
+<?php
+/* -------------------------------------------------------
+ * CSS color sanitizer — only allow safe CSS color values
+ * ----------------------------------------------------- */
+if (!function_exists('_pub_safe_color')) {
+    function _pub_safe_color(string $v): string {
+        $v = trim($v);
+        if ($v === '') return '';
+        if (preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/', $v)) return $v;
+        if (preg_match('/^(rgb|rgba|hsl|hsla)\(\s*[\d\s%,.\/ ]+\)$/i', $v)) return $v;
+        if (preg_match('/^[a-zA-Z]{2,30}$/', $v)) return $v;
+        if (preg_match('/^var\(--[a-zA-Z0-9_-]+\)$/', $v)) return $v;
+        return '';
+    }
+}
+?>
+
 <!-- =============================================
      HERO SLIDER (DB-driven banners)
 ============================================= -->
@@ -101,8 +118,8 @@ $_imgCategory   = pub_card_img_style('category');
 <section class="pub-hero-slider-wrap">
     <div class="pub-banner-slider pub-hero-banner-slider">
         <?php foreach ($heroBanners as $_bi => $_b):
-            $_bBg    = $_b['background_color'] ?? '';
-            $_bTxt   = $_b['text_color'] ?? '';
+            $_bBg    = _pub_safe_color($_b['background_color'] ?? '');
+            $_bTxt   = _pub_safe_color($_b['text_color'] ?? '');
             $_bImg   = $_b['image_url'] ?? '';
             $_bMoImg = $_b['mobile_image_url'] ?? '';
             $_bStyle = '';
@@ -133,7 +150,7 @@ $_imgCategory   = pub_card_img_style('category');
                 <?php endif; ?>
                 <?php if (!empty($_b['link_url']) && !empty($_b['link_text'])): ?>
                 <a href="<?= e($_b['link_url']) ?>" class="pub-btn pub-btn--primary pub-btn--sm"
-                   <?php if (!empty($_b['button_style'])): ?>style="background:<?= e($_b['button_style']) ?>;"<?php endif; ?>>
+                   <?php $_btnStyle = _pub_safe_color($_b['button_style'] ?? ''); if ($_btnStyle): ?>style="background:<?= e($_btnStyle) ?>;"<?php endif; ?>>
                     <?= e($_b['link_text']) ?>
                 </a>
                 <?php endif; ?>
