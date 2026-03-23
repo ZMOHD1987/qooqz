@@ -13,9 +13,22 @@
  */
 $banners = $banners ?? [];
 if (empty($banners)) return;
-$_dir = $GLOBALS['PUB_CONTEXT']['dir'] ?? ($direction ?? 'rtl');
+$_dir = $GLOBALS['PUB_CONTEXT']['dir'] ?? (isset($direction) ? $direction : 'rtl');
 if (!function_exists('_se')) {
     function _se($v) { return htmlspecialchars((string)$v, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8'); }
+}
+if (!function_exists('_safe_color')) {
+    /** Validate and sanitize a CSS color value. Returns empty string if invalid. */
+    function _safe_color($v) {
+        $v = trim((string)$v);
+        if ($v === '') return '';
+        // Allow hex (#fff, #ffffff, #ffffffff), rgb/rgba, hsl/hsla, named colors
+        if (preg_match('/^#([0-9a-fA-F]{3,8})$/', $v)) return $v;
+        if (preg_match('/^(rgb|rgba|hsl|hsla)\(\s*[\d\s%,.\/ ]+\)$/i', $v)) return $v;
+        if (preg_match('/^[a-zA-Z]{2,30}$/', $v)) return $v; // named colors
+        if (preg_match('/^var\(--[a-zA-Z0-9_-]+\)$/', $v)) return $v; // CSS variables
+        return '';
+    }
 }
 $sliderCount = count($banners);
 ?>
@@ -26,8 +39,8 @@ $sliderCount = count($banners);
             $img    = $b['image_url'] ?? ($b['mobile_image_url'] ?? '');
             $mobImg = $b['mobile_image_url'] ?? '';
             if (!$img && !$mobImg) continue;
-            $bgColor   = $b['background_color'] ?? '';
-            $txtColor  = $b['text_color'] ?? '';
+            $bgColor   = _safe_color($b['background_color'] ?? '');
+            $txtColor  = _safe_color($b['text_color'] ?? '');
             $slideStyle = '';
             if ($bgColor) $slideStyle .= 'background-color:' . _se($bgColor) . ';';
             if ($txtColor) $slideStyle .= 'color:' . _se($txtColor) . ';';
@@ -51,19 +64,19 @@ $sliderCount = count($banners);
             <?php endif; ?>
             <?php if (!empty($b['title']) || !empty($b['subtitle'])): ?>
             <div class="hero-slider__caption"
-                 <?= $txtColor ? 'style="color:' . _se($txtColor) . ';"' : '' ?>>
+                 <?php $captionColor = _safe_color($b['text_color'] ?? ''); if ($captionColor): ?>style="color:<?= _se($captionColor) ?>;"<?php endif; ?>>
                 <?php if (!empty($b['title'])): ?>
                 <h2 class="hero-slider__title"><?= _se($b['title']) ?></h2>
                 <?php endif; ?>
                 <?php if (!empty($b['subtitle'])): ?>
                 <p class="hero-slider__subtitle"><?= _se($b['subtitle']) ?></p>
                 <?php endif; ?>
-                <?php if (!empty($b['link_url']) && !empty($b['link_text'])): ?>
+                <?php if (!empty($b['link_url']) && !empty($b['link_text'])):
+                    $btnStyle = _safe_color($b['button_style'] ?? '');
+                ?>
                 <a href="<?= _se($b['link_url']) ?>"
                    class="hero-slider__cta btn"
-                   <?php if (!empty($b['button_style'])): ?>
-                   style="background:<?= _se($b['button_style']) ?>;"
-                   <?php endif; ?>>
+                   <?= $btnStyle ? 'style="background:' . _se($btnStyle) . ';"' : '' ?>>
                     <?= _se($b['link_text']) ?>
                 </a>
                 <?php endif; ?>

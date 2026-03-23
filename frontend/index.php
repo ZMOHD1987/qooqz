@@ -26,6 +26,18 @@ $breadcrumbs = [['label' => ($lang == 'ar' ? 'الرئيسية' : 'Home'), 'url'
 if (!function_exists('_he')) {
     function _he($v) { return htmlspecialchars((string)$v, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8'); }
 }
+if (!function_exists('_safe_color')) {
+    /** Validate and sanitize a CSS color value. Returns empty string if invalid. */
+    function _safe_color($v) {
+        $v = trim((string)$v);
+        if ($v === '') return '';
+        if (preg_match('/^#([0-9a-fA-F]{3,8})$/', $v)) return $v;
+        if (preg_match('/^(rgb|rgba|hsl|hsla)\(\s*[\d\s%,.\/ ]+\)$/i', $v)) return $v;
+        if (preg_match('/^[a-zA-Z]{2,30}$/', $v)) return $v;
+        if (preg_match('/^var\(--[a-zA-Z0-9_-]+\)$/', $v)) return $v;
+        return '';
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -260,7 +272,8 @@ if (!function_exists('_he')) {
                 ?>
                 <li class="cat-sidebar__item<?= $hasChildren ? ' has-children' : '' ?>">
                     <a href="<?= $hasChildren ? '#' : '/frontend/products.php?category_id=' . (int)($cat['id'] ?? 0) ?>"
-                       class="cat-sidebar__link<?= $hasChildren ? ' js-cat-toggle' : '' ?>">
+                       class="cat-sidebar__link<?= $hasChildren ? ' js-cat-toggle' : '' ?>"
+                       <?= $hasChildren ? 'role="button" aria-expanded="false"' : '' ?>>
                         <?php if (!empty($cat['icon'])): ?>
                         <i class="<?= _he($cat['icon']) ?> cat-sidebar__icon" aria-hidden="true"></i>
                         <?php endif; ?>
@@ -306,7 +319,7 @@ if (!function_exists('_he')) {
             if ($sectionIndex === 1 && !empty($adZones['inline'])):
                 foreach ($adZones['inline'] as $inlineAd): ?>
                 <div class="ad-inline"
-                     <?= !empty($inlineAd['background_color']) ? 'style="background:' . _he($inlineAd['background_color']) . ';"' : '' ?>>
+                     <?php $adBg = _safe_color($inlineAd['background_color'] ?? ''); if ($adBg): ?>style="background:<?= _he($adBg) ?>;"<?php endif; ?>>
                     <a href="<?= _he($inlineAd['link_url'] ?? '#') ?>">
                         <img src="<?= _he($inlineAd['image_url'] ?? '') ?>"
                              alt="<?= _he($inlineAd['alt'] ?? '') ?>" loading="lazy">
@@ -438,6 +451,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             currentItem.classList.toggle('is-open');
+            var isNowOpen = currentItem.classList.contains('is-open');
+            this.setAttribute('aria-expanded', isNowOpen ? 'true' : 'false');
         });
     });
 });
