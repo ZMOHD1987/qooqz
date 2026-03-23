@@ -416,6 +416,10 @@ if (!function_exists('pub_load_theme')) {
                     $theme['design']  = $designs;
                     $theme['buttons'] = $buttons;
                     $theme['cards']   = $cards;
+                    // Store raw DB rows so header.php can build CSS vars from them
+                    $theme['color_settings']  = $colorRows;
+                    $theme['font_settings']   = $fonts;
+                    $theme['design_settings'] = $designs;
 
                     // Extract logo_url from design_settings (setting_key = 'logo_url')
                     foreach ($designs as $d) {
@@ -531,14 +535,29 @@ if (!function_exists('pub_load_theme')) {
                             $css .= '  --' . $dLayoutToCssVar[$dk] . ': ' . $cssEsc($cssVal) . ";\n";
                         }
                     }
-                    // Always emit the resolved --pub-header/footer vars last in :root {}
-                    // so they reflect the correct DB-sourced $theme values regardless of
-                    // which setting key / table was used — prevents any earlier rule from
-                    // overriding them with a stale or conflicting intermediate value.
-                    $css .= '  --pub-header-bg: '   . $cssEsc($theme['header_bg'])         . ";\n";
+                    // Always emit the resolved --pub-* vars last in :root {} from the
+                    // mapped $theme values.  This guarantees correct colours regardless of
+                    // which setting_key name the DB used (e.g. main_background vs background_main).
+                    $css .= '  --pub-primary: '     . $cssEsc($theme['primary'])            . ";\n";
+                    $css .= '  --pub-secondary: '   . $cssEsc($theme['secondary'])          . ";\n";
+                    $css .= '  --pub-accent: '      . $cssEsc($theme['accent'])             . ";\n";
+                    $css .= '  --pub-bg: '          . $cssEsc($theme['background'])         . ";\n";
+                    $css .= '  --pub-surface: '     . $cssEsc($theme['surface'])            . ";\n";
+                    $css .= '  --pub-text: '        . $cssEsc($theme['text'])               . ";\n";
+                    $css .= '  --pub-muted: '       . $cssEsc($theme['text_muted'])         . ";\n";
+                    $css .= '  --pub-border: '      . $cssEsc($theme['border'])             . ";\n";
+                    $css .= '  --pub-header-bg: '   . $cssEsc($theme['header_bg'])          . ";\n";
                     $css .= '  --pub-header-text: ' . $cssEsc($theme['header_text_color'])  . ";\n";
                     $css .= '  --pub-footer-bg: '   . $cssEsc($theme['footer_bg'])          . ";\n";
                     $css .= '  --pub-footer-text: ' . $cssEsc($theme['footer_text_color'])  . ";\n";
+                    // Also set --color-* aliases so slider.php and other partials resolve correctly
+                    $css .= '  --color-primary: '   . $cssEsc($theme['primary'])            . ";\n";
+                    $css .= '  --color-secondary: ' . $cssEsc($theme['secondary'])          . ";\n";
+                    $css .= '  --color-accent: '    . $cssEsc($theme['accent'])             . ";\n";
+                    $css .= '  --color-bg: '        . $cssEsc($theme['background'])         . ";\n";
+                    $css .= '  --color-surface: '   . $cssEsc($theme['surface'])            . ";\n";
+                    $css .= '  --color-text: '      . $cssEsc($theme['text'])               . ";\n";
+                    $css .= '  --color-border: '    . $cssEsc($theme['border'])             . ";\n";
                     // --pub-card-bg: generic fallback used by CSS files for cards that have no
                     // card_styles DB entry. pub_card_inline_style() uses the DB background_color
                     // directly so per-card colours from the database are applied correctly.

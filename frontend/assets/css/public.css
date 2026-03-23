@@ -535,7 +535,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
    ----------------------------------------------------- */
 .pub-hero {
   background: linear-gradient(135deg, var(--pub-primary) 0%, var(--pub-accent) 100%);
-  color: #fff;
+  color: var(--pub-slider-text, #fff);
   padding: 52px 16px 48px;
   text-align: center;
 }
@@ -1357,8 +1357,8 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 }
 .pub-banner-caption {
   padding: 16px 20px;
-  background: rgba(0,0,0,0.45);
-  color: #fff;
+  background: var(--pub-slider-overlay, rgba(0,0,0,0.45));
+  color: var(--pub-slider-text, #fff);
   position: absolute;
   bottom: 0;
   left: 0;
@@ -1376,9 +1376,9 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(0,0,0,0.45);
+  background: var(--pub-slider-arrow-bg, rgba(0,0,0,0.45));
   border: none;
-  color: #fff;
+  color: var(--pub-slider-text, #fff);
   font-size: 1.1rem;
   cursor: pointer;
   display: flex;
@@ -1387,7 +1387,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   transition: background 0.2s;
   line-height: 1;
 }
-.pub-slider-btn:hover { background: rgba(0,0,0,0.7); }
+.pub-slider-btn:hover { background: var(--pub-slider-arrow-hover, rgba(0,0,0,0.7)); }
 .pub-slider-btn--prev { left: 10px; }
 .pub-slider-btn--next { right: 10px; }
 [dir="rtl"] .pub-slider-btn--prev { left: auto; right: 10px; }
@@ -1408,7 +1408,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.5);
+  background: var(--pub-slider-dot-bg, rgba(255,255,255,0.5));
   border: none;
   cursor: pointer;
   padding: 0;
@@ -1416,7 +1416,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 }
 .pub-slider-dot.active,
 .pub-slider-dot:hover {
-  background: #fff;
+  background: var(--pub-slider-dot-active, #fff);
   transform: scale(1.2);
 }
 
