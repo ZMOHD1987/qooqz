@@ -181,11 +181,11 @@ $isRtl = ($dir === 'rtl');
 .pay-totals { margin-top: 16px; }
 .pay-totals tr td { padding: 5px 8px; font-size: .9rem; }
 .pay-totals tr td:last-child { text-align: <?= $isRtl ? 'left' : 'right' ?>; font-weight: 600; }
-.pay-totals .pay-grand td { font-size: 1.1rem; color: var(--pub-primary, #10B981); border-top: 1px solid rgba(255,255,255,.1); padding-top: 12px; }
+.pay-totals .pay-grand td { font-size: 1.1rem; color: var(--pub-primary); border-top: 1px solid rgba(255,255,255,.1); padding-top: 12px; }
 .pay-pm-label { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid rgba(255,255,255,.15); border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: border-color .2s; }
-.pay-pm-label:has(input:checked), .pay-pm-label:hover { border-color: var(--pub-primary, #10B981); }
-.pay-pm-label input { accent-color: var(--pub-primary, #10B981); width: 16px; height: 16px; }
-.pay-btn { width: 100%; padding: 14px; font-size: 1rem; font-weight: 700; background: var(--pub-primary, #10B981); color: #000; border: none; border-radius: 10px; cursor: pointer; margin-top: 8px; }
+.pay-pm-label:has(input:checked), .pay-pm-label:hover { border-color: var(--pub-primary); }
+.pay-pm-label input { accent-color: var(--pub-primary); width: 16px; height: 16px; }
+.pay-btn { width: 100%; padding: 14px; font-size: 1rem; font-weight: 700; background: var(--btn-primary-bg, var(--pub-primary)); color: var(--btn-primary-color, #fff); border: none; border-radius: var(--btn-primary-radius, 10px); cursor: pointer; margin-top: 8px; }
 .pay-btn:hover { opacity: .85; }
 .pay-err { background: rgba(239,68,68,.15); color: #f87171; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: .9rem; }
 .pay-auction-badge { display: inline-block; background: rgba(217,119,6,.2); color: #f59e0b; border-radius: 20px; padding: 3px 10px; font-size: .78rem; margin-bottom: 12px; }
@@ -194,7 +194,7 @@ $isRtl = ($dir === 'rtl');
 <main class="pub-main">
 <div class="pub-container">
 <div style="margin:24px 0 16px">
-  <a href="/frontend/public/orders.php?view=<?= $orderId ?>" style="color:var(--pub-primary,#10B981);text-decoration:none">← <?= e(t('orders.back')) ?></a>
+  <a href="/frontend/public/orders.php?view=<?= $orderId ?>" style="color:var(--pub-primary);text-decoration:none">← <?= e(t('orders.back')) ?></a>
 </div>
 
 <?php if ($payError): ?>

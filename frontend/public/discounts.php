@@ -65,9 +65,9 @@ include dirname(__DIR__) . '/partials/header.php';
             $dExpired = !empty($d['ends_at']) && strtotime($d['ends_at']) < time();
             ?>
             <?php if ($dExpired): ?>
-                <span style="position:absolute;top:8px;inset-inline-end:8px;background:#666;color:#fff;font-size:0.72rem;padding:2px 8px;border-radius:999px;">⏰ <?= e(t('discounts.expired')) ?></span>
+                <span style="position:absolute;top:8px;inset-inline-end:8px;background:var(--pub-muted, #666);color:#fff;font-size:0.72rem;padding:2px 8px;border-radius:999px;">⏰ <?= e(t('discounts.expired')) ?></span>
             <?php elseif ($dStatus === 'inactive'): ?>
-                <span style="position:absolute;top:8px;inset-inline-end:8px;background:#888;color:#fff;font-size:0.72rem;padding:2px 8px;border-radius:999px;">⬛ <?= e(t('discounts.inactive')) ?></span>
+                <span style="position:absolute;top:8px;inset-inline-end:8px;background:var(--pub-muted, #888);color:#fff;font-size:0.72rem;padding:2px 8px;border-radius:999px;">⬛ <?= e(t('discounts.inactive')) ?></span>
             <?php endif; ?>
 
             <div class="pub-discount-inner">

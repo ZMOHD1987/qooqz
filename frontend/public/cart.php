@@ -129,7 +129,7 @@ include dirname(__DIR__) . '/partials/header.php';
 .pub-qty-input { width:48px;height:28px;text-align:center;border:1px solid var(--pub-border);border-radius:var(--pub-radius-sm);background:var(--pub-bg);color:var(--pub-text);font-size:0.88rem; }
 .pub-cart-item-subtotal { font-size:0.88rem;font-weight:700;color:var(--pub-text);margin:0; }
 .pub-remove-btn { background:none;border:none;color:var(--pub-muted);cursor:pointer;font-size:1rem;padding:4px;border-radius:4px;transition:color var(--pub-transition); }
-.pub-remove-btn:hover { color:#e74c3c; }
+.pub-remove-btn:hover { color:var(--pub-danger, #e74c3c); }
 .pub-cart-summary-inner { background:var(--pub-bg);border:1px solid var(--pub-border);border-radius:var(--pub-radius);padding:20px;position:sticky;top:calc(var(--pub-header-h) + 16px); }
 .pub-cart-summary-title { font-size:1rem;font-weight:700;margin:0 0 16px;color:var(--pub-text); }
 .pub-summary-row { display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--pub-border); }

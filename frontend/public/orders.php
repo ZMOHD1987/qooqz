@@ -131,31 +131,31 @@ $passedStatuses = $viewOrder ? array_map(fn($h) => $h['status'], $statusHistory)
 .pub-orders-wrap{max-width:900px;margin:32px auto;padding:0 16px 60px}
 .pub-orders-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:28px}
 @media(max-width:600px){.pub-orders-summary{grid-template-columns:repeat(2,1fr)}}
-.pub-stat-card{background:var(--pub-card,#1a2332);border-radius:12px;padding:16px;text-align:center}
-.pub-stat-card .stat-num{font-size:2rem;font-weight:800;color:var(--pub-primary,#10B981)}
-.pub-stat-card .stat-lbl{font-size:0.78rem;color:var(--pub-muted,#94a3b8);margin-top:4px}
+.pub-stat-card{background:var(--pub-card);border-radius:12px;padding:16px;text-align:center}
+.pub-stat-card .stat-num{font-size:2rem;font-weight:800;color:var(--pub-primary)}
+.pub-stat-card .stat-lbl{font-size:0.78rem;color:var(--pub-muted);margin-top:4px}
 .pub-filter-btns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
-.pub-filter-btn{padding:6px 16px;border-radius:20px;border:1px solid var(--pub-border,rgba(255,255,255,.12));background:transparent;color:inherit;cursor:pointer;font-size:0.85rem;text-decoration:none}
-.pub-filter-btn.active,.pub-filter-btn:hover{background:var(--pub-primary,#10B981);border-color:var(--pub-primary,#10B981);color:#000}
-.pub-order-row{background:var(--pub-card,#1a2332);border-radius:12px;padding:16px 20px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;cursor:pointer;transition:box-shadow .2s}
-.pub-order-row:hover{box-shadow:0 0 0 2px var(--pub-primary,#10B981)}
+.pub-filter-btn{padding:6px 16px;border-radius:20px;border:1px solid var(--pub-border);background:transparent;color:inherit;cursor:pointer;font-size:0.85rem;text-decoration:none}
+.pub-filter-btn.active,.pub-filter-btn:hover{background:var(--pub-primary);border-color:var(--pub-primary);color:var(--btn-primary-color, #fff)}
+.pub-order-row{background:var(--pub-card);border-radius:12px;padding:16px 20px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;cursor:pointer;transition:box-shadow .2s}
+.pub-order-row:hover{box-shadow:0 0 0 2px var(--pub-primary)}
 .pub-order-num{font-weight:700;font-size:1rem}
-.pub-order-date{font-size:0.78rem;color:var(--pub-muted,#94a3b8);margin-top:2px}
-.pub-order-total{font-size:1.1rem;font-weight:700;color:var(--pub-accent,#F59E0B)}
+.pub-order-date{font-size:0.78rem;color:var(--pub-muted);margin-top:2px}
+.pub-order-total{font-size:1.1rem;font-weight:700;color:var(--pub-accent)}
 .pub-order-badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:0.75rem;font-weight:600}
-.status-pending{background:rgba(245,158,11,.18);color:#F59E0B}
-.status-confirmed{background:rgba(59,130,246,.18);color:#60a5fa}
-.status-processing{background:rgba(139,92,246,.18);color:#a78bfa}
-.status-shipped{background:rgba(16,185,129,.18);color:#34d399}
-.status-otd{background:rgba(6,182,212,.18);color:#22d3ee}
-.status-done{background:rgba(16,185,129,.3);color:#10B981}
-.status-bad{background:rgba(239,68,68,.18);color:#f87171}
-.status-default{background:rgba(148,163,184,.18);color:#94a3b8}
+.status-pending{background:color-mix(in srgb, var(--pub-warning, #f59e0b) 18%, transparent);color:var(--pub-warning, #f59e0b)}
+.status-confirmed{background:color-mix(in srgb, var(--pub-info, #3b82f6) 18%, transparent);color:var(--pub-info, #60a5fa)}
+.status-processing{background:color-mix(in srgb, var(--pub-info, #8b5cf6) 18%, transparent);color:var(--pub-info, #a78bfa)}
+.status-shipped{background:color-mix(in srgb, var(--pub-success, #10b981) 18%, transparent);color:var(--pub-success, #34d399)}
+.status-otd{background:color-mix(in srgb, var(--pub-info, #06b6d4) 18%, transparent);color:var(--pub-info, #22d3ee)}
+.status-done{background:color-mix(in srgb, var(--pub-success, #10b981) 30%, transparent);color:var(--pub-success)}
+.status-bad{background:color-mix(in srgb, var(--pub-danger, #ef4444) 18%, transparent);color:var(--pub-danger, #f87171)}
+.status-default{background:color-mix(in srgb, var(--pub-muted, #94a3b8) 18%, transparent);color:var(--pub-muted)}
 /* Detail panel */
-.pub-order-detail{background:var(--pub-card,#1a2332);border-radius:12px;padding:24px;margin-bottom:24px}
+.pub-order-detail{background:var(--pub-card);border-radius:12px;padding:24px;margin-bottom:24px}
 .pub-order-detail h2{font-size:1.2rem;font-weight:700;margin:0 0 20px}
 .pub-items-table{width:100%;border-collapse:collapse;margin-bottom:20px}
-.pub-items-table th{font-size:0.78rem;color:var(--pub-muted,#94a3b8);padding:6px 8px;text-align:start;font-weight:500}
+.pub-items-table th{font-size:0.78rem;color:var(--pub-muted);padding:6px 8px;text-align:start;font-weight:500}
 .pub-items-table td{padding:10px 8px;border-top:1px solid rgba(255,255,255,.06);vertical-align:middle}
 .pub-items-table .item-img{width:48px;height:48px;object-fit:cover;border-radius:8px;margin-inline-end:10px}
 /* Tracking timeline */
@@ -163,21 +163,21 @@ $passedStatuses = $viewOrder ? array_map(fn($h) => $h['status'], $statusHistory)
 .pub-track-wrap::before{content:'';position:absolute;top:24px;inset-inline-start:0;inset-inline-end:0;height:2px;background:rgba(255,255,255,.1);z-index:0}
 .pub-track-step{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:1;text-align:center;min-width:0}
 .pub-track-dot{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:all .3s}
-.pub-track-step.done .pub-track-dot{background:var(--pub-primary,#10B981);border-color:var(--pub-primary,#10B981)}
-.pub-track-step.current .pub-track-dot{background:var(--pub-accent,#F59E0B);border-color:var(--pub-accent,#F59E0B);box-shadow:0 0 12px rgba(245,158,11,.5)}
-.pub-track-lbl{font-size:0.7rem;color:var(--pub-muted,#94a3b8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px}
+.pub-track-step.done .pub-track-dot{background:var(--pub-primary);border-color:var(--pub-primary)}
+.pub-track-step.current .pub-track-dot{background:var(--pub-accent);border-color:var(--pub-accent);box-shadow:0 0 12px color-mix(in srgb, var(--pub-accent, #f59e0b) 50%, transparent)}
+.pub-track-lbl{font-size:0.7rem;color:var(--pub-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px}
 .pub-track-step.done .pub-track-lbl,.pub-track-step.current .pub-track-lbl{color:inherit}
 .pub-track-line{flex:1;height:2px;background:rgba(255,255,255,.1);align-self:center;margin-top:-22px}
-.pub-track-step.done ~ .pub-track-line{background:var(--pub-primary,#10B981)}
-.pub-detail-back{display:inline-flex;align-items:center;gap:6px;margin-bottom:16px;color:var(--pub-muted,#94a3b8);text-decoration:none;font-size:0.9rem}
+.pub-track-step.done ~ .pub-track-line{background:var(--pub-primary)}
+.pub-detail-back{display:inline-flex;align-items:center;gap:6px;margin-bottom:16px;color:var(--pub-muted);text-decoration:none;font-size:0.9rem}
 .pub-detail-back:hover{color:inherit}
 .pub-totals-box{background:rgba(255,255,255,.04);border-radius:10px;padding:16px;max-width:320px;margin-inline-start:auto}
 .pub-totals-row{display:flex;justify-content:space-between;padding:4px 0;font-size:0.9rem}
-.pub-totals-row.grand{border-top:1px solid rgba(255,255,255,.12);margin-top:6px;padding-top:8px;font-weight:700;font-size:1rem;color:var(--pub-accent,#F59E0B)}
+.pub-totals-row.grand{border-top:1px solid rgba(255,255,255,.12);margin-top:6px;padding-top:8px;font-weight:700;font-size:1rem;color:var(--pub-accent)}
 .pub-hist-list{list-style:none;padding:0;margin:0}
 .pub-hist-list li{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:0.85rem}
-.pub-hist-list .hist-dot{width:10px;height:10px;border-radius:50%;background:var(--pub-primary,#10B981);flex-shrink:0;margin-top:4px}
-.pub-hist-notes{color:var(--pub-muted,#94a3b8);font-size:0.8rem;margin-top:2px}
+.pub-hist-list .hist-dot{width:10px;height:10px;border-radius:50%;background:var(--pub-primary);flex-shrink:0;margin-top:4px}
+.pub-hist-notes{color:var(--pub-muted);font-size:0.8rem;margin-top:2px}
 </style>
 
 <div class="pub-orders-wrap">
@@ -192,19 +192,19 @@ $passedStatuses = $viewOrder ? array_map(fn($h) => $h['status'], $statusHistory)
         <h2>
             <?= e(t('orders.order_number')) ?>: <?= e($viewOrder['order_number']) ?>
             <?php if (!empty($viewOrder['auction_id'])): ?>
-                <span style="background:#f59e0b;color:#000;font-size:0.7rem;padding:2px 8px;border-radius:4px;margin-inline-start:8px">🔨 <?= e(t('nav.auctions')) ?> #<?= (int)$viewOrder['auction_id'] ?></span>
+                <span style="background:var(--pub-accent, #f59e0b);color:var(--btn-primary-color, #000);font-size:0.7rem;padding:2px 8px;border-radius:4px;margin-inline-start:8px">🔨 <?= e(t('nav.auctions')) ?> #<?= (int)$viewOrder['auction_id'] ?></span>
             <?php endif; ?>
             <span class="pub-order-badge <?= orderStatusClass($viewOrder['status']) ?>" style="margin-inline-start:10px">
                 <?= e(t('orders.status_' . $viewOrder['status'])) ?>
             </span>
             <?php if (in_array($viewOrder['payment_status'], ['pending','failed']) && !in_array($viewOrder['status'], ['cancelled','refunded','failed'])): ?>
                 <a href="/frontend/public/pay.php?order_id=<?= (int)$viewOrder['id'] ?>"
-                   style="background:var(--pub-primary,#10B981);color:#000;font-size:0.78rem;padding:5px 14px;border-radius:20px;text-decoration:none;font-weight:700;margin-inline-start:10px;display:inline-block">
+                   style="background:var(--btn-primary-bg, var(--pub-primary));color:var(--btn-primary-color, #fff);font-size:0.78rem;padding:5px 14px;border-radius:20px;text-decoration:none;font-weight:700;margin-inline-start:10px;display:inline-block">
                     💳 <?= e(t('orders.pay_now')) ?>
                 </a>
             <?php endif; ?>
         </h2>
-        <div style="font-size:0.85rem;color:var(--pub-muted,#94a3b8);margin-bottom:20px">
+        <div style="font-size:0.85rem;color:var(--pub-muted);margin-bottom:20px">
             <?= e(t('orders.placed_on')) ?>: <?= date('Y-m-d H:i', strtotime($viewOrder['created_at'])) ?>
             <?php if ($viewOrder['estimated_delivery_date']): ?>
                 &nbsp;|&nbsp; <?= e(t('orders.estimated_delivery')) ?>: <?= e($viewOrder['estimated_delivery_date']) ?>
@@ -232,11 +232,11 @@ $passedStatuses = $viewOrder ? array_map(fn($h) => $h['status'], $statusHistory)
                         <div class="pub-track-dot"><?= $stepIcons[$si] ?></div>
                         <div class="pub-track-lbl"><?= e(t('orders.status_' . $step)) ?></div>
                         <?php if ($stepHistEntry): ?>
-                            <div style="font-size:0.65rem;color:var(--pub-muted,#94a3b8)"><?= date('m/d H:i', strtotime($stepHistEntry['created_at'])) ?></div>
+                            <div style="font-size:0.65rem;color:var(--pub-muted)"><?= date('m/d H:i', strtotime($stepHistEntry['created_at'])) ?></div>
                         <?php endif; ?>
                     </div>
                     <?php if ($si < count($trackingSteps) - 1): ?>
-                        <div style="flex:1;height:2px;background:<?= ($isDone || $isCurrent) ? 'var(--pub-primary,#10B981)' : 'rgba(255,255,255,.1)' ?>;align-self:center;margin-bottom:28px"></div>
+                        <div style="flex:1;height:2px;background:<?= ($isDone || $isCurrent) ? 'var(--pub-primary)' : 'rgba(255,255,255,.1)' ?>;align-self:center;margin-bottom:28px"></div>
                     <?php endif; ?>
                 <?php endforeach; ?>
             </div>
@@ -271,8 +271,8 @@ $passedStatuses = $viewOrder ? array_map(fn($h) => $h['status'], $statusHistory)
                             <?php endif; ?>
                             <div>
                                 <div style="font-weight:600"><?= e($it['product_name']) ?></div>
-                                <div style="font-size:0.75rem;color:var(--pub-muted,#94a3b8)"><?= e($it['sku']) ?></div>
-                                <?php if ($it['is_refunded']): ?><span style="font-size:0.72rem;background:rgba(239,68,68,.18);color:#f87171;padding:2px 8px;border-radius:10px"><?= e(t('orders.refunded')) ?></span><?php endif; ?>
+                                <div style="font-size:0.75rem;color:var(--pub-muted)"><?= e($it['sku']) ?></div>
+                                <?php if ($it['is_refunded']): ?><span style="font-size:0.72rem;background:color-mix(in srgb, var(--pub-danger, #ef4444) 18%, transparent);color:var(--pub-danger, #f87171);padding:2px 8px;border-radius:10px"><?= e(t('orders.refunded')) ?></span><?php endif; ?>
                             </div>
                         </div>
                     </td>
@@ -295,7 +295,7 @@ $passedStatuses = $viewOrder ? array_map(fn($h) => $h['status'], $statusHistory)
             <div class="pub-totals-row"><span><?= e(t('orders.shipping')) ?></span><span><?= number_format((float)$viewOrder['shipping_cost'], 2) ?></span></div>
             <?php endif; ?>
             <?php if ((float)$viewOrder['discount_amount'] > 0): ?>
-            <div class="pub-totals-row" style="color:var(--pub-primary,#10B981)"><span><?= e(t('orders.discount')) ?></span><span>-<?= number_format((float)$viewOrder['discount_amount'], 2) ?></span></div>
+            <div class="pub-totals-row" style="color:var(--pub-primary)"><span><?= e(t('orders.discount')) ?></span><span>-<?= number_format((float)$viewOrder['discount_amount'], 2) ?></span></div>
             <?php endif; ?>
             <div class="pub-totals-row grand"><span><?= e(t('orders.grand_total')) ?></span><span><?= number_format((float)$viewOrder['grand_total'], 2) ?> <?= e($viewOrder['currency_code']) ?></span></div>
         </div>
@@ -310,7 +310,7 @@ $passedStatuses = $viewOrder ? array_map(fn($h) => $h['status'], $statusHistory)
                     <div class="hist-dot"></div>
                     <div>
                         <div><strong><?= e(t('orders.status_' . $h['status'])) ?></strong>
-                            <span style="color:var(--pub-muted,#94a3b8);font-size:0.78rem;margin-inline-start:8px"><?= date('Y-m-d H:i', strtotime($h['created_at'])) ?></span>
+                            <span style="color:var(--pub-muted);font-size:0.78rem;margin-inline-start:8px"><?= date('Y-m-d H:i', strtotime($h['created_at'])) ?></span>
                         </div>
                         <?php if ($h['notes']): ?><div class="pub-hist-notes"><?= e($h['notes']) ?></div><?php endif; ?>
                     </div>
@@ -324,7 +324,7 @@ $passedStatuses = $viewOrder ? array_map(fn($h) => $h['status'], $statusHistory)
 <?php else: ?>
     <!-- ========= ORDERS LIST VIEW ========= -->
     <h1 style="font-size:1.6rem;font-weight:800;margin-bottom:8px"><?= e(t('orders.page_title')) ?></h1>
-    <p style="color:var(--pub-muted,#94a3b8);margin-bottom:24px"><?= e(t('orders.page_subtitle')) ?></p>
+    <p style="color:var(--pub-muted);margin-bottom:24px"><?= e(t('orders.page_subtitle')) ?></p>
 
     <!-- Summary Stats -->
     <div class="pub-orders-summary">
@@ -333,19 +333,19 @@ $passedStatuses = $viewOrder ? array_map(fn($h) => $h['status'], $statusHistory)
             <div class="stat-lbl"><?= e(t('orders.stat_total')) ?></div>
         </div>
         <div class="pub-stat-card">
-            <div class="stat-num" style="color:var(--pub-accent,#F59E0B)"><?= $summary['pending'] ?></div>
+            <div class="stat-num" style="color:var(--pub-accent)"><?= $summary['pending'] ?></div>
             <div class="stat-lbl"><?= e(t('orders.stat_pending')) ?></div>
         </div>
         <div class="pub-stat-card">
-            <div class="stat-num" style="color:#a78bfa"><?= $summary['processing'] ?></div>
+            <div class="stat-num" style="color:var(--pub-info, #a78bfa)"><?= $summary['processing'] ?></div>
             <div class="stat-lbl"><?= e(t('orders.stat_processing')) ?></div>
         </div>
         <div class="pub-stat-card">
-            <div class="stat-num" style="color:var(--pub-primary,#10B981)"><?= $summary['delivered'] ?></div>
+            <div class="stat-num" style="color:var(--pub-primary)"><?= $summary['delivered'] ?></div>
             <div class="stat-lbl"><?= e(t('orders.stat_delivered')) ?></div>
         </div>
         <div class="pub-stat-card">
-            <div class="stat-num" style="color:#f87171"><?= $summary['cancelled'] ?></div>
+            <div class="stat-num" style="color:var(--pub-danger, #f87171)"><?= $summary['cancelled'] ?></div>
             <div class="stat-lbl"><?= e(t('orders.stat_cancelled')) ?></div>
         </div>
     </div>
@@ -360,7 +360,7 @@ $passedStatuses = $viewOrder ? array_map(fn($h) => $h['status'], $statusHistory)
 
     <!-- Orders List -->
     <?php if (empty($orders)): ?>
-        <div style="text-align:center;padding:60px 20px;color:var(--pub-muted,#94a3b8)">
+        <div style="text-align:center;padding:60px 20px;color:var(--pub-muted)">
             <div style="font-size:3rem;margin-bottom:12px">📭</div>
             <div style="font-size:1.1rem;margin-bottom:16px"><?= e(t('orders.empty')) ?></div>
             <a href="/frontend/public/products.php" class="pub-btn pub-btn--primary"><?= e(t('orders.browse_products')) ?></a>
@@ -372,7 +372,7 @@ $passedStatuses = $viewOrder ? array_map(fn($h) => $h['status'], $statusHistory)
                 <div class="pub-order-num">
                     <?= e($ord['order_number']) ?>
                     <?php if (!empty($ord['auction_id'])): ?>
-                        <span style="background:#f59e0b;color:#000;font-size:0.65rem;padding:1px 6px;border-radius:4px;margin-inline-start:6px">🔨 <?= e(t('nav.auctions')) ?></span>
+                        <span style="background:var(--pub-accent, #f59e0b);color:var(--btn-primary-color, #000);font-size:0.65rem;padding:1px 6px;border-radius:4px;margin-inline-start:6px">🔨 <?= e(t('nav.auctions')) ?></span>
                     <?php endif; ?>
                 </div>
                 <div class="pub-order-date">
@@ -389,7 +389,7 @@ $passedStatuses = $viewOrder ? array_map(fn($h) => $h['status'], $statusHistory)
                 <?php endif; ?>
                 <div class="pub-order-total"><?= number_format((float)$ord['grand_total'], 2) ?> <?= e($ord['currency_code']) ?></div>
                 <?php if (in_array($ord['payment_status'], ['pending','failed']) && !in_array($ord['status'], ['cancelled','refunded','failed'])): ?>
-                    <span onclick="event.preventDefault(); window.location.href='/frontend/public/pay.php?order_id=<?= (int)$ord['id'] ?>'" class="pub-order-badge" style="background:var(--pub-primary,#10B981);color:#000;cursor:pointer">
+                    <span onclick="event.preventDefault(); window.location.href='/frontend/public/pay.php?order_id=<?= (int)$ord['id'] ?>'" class="pub-order-badge" style="background:var(--btn-primary-bg, var(--pub-primary));color:var(--btn-primary-color, #fff);cursor:pointer">
                         💳 <?= e(t('orders.pay_now')) ?>
                     </span>
                 <?php endif; ?>

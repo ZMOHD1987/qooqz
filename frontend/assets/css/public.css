@@ -917,7 +917,8 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .pub-btn:hover { opacity: 0.88; transform: translateY(-1px); }
 .pub-btn:active { transform: translateY(0); }
 
-.pub-btn--primary { background: var(--pub-primary); color: var(--pub-btn-primary-text, #fff); }
+.pub-btn--primary { background: var(--btn-primary-bg, var(--pub-primary)); color: var(--btn-primary-color, #fff); }
+.pub-btn--primary:hover { background: var(--btn-primary-hover-bg, var(--pub-primary)); color: var(--btn-primary-hover-color, #fff); opacity: 0.88; }
 .pub-btn--outline {
   background: transparent;
   color: var(--pub-btn-outline-text, #fff);

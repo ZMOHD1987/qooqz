@@ -159,18 +159,18 @@ include dirname(__DIR__) . '/partials/header.php';
 .pub-auc-bid-row { display: flex; gap: 8px; }
 .pub-auc-bid-input { flex: 1; padding: 12px 14px; border: 2px solid var(--pub-border); border-radius: var(--pub-radius-sm); font-size: 1rem; font-family: inherit; transition: border-color .2s; }
 .pub-auc-bid-input:focus { border-color: var(--pub-primary); outline: none; }
-.pub-auc-bid-btn { padding: 12px 20px; background: var(--pub-primary); color: #fff; border: none; border-radius: var(--pub-radius-sm); font-weight: 700; cursor: pointer; font-size: 1rem; white-space: nowrap; }
+.pub-auc-bid-btn { padding: 12px 20px; background: var(--btn-primary-bg, var(--pub-primary)); color: var(--btn-primary-color, #fff); border: none; border-radius: var(--btn-primary-radius, var(--pub-radius-sm)); font-weight: 700; cursor: pointer; font-size: 1rem; white-space: nowrap; }
 .pub-auc-bid-btn:hover { opacity: .88; }
 .pub-auc-bid-hint { font-size: 12px; color: var(--pub-muted); margin-top: 4px; }
 .pub-auc-auto-bid-row { background: var(--pub-bg); border: 1px dashed var(--pub-border); border-radius: var(--pub-radius-sm); padding: 14px; margin-bottom: 12px; }
 .pub-auc-auto-bid-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
-.pub-auc-buynow-btn { width: 100%; padding: 14px; background: #22c55e; color: #fff; border: none; border-radius: var(--pub-radius-sm); font-weight: 700; font-size: 1rem; cursor: pointer; margin-bottom: 10px; }
-.pub-auc-buynow-btn:hover { background: #16a34a; }
+.pub-auc-buynow-btn { width: 100%; padding: 14px; background: var(--pub-success, #22c55e); color: var(--btn-primary-color, #fff); border: none; border-radius: var(--pub-radius-sm); font-weight: 700; font-size: 1rem; cursor: pointer; margin-bottom: 10px; }
+.pub-auc-buynow-btn:hover { opacity: .88; }
 .pub-auc-watch-btn { width: 100%; padding: 10px; background: transparent; border: 2px solid var(--pub-border); border-radius: var(--pub-radius-sm); cursor: pointer; font-size: 13px; color: var(--pub-muted); display: flex; align-items: center; justify-content: center; gap: 6px; }
-.pub-auc-watch-btn.active { border-color: #ef4444; color: #ef4444; }
+.pub-auc-watch-btn.active { border-color: var(--pub-danger, #ef4444); color: var(--pub-danger, #ef4444); }
 .pub-auc-msg { padding: 10px 14px; border-radius: var(--pub-radius-sm); font-size: 13px; margin-top: 8px; display: none; }
-.pub-auc-msg.success { background: #d1fae5; color: #065f46; }
-.pub-auc-msg.error   { background: #fee2e2; color: #991b1b; }
+.pub-auc-msg.success { background: color-mix(in srgb, var(--pub-success, #22c55e) 15%, transparent); color: var(--pub-success, #065f46); }
+.pub-auc-msg.error   { background: color-mix(in srgb, var(--pub-danger, #ef4444) 15%, transparent); color: var(--pub-danger, #991b1b); }
 .pub-auc-tabs { display: flex; gap: 0; border-bottom: 2px solid var(--pub-border); margin: 32px 0 16px; }
 .pub-auc-tab-btn { padding: 10px 20px; border: none; background: none; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--pub-muted); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .2s; }
 .pub-auc-tab-btn.active { color: var(--pub-primary); border-bottom-color: var(--pub-primary); }
@@ -228,7 +228,7 @@ include dirname(__DIR__) . '/partials/header.php';
           <?php if ((float)($auction['shipping_cost'] ?? 0) > 0): ?>
           <div class="pub-auction-detail-meta"><span class="pub-auction-detail-label"><?= e(t('auctions.shipping')) ?>:</span> <?= number_format((float)$auction['shipping_cost'], 2) ?></div>
           <?php elseif (isset($auction['shipping_cost'])): ?>
-          <div class="pub-auction-detail-meta"><span style="color:#22c55e">✓</span> <?= e(t('auctions.free_shipping')) ?></div>
+          <div class="pub-auction-detail-meta"><span style="color:var(--pub-success, #22c55e)">✓</span> <?= e(t('auctions.free_shipping')) ?></div>
           <?php endif; ?>
         </div>
       </div>
@@ -317,7 +317,7 @@ include dirname(__DIR__) . '/partials/header.php';
       <?php if ($aIsActive): ?>
         <?php if ($aIsOwner): ?>
         <!-- Auction owner — cannot bid -->
-        <div style="background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:14px;text-align:center;font-size:0.9rem;color:#f59e0b;margin-bottom:12px">
+        <div style="background:color-mix(in srgb, var(--pub-warning, #f59e0b) 12%, transparent);border:1px solid color-mix(in srgb, var(--pub-warning, #f59e0b) 30%, transparent);border-radius:8px;padding:14px;text-align:center;font-size:0.9rem;color:var(--pub-warning, #f59e0b);margin-bottom:12px">
           🔒 <?= e(t('auctions.owner_cannot_bid')) ?>
         </div>
         <?php elseif ($_isLoggedIn): ?>
@@ -344,7 +344,7 @@ include dirname(__DIR__) . '/partials/header.php';
             <button type="submit" class="pub-auc-bid-btn" style="white-space:nowrap"><?= e(t('auctions.set_auto')) ?></button>
           </form>
           <?php if ($autoBidData): ?>
-          <p style="font-size:12px;color:#22c55e;margin-top:6px">✓ <?= e(t('auctions.auto_bid_active')) ?>: <?= number_format((float)$autoBidData['max_bid_amount'], 2) ?></p>
+          <p style="font-size:12px;color:var(--pub-success, #22c55e);margin-top:6px">✓ <?= e(t('auctions.auto_bid_active')) ?>: <?= number_format((float)$autoBidData['max_bid_amount'], 2) ?></p>
           <?php endif; ?>
         </div>
 

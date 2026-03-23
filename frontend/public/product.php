@@ -655,10 +655,10 @@ $_productImgStyle  = pub_card_img_style('product');
             <?php foreach ($reviews as $rv): ?>
             <div style="border-bottom:1px solid var(--pub-border,#333);padding:14px 0;">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                    <span style="color:#f59e0b;font-size:1.1em;"><?= str_repeat('★', (int)($rv['rating'] ?? 0)) ?><?= str_repeat('☆', 5 - (int)($rv['rating'] ?? 0)) ?></span>
+                    <span style="color:var(--pub-accent, #f59e0b);font-size:1.1em;"><?= str_repeat('★', (int)($rv['rating'] ?? 0)) ?><?= str_repeat('☆', 5 - (int)($rv['rating'] ?? 0)) ?></span>
                     <strong style="font-size:.9em;"><?= e($rv['author'] ?? '') ?></strong>
                     <?php if (!empty($rv['is_verified_purchase'])): ?>
-                    <span style="font-size:.75em;background:var(--pub-success,#10b981);color:#fff;padding:1px 6px;border-radius:4px;">✓ <?= e(t('products.verified_purchase')) ?></span>
+                    <span style="font-size:.75em;background:var(--pub-success);color:#fff;padding:1px 6px;border-radius:4px;">✓ <?= e(t('products.verified_purchase')) ?></span>
                     <?php endif; ?>
                     <span style="font-size:.75em;color:var(--pub-muted,#999);margin-left:auto;"><?= e(substr($rv['created_at'] ?? '', 0, 10)) ?></span>
                 </div>
@@ -675,7 +675,7 @@ $_productImgStyle  = pub_card_img_style('product');
                 <h4 style="margin:0 0 12px;"><?= e(t('products.write_review')) ?></h4>
                 <div style="margin-bottom:8px;">
                     <label style="display:block;font-size:.85em;margin-bottom:4px;"><?= e(t('products.your_rating')) ?></label>
-                    <div id="pubStarPicker" style="font-size:1.6em;cursor:pointer;color:#f59e0b;">
+                    <div id="pubStarPicker" style="font-size:1.6em;cursor:pointer;color:var(--pub-accent, #f59e0b);">
                         <?php for ($i = 1; $i <= 5; $i++): ?><span data-val="<?= $i ?>" onclick="pubPickStar(<?= $i ?>)">☆</span><?php endfor; ?>
                     </div>
                     <input type="hidden" id="pubReviewRating" value="0">
