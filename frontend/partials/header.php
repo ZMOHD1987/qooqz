@@ -39,6 +39,7 @@ $_appName   = $GLOBALS['PUB_APP_NAME']  ?? 'QOOQZ';
 $_pageTitle = $GLOBALS['PUB_PAGE_TITLE'] ?? ($_seo['title'] ?? $_appName);
 $_pageDesc  = $GLOBALS['PUB_PAGE_DESC']  ?? ($_seo['description'] ?? '');
 $_basePath  = rtrim($GLOBALS['PUB_BASE_PATH'] ?? '/frontend/public', '/');
+$_authPath  = '/frontend'; // Auth pages (login, register, profile, logout) at /frontend/ level
 
 // ════════════════════════════════════════════════════════════
 // 2. Helpers
@@ -61,7 +62,22 @@ if (!empty($theme['color_settings']) && is_array($theme['color_settings'])) {
         $val = $cs['color_value']  ?? ($cs['setting_value'] ?? '');
         if ($key !== '' && $val !== '') {
             $safeKey = preg_replace('/[^a-zA-Z0-9_-]/', '', $key);
-            $safeVal = preg_replace('/[^a-zA-Z0-9#(),.\/ %_-]/', '', $val);
+            // Strict CSS color validation — reject anything that could be CSS injection
+            $v = trim($val);
+            $safeVal = '';
+            if (preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/', $v)) {
+                $safeVal = $v; // hex color
+            } elseif (preg_match('/^(rgb|rgba|hsl|hsla)\(\s*[\d\s%,.]+\)$/i', $v)) {
+                $safeVal = $v; // rgb/rgba/hsl/hsla
+            } elseif (preg_match('/^[a-zA-Z]{2,30}$/', $v)) {
+                $safeVal = $v; // named color
+            } elseif (preg_match('/^var\(--[a-zA-Z0-9_-]+\)$/', $v)) {
+                $safeVal = $v; // CSS variable reference
+            } elseif (preg_match('/^[\d.]+(px|em|rem|%|vh|vw|pt|ch|ex|cm|mm|in|pc)$/', $v)) {
+                $safeVal = $v; // CSS length/size
+            } elseif (preg_match('/^"[^"]{1,80}"$/', $v) || preg_match("/^'[^']{1,80}'$/", $v)) {
+                $safeVal = $v; // quoted font name
+            }
             if ($safeKey && $safeVal) {
                 $parts[] = '    --' . $safeKey . ': ' . $safeVal . ';';
                 // Also set hyphenated variant
@@ -277,11 +293,11 @@ $_cartLabel = e(t('nav.cart'));
 
             <!-- Login / User -->
             <?php if ($_isLoggedIn): ?>
-                <a href="/frontend/profile.php" class="pub-login-btn">
+                <a href="<?= e($_authPath . '/profile.php') ?>" class="pub-login-btn">
                     <?= e($_user['name'] ?? $_user['username'] ?? t('nav.account')) ?>
                 </a>
             <?php else: ?>
-                <a href="/frontend/login.php" class="pub-login-btn"><?= e(t('nav.login')) ?></a>
+                <a href="<?= e($_authPath . '/login.php') ?>" class="pub-login-btn"><?= e(t('nav.login')) ?></a>
             <?php endif; ?>
 
             <!-- Hamburger toggle (controls sidebar in menu.php) -->

@@ -18,6 +18,7 @@ $_user      = $_ctx['user'] ?? [];
 $_isLoggedIn = !empty($_user['id']);
 $_appName   = $GLOBALS['PUB_APP_NAME']  ?? 'QOOQZ';
 $_basePath  = rtrim($GLOBALS['PUB_BASE_PATH'] ?? '/frontend/public', '/');
+$_authPath  = '/frontend'; // Auth pages (login, register, profile, logout) live at /frontend/ level
 
 if (!function_exists('e')) {
     function e($v): string { return htmlspecialchars((string)$v, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8'); }
@@ -111,22 +112,22 @@ if (!function_exists('t')) {
             <span class="pub-sidebar-icon">↩</span>
             <span class="pub-sidebar-text"><?= e(t('nav.returns')) ?></span>
         </a>
-        <a href="/frontend/profile.php" class="pub-sidebar-link">
+        <a href="<?= e($_authPath . '/profile.php') ?>" class="pub-sidebar-link">
             <span class="pub-sidebar-icon">👤</span>
             <span class="pub-sidebar-text"><?= e($_user['name'] ?? $_user['username'] ?? t('nav.account')) ?></span>
         </a>
-        <a href="/frontend/logout.php" class="pub-sidebar-link">
+        <a href="<?= e($_authPath . '/logout.php') ?>" class="pub-sidebar-link">
             <span class="pub-sidebar-icon">🚪</span>
             <span class="pub-sidebar-text"><?= e(t('nav.logout')) ?></span>
         </a>
         <?php else: ?>
         <div class="pub-sidebar-divider"></div>
         <!-- Guest links -->
-        <a href="/frontend/login.php" class="pub-sidebar-link">
+        <a href="<?= e($_authPath . '/login.php') ?>" class="pub-sidebar-link">
             <span class="pub-sidebar-icon">🔑</span>
             <span class="pub-sidebar-text"><?= e(t('nav.login')) ?></span>
         </a>
-        <a href="/frontend/login.php?tab=register" class="pub-sidebar-link">
+        <a href="<?= e($_authPath . '/login.php?tab=register') ?>" class="pub-sidebar-link">
             <span class="pub-sidebar-icon">📝</span>
             <span class="pub-sidebar-text"><?= e(t('nav.register')) ?></span>
         </a>
