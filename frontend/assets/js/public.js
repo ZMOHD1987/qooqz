@@ -150,7 +150,7 @@
    * ----------------------------------------------------- */
   function markActiveNav() {
     var path = window.location.pathname;
-    var links = document.querySelectorAll('.pub-nav a, .pub-sidebar-link');
+    var links = document.querySelectorAll('.pub-sidebar-link');
     links.forEach(function (a) {
       if (a.getAttribute('href') && path.indexOf(a.getAttribute('href')) !== -1) {
         a.classList.add('active');
@@ -326,11 +326,10 @@
   }
 
   /* -------------------------------------------------------
-   * 9. Cart badge — read localStorage and update #pubCartCount
+   * 9. Cart badge — update sidebar cart badge from localStorage
    * ----------------------------------------------------- */
   function initCartBadge() {
     var badges = [
-      document.getElementById('pubCartCount'),
       document.getElementById('pubCartCountSidebar'),
     ];
     var cart = [];
@@ -631,9 +630,9 @@ function pubAddToCart(btn) {
     }).catch(function () {}); // silent fail — localStorage is the fallback
   }
 
-  // ── 3. Update header cart count badges ───────────────────────────────────
+  // ── 3. Update sidebar cart count badge ───────────────────────────────────
   var total = cart.reduce(function (s, i) { return s + (Math.max(1, parseInt(i.qty, 10) || 1)); }, 0);
-  [document.getElementById('pubCartCount'), document.getElementById('pubCartCountSidebar')]
+  [document.getElementById('pubCartCountSidebar')]
     .forEach(function (badge) {
       if (!badge) return;
       badge.textContent = total;

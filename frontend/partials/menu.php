@@ -100,6 +100,10 @@ if (!function_exists('t')) {
         <?php if ($_isLoggedIn): ?>
         <div class="pub-sidebar-divider"></div>
         <!-- Logged-in user links -->
+        <a href="<?= e($_basePath . '/notifications.php') ?>" class="pub-sidebar-link">
+            <span class="pub-sidebar-icon">🔔</span>
+            <span class="pub-sidebar-text"><?= e(t('nav.notifications')) ?></span>
+        </a>
         <a href="<?= e($_basePath . '/orders.php') ?>" class="pub-sidebar-link">
             <span class="pub-sidebar-icon">📦</span>
             <span class="pub-sidebar-text"><?= e(t('nav.orders')) ?></span>

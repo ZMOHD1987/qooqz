@@ -234,57 +234,10 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .pub-join-result.success { background: #d1fae5; color: #065f46; }
 .pub-join-result.error   { background: #fee2e2; color: #991b1b; }
 
-/* Desktop Nav */
-.pub-nav {
-  display: none;
-  gap: 4px;
-  align-items: center;
-}
-.pub-nav a {
-  color: rgba(255,255,255,0.9);
-  padding: 6px 12px;
-  border-radius: var(--pub-radius-sm);
-  font-size: 0.92rem;
-  font-weight: 500;
-  transition: background var(--pub-transition), color var(--pub-transition);
-}
-.pub-nav a:hover,
-.pub-nav a.active {
-  background: rgba(255,255,255,0.18);
-  color: #fff;
-}
+/* Desktop Nav — REMOVED: all navigation is in sidebar (menu.php) */
+.pub-nav { display: none; }
 
-/* Header actions */
-.pub-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0; /* prevent hamburger from being squeezed off screen */
-}
-
-.pub-lang-btn {
-  background: rgba(255,255,255,0.15);
-  border: 1px solid rgba(255,255,255,0.3);
-  color: #fff;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.82rem;
-  cursor: pointer;
-  transition: background var(--pub-transition);
-  text-decoration: none;
-}
-.pub-lang-btn:hover { background: rgba(255,255,255,0.25); color: #fff; }
-
-.pub-login-btn {
-  background: #fff;
-  color: var(--pub-primary);
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  transition: opacity var(--pub-transition);
-}
-.pub-login-btn:hover { opacity: 0.9; color: var(--pub-primary); }
+/* Header actions — REMOVED: only hamburger remains, no wrapper needed */
 
 /* Hamburger toggle (sidebar toggle button — visible on all screen sizes) */
 .pub-hamburger {
@@ -1126,42 +1079,13 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 }
 
 /* -------------------------------------------------------
-   18. Responsive — Desktop nav show/hide
+   18. Responsive — (Desktop nav removed; sidebar is the only nav)
    ----------------------------------------------------- */
 @media (min-width: 768px) {
-  .pub-nav { display: flex; }
   /* Menu button stays visible on desktop too */
 }
 
-/* Nav badge (cart count in desktop nav) */
-.pub-nav-badge {
-  background: var(--pub-accent, #F59E0B);
-  color: #000;
-  border-radius: 50%;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  line-height: 18px;
-  text-align: center;
-  margin-inline-start: 4px;
-}
-
-/* Cart nav link in header */
-.pub-cart-nav-link { position: relative; }
-
-/* On mobile: hide login/logout buttons from header bar (they live in the drawer).
-   This prevents the header from overflowing on narrow screens when a logo is present. */
-@media (max-width: 767px) {
-  .pub-header-actions .pub-login-btn { display: none; }
-  .pub-header-actions .pub-btn--ghost { display: none; }
-  /* Constrain logo image on mobile so it doesn't push hamburger off screen */
-  .pub-logo-img { max-width: 90px; max-height: 30px; }
-  /* Give logo a bit more room, and let it grow to fill available space */
-  .pub-logo { max-width: unset; flex: 1; overflow: hidden; }
-  .pub-logo-name { max-width: 110px; }
-}
+/* Nav badge / cart nav link — REMOVED (nav moved to sidebar) */
 
 /* -------------------------------------------------------
    19. Page-specific: product list page filters

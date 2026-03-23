@@ -133,35 +133,8 @@ if (!function_exists('_pub_asset_ver')) {
 }
 
 // ════════════════════════════════════════════════════════════
-// 7. Notification data for bell icon
+// 7. (Reserved — nav/notification removed; all navigation in menu.php)
 // ════════════════════════════════════════════════════════════
-$_pubNotifJson = ['items' => [], 'unread' => 0];
-if ($_isLoggedIn) {
-    $apiBase = function_exists('pub_api_url') ? pub_api_url('') : '/api/';
-    $nResp = function_exists('pub_fetch')
-        ? pub_fetch($apiBase . 'notifications?user_id=' . (int)$_user['id'] . '&per=5')
-        : ['data' => []];
-    $_pubNotifJson = [
-        'items'  => $nResp['data']['data'] ?? [],
-        'unread' => (int)($nResp['data']['meta']['unread'] ?? 0),
-    ];
-}
-
-// ════════════════════════════════════════════════════════════
-// 8. Nav items (used only for desktop nav, NOT in sidebar)
-// ════════════════════════════════════════════════════════════
-$_navItems = [
-    t('nav.home')       => $_basePath . '/index.php',
-    t('nav.products')   => $_basePath . '/products.php',
-    t('nav.categories') => $_basePath . '/categories.php',
-    t('nav.offers')     => $_basePath . '/discounts.php',
-    t('nav.jobs')       => $_basePath . '/jobs.php',
-    t('nav.entities')   => $_basePath . '/entities.php',
-    t('nav.tenants')    => $_basePath . '/tenants.php',
-    t('nav.auctions')   => $_basePath . '/auctions.php',
-];
-$_cartUrl   = $_basePath . '/cart.php';
-$_cartLabel = e(t('nav.cart'));
 ?>
 <!doctype html>
 <html lang="<?= e($lang) ?>" dir="<?= e($dir) ?>">
@@ -227,16 +200,14 @@ $_cartLabel = e(t('nav.cart'));
     <script defer
             src="/frontend/assets/js/slider.js?v=<?= _pub_asset_ver('/frontend/assets/js/slider.js') ?>">
     </script>
-
-    <!-- Notification data for bell icon -->
-    <script type="application/json" id="pubNotifData"><?= json_encode($_pubNotifJson, JSON_HEX_TAG | JSON_UNESCAPED_UNICODE) ?></script>
 </head>
 
 <body class="pub-body <?= e($dir) ?>">
 
 <!-- =============================================
-     HEADER — Clean bar: logo + nav + actions
-     Menus are in menu.php (sidebar), NOT here.
+     HEADER — Clean bar: logo + hamburger ONLY
+     All navigation lives in menu.php (sidebar).
+     Colors come from DB theme via CSS custom properties.
 ============================================= -->
 <header class="pub-header" role="banner">
     <div class="pub-container pub-header-inner">
@@ -253,60 +224,12 @@ $_cartLabel = e(t('nav.cart'));
             <?php endif; ?>
         </a>
 
-        <!-- Desktop navigation links (hidden on mobile, visible ≥768px) -->
-        <nav class="pub-nav" aria-label="<?= e(t('nav.main_navigation')) ?>">
-            <?php foreach ($_navItems as $label => $href): ?>
-                <a href="<?= e($href) ?>"><?= e($label) ?></a>
-            <?php endforeach; ?>
-            <a href="<?= e($_cartUrl) ?>" class="pub-cart-nav-link">
-                🛒 <?= $_cartLabel ?>
-                <span id="pubCartCount" class="pub-nav-badge" style="display:none;"></span>
-            </a>
-        </nav>
-
-        <!-- Header actions: notification + login + hamburger -->
-        <div class="pub-header-actions">
-            <!-- Notification bell -->
-            <div class="pub-notif-wrap" id="pubNotifWrap">
-                <button class="pub-notif-btn" id="pubNotifBtn"
-                        aria-label="<?= e(t('nav.notifications', ['default' => 'Notifications'])) ?>"
-                        aria-haspopup="true" aria-expanded="false">
-                    🔔
-                    <span class="pub-notif-badge" id="pubNotifBadge"></span>
-                </button>
-                <div class="pub-notif-dropdown" id="pubNotifDropdown" role="dialog"
-                     aria-label="<?= e(t('nav.notifications', ['default' => 'Notifications'])) ?>">
-                    <div class="pub-notif-header">
-                        <span><?= e(t('nav.notifications', ['default' => 'Notifications'])) ?></span>
-                        <button class="pub-notif-mark-all" id="pubNotifMarkAll">
-                            <?= e(t('notifications.mark_all_read', ['default' => 'Mark all read'])) ?>
-                        </button>
-                    </div>
-                    <div class="pub-notif-list" id="pubNotifList">
-                        <div class="pub-notif-empty"><?= e(t('notifications.empty', ['default' => 'No notifications'])) ?></div>
-                    </div>
-                    <div class="pub-notif-footer">
-                        <a href="/frontend/public/notifications.php"><?= e(t('notifications.view_all', ['default' => 'View all'])) ?></a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Login / User -->
-            <?php if ($_isLoggedIn): ?>
-                <a href="<?= e($_authPath . '/profile.php') ?>" class="pub-login-btn">
-                    <?= e($_user['name'] ?? $_user['username'] ?? t('nav.account')) ?>
-                </a>
-            <?php else: ?>
-                <a href="<?= e($_authPath . '/login.php') ?>" class="pub-login-btn"><?= e(t('nav.login')) ?></a>
-            <?php endif; ?>
-
-            <!-- Hamburger toggle (controls sidebar in menu.php) -->
-            <button class="pub-hamburger" id="pubHamburger"
-                    aria-label="<?= e(t('nav.menu_open')) ?>"
-                    aria-expanded="false" aria-controls="pubSidebar">
-                <span></span><span></span><span></span>
-            </button>
-        </div>
+        <!-- Hamburger toggle (controls sidebar in menu.php) -->
+        <button class="pub-hamburger" id="pubHamburger"
+                aria-label="<?= e(t('nav.menu_open')) ?>"
+                aria-expanded="false" aria-controls="pubSidebar">
+            <span></span><span></span><span></span>
+        </button>
     </div>
 </header>
 
