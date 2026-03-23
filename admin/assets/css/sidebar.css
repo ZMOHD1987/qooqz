@@ -89,17 +89,17 @@
 
 /* Hover */
 .sidebar-link:hover {
-    background: color-mix(in srgb, var(--primary-color, #3b82f6) 12%, transparent);
+    background: var(--sidebar-hover, var(--sidebar_hover, color-mix(in srgb, var(--primary-color, #3b82f6) 12%, transparent)));
     color: var(--text-primary, #fff);
 }
 
 /* Active */
 .sidebar-link.active {
-    background: var(--sidebar-active, var(--primary-color, #3b82f6));
-    color: #fff;
+    background: var(--sidebar-active, var(--sidebar_active, var(--primary-color, #3b82f6)));
+    color: var(--text-primary, #fff);
     font-weight: 500;
 }
-.sidebar-link.active .sidebar-icon { color: #fff; }
+.sidebar-link.active .sidebar-icon { color: var(--text-primary, #fff); }
 
 /* Focus (accessibility) */
 .sidebar-link:focus-visible {
@@ -123,7 +123,7 @@
     color: var(--primary-color, #3b82f6);
 }
 .sidebar-link.active .sidebar-icon {
-    color: #fff;
+    color: var(--text-primary, #fff);
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -210,7 +210,7 @@
 }
 .js-home-link:hover .sidebar-icon,
 .js-home-link.active .sidebar-icon {
-    color: #fff;
+    color: var(--text-primary, #fff);
 }
 
 /* فاصل بصري بعد زر الرئيسية */
