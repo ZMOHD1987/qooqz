@@ -271,6 +271,10 @@ function _header_build_alias_vars(array $vars): array
     $alias('--input-placeholder', '--input_placeholder',
            '--text-secondary', '--text_secondary');
 
+    // Sidebar hover / active (fall back to primary-color if not set in DB)
+    $alias('--sidebar-hover',  '--sidebar_hover',  '--primary-color', '--primary_color');
+    $alias('--sidebar-active', '--sidebar_active',  '--primary-color', '--primary_color');
+
     return $aliases;
 }
 
@@ -341,11 +345,8 @@ function _header_safe_json(array $data): string
 /**
  * Cache-busting: يُرجع timestamp الملف أو '0' إذا غير موجود
  */
-function assetVer(string $path = ''): string
+function assetVer(string $path): string
 {
-    if ($path === '') {
-        return (string) time();
-    }
     static $cache = [];
     if (!isset($cache[$path])) {
         $full         = $_SERVER['DOCUMENT_ROOT'] . $path;
@@ -480,6 +481,9 @@ body {
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
           crossorigin="anonymous"
           referrerpolicy="no-referrer">
+          <link rel="stylesheet" href="/admin/assets/css/sidebar.css?v=<?= assetVer('/admin/assets/css/sidebar.css') ?>">
+          <script defer src="/admin/assets/js/sidebar-toggle.js?v=<?= assetVer('/admin/assets/js/sidebar-toggle.js') ?>">
+</script>
 
     <!-- Admin Framework JS (يجب قبل admin_core.js لأنه يُعرِّف AdminFramework) -->
     <script src="/admin/assets/js/admin_framework.js?v=<?= assetVer('/admin/assets/js/admin_framework.js') ?>"></script>
