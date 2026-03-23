@@ -52,49 +52,137 @@ if (!function_exists('t')) {
 }
 
 // ════════════════════════════════════════════════════════════
-// 3. Theme colors → CSS custom properties
+// 3. Theme → CSS custom properties (matches admin/includes/header.php approach)
+//    Processes: color_settings, font_settings, design_settings
+//    Creates both underscore AND hyphen variants in a single pass
 // ════════════════════════════════════════════════════════════
-$_themeVars = '';
-if (!empty($theme['color_settings']) && is_array($theme['color_settings'])) {
-    $parts = [];
-    foreach ($theme['color_settings'] as $cs) {
-        $key = $cs['setting_key'] ?? '';
-        $val = $cs['color_value']  ?? ($cs['setting_value'] ?? '');
-        if ($key !== '' && $val !== '') {
-            $safeKey = preg_replace('/[^a-zA-Z0-9_-]/', '', $key);
-            // Strict CSS color validation — reject anything that could be CSS injection
-            $v = trim($val);
-            $safeVal = '';
-            if (preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/', $v)) {
-                $safeVal = $v; // hex color
-            } elseif (preg_match('/^(rgb|rgba|hsl|hsla)\(\s*[\d\s%,.]+\)$/i', $v)) {
-                $safeVal = $v; // rgb/rgba/hsl/hsla
-            } elseif (preg_match('/^[a-zA-Z]{2,30}$/', $v)) {
-                $safeVal = $v; // named color
-            } elseif (preg_match('/^var\(--[a-zA-Z0-9_-]+\)$/', $v)) {
-                $safeVal = $v; // CSS variable reference
-            }
-            if ($safeKey && $safeVal) {
-                $parts[] = '    --' . $safeKey . ': ' . $safeVal . ';';
-                // Also set hyphenated variant
-                $hk = str_replace('_', '-', $safeKey);
-                if ($hk !== $safeKey) {
-                    $parts[] = '    --' . $hk . ': ' . $safeVal . ';';
-                }
-            }
-        }
-    }
-    if ($parts) {
-        $_themeVars = implode("\n", $parts);
+
+/** Validate a CSS value — only safe colors, lengths, font names allowed */
+if (!function_exists('_pub_safe_css_val')) {
+    function _pub_safe_css_val(string $v): string {
+        $v = trim($v);
+        if ($v === '') return '';
+        // hex color
+        if (preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/', $v)) return $v;
+        // rgb/rgba/hsl/hsla
+        if (preg_match('/^(rgb|rgba|hsl|hsla)\(\s*[\d\s%,.\/]+\)$/i', $v)) return $v;
+        // named color (2-30 alpha chars)
+        if (preg_match('/^[a-zA-Z]{2,30}$/', $v)) return $v;
+        // CSS variable reference
+        if (preg_match('/^var\(--[a-zA-Z0-9_-]+\)$/', $v)) return $v;
+        // CSS length (e.g. 16px, 1.5rem, 100%)
+        if (preg_match('/^[\d.]+(px|em|rem|%|vh|vw|pt|ch|ex)$/', $v)) return $v;
+        // Numeric (e.g. font-weight 400, 700)
+        if (preg_match('/^\d{1,4}$/', $v)) return $v;
+        // Quoted font name
+        if (preg_match('/^"[a-zA-Z0-9\s\-]{1,60}"$/', $v)) return $v;
+        // Font stack (comma-separated, alphanumeric + spaces + quotes)
+        if (preg_match('/^[a-zA-Z0-9\s,"\'\-]+$/', $v) && strlen($v) <= 200) return $v;
+        return '';
     }
 }
 
+$_cssVars = []; // ['--var-name' => 'value'] map
+
+$_setVar = function (string $key, string $value) use (&$_cssVars): void {
+    if ($value === '') return;
+    $safe = _pub_safe_css_val($value);
+    if ($safe === '') return;
+    $keyU = '--' . str_replace('-', '_', preg_replace('/[^a-zA-Z0-9_-]/', '', $key));
+    $keyH = '--' . str_replace('_', '-', preg_replace('/[^a-zA-Z0-9_-]/', '', $key));
+    $_cssVars[$keyU] = $safe;
+    if ($keyH !== $keyU) {
+        $_cssVars[$keyH] = $safe;
+    }
+};
+
+// ── Color settings ────────────────────────────────────────
+foreach ($theme['color_settings'] ?? [] as $cs) {
+    $k = trim($cs['setting_key'] ?? '');
+    $v = trim($cs['color_value']  ?? ($cs['setting_value'] ?? ''));
+    if ($k !== '' && $v !== '') {
+        $_setVar($k, $v);
+    }
+}
+
+// ── Font settings (matches admin approach) ────────────────
+foreach ($theme['font_settings'] ?? [] as $f) {
+    $k = trim($f['setting_key'] ?? '');
+    if ($k === '') continue;
+    if (!empty($f['font_family'])) $_setVar("{$k}_family", $f['font_family']);
+    if (!empty($f['font_size']))   $_setVar("{$k}_size",   $f['font_size']);
+    if (!empty($f['font_weight'])) $_setVar("{$k}_weight", (string)$f['font_weight']);
+}
+
+// ── Design settings ───────────────────────────────────────
+foreach ($theme['design_settings'] ?? [] as $d) {
+    $k = trim($d['setting_key']   ?? '');
+    $v = trim($d['setting_value'] ?? '');
+    if ($k !== '' && $v !== '' && $k !== 'logo_url') {
+        $_setVar($k, $v);
+    }
+}
+
+// ── Alias vars for compatibility (same as admin _header_build_alias_vars) ──
+$_aliasVars = [];
+$_getVar = function (string ...$names) use (&$_cssVars): string {
+    foreach ($names as $n) {
+        if (isset($_cssVars[$n]) && $_cssVars[$n] !== '') return $_cssVars[$n];
+    }
+    return '';
+};
+$_alias = function (string $target, string ...$sources) use (&$_cssVars, $_getVar, &$_aliasVars): void {
+    if (isset($_cssVars[$target]) && $_cssVars[$target] !== '') return;
+    $v = $_getVar(...$sources);
+    if ($v !== '') $_aliasVars[$target] = $v;
+};
+
+$_alias('--surface-color',       '--surface_color', '--background-secondary', '--background_secondary');
+$_alias('--card-bg',             '--card_bg',       '--surface-color', '--background-secondary');
+$_alias('--input-bg',            '--input_bg',      '--surface-color', '--background-secondary');
+$_alias('--danger-color',        '--danger_color',  '--error-color',   '--error_color');
+$_alias('--error-color',         '--error_color',   '--danger-color',  '--danger_color');
+$_alias('--info-color',          '--info_color',    '--primary-color', '--primary_color');
+$_alias('--text-secondary',      '--text_secondary', '--text-muted', '--text-light');
+$_alias('--border-color',        '--border_color',  '--border', '--divider-color');
+$_alias('--sidebar-hover',       '--sidebar_hover',  '--primary-color', '--primary_color');
+$_alias('--sidebar-active',      '--sidebar_active', '--primary-color', '--primary_color');
+
+// Build the :root CSS block
+$_themeVars = '';
+$_allVars = array_merge($_cssVars, $_aliasVars);
+if (!empty($_allVars)) {
+    $parts = [];
+    foreach ($_allVars as $name => $value) {
+        $parts[] = '    ' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8')
+                 . ': '   . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . ';';
+    }
+    $_themeVars = implode("\n", $parts);
+}
+
 // ════════════════════════════════════════════════════════════
-// 4. Font detection
+// 4. Font detection — also collect DB font links (like admin)
 // ════════════════════════════════════════════════════════════
 $_fontUrl = $dir === 'rtl'
     ? 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap'
     : 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
+
+// Collect additional font URLs from DB font_settings
+$_dbFontLinks = [];
+$_systemFonts = ['system-ui','sans-serif','serif','monospace','arial','verdana','helvetica','georgia','times','courier','tahoma','inherit','initial','unset'];
+foreach ($theme['font_settings'] ?? [] as $_f) {
+    if (empty($_f['font_family'])) continue;
+    if (!empty($_f['font_url'])) {
+        $_url = $_f['font_url'];
+    } else {
+        $_primary = trim(explode(',', $_f['font_family'])[0], " \"'");
+        if ($_primary === '' || in_array(strtolower($_primary), $_systemFonts, true)) continue;
+        $_url = 'https://fonts.googleapis.com/css2?family=' . urlencode(str_replace(' ', '+', $_primary)) . ':wght@400;500;600;700&display=swap';
+    }
+    if (!in_array($_url, $_dbFontLinks, true)) {
+        $_dbFontLinks[] = $_url;
+    }
+}
 
 // ════════════════════════════════════════════════════════════
 // 5. Logo
@@ -162,10 +250,15 @@ if (!function_exists('_pub_asset_ver')) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <!-- Fonts -->
+    <!-- Fonts (default + DB fonts) -->
     <link rel="preload" href="<?= e($_fontUrl) ?>" as="style"
           onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="<?= e($_fontUrl) ?>"></noscript>
+    <?php foreach ($_dbFontLinks as $_dbFont): ?>
+    <link rel="preload" href="<?= e($_dbFont) ?>" as="style"
+          onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="<?= e($_dbFont) ?>"></noscript>
+    <?php endforeach; ?>
 
     <!-- ════════════════════════════════════════════════════
          Theme CSS Variables (DB-driven)
@@ -201,14 +294,22 @@ if (!function_exists('_pub_asset_ver')) {
 <body class="pub-body <?= e($dir) ?>">
 
 <!-- =============================================
-     HEADER — Clean bar: logo + hamburger ONLY
-     All navigation lives in menu.php (sidebar).
+     HEADER — hamburger + logo + search
+     Menu button on start side (right for RTL, left for LTR).
+     Logo from DB (design_settings). Search on all pages.
      Colors come from DB theme via CSS custom properties.
 ============================================= -->
 <header class="pub-header" role="banner">
     <div class="pub-container pub-header-inner">
 
-        <!-- Logo -->
+        <!-- Hamburger toggle — start side (first in DOM → right in RTL, left in LTR) -->
+        <button class="pub-hamburger" id="pubHamburger"
+                aria-label="<?= e(t('nav.menu_open')) ?>"
+                aria-expanded="false" aria-controls="pubSidebar">
+            <span></span><span></span><span></span>
+        </button>
+
+        <!-- Logo (DB design_settings or fallback) -->
         <a href="<?= e($_basePath . '/index.php') ?>" class="pub-logo" aria-label="<?= e($_appName) ?>">
             <?php if (!empty($_logoUrl)): ?>
                 <img src="<?= e($_logoUrl) ?>" alt="<?= e($_appName) ?>" class="pub-logo-img"
@@ -220,12 +321,14 @@ if (!function_exists('_pub_asset_ver')) {
             <?php endif; ?>
         </a>
 
-        <!-- Hamburger toggle (controls sidebar in menu.php) -->
-        <button class="pub-hamburger" id="pubHamburger"
-                aria-label="<?= e(t('nav.menu_open')) ?>"
-                aria-expanded="false" aria-controls="pubSidebar">
-            <span></span><span></span><span></span>
-        </button>
+        <!-- Search field — visible on all pages -->
+        <form class="pub-header-search" method="get" action="<?= e($_basePath . '/products.php') ?>" id="pubHeaderSearchForm">
+            <input type="search" name="q" class="pub-header-search-input"
+                   placeholder="<?= e(t('search.placeholder')) ?>"
+                   value="<?= e($_GET['q'] ?? '') ?>"
+                   autocomplete="off">
+            <button type="submit" class="pub-header-search-btn" aria-label="<?= e(t('search.button')) ?>">🔍</button>
+        </form>
     </div>
 </header>
 

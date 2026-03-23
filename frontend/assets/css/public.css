@@ -118,6 +118,54 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   .pub-logo { max-width: 50px; }
 }
 
+/* Header search — compact inline search in the header bar */
+.pub-header-search {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 420px;
+  min-width: 0;
+  background: rgba(255,255,255,0.15);
+  border-radius: var(--pub-radius, 10px);
+  overflow: hidden;
+  transition: background var(--pub-transition);
+}
+.pub-header-search:focus-within {
+  background: rgba(255,255,255,0.25);
+}
+.pub-header-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: #fff;
+  padding: 7px 12px;
+  font-size: 0.88rem;
+  outline: none;
+}
+.pub-header-search-input::placeholder {
+  color: rgba(255,255,255,0.6);
+}
+.pub-header-search-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.8);
+  padding: 7px 10px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+  transition: color var(--pub-transition);
+}
+.pub-header-search-btn:hover {
+  color: #fff;
+}
+
+/* On very small screens make search smaller */
+@media (max-width: 480px) {
+  .pub-header-search { max-width: none; }
+  .pub-header-search-input { padding: 6px 8px; font-size: 0.82rem; }
+}
+
 .pub-logo-icon {
   width: 36px;
   height: 36px;
