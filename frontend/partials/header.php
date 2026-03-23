@@ -428,9 +428,9 @@ body {
 <body class="pub-body <?= e($dir) ?>">
 
 <!-- =============================================
-     HEADER — hamburger + logo + search
+     HEADER — hamburger + logo
      Menu button on start side (right for RTL, left for LTR).
-     Logo from DB (design_settings). Search on all pages.
+     Logo from DB (design_settings).
      Colors come from DB theme via CSS custom properties.
 ============================================= -->
 <header class="pub-header" role="banner">
@@ -454,15 +454,6 @@ body {
                 <span class="pub-logo-name"><?= e($_appName) ?></span>
             <?php endif; ?>
         </a>
-
-        <!-- Search field — visible on all pages -->
-        <form class="pub-header-search" method="get" action="<?= e($_basePath . '/products.php') ?>" id="pubHeaderSearchForm">
-            <input type="search" name="q" class="pub-header-search-input"
-                   placeholder="<?= e(t('search.placeholder')) ?>"
-                   value="<?= e($_GET['q'] ?? '') ?>"
-                   autocomplete="off">
-            <button type="submit" class="pub-header-search-btn" aria-label="<?= e(t('search.button')) ?>">🔍</button>
-        </form>
     </div>
 </header>
 

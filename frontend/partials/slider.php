@@ -114,7 +114,7 @@ $sliderCount = count($banners);
     width: 100%;
     border-radius: var(--radius-md, 8px);
     overflow: hidden;
-    background: var(--pub-surface, var(--color-surface, #f8f9fb));
+    background: var(--background-main, var(--background_main, var(--pub-bg, #242323)));
     aspect-ratio: 16 / 6;
     min-height: 200px;
     margin-bottom: var(--space-6, 32px);
@@ -123,7 +123,7 @@ $sliderCount = count($banners);
 .hero-slider__slide {
     position: absolute; inset: 0;
     display: none;
-    background: var(--pub-surface, var(--color-surface, #f8f9fb));
+    background: var(--background-secondary, var(--background_secondary, var(--pub-surface, #383f42)));
     animation: sliderFadeIn 0.5s ease;
 }
 .hero-slider__slide.active { display: block; }
@@ -148,14 +148,20 @@ $sliderCount = count($banners);
     opacity: 0.9; color: inherit;
 }
 .hero-slider__cta {
-    display: inline-block; padding: 8px 20px;
-    border-radius: var(--radius-sm, 4px);
-    background: var(--pub-primary, var(--color-primary, #2d8cf0));
-    color: var(--pub-slider-text, #fff); text-decoration: none;
-    font-weight: 600; font-size: 0.95rem;
-    transition: opacity 0.2s;
+    display: inline-block; padding: var(--btn-primary-padding, 8px 20px);
+    border-radius: var(--btn-primary-radius, var(--radius-sm, 4px));
+    background: var(--btn-primary-bg, var(--pub-primary, var(--primary-color, var(--primary_color, #03874e))));
+    color: var(--btn-primary-color, var(--pub-slider-text, #fff)); text-decoration: none;
+    font-weight: var(--btn-primary-font-weight, 600); font-size: var(--btn-primary-font-size, 0.95rem);
+    border: var(--btn-primary-border-width, 1px) solid var(--btn-primary-border, transparent);
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
-.hero-slider__cta:hover { opacity: 0.85; color: var(--pub-slider-text, #fff); text-decoration: none; }
+.hero-slider__cta:hover {
+    background: var(--btn-primary-hover-bg, var(--primary-hover, var(--primary_hover, #00ff00)));
+    color: var(--btn-primary-hover-color, var(--pub-slider-text, #fff));
+    border-color: var(--btn-primary-hover-border, transparent);
+    text-decoration: none;
+}
 /* Arrows */
 .hero-slider__arrow {
     position: absolute; top: 50%; transform: translateY(-50%);

@@ -289,13 +289,13 @@
   --pub-footer-bg:   var(--color-footer-bg);
   --pub-footer-text: var(--color-footer-text);
 
-  /* Slider overlay / arrows / dots (referenced in slider.php) */
+  /* Slider overlay / arrows / dots (referenced in slider.php) — DB-driven */
   --pub-slider-overlay:    linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 100%);
-  --pub-slider-text:       #ffffff;
+  --pub-slider-text:       var(--text-primary, var(--text_primary, #ffffff));
   --pub-slider-arrow-bg:   rgba(0,0,0,0.45);
   --pub-slider-arrow-hover:rgba(0,0,0,0.72);
   --pub-slider-dot-bg:     rgba(255,255,255,0.45);
-  --pub-slider-dot-active: #ffffff;
+  --pub-slider-dot-active: var(--primary-color, var(--primary_color, #03874e));
 
   /* Status */
   --pub-success: var(--color-success);
