@@ -337,7 +337,10 @@ if (!preg_match('/^#[0-9a-fA-F]{3,8}$/', $_themeColor) && !preg_match('/^[a-zA-Z
     <meta name="mobile-web-app-capable"               content="yes">
     <meta name="apple-mobile-web-app-capable"         content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title"           content="<?= e($_appName) ?>">
     <meta name="theme-color" content="<?= e($_themeColor) ?>">
+    <link rel="manifest" href="/frontend/manifest.json">
+    <link rel="apple-touch-icon" href="/images/default-image.png">
 
     <!-- DNS / Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

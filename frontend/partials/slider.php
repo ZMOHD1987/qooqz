@@ -75,8 +75,8 @@ $sliderCount = count($banners);
                     $btnStyle = _safe_color($b['button_style'] ?? '');
                 ?>
                 <a href="<?= _se($b['link_url']) ?>"
-                   class="hero-slider__cta btn"
-                   <?= $btnStyle ? 'style="background:' . _se($btnStyle) . ';"' : '' ?>>
+                   class="hero-slider__cta btn pub-btn--primary"
+                   <?= $btnStyle ? 'style="background-color:' . _se($btnStyle) . ';"' : '' ?>>
                     <?= _se($b['link_text']) ?>
                 </a>
                 <?php endif; ?>

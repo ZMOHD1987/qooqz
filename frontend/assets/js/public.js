@@ -23,6 +23,15 @@
 
     if (!toggle || !sidebar) return;
 
+    // Remove any event listeners from inline fallback (header.php) to prevent
+    // double-binding which causes sidebar to open then immediately close on mobile
+    if (toggle.dataset.bound) {
+      var clean = toggle.cloneNode(true);
+      toggle.parentNode.replaceChild(clean, toggle);
+      toggle = clean;
+    }
+    toggle.dataset.bound = 'js';
+
     var STORAGE_KEY = 'pub_sidebar_collapsed';
     var MOBILE_BP   = 768; // matches CSS breakpoint
 
@@ -540,6 +549,11 @@
     initCartBadge();
     updateUserDisplay();
     initNotifBell();
+
+    // Register service worker for PWA support
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/frontend/sw.js').catch(function () {});
+    }
   });
 
 })();
