@@ -658,7 +658,7 @@ $_productImgStyle  = pub_card_img_style('product');
                     <span style="color:var(--pub-accent, #f59e0b);font-size:1.1em;"><?= str_repeat('★', (int)($rv['rating'] ?? 0)) ?><?= str_repeat('☆', 5 - (int)($rv['rating'] ?? 0)) ?></span>
                     <strong style="font-size:.9em;"><?= e($rv['author'] ?? '') ?></strong>
                     <?php if (!empty($rv['is_verified_purchase'])): ?>
-                    <span style="font-size:.75em;background:var(--pub-success);color:#fff;padding:1px 6px;border-radius:4px;">✓ <?= e(t('products.verified_purchase')) ?></span>
+                    <span style="font-size:.75em;background:var(--pub-success);color:var(--btn-primary-color, #fff);padding:1px 6px;border-radius:4px;">✓ <?= e(t('products.verified_purchase')) ?></span>
                     <?php endif; ?>
                     <span style="font-size:.75em;color:var(--pub-muted,#999);margin-left:auto;"><?= e(substr($rv['created_at'] ?? '', 0, 10)) ?></span>
                 </div>
@@ -911,7 +911,7 @@ function pubSubmitReview(productId) {
     var title   = (document.getElementById('pubReviewTitle').value || '').trim();
     var comment = (document.getElementById('pubReviewComment').value || '').trim();
     var msg     = document.getElementById('pubReviewMsg');
-    if (rating < 1 || rating > 5) { msg.textContent = '⚠️ Please select a rating.'; msg.style.color = '#ef4444'; return; }
+    if (rating < 1 || rating > 5) { msg.textContent = '⚠️ Please select a rating.'; msg.style.color = getComputedStyle(document.documentElement).getPropertyValue('--pub-danger').trim() || '#ef4444'; return; }
     msg.textContent = '…'; msg.style.color = '';
     fetch('/api/public/products/' + productId + '/reviews', {
         method: 'POST', credentials: 'include',
@@ -920,22 +920,22 @@ function pubSubmitReview(productId) {
     }).then(function(r) { return r.json(); }).then(function(d) {
         if (d.success) {
             msg.textContent = '✅ Review submitted — awaiting approval.';
-            msg.style.color = '#10b981';
+            msg.style.color = getComputedStyle(document.documentElement).getPropertyValue('--pub-success').trim() || '#10b981';
             document.getElementById('pubReviewTitle').value = '';
             document.getElementById('pubReviewComment').value = '';
             pubPickStar(0);
         } else {
             msg.textContent = '❌ ' + (d.message || 'Error');
-            msg.style.color = '#ef4444';
+            msg.style.color = getComputedStyle(document.documentElement).getPropertyValue('--pub-danger').trim() || '#ef4444';
         }
-    }).catch(function() { msg.textContent = '❌ Network error.'; msg.style.color = '#ef4444'; });
+    }).catch(function() { msg.textContent = '❌ Network error.'; msg.style.color = getComputedStyle(document.documentElement).getPropertyValue('--pub-danger').trim() || '#ef4444'; });
 }
 
 /* Submit question */
 function pubSubmitQuestion(productId) {
     var question = (document.getElementById('pubQuestionText').value || '').trim();
     var msg      = document.getElementById('pubQaMsg');
-    if (!question) { msg.textContent = '⚠️ Please enter your question.'; msg.style.color = '#ef4444'; return; }
+    if (!question) { msg.textContent = '⚠️ Please enter your question.'; msg.style.color = getComputedStyle(document.documentElement).getPropertyValue('--pub-danger').trim() || '#ef4444'; return; }
     msg.textContent = '…'; msg.style.color = '';
     fetch('/api/public/products/' + productId + '/questions', {
         method: 'POST', credentials: 'include',
@@ -944,13 +944,13 @@ function pubSubmitQuestion(productId) {
     }).then(function(r) { return r.json(); }).then(function(d) {
         if (d.success) {
             msg.textContent = '✅ Question submitted — awaiting review.';
-            msg.style.color = '#10b981';
+            msg.style.color = getComputedStyle(document.documentElement).getPropertyValue('--pub-success').trim() || '#10b981';
             document.getElementById('pubQuestionText').value = '';
         } else {
             msg.textContent = '❌ ' + (d.message || 'Error');
-            msg.style.color = '#ef4444';
+            msg.style.color = getComputedStyle(document.documentElement).getPropertyValue('--pub-danger').trim() || '#ef4444';
         }
-    }).catch(function() { msg.textContent = '❌ Network error.'; msg.style.color = '#ef4444'; });
+    }).catch(function() { msg.textContent = '❌ Network error.'; msg.style.color = getComputedStyle(document.documentElement).getPropertyValue('--pub-danger').trim() || '#ef4444'; });
 }
 </script>
 
