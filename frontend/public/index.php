@@ -598,7 +598,7 @@ else:
         </div>
         <div class="pub-grid-md">
             <?php foreach ($featuredTenants as $ten): ?>
-            <a href="/frontend/public/tenants.php?id=<?= (int)($ten['id'] ?? 0) ?>"
+            <a href="/frontend/public/tenant.php?id=<?= (int)($ten['id'] ?? 0) ?>"
                class="pub-entity-card<?= $_clsTenant ? ' '.$_clsTenant : '' ?>" style="text-decoration:none;<?= e($_cardTenant) ?>">
                 <div class="pub-entity-avatar">🏪</div>
                 <div class="pub-entity-info">
