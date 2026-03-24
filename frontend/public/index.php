@@ -600,7 +600,16 @@ else:
             <?php foreach ($featuredTenants as $ten): ?>
             <a href="/frontend/public/tenant.php?id=<?= (int)($ten['id'] ?? 0) ?>"
                class="pub-entity-card<?= $_clsTenant ? ' '.$_clsTenant : '' ?>" style="text-decoration:none;<?= e($_cardTenant) ?>">
-                <div class="pub-entity-avatar">🏪</div>
+                <div class="pub-entity-avatar">
+                    <?php if (!empty($ten['logo_url'])): ?>
+                        <img src="<?= e(pub_img($ten['logo_url'], 'tenant_logo')) ?>"
+                             alt="<?= e($ten['name'] ?? '') ?>" loading="lazy"
+                             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                        <span style="display:none;">🏪</span>
+                    <?php else: ?>
+                        🏪
+                    <?php endif; ?>
+                </div>
                 <div class="pub-entity-info">
                     <p class="pub-entity-name"><?= e($ten['name'] ?? '') ?></p>
                     <?php if (($ten['status'] ?? '') === 'active'): ?>

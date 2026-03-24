@@ -34,7 +34,15 @@ if ($first === 'tenants') {
     }
 
     if ($id) {
-        $row = $pdoOne("SELECT id, name, status FROM tenants WHERE id = ? AND status = 'active' LIMIT 1", [$id]);
+        $row = $pdoOne(
+            "SELECT t.id, t.name, t.status,
+                    (SELECT i.url FROM images i
+                      WHERE i.owner_type = 'tenant' AND i.owner_id = t.id
+                        AND i.image_type_id = 21
+                      ORDER BY i.id ASC LIMIT 1) AS logo_url
+               FROM tenants t WHERE t.id = ? AND t.status = 'active' LIMIT 1",
+            [$id]
+        );
         if ($row) ResponseFormatter::success(['ok' => true, 'tenant' => $row]);
         else      ResponseFormatter::notFound('Tenant not found');
         exit;
@@ -51,7 +59,11 @@ if ($first === 'tenants') {
     $total = $pdoCount("SELECT COUNT(*) FROM tenants t $where", $params);
     $rows  = $pdoList(
         "SELECT t.id, t.name, t.status,
-                sp.plan_name
+                sp.plan_name,
+                (SELECT i.url FROM images i
+                  WHERE i.owner_type = 'tenant' AND i.owner_id = t.id
+                    AND i.image_type_id = 21
+                  ORDER BY i.id ASC LIMIT 1) AS logo_url
            FROM tenants t
       LEFT JOIN subscription_plans sp ON sp.id = (
               SELECT plan_id FROM subscriptions s

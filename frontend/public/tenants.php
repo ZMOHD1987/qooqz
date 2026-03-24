@@ -44,7 +44,11 @@ if ($pdo) {
         $offset = ($page - 1) * $limit;
         $stmt = $pdo->prepare(
             "SELECT t.id, t.name, t.status,
-                    sp.plan_name
+                    sp.plan_name,
+                    (SELECT i.url FROM images i
+                      WHERE i.owner_type = 'tenant' AND i.owner_id = t.id
+                        AND i.image_type_id = 21
+                      ORDER BY i.id ASC LIMIT 1) AS logo_url
                FROM tenants t
           LEFT JOIN subscription_plans sp ON sp.id = (
                   SELECT plan_id FROM subscriptions s
@@ -124,7 +128,16 @@ $_tenantCardClass = pub_card_css_class('tenants');
         <a href="/frontend/public/tenant.php?id=<?= (int)($ten['id'] ?? 0) ?>"
            class="pub-entity-card<?= $_tenantCardClass ? ' ' . $_tenantCardClass : '' ?>"
            style="text-decoration:none;<?= e($_tenantCardStyle) ?>">
-            <div class="pub-entity-avatar">🏪</div>
+            <div class="pub-entity-avatar">
+                <?php if (!empty($ten['logo_url'])): ?>
+                    <img src="<?= e(pub_img($ten['logo_url'], 'tenant_logo')) ?>"
+                         alt="<?= e($ten['name'] ?? '') ?>" loading="lazy"
+                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                    <span style="display:none;">🏪</span>
+                <?php else: ?>
+                    🏪
+                <?php endif; ?>
+            </div>
             <div class="pub-entity-info">
                 <p class="pub-entity-name"><?= e($ten['name'] ?? '') ?></p>
                 <?php if (($ten['status'] ?? '') === 'active'): ?>
