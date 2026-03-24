@@ -170,8 +170,8 @@ $componentsDir = __DIR__ . '/components';
 ?>
 <section class="homepage-section"<?= $sStyle ? ' style="' . $sStyle . '"' : '' ?>>
 <?php if ($secCss !== ''):
-    // Strip potential style-tag breakout sequences for security
-    $safeCss = str_ireplace(['</style', '<script', '</', '<!--'], '', $secCss);
+    // CSS never needs < or > characters — strip them to prevent tag injection
+    $safeCss = str_replace(['<', '>'], '', $secCss);
 ?>
 <style><?= $safeCss ?></style>
 <?php endif; ?>
