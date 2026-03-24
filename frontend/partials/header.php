@@ -1,23 +1,57 @@
 <?php
+declare(strict_types=1);
 /**
- * Frontend Header Partial — QOOQZ Global Public Interface
- * Requires: frontend/includes/public_context.php (or $GLOBALS['PUB_CONTEXT'])
- * Supports: RTL/LTR, mobile-first, dynamic theme colors, all-language t() system
+ * frontend/partials/header.php — Production v3.0
+ * QOOQZ — Public Interface Header
+ *
+ * ─ Design Principles (mirrors admin/includes/header.php) ───────
+ *   1. Single source of CSS variables → set HERE, no JS overrides
+ *   2. No !important on colors      → natural cascade specificity wins
+ *   3. No race condition             → all CSS injected before <body>
+ *   4. No duplication of vars        → underscore + hyphen in one pass
+ *   5. generated_css from DB         → button/card concrete classes
+ * ───────────────────────────────────────────────────────────────
+ *
+ * Responsibilities:
+ *   1. HTML <head> with public CSS, fonts, meta tags, SEO
+ *   2. <header> bar: logo + hamburger toggle (NO menus — menus live in menu.php)
+ *   3. Opens <div class="pub-layout"> and includes menu.php sidebar
+ *   4. Opens <main class="pub-main-content"> for page content
+ *
+ * The footer.php closes </main> and </div>.
+ * Menu.php renders the sidebar navigation independently.
  */
 
-// Resolve context
-$_ctx  = $GLOBALS['PUB_CONTEXT'] ?? [];
-$lang  = $_ctx['lang'] ?? 'ar';
-$dir   = $_ctx['dir']  ?? 'rtl';
-$theme = $_ctx['theme'] ?? [];
-$_seo  = $_ctx['seo']  ?? [];
-$_user = $_ctx['user'] ?? [];
+// ════════════════════════════════════════════════════════════
+// 0. Guard: no CLI, no direct /api/ access
+// ════════════════════════════════════════════════════════════
+if (php_sapi_name() === 'cli') {
+    return;
+}
+if (str_starts_with($_SERVER['REQUEST_URI'] ?? '', '/api/')) {
+    http_response_code(403);
+    exit('Direct access denied');
+}
+
+// ════════════════════════════════════════════════════════════
+// 1. Context — loaded by public_context.php before this file
+// ════════════════════════════════════════════════════════════
+$_ctx      = $GLOBALS['PUB_CONTEXT'] ?? [];
+$lang      = $_ctx['lang'] ?? 'ar';
+$dir       = $_ctx['dir']  ?? 'rtl';
+$theme     = $_ctx['theme'] ?? [];
+$_seo      = $_ctx['seo']  ?? [];
+$_user     = $_ctx['user'] ?? [];
 $_isLoggedIn = !empty($_user['id']);
 $_appName   = $GLOBALS['PUB_APP_NAME']  ?? 'QOOQZ';
 $_pageTitle = $GLOBALS['PUB_PAGE_TITLE'] ?? ($_seo['title'] ?? $_appName);
 $_pageDesc  = $GLOBALS['PUB_PAGE_DESC']  ?? ($_seo['description'] ?? '');
 $_basePath  = rtrim($GLOBALS['PUB_BASE_PATH'] ?? '/frontend/public', '/');
+$_authPath  = '/frontend'; // Auth pages (login, register, profile, logout) at /frontend/ level
 
+// ════════════════════════════════════════════════════════════
+// 2. Helpers
+// ════════════════════════════════════════════════════════════
 if (!function_exists('e')) {
     function e($v): string { return htmlspecialchars((string)$v, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8'); }
 }
@@ -25,359 +59,439 @@ if (!function_exists('t')) {
     function t(string $key, array $r = []): string { return $key; }
 }
 
-// Nav items using translation system
-$_navItems = [
-    t('nav.home')       => $_basePath . '/index.php',
-    t('nav.products')   => $_basePath . '/products.php',
-    t('nav.categories') => $_basePath . '/categories.php',
-    t('nav.offers')     => $_basePath . '/discounts.php',
-    t('nav.jobs')       => $_basePath . '/jobs.php',
-    t('nav.entities')   => $_basePath . '/entities.php',
-    t('nav.tenants')    => $_basePath . '/tenants.php',
-    t('nav.auctions')  => $_basePath . '/auctions.php',
-];
-// Orders, tickets and returns links only for logged-in users
-if (!empty($GLOBALS['PUB_CONTEXT']['user']['id']) || !empty($_SESSION['user_id']) || !empty($_SESSION['user']['id'])) {
-    $_navItems[t('nav.orders')]  = $_basePath . '/orders.php';
-    $_navItems[t('nav.tickets')] = $_basePath . '/tickets.php';
-    $_navItems[t('nav.returns')] = $_basePath . '/returns.php';
-}
-$_cartUrl   = $_basePath . '/cart.php';
-$_cartLabel = e(t('nav.cart'));
+// ════════════════════════════════════════════════════════════
+// 3. Theme → CSS custom properties
+//    Full DB theme injection pipeline (matches admin/includes/header.php)
+//    Processes: color_settings, font_settings, design_settings
+//    Creates both underscore AND hyphen variants in a single pass
+// ════════════════════════════════════════════════════════════
 
-// Font: Cairo for Arabic/RTL, Inter for LTR
+/**
+ * Sanitize a CSS value — strip injection vectors while allowing valid CSS.
+ * Matches admin's AdminUiThemeLoader::generateCss() approach: removes { } ; `
+ * Also does basic validation for safety.
+ */
+if (!function_exists('_pub_safe_css_val')) {
+    function _pub_safe_css_val(string $v): string {
+        $v = trim($v);
+        if ($v === '') return '';
+        // Strip dangerous characters that could break out of CSS context
+        $v = preg_replace('/[{};`]/', '', $v);
+        if ($v === '') return '';
+        // hex color
+        if (preg_match('/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/', $v)) return $v;
+        // rgb/rgba/hsl/hsla
+        if (preg_match('/^(rgb|rgba|hsl|hsla)\(\s*[\d\s%,.\/]+\)$/i', $v)) return $v;
+        // named color (2-30 alpha chars)
+        if (preg_match('/^[a-zA-Z]{2,30}$/', $v)) return $v;
+        // CSS variable reference
+        if (preg_match('/^var\(--[a-zA-Z0-9_-]+\)$/', $v)) return $v;
+        // CSS length (e.g. 16px, 1.5rem, 100%, multi-value shorthand like "20px 16px")
+        if (preg_match('/^[\d.]+(px|em|rem|%|vh|vw|pt|ch|ex)(\s+[\d.]+(px|em|rem|%|vh|vw|pt|ch|ex))*$/', $v)) return $v;
+        // Numeric (e.g. font-weight 400, 700, line-height 1.5)
+        if (preg_match('/^[\d.]{1,6}$/', $v)) return $v;
+        // Box-shadow value: numeric offsets + optional rgba/hex color
+        // e.g. "0 4px 20px rgba(255,99,71,0.2)" or "0 6px 24px rgba(14,165,233,0.25)"
+        if (preg_match('/^[\d\s.]+(px|em|rem)?\s+(rgba?\([\d\s%,.\/]+\))$/i', $v)) return $v;
+        if (preg_match('/^[\d.]+(px)?\s+[\d.]+(px)?\s+[\d.]+(px)?(\s+[\d.]+(px)?)?\s+(rgba?\([\d\s%,.\/]+\)|#[0-9a-fA-F]{3,8})$/i', $v)) return $v;
+        // Quoted font name
+        if (preg_match('/^"[a-zA-Z0-9\s\-]{1,60}"$/', $v)) return $v;
+        // Font stack (comma-separated, alphanumeric + spaces + quotes)
+        if (preg_match('/^[a-zA-Z0-9\s,"\'\-]+$/', $v) && strlen($v) <= 200) return $v;
+        return '';
+    }
+}
+
+$_cssVars = []; // ['--var-name' => 'value'] map
+
+/**
+ * Set a CSS custom property in both underscore and hyphen forms.
+ * Values are validated through _pub_safe_css_val().
+ */
+$_setVar = function (string $key, string $value) use (&$_cssVars): void {
+    if ($value === '') return;
+    $safe = _pub_safe_css_val($value);
+    if ($safe === '') return;
+    $sanitized = preg_replace('/[^a-zA-Z0-9_-]/', '', $key);
+    $keyU = '--' . str_replace('-', '_', $sanitized);
+    $keyH = '--' . str_replace('_', '-', $sanitized);
+    $_cssVars[$keyU] = $safe;
+    if ($keyH !== $keyU) {
+        $_cssVars[$keyH] = $safe;
+    }
+};
+
+// ── Color settings ────────────────────────────────────────
+foreach ($theme['color_settings'] ?? [] as $cs) {
+    $k = trim($cs['setting_key'] ?? '');
+    $v = trim($cs['color_value']  ?? ($cs['setting_value'] ?? ''));
+    if ($k !== '' && $v !== '') {
+        $_setVar($k, $v);
+    }
+}
+
+// ── Font settings (matches admin approach) ────────────────
+foreach ($theme['font_settings'] ?? [] as $f) {
+    $k = trim($f['setting_key'] ?? '');
+    if ($k === '') continue;
+    if (!empty($f['font_family'])) $_setVar("{$k}_family", $f['font_family']);
+    if (!empty($f['font_size']))   $_setVar("{$k}_size",   $f['font_size']);
+    if (!empty($f['font_weight'])) $_setVar("{$k}_weight", (string)$f['font_weight']);
+}
+
+// ── Design settings ───────────────────────────────────────
+foreach ($theme['design_settings'] ?? [] as $d) {
+    $k = trim($d['setting_key']   ?? '');
+    $v = trim($d['setting_value'] ?? '');
+    if ($k !== '' && $v !== '' && $k !== 'logo_url') {
+        $_setVar($k, $v);
+    }
+}
+
+// ── Button styles → CSS variables (--btn-{slug}-*) ───────
+// Matches db-theme-bridge.css variable naming convention
+foreach ($theme['buttons'] ?? [] as $b) {
+    $slug = trim($b['slug'] ?? '');
+    if ($slug === '') continue;
+    $slug = preg_replace('/[^a-z0-9-]/', '-', strtolower($slug));
+    if (!empty($b['background_color']))       $_setVar("btn-{$slug}-bg",           (string)$b['background_color']);
+    if (!empty($b['text_color']))             $_setVar("btn-{$slug}-color",        (string)$b['text_color']);
+    if (!empty($b['border_color']))           $_setVar("btn-{$slug}-border",       (string)$b['border_color']);
+    if (isset($b['border_width']))            $_setVar("btn-{$slug}-border-width", (int)$b['border_width'] . 'px');
+    if (isset($b['border_radius']))           $_setVar("btn-{$slug}-radius",       (int)$b['border_radius'] . 'px');
+    if (!empty($b['padding']))                $_setVar("btn-{$slug}-padding",      (string)$b['padding']);
+    if (!empty($b['font_size']))              $_setVar("btn-{$slug}-font-size",    (is_numeric($b['font_size']) ? $b['font_size'] . 'px' : (string)$b['font_size']));
+    if (!empty($b['font_weight']))            $_setVar("btn-{$slug}-font-weight",  (string)$b['font_weight']);
+    if (!empty($b['hover_background_color'])) $_setVar("btn-{$slug}-hover-bg",     (string)$b['hover_background_color']);
+    if (!empty($b['hover_text_color']))       $_setVar("btn-{$slug}-hover-color",  (string)$b['hover_text_color']);
+    if (!empty($b['hover_border_color']))     $_setVar("btn-{$slug}-hover-border", (string)$b['hover_border_color']);
+}
+
+// ── Card styles → CSS variables (--card-{slug}-*) ────────
+// Matches db-theme-bridge.css variable naming convention
+foreach ($theme['cards'] ?? [] as $c) {
+    $slug = trim($c['slug'] ?? '');
+    if ($slug === '') continue;
+    $slug = preg_replace('/[^a-z0-9-]/', '-', strtolower($slug));
+    if (!empty($c['background_color'])) $_setVar("card-{$slug}-bg",           (string)$c['background_color']);
+    if (!empty($c['border_color']))     $_setVar("card-{$slug}-border",       (string)$c['border_color']);
+    if (isset($c['border_width']))      $_setVar("card-{$slug}-border-width", (int)$c['border_width'] . 'px');
+    if (isset($c['border_radius']))     $_setVar("card-{$slug}-radius",       (int)$c['border_radius'] . 'px');
+    if (!empty($c['shadow_style']))     $_setVar("card-{$slug}-shadow",       (string)$c['shadow_style']);
+    if (!empty($c['padding']))          $_setVar("card-{$slug}-padding",      (string)$c['padding']);
+    if (!empty($c['text_color']))       $_setVar("card-{$slug}-text",         (string)$c['text_color']);
+}
+
+// ── Alias vars for compatibility (matches admin _header_build_alias_vars) ──
+$_aliasVars = [];
+$_getVar = function (string ...$names) use (&$_cssVars): string {
+    foreach ($names as $n) {
+        if (isset($_cssVars[$n]) && $_cssVars[$n] !== '') return $_cssVars[$n];
+    }
+    return '';
+};
+$_alias = function (string $target, string ...$sources) use (&$_cssVars, $_getVar, &$_aliasVars): void {
+    if (isset($_cssVars[$target]) && $_cssVars[$target] !== '') return;
+    $v = $_getVar(...$sources);
+    if ($v !== '') $_aliasVars[$target] = $v;
+};
+
+// Surface / background
+$_alias('--surface-color',       '--surface_color', '--background-secondary', '--background_secondary');
+$_alias('--card-bg',             '--card_bg',       '--surface-color', '--background-secondary');
+$_alias('--input-bg',            '--input_bg',      '--surface-color', '--background-secondary');
+$_alias('--input-background',    '--input_background', '--input-bg', '--input_bg');
+$_alias('--background-tertiary', '--background_tertiary', '--background-secondary');
+
+// Colors
+$_alias('--danger-color',        '--danger_color',  '--error-color',   '--error_color');
+$_alias('--error-color',         '--error_color',   '--danger-color',  '--danger_color');
+$_alias('--info-color',          '--info_color',    '--primary-color', '--primary_color');
+
+// Text
+$_alias('--text-secondary',      '--text_secondary', '--text-muted', '--text-light');
+$_alias('--text-tertiary',       '--text_tertiary',  '--text-secondary', '--text_secondary');
+
+// Border
+$_alias('--border-color',        '--border_color',  '--border', '--divider-color');
+
+// Input placeholder
+$_alias('--input-placeholder',   '--input_placeholder', '--text-secondary', '--text_secondary');
+
+// Sidebar hover / active (fall back to primary-color if not set in DB)
+$_alias('--sidebar-hover',       '--sidebar_hover',  '--primary-color', '--primary_color');
+$_alias('--sidebar-active',      '--sidebar_active', '--primary-color', '--primary_color');
+
+// Build the :root CSS block string
+$_themeVars = '';
+$_allVars = array_merge($_cssVars, $_aliasVars);
+if (!empty($_allVars)) {
+    $parts = [];
+    foreach ($_allVars as $name => $value) {
+        $parts[] = '    ' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8')
+                 . ': '   . htmlspecialchars($value, ENT_QUOTES, 'UTF-8') . ';';
+    }
+    $_themeVars = implode("\n", $parts);
+}
+
+// ════════════════════════════════════════════════════════════
+// 4. Font detection — also collect DB font links (like admin)
+// ════════════════════════════════════════════════════════════
 $_fontUrl = $dir === 'rtl'
     ? 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap'
     : 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
+
+// Collect additional font URLs from DB font_settings (matches admin _header_collect_font_links)
+$_dbFontLinks = [];
+$_systemFonts = [
+    'system-ui','ui-sans-serif','ui-serif','ui-monospace',
+    'sans-serif','serif','monospace','cursive','fantasy',
+    'inherit','initial','unset',
+    'arial','verdana','helvetica','helvetica neue','georgia',
+    'times','times new roman','courier','courier new',
+    'impact','trebuchet ms','comic sans ms','tahoma',
+    'lucida','palatino','garamond',
+];
+$_trustedFontHosts = ['fonts.googleapis.com', 'fonts.gstatic.com'];
+foreach ($theme['font_settings'] ?? [] as $_f) {
+    if (empty($_f['font_family'])) continue;
+    if (!empty($_f['font_url'])) {
+        $_url = $_f['font_url'];
+        // Validate font URL points to trusted source only
+        $_urlHost = parse_url($_url, PHP_URL_HOST);
+        if (!$_urlHost || !in_array($_urlHost, $_trustedFontHosts, true)) continue;
+    } else {
+        $_primary = trim(explode(',', $_f['font_family'])[0], " \"'");
+        if ($_primary === '' || in_array(strtolower($_primary), $_systemFonts, true)) continue;
+        $_url = 'https://fonts.googleapis.com/css2?family=' . urlencode(str_replace(' ', '+', $_primary)) . ':wght@400;500;600;700&display=swap';
+    }
+    if (!in_array($_url, $_dbFontLinks, true)) {
+        $_dbFontLinks[] = $_url;
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// 5. Logo
+// ════════════════════════════════════════════════════════════
+$_logoUrl = '';
+if (!empty($theme['design_settings']) && is_array($theme['design_settings'])) {
+    foreach ($theme['design_settings'] as $d) {
+        if (($d['setting_key'] ?? '') === 'logo_url' && !empty($d['setting_value'])) {
+            $_logoUrl = $d['setting_value'];
+            break;
+        }
+    }
+}
+// Fallback: check for static logo files
+if (empty($_logoUrl)) {
+    foreach (['logo.png', 'logo.svg', 'logo.webp'] as $_lf) {
+        if (@file_exists(FRONTEND_BASE . '/assets/images/' . $_lf)) {
+            $_logoUrl = '/frontend/assets/images/' . $_lf;
+            break;
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// 6. Cache-busting helper
+// ════════════════════════════════════════════════════════════
+if (!function_exists('_pub_asset_ver')) {
+    function _pub_asset_ver(string $path): string {
+        $full = ($_SERVER['DOCUMENT_ROOT'] ?? '') . $path;
+        return file_exists($full) ? (string)filemtime($full) : '1';
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// 7. Resolve theme-color for PWA meta tag from DB
+// ════════════════════════════════════════════════════════════
+$_themeColor = $_allVars['--primary-color'] ?? $_allVars['--primary_color']
+            ?? ($theme['primary'] ?? '#2d8cf0');
+// Ensure it's a valid hex or named color (no CSS vars in meta tag)
+if (!preg_match('/^#[0-9a-fA-F]{3,8}$/', $_themeColor) && !preg_match('/^[a-zA-Z]{2,20}$/', $_themeColor)) {
+    $_themeColor = '#2d8cf0';
+}
+
 ?>
 <!doctype html>
 <html lang="<?= e($lang) ?>" dir="<?= e($dir) ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="<?= e($theme['primary'] ?? '#FF0000') ?>">
+    <meta name="robots" content="index, follow">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
 
-    <?php
-    // Merge PUB_SEO global (set by each page) with header-level SEO defaults
-    $_pubSeo  = $GLOBALS['PUB_SEO'] ?? [];
-    $_robots  = $_pubSeo['robots']       ?? 'index,follow';
-    $_keywords= $_pubSeo['keywords']     ?? '';
-    $_canonical = $_pubSeo['canonical_url'] ?? '';
-    $_ogTitle = $_pubSeo['og_title']     ?? $_pageTitle;
-    $_ogDesc  = $_pubSeo['og_description'] ?? $_pageDesc;
-    $_ogImage = $_pubSeo['og_image']     ?? ($theme['logo_url'] ?? '');
-    $_ogType  = $_pubSeo['og_type']      ?? 'website';
-    $_siteUrl = 'https://' . ($_SERVER['HTTP_HOST'] ?? 'hcsfcs.top');
-    $_curUrl  = $_siteUrl . ($_SERVER['REQUEST_URI'] ?? '/');
-    if (!$_canonical) $_canonical = $_curUrl;
-    ?>
+    <!-- SEO -->
     <title><?= e($_pageTitle) ?></title>
-    <?php if ($_pageDesc): ?><meta name="description" content="<?= e($_pageDesc) ?>"><?php endif; ?>
-    <?php if ($_keywords): ?><meta name="keywords" content="<?= e($_keywords) ?>"><?php endif; ?>
-    <meta name="robots" content="<?= e($_robots) ?>">
-    <link rel="canonical" href="<?= e($_canonical) ?>">
+    <?php if ($_pageDesc): ?>
+    <meta name="description" content="<?= e($_pageDesc) ?>">
+    <?php endif; ?>
 
     <!-- Open Graph -->
-    <meta property="og:type"        content="<?= e($_ogType) ?>">
-    <meta property="og:title"       content="<?= e($_ogTitle ?: $_pageTitle) ?>">
-    <meta property="og:description" content="<?= e($_ogDesc ?: $_pageDesc) ?>">
-    <meta property="og:url"         content="<?= e($_curUrl) ?>">
+    <meta property="og:title"       content="<?= e($_pageTitle) ?>">
+    <meta property="og:description" content="<?= e($_pageDesc) ?>">
+    <meta property="og:type"        content="website">
     <meta property="og:site_name"   content="<?= e($_appName) ?>">
-    <?php if ($_ogImage): ?><meta property="og:image" content="<?= e(strpos($_ogImage,'http')===0 ? $_ogImage : $_siteUrl.$_ogImage) ?>"><?php endif; ?>
-    <meta property="og:locale"      content="<?= e(str_replace('-','_',$lang)) ?>">
 
-    <!-- Twitter Card -->
-    <meta name="twitter:card"        content="summary_large_image">
-    <meta name="twitter:title"       content="<?= e($_ogTitle ?: $_pageTitle) ?>">
-    <meta name="twitter:description" content="<?= e($_ogDesc ?: $_pageDesc) ?>">
-    <?php if ($_ogImage): ?><meta name="twitter:image" content="<?= e(strpos($_ogImage,'http')===0 ? $_ogImage : $_siteUrl.$_ogImage) ?>"><?php endif; ?>
+    <!-- PWA / Mobile -->
+    <meta name="mobile-web-app-capable"               content="yes">
+    <meta name="apple-mobile-web-app-capable"         content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title"           content="<?= e($_appName) ?>">
+    <meta name="theme-color" content="<?= e($_themeColor) ?>">
+    <link rel="manifest" href="/frontend/manifest.json">
+    <link rel="apple-touch-icon" href="/images/default-image.png">
 
-    <?php
-    // JSON-LD Schema Markup — use admin-configured schema_markup if available,
-    // otherwise auto-generate from PUB_SEO data (Product, WebSite, etc.)
-    $_schemaMarkup = $_pubSeo['schema_markup'] ?? '';
-    if (!$_schemaMarkup && !empty($_pubSeo['schema_type'])) {
-        // Auto-generate Product schema
-        if ($_pubSeo['schema_type'] === 'Product') {
-            $__schema = [
-                '@context'    => 'https://schema.org',
-                '@type'       => 'Product',
-                'name'        => $_pubSeo['schema_name']  ?? $_pageTitle,
-                'description' => $_pubSeo['schema_description'] ?? '',
-                'sku'         => $_pubSeo['schema_sku'] ?? '',
-                'url'         => $_curUrl,
-            ];
-            if (!empty($_pubSeo['schema_image'])) $__schema['image'] = $_siteUrl . $_pubSeo['schema_image'];
-            if (!empty($_pubSeo['schema_price'])) {
-                $__schema['offers'] = [
-                    '@type'         => 'Offer',
-                    'price'         => (string)$_pubSeo['schema_price'],
-                    'priceCurrency' => $_pubSeo['schema_currency'] ?? 'USD',
-                    'availability'  => $_pubSeo['schema_availability'] ?? 'https://schema.org/InStock',
-                    'url'           => $_curUrl,
-                ];
-            }
-            if (!empty($_pubSeo['schema_rating'])) {
-                $__schema['aggregateRating'] = [
-                    '@type'       => 'AggregateRating',
-                    'ratingValue' => $_pubSeo['schema_rating']['ratingValue'],
-                    'reviewCount' => $_pubSeo['schema_rating']['reviewCount'],
-                    'bestRating'  => '5',
-                    'worstRating' => '1',
-                ];
-            }
-            $_schemaMarkup = json_encode($__schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG);
-        } elseif ($_pubSeo['schema_type'] === 'WebSite') {
-            $_schemaMarkup = json_encode([
-                '@context' => 'https://schema.org',
-                '@type'    => 'WebSite',
-                'name'     => $_appName,
-                'url'      => $_siteUrl,
-            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG);
-        } elseif ($_pubSeo['schema_type'] === 'LocalBusiness') {
-            $__schema = [
-                '@context' => 'https://schema.org',
-                '@type'    => 'LocalBusiness',
-                'name'     => $_pubSeo['schema_name'] ?? $_pageTitle,
-                'url'      => !empty($_pubSeo['schema_url']) ? $_pubSeo['schema_url'] : $_curUrl,
-            ];
-            if (!empty($_pubSeo['schema_phone'])) $__schema['telephone'] = $_pubSeo['schema_phone'];
-            if (!empty($_pubSeo['schema_email'])) $__schema['email'] = $_pubSeo['schema_email'];
-            if (!empty($_pubSeo['og_image']))     $__schema['image'] = $_siteUrl . $_pubSeo['og_image'];
-            $_schemaMarkup = json_encode($__schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG);
-        } elseif ($_pubSeo['schema_type'] === 'ItemList') {
-            $_schemaMarkup = json_encode([
-                '@context' => 'https://schema.org',
-                '@type'    => 'ItemList',
-                'name'     => $_pageTitle,
-                'url'      => $_curUrl,
-            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG);
-        }
-    }
-    if (!$_schemaMarkup) {
-        // Default WebSite schema for all pages
-        $_schemaMarkup = json_encode([
-            '@context' => 'https://schema.org',
-            '@type'    => 'WebSite',
-            'name'     => $_appName,
-            'url'      => $_siteUrl,
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG);
-    }
-    ?>
-    <script type="application/ld+json"><?= $_schemaMarkup ?></script>
-
-    <!-- Fonts -->
+    <!-- DNS / Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="<?= e($_fontUrl) ?>" rel="stylesheet">
 
-    <!-- Public UI styles — ?v= cache-busting: forces browser to re-download on every deploy -->
-    <?php
-    $_pubCssV = @filemtime(FRONTEND_BASE . '/assets/css/public.css') ?: '1';
-    $_pubHjV  = @filemtime(FRONTEND_BASE . '/assets/js/homepage-engine.js') ?: '1';
-    ?>
-    <link rel="stylesheet" href="/frontend/assets/css/public.css?v=<?= $_pubCssV ?>">
-    <!-- Homepage section engine (loaded early so init() can be called inline) -->
-    <script src="/frontend/assets/js/homepage-engine.js?v=<?= $_pubHjV ?>"></script>
+    <!-- Fonts (default + DB fonts) -->
+    <link rel="preload" href="<?= e($_fontUrl) ?>" as="style"
+          onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="<?= e($_fontUrl) ?>"></noscript>
+    <?php foreach ($_dbFontLinks as $_dbFont): ?>
+    <link rel="preload" href="<?= e($_dbFont) ?>" as="style"
+          onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="<?= e($_dbFont) ?>"></noscript>
+    <?php endforeach; ?>
 
-    <!-- Theme: inject CSS variables from DB color_settings -->
-    <?php if (!empty($theme)): ?>
-    <style id="pubThemeVars">
-    :root {
-        --pub-primary:    <?= e($theme['primary']    ?? '#FF0000') ?>;
-        --pub-secondary:  <?= e($theme['secondary']  ?? '#10B981') ?>;
-        --pub-accent:     <?= e($theme['accent']     ?? '#F59E0B') ?>;
-        --pub-bg:         <?= e($theme['background'] ?? '#0d0d0d') ?>;
-        --pub-surface:    <?= e($theme['surface']    ?? '#1a1a2e') ?>;
-        --pub-text:       <?= e($theme['text']       ?? '#FFFFFF') ?>;
-        --pub-muted:      <?= e($theme['text_muted'] ?? '#B0B0B0') ?>;
-        --pub-border:     <?= e($theme['border']     ?? '#333333') ?>;
-        --pub-header-bg:  <?= e($theme['header_bg']        ?? $theme['primary'] ?? '#1e2533') ?>;
-        --pub-header-text: <?= e($theme['header_text_color'] ?? '#FFFFFF') ?>;
-        --pub-footer-bg:  <?= e($theme['footer_bg']        ?? '#1e2a38') ?>;
-        --pub-footer-text:<?= e($theme['footer_text_color'] ?? '#B0B0B0') ?>;
-        --pub-card:       <?= e($theme['surface']    ?? '#1a1a2e') ?>;
-    }
-    .pub-header  { background: var(--pub-header-bg) !important; color: var(--pub-header-text) !important; }
-    .pub-hero    { background: linear-gradient(135deg, var(--pub-header-bg) 0%, var(--pub-accent) 100%) !important; }
+    <!-- ════════════════════════════════════════════════════
+         Design Tokens (variables.css) — loaded FIRST
+         Provides defaults & --color-*→--pub-* bridge.
+         DB values injected AFTER this will override defaults.
+         ════════════════════════════════════════════════════ -->
+    <link rel="stylesheet"
+          href="/frontend/assets/css/variables.css?v=<?= _pub_asset_ver('/frontend/assets/css/variables.css') ?>">
+
+    <!-- ════════════════════════════════════════════════════
+         CSS VARIABLES (single source of truth from DB)
+         Overrides variables.css defaults with real DB values.
+         Mirrors admin/includes/header.php approach.
+         ════════════════════════════════════════════════════ -->
+    <style id="pub-theme-vars">
+:root {
+<?php if ($_themeVars): ?>
+<?= $_themeVars . "\n" ?>
+<?php endif; ?>
+}
+
+/* ── Baseline rules that depend only on CSS vars ── */
+body {
+    background:  var(--pub-bg, var(--background-main, var(--background_main, #ffffff)));
+    color:       var(--pub-text, var(--text-primary, var(--text_primary, #222831)));
+    font-family: var(--body-font-family, var(--body_font-family, "Cairo", "Inter", system-ui, sans-serif));
+    margin: 0;
+    padding: 0;
+}
+
+.pub-header {
+    background: var(--pub-header-bg, var(--header-background, var(--header_background, var(--pub-primary, #2d8cf0))));
+    color:      var(--pub-header-text, var(--header-text, var(--header_text, #ffffff)));
+}
+
+.pub-sidebar {
+    background: var(--pub-sidebar-bg, var(--sidebar-background, var(--sidebar_background, var(--pub-header-bg, var(--pub-primary, #2d8cf0)))));
+    color:      var(--pub-sidebar-text, var(--sidebar-text, var(--sidebar_text, #ffffff)));
+}
+
+.pub-footer {
+    background: var(--pub-footer-bg, var(--footer-background, var(--footer_background, #1e2a38)));
+    color:      var(--pub-footer-text, var(--footer-text, var(--footer_text, rgba(255,255,255,0.8))));
+}
     </style>
+
+    <!-- ════════════════════════════════════════════════════
+         Public Stylesheet — loaded AFTER theme-vars so its
+         :root defaults are OVERRIDDEN by DB variables above
+         ════════════════════════════════════════════════════ -->
+    <link rel="stylesheet"
+          href="/frontend/assets/css/public.css?v=<?= _pub_asset_ver('/frontend/assets/css/public.css') ?>">
+
+    <!-- ════════════════════════════════════════════════════
+         Generated CSS (DB-driven button/card/font styles)
+         Loaded LAST — concrete .btn-{slug}, .card-{slug} classes
+         using var() references to :root variables above
+         ════════════════════════════════════════════════════ -->
     <?php if (!empty($theme['generated_css'])): ?>
-    <style id="pubDynamicTheme"><?= $theme['generated_css'] ?></style>
+    <style id="pub-theme-generated"><?= $theme['generated_css'] ?></style>
     <?php endif; ?>
-    <script type="application/json" id="pubThemeData"><?= json_encode($theme, JSON_HEX_TAG | JSON_UNESCAPED_UNICODE) ?></script>
-    <?php endif; ?>
-    <?php
-    // Inject PHP session user so JS can show username even when localStorage is empty
-    // (happens when user logged in via admin panel instead of frontend login.php).
-    // Only safe non-sensitive fields are exposed: id, name, username, email.
-    $_phpUser = null;
-    if ($_isLoggedIn && !empty($_user['id'])) {
-        $_phpUser = [
-            'id'       => (int)$_user['id'],
-            'name'     => $_user['name'] ?? $_user['username'] ?? '',
-            'username' => $_user['username'] ?? '',
-            'email'    => $_user['email']    ?? '',
-        ];
-    }
-    ?>
-    <script>window.pubSessionUser = <?= json_encode($_phpUser, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) ?>;
-    window.PUB_TENANT_ID = <?= (int)($ctx['tenant_id'] ?? 1) ?>;
-    window.PUB_LANG = <?= json_encode($ctx['lang'] ?? 'en', JSON_HEX_TAG) ?>;
+
+    <!-- Homepage engine JS (deferred) -->
+    <script defer
+            src="/frontend/assets/js/homepage-engine.js?v=<?= _pub_asset_ver('/frontend/assets/js/homepage-engine.js') ?>">
     </script>
-    <?php
-    // Inject notifications as JSON for the bell widget (pub_load_notifications already ran)
-    $_pubNotifJson = $ctx['notifications'] ?? [];
-    ?>
-    <script type="application/json" id="pubNotifData"><?= json_encode($_pubNotifJson, JSON_HEX_TAG | JSON_UNESCAPED_UNICODE) ?></script>
-    <?php unset($_pubNotifJson); ?>
+
+    <!-- Slider JS (deferred) -->
+    <script defer
+            src="/frontend/assets/js/slider.js?v=<?= _pub_asset_ver('/frontend/assets/js/slider.js') ?>">
+    </script>
 </head>
 
 <body class="pub-body <?= e($dir) ?>">
 
 <!-- =============================================
-     HEADER
+     HEADER — hamburger + logo
+     Menu button on start side (right for RTL, left for LTR).
+     Logo from DB (design_settings).
+     Colors come from DB theme via CSS custom properties.
 ============================================= -->
 <header class="pub-header" role="banner">
     <div class="pub-container pub-header-inner">
 
-        <!-- Logo -->
+        <!-- Hamburger toggle — start side (first in DOM → right in RTL, left in LTR) -->
+        <button class="pub-hamburger" id="pubHamburger"
+                aria-label="<?= e(t('nav.menu_open')) ?>"
+                aria-expanded="false" aria-controls="pubSidebar">
+            <span></span><span></span><span></span>
+        </button>
+
+        <!-- Logo (DB design_settings or fallback) -->
         <a href="<?= e($_basePath . '/index.php') ?>" class="pub-logo" aria-label="<?= e($_appName) ?>">
-            <?php
-            $_logoUrl = $theme['logo_url'] ?? '';
-            // Also check static file fallback: /frontend/assets/images/logo.{png,svg,webp}
-            if (empty($_logoUrl)) {
-                $_baseImgDir = FRONTEND_BASE . '/assets/images/';
-                foreach (['logo.png', 'logo.svg', 'logo.webp'] as $_lf) {
-                    if (@file_exists($_baseImgDir . $_lf)) {
-                        $_logoUrl = '/frontend/assets/images/' . $_lf;
-                        break;
-                    }
-                }
-                unset($_baseImgDir, $_lf);
-            }
-            if (!empty($_logoUrl)):
-            ?>
+            <?php if (!empty($_logoUrl)): ?>
                 <img src="<?= e($_logoUrl) ?>" alt="<?= e($_appName) ?>" class="pub-logo-img"
-                     style="width:auto;vertical-align:middle;object-fit:contain;flex-shrink:0;">
-                <span class="pub-logo-name" style="margin-inline-start:4px;font-weight:700;letter-spacing:0.5px;"><?= e($_appName) ?></span>
+                     loading="eager" decoding="async">
+                <span class="pub-logo-name"><?= e($_appName) ?></span>
             <?php else: ?>
                 <span class="pub-logo-icon" aria-hidden="true">🌐</span>
-                <?= e($_appName) ?>
+                <span class="pub-logo-name"><?= e($_appName) ?></span>
             <?php endif; ?>
         </a>
-
-        <!-- Desktop navigation -->
-        <nav class="pub-nav" aria-label="<?= e(t('nav.menu_open')) ?>">
-            <?php foreach ($_navItems as $label => $href): ?>
-                <a href="<?= e($href) ?>"><?= e($label) ?></a>
-            <?php endforeach; ?>
-            <!-- Cart link with live count badge -->
-            <a href="<?= e($_cartUrl) ?>" class="pub-cart-nav-link" style="position:relative;display:inline-flex;align-items:center;gap:4px;">
-                🛒 <?= $_cartLabel ?>
-                <span id="pubCartCount"
-                      style="display:none;background:var(--pub-accent,#F59E0B);color:#000;
-                             border-radius:50%;min-width:18px;height:18px;padding:0 4px;
-                             font-size:0.7rem;font-weight:800;line-height:18px;
-                             text-align:center;vertical-align:middle;"></span>
-            </a>
-            <!-- Wishlist link with live count badge -->
-            <a href="/frontend/public/wishlist.php" class="pub-wishlist-badge" style="position:relative;display:inline-flex;align-items:center;gap:4px;" title="<?= e(t('nav.wishlist')) ?>">
-                ♡ <?= e(t('nav.wishlist')) ?>
-                <span id="pubWishlistCount"></span>
-            </a>
-            <!-- Compare link with live count badge -->
-            <a href="/frontend/public/compare.php" style="position:relative;display:inline-flex;align-items:center;gap:4px;" title="<?= e(t('nav.compare', ['default' => 'Compare'])) ?>">
-                ⚖️ <?= e(t('nav.compare', ['default' => 'Compare'])) ?>
-                <span class="pub-compare-badge" style="display:none;background:var(--pub-secondary,#10b981);color:#fff;
-                       border-radius:50%;min-width:18px;height:18px;padding:0 4px;
-                       font-size:0.7rem;font-weight:800;line-height:18px;text-align:center;vertical-align:middle;"></span>
-            </a>
-        </nav>
-
-        <!-- Header actions -->
-        <div class="pub-header-actions">
-            <!-- Notification bell (all users) -->
-            <div class="pub-notif-wrap" id="pubNotifWrap">
-                <button class="pub-notif-btn" id="pubNotifBtn"
-                        aria-label="<?= e(t('nav.notifications', ['default' => 'Notifications'])) ?>"
-                        aria-haspopup="true" aria-expanded="false">
-                    🔔
-                    <span class="pub-notif-badge" id="pubNotifBadge"></span>
-                </button>
-                <!-- Notification dropdown -->
-                <div class="pub-notif-dropdown" id="pubNotifDropdown" role="dialog"
-                     aria-label="<?= e(t('nav.notifications', ['default' => 'Notifications'])) ?>">
-                    <div class="pub-notif-header">
-                        <span><?= e(t('nav.notifications', ['default' => 'Notifications'])) ?></span>
-                        <button class="pub-notif-mark-all" id="pubNotifMarkAll">
-                            <?= e(t('notifications.mark_all_read', ['default' => 'Mark all read'])) ?>
-                        </button>
-                    </div>
-                    <div class="pub-notif-list" id="pubNotifList">
-                        <div class="pub-notif-empty"><?= e(t('notifications.empty', ['default' => 'No notifications'])) ?></div>
-                    </div>
-                    <div class="pub-notif-footer">
-                        <a href="/frontend/public/notifications.php"><?= e(t('notifications.view_all', ['default' => 'View all'])) ?></a>
-                    </div>
-                </div>
-            </div>
-            <!-- Login / user — no language switcher button (auto-detected) -->
-            <?php if ($_isLoggedIn): ?>
-                <a href="/frontend/profile.php" class="pub-login-btn" style="margin-inline-end:6px;">
-                    <?= e($_user['name'] ?? $_user['username'] ?? t('nav.account')) ?>
-                </a>
-                <a href="/frontend/logout.php"
-                   class="pub-btn pub-btn--ghost pub-btn--sm"
-                   style="font-size:0.8rem;padding:4px 10px;"><?= e(t('nav.logout')) ?></a>
-            <?php else: ?>
-                <a href="/frontend/login.php" class="pub-login-btn"><?= e(t('nav.login')) ?></a>
-            <?php endif; ?>
-
-            <!-- Hamburger (mobile) -->
-            <button class="pub-hamburger" id="pubHamburger"
-                    aria-label="<?= e(t('nav.menu_open')) ?>"
-                    aria-expanded="false" aria-controls="pubMobileNav">
-                <span></span><span></span><span></span>
-            </button>
-        </div>
     </div>
 </header>
 
-<!-- Mobile nav drawer -->
-<div class="pub-mobile-nav" id="pubMobileNav" role="dialog" aria-modal="true"
-     aria-label="<?= e(t('nav.menu_open')) ?>">
-    <nav class="pub-mobile-nav-inner">
-        <?php foreach ($_navItems as $label => $href): ?>
-            <a href="<?= e($href) ?>"><?= e($label) ?></a>
-        <?php endforeach; ?>
-        <!-- Cart link -->
-        <a href="<?= e($_cartUrl) ?>">
-            🛒 <?= $_cartLabel ?>
-            <span id="pubCartCountMobile"
-                  style="display:none;background:var(--pub-accent,#F59E0B);color:#000;
-                         border-radius:50%;min-width:18px;height:18px;padding:0 4px;
-                         font-size:0.7rem;font-weight:800;line-height:18px;
-                         text-align:center;vertical-align:middle;margin-inline-start:4px;"></span>
-        </a>
-        <!-- Wishlist link -->
-        <a href="/frontend/public/wishlist.php">
-            ♡ <?= e(t('nav.wishlist')) ?>
-            <span id="pubWishlistCountMobile"></span>
-        </a>
-        <hr style="border-color:rgba(255,255,255,0.15);margin:12px 0;">
-        <?php if ($_isLoggedIn): ?>
-            <a href="/frontend/public/orders.php">📦 <?= e(t('nav.orders')) ?></a>
-            <a href="/frontend/public/tickets.php">🎫 <?= e(t('nav.tickets')) ?></a>
-            <a href="/frontend/public/returns.php">↩ <?= e(t('nav.returns')) ?></a>
-            <a href="/frontend/profile.php">👤 <?= e($_user['name'] ?? $_user['username'] ?? t('nav.account')) ?></a>
-            <a href="/frontend/logout.php"><?= e(t('nav.logout')) ?></a>
-        <?php else: ?>
-            <a href="/frontend/login.php"><?= e(t('nav.login')) ?></a>
-            <a href="/frontend/login.php?tab=register"><?= e(t('nav.register')) ?></a>
-        <?php endif; ?>
-    </nav>
-</div>
-
 <!-- =============================================
-     PAGE CONTENT START
+     LAYOUT: sidebar (from menu.php) + main content
 ============================================= -->
+<div class="pub-layout">
+
+    <?php
+    // Include the sidebar menu — completely separate from header
+    $menuFile = __DIR__ . '/menu.php';
+    if (is_readable($menuFile)) {
+        include $menuFile;
+    }
+    ?>
+
+    <!-- Mobile sidebar backdrop -->
+    <div class="pub-sidebar-backdrop" id="pubSidebarOverlay" aria-hidden="true"></div>
+
+    <!-- Inline fallback: ensure hamburger opens sidebar even if public.js fails -->
+    <script>
+    (function(){
+        var h=document.getElementById('pubHamburger'),
+            s=document.getElementById('pubSidebar'),
+            b=document.getElementById('pubSidebarOverlay'),
+            c=document.getElementById('pubSidebarClose');
+        if(!h||!s)return;
+        if(h.dataset.bound)return; h.dataset.bound='1';
+        function open(){s.classList.add('open');if(b)b.classList.add('open');h.setAttribute('aria-expanded','true');document.body.style.overflow='hidden';}
+        function close(){s.classList.remove('open');if(b)b.classList.remove('open');h.setAttribute('aria-expanded','false');document.body.style.overflow='';}
+        h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+        if(b)b.addEventListener('click',close);
+        if(c)c.addEventListener('click',close);
+    })();
+    </script>
+
+    <!-- Main content area — page content goes here -->
+    <main class="pub-main-content">

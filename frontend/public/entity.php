@@ -925,9 +925,9 @@ $_entityDiscountCardClass = pub_card_css_class('discount');
                     <div style="font-size:1.3rem;letter-spacing:2px;">
                         <?php for ($si=1; $si<=5; $si++): ?>
                             <?php if ($si <= $entityRatingAvg): ?>
-                                <span style="color:#F59E0B;">★</span>
+                                <span style="color:var(--pub-accent, #F59E0B);">★</span>
                             <?php elseif ($si - 0.5 <= $entityRatingAvg): ?>
-                                <span style="color:#F59E0B;opacity:0.6;">★</span>
+                                <span style="color:var(--pub-accent, #F59E0B);opacity:0.6;">★</span>
                             <?php else: ?>
                                 <span style="color:var(--pub-border);">☆</span>
                             <?php endif; ?>
@@ -945,7 +945,7 @@ $_entityDiscountCardClass = pub_card_css_class('discount');
                     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
                         <span style="font-weight:700;font-size:0.9rem;"><?= e($r['reviewer_name']) ?></span>
                         <div style="display:flex;align-items:center;gap:6px;">
-                            <span style="color:#F59E0B;font-size:1rem;">
+                            <span style="color:var(--pub-accent, #F59E0B);font-size:1rem;">
                                 <?php for ($si=1; $si<=5; $si++): ?>
                                     <?= $si <= (float)$r['rating'] ? '★' : '☆' ?>
                                 <?php endfor; ?>
@@ -1154,15 +1154,15 @@ echo '<style>
 .pub-cat-tab-btn--sub { font-size:0.78rem; font-weight:500; padding:5px 12px;
   border-radius:var(--pub-radius) var(--pub-radius) 0 0; }
 /* Cart add button on product card */
-.pub-cart-add-btn { width:100%; margin-top:6px; padding:7px 0; background:var(--pub-primary,#03874e); color:#fff;
+.pub-cart-add-btn { width:100%; margin-top:6px; padding:7px 0; background:var(--btn-primary-bg, var(--pub-primary)); color:var(--btn-primary-color, #fff);
   border:none; border-radius:0 0 var(--pub-radius) var(--pub-radius); font-size:0.82rem; font-weight:600;
   cursor:pointer; transition:opacity 0.2s; }
 .pub-cart-add-btn:hover { opacity:0.85; }
 /* Open/closed badge */
 .pub-open-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px;
   font-size:0.78rem; font-weight:700; }
-.pub-open-badge--open  { background:#d1fae5; color:#065f46; }
-.pub-open-badge--closed{ background:#fee2e2; color:#991b1b; }
+.pub-open-badge--open  { background:color-mix(in srgb, var(--pub-success, #22c55e) 15%, transparent); color:var(--pub-success, #065f46); }
+.pub-open-badge--closed{ background:color-mix(in srgb, var(--pub-danger, #ef4444) 15%, transparent); color:var(--pub-danger, #991b1b); }
 /* Tab count badge */
 .pub-tab-count { background:var(--pub-primary); color:#fff; border-radius:20px; padding:1px 6px;
   font-size:0.72rem; font-weight:700; margin-inline-start:4px; }
@@ -1188,7 +1188,7 @@ echo '<style>
 /* Entity rating average badge */
 .pub-entity-rating-avg { display:inline-flex; align-items:center; gap:4px; padding:3px 10px;
   border-radius:20px; font-size:0.82rem; font-weight:700;
-  background:#fef3c7; color:#92400e; }
+  background:color-mix(in srgb, var(--pub-warning, #f59e0b) 20%, transparent); color:var(--pub-warning, #92400e); }
 /* Mobile entity profile */
 @media(max-width:600px){
   .pub-entity-profile-header { flex-direction:column; align-items:center; text-align:center; gap:10px; margin-top:-36px; }

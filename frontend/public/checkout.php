@@ -289,7 +289,7 @@ include dirname(__DIR__) . '/partials/header.php';
     <h1 style="font-size:1.4rem;margin:0 0 24px;">💳 <?= e(t('checkout.title')) ?></h1>
 
     <?php if ($checkoutError): ?>
-    <div style="background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);color:#e74c3c;
+    <div style="background:color-mix(in srgb, var(--pub-danger, #e74c3c) 10%, transparent);border:1px solid color-mix(in srgb, var(--pub-danger, #e74c3c) 30%, transparent);color:var(--pub-danger, #e74c3c);
                 padding:12px 16px;border-radius:var(--pub-radius);margin-bottom:20px;">
         ⚠️ <?= e($checkoutError) ?>
     </div>

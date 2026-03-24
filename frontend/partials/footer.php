@@ -14,11 +14,13 @@ if (!function_exists('t')) {
 }
 ?>
 
+    </main><!-- .pub-main-content -->
+</div><!-- .pub-layout -->
+
 <!-- =============================================
      FOOTER
 ============================================= -->
-<footer class="pub-footer" role="contentinfo"
-        style="background:var(--pub-footer-bg,#1e2a38);color:var(--pub-footer-text,rgba(255,255,255,0.8));border-top:4px solid var(--pub-primary,#2d8cf0);">
+<footer class="pub-footer" role="contentinfo">
     <div class="pub-container">
         <div class="pub-footer-grid">
 
@@ -67,7 +69,7 @@ if (!function_exists('t')) {
 <?php $_btt_side = ($_ctx['dir'] ?? 'rtl') === 'rtl' ? 'left' : 'right'; ?>
 <button id="pubBackToTop" title="<?= e(t('footer.back_to_top')) ?>"
         style="display:none;position:fixed;bottom:20px;<?= e($_btt_side) ?>:20px;
-               z-index:200;width:40px;height:40px;background:var(--pub-primary);color:#fff;
+               z-index:200;width:40px;height:40px;background:var(--pub-primary);color:var(--pub-btn-primary-text,#fff);
                border:none;border-radius:50%;font-size:1.2rem;cursor:pointer;align-items:center;
                justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.2);">↑</button>
 

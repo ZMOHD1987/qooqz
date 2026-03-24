@@ -45,12 +45,6 @@ include dirname(__DIR__) . '/partials/header.php';
                        placeholder="<?= e(t('join_tenant.name_ph')) ?>">
             </div>
 
-            <div class="pub-join-group full">
-                <label for="jtDomain"><?= e(t('join_tenant.domain')) ?></label>
-                <input id="jtDomain" name="domain" type="text"
-                       placeholder="<?= e(t('join_tenant.domain_ph')) ?>">
-            </div>
-
         </div>
 
         <button type="submit" class="pub-btn pub-btn--primary" style="width:100%;padding:12px;">

@@ -321,7 +321,7 @@ include dirname(__DIR__) . '/partials/header.php';
     bottom: 0; left: 0; right: 0;
     padding: 20px 24px;
     background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
-    color: #fff;
+    color: var(--pub-slider-text, #fff);
 }
 .catalog-slide-title {
     margin: 0 0 4px;
@@ -338,7 +338,7 @@ include dirname(__DIR__) . '/partials/header.php';
     position: absolute;
     top: 50%; transform: translateY(-50%);
     background: rgba(0,0,0,0.38);
-    color: #fff; border: none;
+    color: var(--pub-slider-text, #fff); border: none;
     width: 40px; height: 40px;
     font-size: 1.5rem; cursor: pointer;
     border-radius: 50%; z-index: 5;
@@ -360,7 +360,7 @@ include dirname(__DIR__) . '/partials/header.php';
     border: none; background: rgba(255,255,255,0.45);
     cursor: pointer; padding: 0; transition: background 0.2s, transform 0.2s;
 }
-.catalog-dot.active { background: #fff; transform: scale(1.3); }
+.catalog-dot.active { background: var(--pub-slider-dot-active, var(--pub-primary, #fff)); transform: scale(1.3); }
 
 /* ─── Categories strip ───────────────────────────────────────── */
 .catalog-cats-strip {
@@ -387,7 +387,7 @@ include dirname(__DIR__) . '/partials/header.php';
 .catalog-cat-pill.active {
     background: var(--pub-primary, #2d8cf0);
     border-color: var(--pub-primary, #2d8cf0);
-    color: #fff;
+    color: var(--btn-primary-color, #fff);
 }
 
 /* ─── Pagination ─────────────────────────────────────────────── */

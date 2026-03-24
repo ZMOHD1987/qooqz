@@ -33,8 +33,8 @@ if ($pdo) {
 
         if ($search !== '') {
             $like = '%' . addcslashes($search, '%_\\') . '%';
-            $where[] = '(e.store_name LIKE ? OR e.email LIKE ?)';
-            $params[] = $like; $params[] = $like;
+            $where[] = 'e.store_name LIKE ?';
+            $params[] = $like;
         }
 
         if ($vType !== '') { $where[] = 'e.vendor_type = ?'; $params[] = $vType; }
@@ -235,11 +235,11 @@ $_entityCardClass = pub_card_css_class('entities');
   border-radius:20px; line-height:1.5; white-space:nowrap;
   border:1px solid transparent;
 }
-.pub-entity-feature-badge--featured  { background:rgba(245,158,11,0.12); color:#b45309; border-color:rgba(245,158,11,0.3); }
-.pub-entity-feature-badge--booking   { background:rgba(59,130,246,0.10); color:#1d4ed8; border-color:rgba(59,130,246,0.25); }
-.pub-entity-feature-badge--delivery  { background:rgba(16,185,129,0.10); color:#047857; border-color:rgba(16,185,129,0.25); }
-.pub-entity-feature-badge--cod       { background:rgba(139,92,246,0.10); color:#6d28d9; border-color:rgba(139,92,246,0.25); }
-.pub-entity-feature-badge--minorder  { background:rgba(107,114,128,0.08); color:#374151; border-color:rgba(107,114,128,0.2); }
+.pub-entity-feature-badge--featured  { background:color-mix(in srgb, var(--pub-warning, #f59e0b) 12%, transparent); color:var(--pub-warning, #b45309); border-color:color-mix(in srgb, var(--pub-warning, #f59e0b) 30%, transparent); }
+.pub-entity-feature-badge--booking   { background:color-mix(in srgb, var(--pub-info, #3b82f6) 10%, transparent); color:var(--pub-info, #1d4ed8); border-color:color-mix(in srgb, var(--pub-info, #3b82f6) 25%, transparent); }
+.pub-entity-feature-badge--delivery  { background:color-mix(in srgb, var(--pub-success, #10b981) 10%, transparent); color:var(--pub-success, #047857); border-color:color-mix(in srgb, var(--pub-success, #10b981) 25%, transparent); }
+.pub-entity-feature-badge--cod       { background:color-mix(in srgb, var(--pub-info, #8b5cf6) 10%, transparent); color:var(--pub-info, #6d28d9); border-color:color-mix(in srgb, var(--pub-info, #8b5cf6) 25%, transparent); }
+.pub-entity-feature-badge--minorder  { background:color-mix(in srgb, var(--pub-muted, #6b7280) 8%, transparent); color:var(--pub-muted, #374151); border-color:color-mix(in srgb, var(--pub-muted, #6b7280) 20%, transparent); }
 </style>
 <script>
 (function () {

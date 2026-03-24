@@ -254,6 +254,7 @@ if (!function_exists('pub_load_theme')) {
         // Defaults (fallback when DB is unreachable)
         $defaults = [
             'primary'    => '#03874e',
+            'primary_hover' => '#00ff00',
             'secondary'  => '#10B981',
             'accent'     => '#F59E0B',
             'background' => '#0d0d0d',
@@ -265,6 +266,19 @@ if (!function_exists('pub_load_theme')) {
             'header_text_color'=> '#FFFFFF',
             'footer_bg'        => '#1e2a38',
             'footer_text_color'=> '#B0B0B0',
+            'sidebar_bg'          => '#3f363f',
+            'sidebar_text'        => '#e8e8e8',
+            'sidebar_toggle'      => '#633b3b',
+            'sidebar_toggle_hover'=> '#c49121',
+            'sidebar_card_bg'     => '#3f363f',
+            'sidebar_card_text'   => '#de1717',
+            'success'    => '#10b981',
+            'warning'    => '#f59e0b',
+            'danger'     => '#ef4444',
+            'error'      => '#EF4444',
+            'info'       => '#22C55E',
+            'input_text'       => '#494646',
+            'input_placeholder'=> '#6B7280',
             'logo_url'   => '',          // set from design_settings WHERE setting_key='logo_url'
             'generated_css' => '',
             'fonts'      => [],
@@ -338,6 +352,7 @@ if (!function_exists('pub_load_theme')) {
                     // Covers both possible naming conventions (noun_adjective vs adjective_noun)
                     $colorMap = [
                         'primary_color'        => 'primary',
+                        'primary_hover'        => 'primary_hover',
                         'secondary_color'      => 'secondary',
                         'accent_color'         => 'accent',
                         // "Main Background" — try both naming variants
@@ -367,6 +382,22 @@ if (!function_exists('pub_load_theme')) {
                         'footer_background'    => 'footer_bg',
                         'footer_text'          => 'footer_text_color',
                         'footer_text_color'    => 'footer_text_color',
+                        // Sidebar
+                        'sidebar_background'      => 'sidebar_bg',
+                        'sidebar_text'            => 'sidebar_text',
+                        'sidebar_toggle_bg'       => 'sidebar_toggle',
+                        'sidebar_toggle_bg_hover' => 'sidebar_toggle_hover',
+                        'sidebar_card_background' => 'sidebar_card_bg',
+                        'sidebar_card_text'       => 'sidebar_card_text',
+                        // Status
+                        'success_color'        => 'success',
+                        'warning_color'        => 'warning',
+                        'danger_color'         => 'danger',
+                        'error_color'          => 'error',
+                        'info_color'           => 'info',
+                        // Input
+                        'input_text'           => 'input_text',
+                        'input_placeholder'    => 'input_placeholder',
                     ];
                     foreach ($colorRows as $row) {
                         $k = $row['setting_key'] ?? '';
@@ -416,6 +447,10 @@ if (!function_exists('pub_load_theme')) {
                     $theme['design']  = $designs;
                     $theme['buttons'] = $buttons;
                     $theme['cards']   = $cards;
+                    // Store raw DB rows so header.php can build CSS vars from them
+                    $theme['color_settings']  = $colorRows;
+                    $theme['font_settings']   = $fonts;
+                    $theme['design_settings'] = $designs;
 
                     // Extract logo_url from design_settings (setting_key = 'logo_url')
                     foreach ($designs as $d) {
@@ -430,7 +465,7 @@ if (!function_exists('pub_load_theme')) {
                             $logoSt = $pdo->prepare(
                                 "SELECT i.url FROM images i
                                  LEFT JOIN image_types it ON it.id = i.image_type_id
-                                 WHERE i.owner_type = 'tenant' AND i.owner_id = ?
+                                 WHERE i.tenant_id = ?
                                    AND (it.code = 'logo' OR it.code = 'entity_logo' OR it.code = 'tenant_logo')
                                  ORDER BY i.id ASC LIMIT 1"
                             );
@@ -454,6 +489,7 @@ if (!function_exists('pub_load_theme')) {
                     // DB colours render correctly without relying solely on the PHP bridge.
                     $pubAliases = [
                         'primary_color'        => ['color-primary',  'pub-primary'],
+                        'primary_hover'        => ['color-primary-hover', 'pub-primary-hover'],
                         'secondary_color'      => ['color-secondary', 'pub-secondary'],
                         'accent_color'         => ['color-accent',    'pub-accent'],
                         'background_main'      => ['pub-bg'],
@@ -474,6 +510,22 @@ if (!function_exists('pub_load_theme')) {
                         'header_text_color'    => ['pub-header-text'],
                         'footer_text'          => ['pub-footer-text'],
                         'footer_text_color'    => ['pub-footer-text'],
+                        // Sidebar — bridge DB keys to --pub-sidebar-* and --color-sidebar-*
+                        'sidebar_background'      => ['pub-sidebar-bg',       'color-sidebar-bg'],
+                        'sidebar_text'            => ['pub-sidebar-text',     'color-sidebar-text'],
+                        'sidebar_toggle_bg'       => ['pub-sidebar-toggle-bg','color-sidebar-toggle'],
+                        'sidebar_toggle_bg_hover' => ['pub-sidebar-hover',    'color-sidebar-toggle-hover'],
+                        'sidebar_card_background' => ['pub-sidebar-card-bg',  'color-sidebar-card-bg'],
+                        'sidebar_card_text'       => ['pub-sidebar-card-text','color-sidebar-card-text'],
+                        // Status colors — bridge to --pub-* and --color-*
+                        'success_color'        => ['pub-success', 'color-success'],
+                        'warning_color'        => ['pub-warning', 'color-warning'],
+                        'danger_color'         => ['pub-danger',  'color-danger'],
+                        'error_color'          => ['pub-error',   'color-error'],
+                        'info_color'           => ['pub-info',    'color-info'],
+                        // Input
+                        'input_text'           => ['pub-input-text',       'color-input-text'],
+                        'input_placeholder'    => ['pub-input-placeholder','color-input-placeholder'],
                     ];
                     foreach ($pubAliases as $srcKey => $aliases) {
                         if (empty($colors[$srcKey])) continue;
@@ -531,14 +583,58 @@ if (!function_exists('pub_load_theme')) {
                             $css .= '  --' . $dLayoutToCssVar[$dk] . ': ' . $cssEsc($cssVal) . ";\n";
                         }
                     }
-                    // Always emit the resolved --pub-header/footer vars last in :root {}
-                    // so they reflect the correct DB-sourced $theme values regardless of
-                    // which setting key / table was used — prevents any earlier rule from
-                    // overriding them with a stale or conflicting intermediate value.
-                    $css .= '  --pub-header-bg: '   . $cssEsc($theme['header_bg'])         . ";\n";
+                    // Always emit the resolved --pub-* vars last in :root {} from the
+                    // mapped $theme values.  This guarantees correct colors regardless of
+                    // which setting_key name the DB used (e.g. main_background vs background_main).
+                    $css .= '  --pub-primary: '     . $cssEsc($theme['primary'])            . ";\n";
+                    $css .= '  --pub-primary-hover: '. $cssEsc($theme['primary_hover'])     . ";\n";
+                    $css .= '  --pub-secondary: '   . $cssEsc($theme['secondary'])          . ";\n";
+                    $css .= '  --pub-accent: '      . $cssEsc($theme['accent'])             . ";\n";
+                    $css .= '  --pub-bg: '          . $cssEsc($theme['background'])         . ";\n";
+                    $css .= '  --pub-surface: '     . $cssEsc($theme['surface'])            . ";\n";
+                    $css .= '  --pub-text: '        . $cssEsc($theme['text'])               . ";\n";
+                    $css .= '  --pub-muted: '       . $cssEsc($theme['text_muted'])         . ";\n";
+                    $css .= '  --pub-border: '      . $cssEsc($theme['border'])             . ";\n";
+                    $css .= '  --pub-header-bg: '   . $cssEsc($theme['header_bg'])          . ";\n";
                     $css .= '  --pub-header-text: ' . $cssEsc($theme['header_text_color'])  . ";\n";
                     $css .= '  --pub-footer-bg: '   . $cssEsc($theme['footer_bg'])          . ";\n";
                     $css .= '  --pub-footer-text: ' . $cssEsc($theme['footer_text_color'])  . ";\n";
+                    // Sidebar resolved vars
+                    $css .= '  --pub-sidebar-bg: '          . $cssEsc($theme['sidebar_bg'])           . ";\n";
+                    $css .= '  --pub-sidebar-text: '        . $cssEsc($theme['sidebar_text'])         . ";\n";
+                    $css .= '  --pub-sidebar-toggle-bg: '   . $cssEsc($theme['sidebar_toggle'])       . ";\n";
+                    $css .= '  --pub-sidebar-hover: '       . $cssEsc($theme['sidebar_toggle_hover']) . ";\n";
+                    $css .= '  --pub-sidebar-active: '      . $cssEsc($theme['primary'])              . ";\n";
+                    $css .= '  --pub-sidebar-card-bg: '     . $cssEsc($theme['sidebar_card_bg'])      . ";\n";
+                    $css .= '  --pub-sidebar-card-text: '   . $cssEsc($theme['sidebar_card_text'])    . ";\n";
+                    // Status resolved vars
+                    $css .= '  --pub-success: '     . $cssEsc($theme['success'])            . ";\n";
+                    $css .= '  --pub-warning: '     . $cssEsc($theme['warning'])            . ";\n";
+                    $css .= '  --pub-danger: '      . $cssEsc($theme['danger'])             . ";\n";
+                    $css .= '  --pub-error: '       . $cssEsc($theme['error'])              . ";\n";
+                    $css .= '  --pub-info: '        . $cssEsc($theme['info'])               . ";\n";
+                    // Also set --color-* aliases so slider.php and other partials resolve correctly
+                    $css .= '  --color-primary: '   . $cssEsc($theme['primary'])            . ";\n";
+                    $css .= '  --color-primary-hover: '. $cssEsc($theme['primary_hover'])   . ";\n";
+                    $css .= '  --color-secondary: ' . $cssEsc($theme['secondary'])          . ";\n";
+                    $css .= '  --color-accent: '    . $cssEsc($theme['accent'])             . ";\n";
+                    $css .= '  --color-bg: '        . $cssEsc($theme['background'])         . ";\n";
+                    $css .= '  --color-surface: '   . $cssEsc($theme['surface'])            . ";\n";
+                    $css .= '  --color-text: '      . $cssEsc($theme['text'])               . ";\n";
+                    $css .= '  --color-border: '    . $cssEsc($theme['border'])             . ";\n";
+                    // Sidebar --color-* aliases for variables.css bridge
+                    $css .= '  --color-sidebar-bg: '           . $cssEsc($theme['sidebar_bg'])           . ";\n";
+                    $css .= '  --color-sidebar-text: '         . $cssEsc($theme['sidebar_text'])         . ";\n";
+                    $css .= '  --color-sidebar-toggle: '       . $cssEsc($theme['sidebar_toggle'])       . ";\n";
+                    $css .= '  --color-sidebar-toggle-hover: ' . $cssEsc($theme['sidebar_toggle_hover']) . ";\n";
+                    $css .= '  --color-sidebar-card-bg: '      . $cssEsc($theme['sidebar_card_bg'])      . ";\n";
+                    $css .= '  --color-sidebar-card-text: '    . $cssEsc($theme['sidebar_card_text'])    . ";\n";
+                    // Status --color-* aliases
+                    $css .= '  --color-success: '   . $cssEsc($theme['success'])            . ";\n";
+                    $css .= '  --color-warning: '   . $cssEsc($theme['warning'])            . ";\n";
+                    $css .= '  --color-danger: '    . $cssEsc($theme['danger'])             . ";\n";
+                    $css .= '  --color-error: '     . $cssEsc($theme['error'])              . ";\n";
+                    $css .= '  --color-info: '      . $cssEsc($theme['info'])               . ";\n";
                     // --pub-card-bg: generic fallback used by CSS files for cards that have no
                     // card_styles DB entry. pub_card_inline_style() uses the DB background_color
                     // directly so per-card colours from the database are applied correctly.
@@ -593,39 +689,67 @@ if (!function_exists('pub_load_theme')) {
                     }
                     // Map button_type to .pub-btn-- class names used in HTML
                     $pubBtnTypeMap = ['transpa' => 'ghost', 'transparent' => 'ghost'];
+                    // Emit --btn-{slug}-* CSS variables inside a :root block and generate
+                    // .btn-{slug} classes that reference those vars (db-theme-bridge.css pattern)
+                    $css .= ":root {\n";
                     foreach ($buttons as $b) {
                         if (empty($b['slug'])) continue;
                         $slugB    = preg_replace('/[^a-z0-9_\-]/', '-', (string)$b['slug']);
                         $btnType  = strtolower(trim((string)($b['button_type'] ?? '')));
                         $pubClass = $pubBtnTypeMap[$btnType] ?? $btnType;
                         $isDisabled = strpos($slugB, '-disabled') !== false;
-                        // Combine .btn-{slug} with .pub-btn--{type} for non-disabled buttons
+
+                        // ── :root CSS variables for this button ──
+                        if (!empty($b['background_color']))       $css .= "  --btn-{$slugB}-bg: "           . $cssEsc((string)$b['background_color'])       . ";\n";
+                        if (!empty($b['text_color']))             $css .= "  --btn-{$slugB}-color: "        . $cssEsc((string)$b['text_color'])             . ";\n";
+                        if (!empty($b['border_color']))           $css .= "  --btn-{$slugB}-border: "       . $cssEsc((string)$b['border_color'])           . ";\n";
+                        if (isset($b['border_width']))            $css .= "  --btn-{$slugB}-border-width: " . (int)$b['border_width']                       . "px;\n";
+                        if (isset($b['border_radius']))           $css .= "  --btn-{$slugB}-radius: "       . (int)$b['border_radius']                      . "px;\n";
+                        if (!empty($b['padding']))                $css .= "  --btn-{$slugB}-padding: "      . $cssEsc((string)$b['padding'])                . ";\n";
+                        if (!empty($b['font_size']))              $css .= "  --btn-{$slugB}-font-size: "    . $cssEsc((string)$b['font_size']) . (is_numeric($b['font_size']) ? 'px' : '') . ";\n";
+                        if (!empty($b['font_weight']))            $css .= "  --btn-{$slugB}-font-weight: "  . $cssEsc((string)$b['font_weight'])            . ";\n";
+                        if (!empty($b['hover_background_color'])) $css .= "  --btn-{$slugB}-hover-bg: "     . $cssEsc((string)$b['hover_background_color']) . ";\n";
+                        if (!empty($b['hover_text_color']))       $css .= "  --btn-{$slugB}-hover-color: "  . $cssEsc((string)$b['hover_text_color'])       . ";\n";
+                        if (!empty($b['hover_border_color']))     $css .= "  --btn-{$slugB}-hover-border: " . $cssEsc((string)$b['hover_border_color'])     . ";\n";
+                    }
+                    $css .= "}\n";
+
+                    // ── .btn-{slug} classes using var() references ──
+                    foreach ($buttons as $b) {
+                        if (empty($b['slug'])) continue;
+                        $slugB    = preg_replace('/[^a-z0-9_\-]/', '-', (string)$b['slug']);
+                        $btnType  = strtolower(trim((string)($b['button_type'] ?? '')));
+                        $pubClass = $pubBtnTypeMap[$btnType] ?? $btnType;
+                        $isDisabled = strpos($slugB, '-disabled') !== false;
+                        // Combine .btn-{slug} with .pub-btn--{slug} for non-disabled buttons
+                        // Use slug (not button_type) to prevent type collisions
+                        // e.g. ghost (type=primary) must NOT override .pub-btn--primary
                         $sel = ".btn-{$slugB}";
-                        if (!$isDisabled && $pubClass && preg_match('/^[a-z][a-z0-9\-]*$/', $pubClass)) {
-                            $sel .= ", .pub-btn--{$pubClass}";
+                        if (!$isDisabled && preg_match('/^[a-z][a-z0-9\-]*$/', $slugB)) {
+                            $sel .= ", .pub-btn--{$slugB}";
                         }
                         $css .= "{$sel} {\n";
-                        if (!empty($b['background_color'])) $css .= '  background-color: ' . $cssEsc((string)$b['background_color']) . ";\n";
-                        if (!empty($b['text_color']))       $css .= '  color: '            . $cssEsc((string)$b['text_color'])       . ";\n";
-                        if (!empty($b['border_color']))     $css .= '  border: '           . (int)$b['border_width'] . 'px solid ' . $cssEsc((string)$b['border_color']) . ";\n";
-                        if (isset($b['border_radius']))     $css .= '  border-radius: '    . (int)$b['border_radius'] . "px;\n";
-                        if (!empty($b['padding']))          $css .= '  padding: '          . $cssEsc((string)$b['padding'])          . ";\n";
-                        if (!empty($b['font_size']))        $css .= '  font-size: '        . $cssEsc((string)$b['font_size'])        . ";\n";
-                        if (!empty($b['font_weight']))      $css .= '  font-weight: '      . $cssEsc((string)$b['font_weight'])      . ";\n";
+                        if (!empty($b['background_color'])) $css .= "  background-color: var(--btn-{$slugB}-bg);\n";
+                        if (!empty($b['text_color']))       $css .= "  color:            var(--btn-{$slugB}-color);\n";
+                        if (!empty($b['border_color']))     $css .= "  border:           var(--btn-{$slugB}-border-width, " . (int)$b['border_width'] . "px) solid var(--btn-{$slugB}-border);\n";
+                        if (isset($b['border_radius']))     $css .= "  border-radius:    var(--btn-{$slugB}-radius);\n";
+                        if (!empty($b['padding']))          $css .= "  padding:          var(--btn-{$slugB}-padding);\n";
+                        if (!empty($b['font_size']))        $css .= "  font-size:        var(--btn-{$slugB}-font-size);\n";
+                        if (!empty($b['font_weight']))      $css .= "  font-weight:      var(--btn-{$slugB}-font-weight);\n";
                         $css .= "  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;\n";
                         $css .= "}\n";
                         $hasHover = !empty($b['hover_background_color'])
                                  || !empty($b['hover_text_color'])
                                  || !empty($b['hover_border_color']);
                         if ($hasHover) {
-                            $hoverSel = ".btn-{$slugB}:hover";
-                            if (!$isDisabled && $pubClass && preg_match('/^[a-z][a-z0-9\-]*$/', $pubClass)) {
-                                $hoverSel .= ", .pub-btn--{$pubClass}:hover";
+                            $hoverSel = ".btn-{$slugB}:hover, .btn-{$slugB}:focus-visible";
+                            if (!$isDisabled && preg_match('/^[a-z][a-z0-9\-]*$/', $slugB)) {
+                                $hoverSel .= ", .pub-btn--{$slugB}:hover, .pub-btn--{$slugB}:focus-visible";
                             }
                             $css .= "{$hoverSel} {\n";
-                            if (!empty($b['hover_background_color'])) $css .= '  background-color: ' . $cssEsc((string)$b['hover_background_color']) . ";\n";
-                            if (!empty($b['hover_text_color']))       $css .= '  color: '             . $cssEsc((string)$b['hover_text_color']) . ";\n";
-                            if (!empty($b['hover_border_color']))     $css .= '  border-color: '      . $cssEsc((string)$b['hover_border_color']) . ";\n";
+                            if (!empty($b['hover_background_color'])) $css .= "  background-color: var(--btn-{$slugB}-hover-bg);\n";
+                            if (!empty($b['hover_text_color']))       $css .= "  color:            var(--btn-{$slugB}-hover-color);\n";
+                            if (!empty($b['hover_border_color']))     $css .= "  border-color:     var(--btn-{$slugB}-hover-border);\n";
                             $css .= "}\n";
                         }
                     }
@@ -634,11 +758,11 @@ if (!function_exists('pub_load_theme')) {
                         $slugC = preg_replace('/[^a-z0-9_\-]/', '-', (string)$c['slug']);
                         $hoverEffect = strtolower(trim((string)($c['hover_effect'] ?? '')));
                         $css .= ".card-{$slugC} {\n";
-                        if (!empty($c['background_color'])) $css .= '  background-color: ' . $cssEsc((string)$c['background_color']) . ";\n";
-                        if (!empty($c['border_color']))     $css .= '  border: '           . (int)$c['border_width'] . 'px solid ' . $cssEsc((string)$c['border_color']) . ";\n";
-                        if (isset($c['border_radius']))     $css .= '  border-radius: '    . (int)$c['border_radius'] . "px;\n";
-                        if (!empty($c['shadow_style']))     $css .= '  box-shadow: '       . $cssEsc((string)$c['shadow_style'])     . ";\n";
-                        if (!empty($c['padding']))          $css .= '  padding: '          . $cssEsc((string)$c['padding'])          . ";\n";
+                        if (!empty($c['background_color'])) $css .= "  background-color: var(--card-{$slugC}-bg);\n";
+                        if (!empty($c['border_color']))     $css .= "  border:           var(--card-{$slugC}-border-width, " . (int)$c['border_width'] . "px) solid var(--card-{$slugC}-border);\n";
+                        if (isset($c['border_radius']))     $css .= "  border-radius:    var(--card-{$slugC}-radius);\n";
+                        if (!empty($c['shadow_style']))     $css .= "  box-shadow:       var(--card-{$slugC}-shadow);\n";
+                        if (!empty($c['padding']))          $css .= "  padding:          var(--card-{$slugC}-padding);\n";
                         if (!empty($c['text_align']))       $css .= '  text-align: '       . $cssEsc((string)$c['text_align'])       . ";\n";
                         // Only add transition when a hover effect is configured
                         if ($hoverEffect && $hoverEffect !== 'none') {

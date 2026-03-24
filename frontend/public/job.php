@@ -201,11 +201,11 @@ $_jobDetailCardClass = pub_card_css_class('jobs');
 
             <!-- Success / Error messages -->
             <div id="pubApplySuccess" style="display:none;padding:14px 18px;border-radius:8px;
-                 background:#10b98122;border:1px solid #10b981;color:#10b981;margin-bottom:18px;">
+                 background:color-mix(in srgb, var(--pub-success, #10b981) 15%, transparent);border:1px solid var(--pub-success, #10b981);color:var(--pub-success, #10b981);margin-bottom:18px;">
                 ✅ <?= e(t('jobs.application_success')) ?>
             </div>
             <div id="pubApplyError" style="display:none;padding:14px 18px;border-radius:8px;
-                 background:#ef444422;border:1px solid #ef4444;color:#ef4444;margin-bottom:18px;">
+                 background:color-mix(in srgb, var(--pub-danger, #ef4444) 15%, transparent);border:1px solid var(--pub-danger, #ef4444);color:var(--pub-danger, #ef4444);margin-bottom:18px;">
                 ❌ <span id="pubApplyErrorMsg"><?= e(t('jobs.application_error')) ?></span>
             </div>
 
@@ -215,7 +215,7 @@ $_jobDetailCardClass = pub_card_css_class('jobs');
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:14px;">
                     <div>
                         <label style="display:block;font-size:0.86rem;font-weight:600;color:var(--pub-muted);margin-bottom:5px;">
-                            <?= e(t('jobs.full_name')) ?> <span style="color:#ef4444;">*</span>
+                            <?= e(t('jobs.full_name')) ?> <span style="color:var(--pub-danger, #ef4444);">*</span>
                         </label>
                         <input type="text" name="full_name" required
                                class="pub-search-input" style="width:100%;box-sizing:border-box;"
@@ -223,7 +223,7 @@ $_jobDetailCardClass = pub_card_css_class('jobs');
                     </div>
                     <div>
                         <label style="display:block;font-size:0.86rem;font-weight:600;color:var(--pub-muted);margin-bottom:5px;">
-                            <?= e(t('jobs.email')) ?> <span style="color:#ef4444;">*</span>
+                            <?= e(t('jobs.email')) ?> <span style="color:var(--pub-danger, #ef4444);">*</span>
                         </label>
                         <input type="email" name="email" required
                                class="pub-search-input" style="width:100%;box-sizing:border-box;"

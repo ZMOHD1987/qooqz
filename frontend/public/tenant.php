@@ -3,7 +3,7 @@ declare(strict_types=1);
 /**
  * frontend/public/tenant.php
  * QOOQZ — Tenant Profile Page
- * Shows: tenant name/domain/status, all approved entities, add-entity CTA
+ * Shows: tenant name/status, all approved entities, add-entity CTA
  */
 
 require_once dirname(__DIR__) . '/includes/public_context.php';
@@ -74,16 +74,20 @@ $_tenantEntityCardClass = pub_card_css_class('entities');
     <div class="pub-info-card" style="margin-bottom:28px;">
         <div style="padding:20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
             <div style="width:64px;height:64px;border-radius:12px;background:var(--pub-primary);
-                        display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0;">🌐</div>
+                        display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0;overflow:hidden;">
+                <?php if (!empty($tenant['logo_url'])): ?>
+                    <img src="<?= e(pub_img($tenant['logo_url'], 'tenant_logo')) ?>"
+                         alt="<?= $tenantName ?>" loading="lazy"
+                         style="width:100%;height:100%;object-fit:cover;"
+                         onerror="this.style.display='none';this.parentElement.textContent='🌐'">
+                <?php else: ?>
+                    🌐
+                <?php endif; ?>
+            </div>
             <div style="flex:1;min-width:0;">
                 <h1 style="margin:0 0 4px;font-size:1.4rem;"><?= $tenantName ?></h1>
-                <?php if (!empty($tenant['domain'])): ?>
-                    <p style="margin:0;font-size:0.84rem;color:var(--pub-muted);">
-                        🔗 <?= e($tenant['domain']) ?>
-                    </p>
-                <?php endif; ?>
                 <div style="margin-top:8px;">
-                    <span style="font-size:0.78rem;background:var(--pub-primary);color:#fff;
+                    <span style="font-size:0.78rem;background:var(--pub-primary);color:var(--btn-primary-color, #fff);
                                  padding:3px 10px;border-radius:20px;">
                         <?= e(t('tenants.active_status')) ?>
                     </span>

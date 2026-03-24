@@ -11,38 +11,113 @@
   'use strict';
 
   /* -------------------------------------------------------
-   * 1. Mobile nav toggle
+   * 1. Sidebar toggle (persistent on desktop, slide-out on mobile)
+   *    Desktop: collapse/expand (body.pub-sidebar-collapsed), persisted in localStorage
+   *    Mobile: slide-out overlay (sidebar.open + backdrop.open)
    * ----------------------------------------------------- */
-  function initMobileNav() {
-    var toggle = document.getElementById('pubHamburger');
-    var drawer = document.getElementById('pubMobileNav');
-    var overlay = document.getElementById('pubMobileNav');
+  function initSidebar() {
+    var toggle   = document.getElementById('pubHamburger');
+    var sidebar  = document.getElementById('pubSidebar');
+    var backdrop = document.getElementById('pubSidebarOverlay');
+    var closeBtn = document.getElementById('pubSidebarClose');
 
-    if (!toggle || !drawer) return;
+    if (!toggle || !sidebar) return;
 
+    // Remove any event listeners from inline fallback (header.php) to prevent
+    // double-binding which causes sidebar to open then immediately close on mobile
+    if (toggle.dataset.bound) {
+      var clean = toggle.cloneNode(true);
+      toggle.parentNode.replaceChild(clean, toggle);
+      toggle = clean;
+    }
+    toggle.dataset.bound = 'js';
+
+    var STORAGE_KEY = 'pub_sidebar_collapsed';
+    var MOBILE_BP   = 768; // matches CSS breakpoint
+
+    function isMobile() {
+      return window.innerWidth <= MOBILE_BP;
+    }
+
+    // ── Desktop: collapse / expand ──
+    function restoreDesktopState() {
+      if (isMobile()) return;
+      try {
+        if (localStorage.getItem(STORAGE_KEY) === '1') {
+          document.body.classList.add('pub-sidebar-collapsed');
+        }
+      } catch (e) {}
+    }
+
+    function toggleDesktop() {
+      var collapsed = document.body.classList.toggle('pub-sidebar-collapsed');
+      try { localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0'); } catch (e) {}
+    }
+
+    // ── Mobile: slide-out overlay ──
+    function openMobile() {
+      sidebar.classList.add('open');
+      if (backdrop) backdrop.classList.add('open');
+      toggle.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeMobile() {
+      sidebar.classList.remove('open');
+      if (backdrop) backdrop.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+    }
+
+    // ── Toggle click: desktop vs mobile ──
     toggle.addEventListener('click', function () {
-      var isOpen = drawer.classList.toggle('open');
-      toggle.setAttribute('aria-expanded', String(isOpen));
-      document.body.style.overflow = isOpen ? 'hidden' : '';
-    });
-
-    // Close on overlay click
-    drawer.addEventListener('click', function (e) {
-      if (e.target === drawer) {
-        drawer.classList.remove('open');
-        toggle.setAttribute('aria-expanded', 'false');
-        document.body.style.overflow = '';
+      if (isMobile()) {
+        if (sidebar.classList.contains('open')) {
+          closeMobile();
+        } else {
+          openMobile();
+        }
+      } else {
+        toggleDesktop();
       }
     });
 
-    // Close on Escape key
+    // Close on backdrop click (mobile)
+    if (backdrop) {
+      backdrop.addEventListener('click', closeMobile);
+    }
+
+    // Close button inside sidebar (mobile)
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeMobile);
+    }
+
+    // Escape key closes mobile sidebar
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && drawer.classList.contains('open')) {
-        drawer.classList.remove('open');
-        toggle.setAttribute('aria-expanded', 'false');
-        document.body.style.overflow = '';
+      if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+        closeMobile();
       }
     });
+
+    // On resize: if going from mobile→desktop while sidebar is open, close mobile state
+    window.addEventListener('resize', function () {
+      if (!isMobile() && sidebar.classList.contains('open')) {
+        closeMobile();
+      }
+    });
+
+    // Restore desktop collapsed state from localStorage
+    restoreDesktopState();
+
+    // Highlight active link based on current URL (first match only)
+    var currentPath = window.location.pathname;
+    var links = sidebar.querySelectorAll('.pub-sidebar-link');
+    for (var i = 0; i < links.length; i++) {
+      if (links[i].getAttribute('href') === currentPath) {
+        links[i].classList.add('active');
+        break;
+      }
+    }
   }
 
   /* -------------------------------------------------------
@@ -84,7 +159,7 @@
    * ----------------------------------------------------- */
   function markActiveNav() {
     var path = window.location.pathname;
-    var links = document.querySelectorAll('.pub-nav a, .pub-mobile-nav-inner a');
+    var links = document.querySelectorAll('.pub-sidebar-link');
     links.forEach(function (a) {
       if (a.getAttribute('href') && path.indexOf(a.getAttribute('href')) !== -1) {
         a.classList.add('active');
@@ -260,12 +335,11 @@
   }
 
   /* -------------------------------------------------------
-   * 9. Cart badge — read localStorage and update #pubCartCount
+   * 9. Cart badge — update sidebar cart badge from localStorage
    * ----------------------------------------------------- */
   function initCartBadge() {
     var badges = [
-      document.getElementById('pubCartCount'),
-      document.getElementById('pubCartCountMobile'),
+      document.getElementById('pubCartCountSidebar'),
     ];
     var cart = [];
     try { cart = JSON.parse(localStorage.getItem('pub_cart') || '[]'); } catch (e) {}
@@ -464,7 +538,7 @@
    * ----------------------------------------------------- */
   document.addEventListener('DOMContentLoaded', function () {
     applyTheme();
-    initMobileNav();
+    initSidebar();
     markActiveNav();
     lazyLoadImages();
     initSearch();
@@ -475,6 +549,11 @@
     initCartBadge();
     updateUserDisplay();
     initNotifBell();
+
+    // Register service worker for PWA support
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/frontend/sw.js').catch(function () {});
+    }
   });
 
 })();
@@ -565,9 +644,9 @@ function pubAddToCart(btn) {
     }).catch(function () {}); // silent fail — localStorage is the fallback
   }
 
-  // ── 3. Update header cart count badges ───────────────────────────────────
+  // ── 3. Update sidebar cart count badge ───────────────────────────────────
   var total = cart.reduce(function (s, i) { return s + (Math.max(1, parseInt(i.qty, 10) || 1)); }, 0);
-  [document.getElementById('pubCartCount'), document.getElementById('pubCartCountMobile')]
+  [document.getElementById('pubCartCountSidebar')]
     .forEach(function (badge) {
       if (!badge) return;
       badge.textContent = total;
@@ -637,7 +716,7 @@ function pubRefreshWishlistBadge() {
     // Update badge
     var badge = document.getElementById('pubWishlistCount');
     if (badge) { badge.textContent = count; badge.style.display = count ? 'inline-flex' : 'none'; }
-    var badgeMob = document.getElementById('pubWishlistCountMobile');
+    var badgeMob = document.getElementById('pubWishlistCountSidebar');
     if (badgeMob) { badgeMob.textContent = count; badgeMob.style.display = count ? 'inline-flex' : 'none'; }
     // Update heart buttons on page
     document.querySelectorAll('.pub-wishlist-btn').forEach(function (btn) {
