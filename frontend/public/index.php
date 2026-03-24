@@ -169,8 +169,11 @@ $componentsDir = __DIR__ . '/components';
     $isFullWidth = in_array($component, ['ad_slider', 'ad_search'], true);
 ?>
 <section class="homepage-section"<?= $sStyle ? ' style="' . $sStyle . '"' : '' ?>>
-<?php if ($secCss !== ''): ?>
-<style><?= $secCss ?></style>
+<?php if ($secCss !== ''):
+    // Strip potential style-tag breakout sequences for security
+    $safeCss = str_ireplace(['</style', '<script', '</', '<!--'], '', $secCss);
+?>
+<style><?= $safeCss ?></style>
 <?php endif; ?>
 
 <?php if ($isFullWidth): ?>
