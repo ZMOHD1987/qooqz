@@ -37,7 +37,7 @@ if ($first === 'tenants') {
         $row = $pdoOne(
             "SELECT t.id, t.name, t.status,
                     (SELECT i.url FROM images i
-                      WHERE i.owner_type = 'tenant' AND i.owner_id = t.id
+                      WHERE i.tenant_id = t.id
                         AND i.image_type_id = 21
                       ORDER BY i.id ASC LIMIT 1) AS logo_url
                FROM tenants t WHERE t.id = ? AND t.status = 'active' LIMIT 1",
@@ -61,7 +61,7 @@ if ($first === 'tenants') {
         "SELECT t.id, t.name, t.status,
                 sp.plan_name,
                 (SELECT i.url FROM images i
-                  WHERE i.owner_type = 'tenant' AND i.owner_id = t.id
+                  WHERE i.tenant_id = t.id
                     AND i.image_type_id = 21
                   ORDER BY i.id ASC LIMIT 1) AS logo_url
            FROM tenants t
