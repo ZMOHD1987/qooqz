@@ -721,10 +721,12 @@ if (!function_exists('pub_load_theme')) {
                         $btnType  = strtolower(trim((string)($b['button_type'] ?? '')));
                         $pubClass = $pubBtnTypeMap[$btnType] ?? $btnType;
                         $isDisabled = strpos($slugB, '-disabled') !== false;
-                        // Combine .btn-{slug} with .pub-btn--{type} for non-disabled buttons
+                        // Combine .btn-{slug} with .pub-btn--{slug} for non-disabled buttons
+                        // Use slug (not button_type) to prevent type collisions
+                        // e.g. ghost (type=primary) must NOT override .pub-btn--primary
                         $sel = ".btn-{$slugB}";
-                        if (!$isDisabled && $pubClass && preg_match('/^[a-z][a-z0-9\-]*$/', $pubClass)) {
-                            $sel .= ", .pub-btn--{$pubClass}";
+                        if (!$isDisabled && preg_match('/^[a-z][a-z0-9\-]*$/', $slugB)) {
+                            $sel .= ", .pub-btn--{$slugB}";
                         }
                         $css .= "{$sel} {\n";
                         if (!empty($b['background_color'])) $css .= "  background-color: var(--btn-{$slugB}-bg);\n";
@@ -741,8 +743,8 @@ if (!function_exists('pub_load_theme')) {
                                  || !empty($b['hover_border_color']);
                         if ($hasHover) {
                             $hoverSel = ".btn-{$slugB}:hover, .btn-{$slugB}:focus-visible";
-                            if (!$isDisabled && $pubClass && preg_match('/^[a-z][a-z0-9\-]*$/', $pubClass)) {
-                                $hoverSel .= ", .pub-btn--{$pubClass}:hover, .pub-btn--{$pubClass}:focus-visible";
+                            if (!$isDisabled && preg_match('/^[a-z][a-z0-9\-]*$/', $slugB)) {
+                                $hoverSel .= ", .pub-btn--{$slugB}:hover, .pub-btn--{$slugB}:focus-visible";
                             }
                             $css .= "{$hoverSel} {\n";
                             if (!empty($b['hover_background_color'])) $css .= "  background-color: var(--btn-{$slugB}-hover-bg);\n";
