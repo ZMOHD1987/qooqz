@@ -33,8 +33,8 @@ if ($pdo) {
 
         if ($search !== '') {
             $like = '%' . addcslashes($search, '%_\\') . '%';
-            $where[] = '(e.store_name LIKE ? OR e.email LIKE ?)';
-            $params[] = $like; $params[] = $like;
+            $where[] = 'e.store_name LIKE ?';
+            $params[] = $like;
         }
 
         if ($vType !== '') { $where[] = 'e.vendor_type = ?'; $params[] = $vType; }

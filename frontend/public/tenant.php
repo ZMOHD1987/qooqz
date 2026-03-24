@@ -3,7 +3,7 @@ declare(strict_types=1);
 /**
  * frontend/public/tenant.php
  * QOOQZ — Tenant Profile Page
- * Shows: tenant name/domain/status, all approved entities, add-entity CTA
+ * Shows: tenant name/status, all approved entities, add-entity CTA
  */
 
 require_once dirname(__DIR__) . '/includes/public_context.php';
@@ -77,13 +77,8 @@ $_tenantEntityCardClass = pub_card_css_class('entities');
                         display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0;">🌐</div>
             <div style="flex:1;min-width:0;">
                 <h1 style="margin:0 0 4px;font-size:1.4rem;"><?= $tenantName ?></h1>
-                <?php if (!empty($tenant['domain'])): ?>
-                    <p style="margin:0;font-size:0.84rem;color:var(--pub-muted);">
-                        🔗 <?= e($tenant['domain']) ?>
-                    </p>
-                <?php endif; ?>
                 <div style="margin-top:8px;">
-                    <span style="font-size:0.78rem;background:var(--pub-primary);color:#fff;
+                    <span style="font-size:0.78rem;background:var(--pub-primary);color:var(--btn-primary-color, #fff);
                                  padding:3px 10px;border-radius:20px;">
                         <?= e(t('tenants.active_status')) ?>
                     </span>

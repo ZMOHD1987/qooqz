@@ -603,9 +603,6 @@ else:
                 <div class="pub-entity-avatar">🏪</div>
                 <div class="pub-entity-info">
                     <p class="pub-entity-name"><?= e($ten['name'] ?? '') ?></p>
-                    <?php if (!empty($ten['domain'])): ?>
-                        <p class="pub-entity-desc"><?= e($ten['domain']) ?></p>
-                    <?php endif; ?>
                     <?php if (($ten['status'] ?? '') === 'active'): ?>
                         <span class="pub-entity-verified">🟢 <?= e(t('tenants.active')) ?></span>
                     <?php endif; ?>
