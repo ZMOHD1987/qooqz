@@ -1,0 +1,9 @@
+/* بسيط ومتوافق عالميًا */
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f6f7fb; direction:rtl; }
+.login-container { max-width:680px; margin:24px auto; padding:16px; background:#fff; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,0.06); overflow:auto; max-height:90vh; }
+.form-group { margin-bottom:12px; }
+label { display:block; margin-bottom:6px; color:#333; font-weight:600; }
+input[type="text"], input[type="email"], input[type="password"], input[type="number"], select { width:100%; padding:10px; border-radius:6px; border:1px solid #ddd; box-sizing:border-box; }
+button { display:block; width:100%; padding:12px; background:#007bff; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:16px; }
+button:active { transform:translateY(1px); }
+#message { margin-top:12px; text-align:center; font-weight:600; }

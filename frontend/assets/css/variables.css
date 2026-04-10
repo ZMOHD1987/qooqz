@@ -1,0 +1,367 @@
+/* ============================================================
+   assets/css/variables.css
+   QOOQZ — Design Tokens (DB-driven, 100% from database)
+   
+   Priority chain:
+     1. DB injects :root vars via header.php (generated_css)
+     2. These variables reference those DB vars with fallbacks
+     3. public.css --pub-* vars consume these tokens
+   ============================================================ */
+
+/* -------------------------------------------------------
+   DB Color Variables — injected by header.php from:
+   color_settings table + design_settings table
+   
+   The values below are the live DB values (tenant_id=1):
+   primary_color:        #03874e
+   secondary_color:      #10B981
+   accent_color:         #098684
+   background_main:      #242323
+   background_secondary: #383f42
+   text_primary:         #FFFFFF
+   text_secondary:       #94a3b8
+   border_color:         #7a7a7a
+   header_background:    #8f0f29
+   header_text:          #ffffff
+   sidebar_background:   #3f363f
+   sidebar_text:         #e8e8e8
+   footer_background:    #424343
+   footer_text:          #B0B0B0
+   success_color:        #10b981
+   warning_color:        #f59e0b
+   danger_color:         #ef4444
+   error_color:          #EF4444
+   info_color:           #22C55E
+   input_text:           #494646
+   input_placeholder:    #6B7280
+   sidebar_toggle_bg:    #633b3b
+   sidebar_toggle_bg_hover: #c49121
+   primary_hover:        #00ff00
+   ----------------------------------------------------- */
+
+:root {
+  /* ── Core brand colors (DB color_settings) ───────────────────── */
+  --color-primary:     var(--primary-color,        var(--primary_color,        #03874e));
+  --color-primary-hover: var(--primary-hover,      var(--primary_hover,        #00ff00));
+  --color-secondary:   var(--secondary-color,      var(--secondary_color,      #10B981));
+  --color-accent:      var(--accent-color,         var(--accent_color,         #098684));
+
+  /* ── Status colors (DB color_settings) ──────────────────────── */
+  --color-success:     var(--success-color,        var(--success_color,        #10b981));
+  --color-warning:     var(--warning-color,        var(--warning_color,        #f59e0b));
+  --color-danger:      var(--danger-color,         var(--danger_color,         #ef4444));
+  --color-error:       var(--error-color,          var(--error_color,          #EF4444));
+  --color-info:        var(--info-color,           var(--info_color,           #22C55E));
+
+  /* ── Backgrounds (DB color_settings) ────────────────────────── */
+  --color-bg:          var(--background-main,      var(--background_main,      #242323));
+  --color-surface:     var(--background-secondary, var(--background_secondary, #383f42));
+
+  /* ── Text colors (DB color_settings) ────────────────────────── */
+  --color-text:        var(--text-primary,         var(--text_primary,         #FFFFFF));
+  --color-muted:       var(--text-secondary,       var(--text_secondary,       #94a3b8));
+  --color-inverse-text: #ffffff;
+
+  /* ── Borders (DB color_settings) ────────────────────────────── */
+  --color-border:      var(--border-color,         var(--border_color,         #7a7a7a));
+  --color-shadow:      rgba(0, 0, 0, 0.25);
+
+  /* ── Header (DB color_settings + design_settings) ───────────── */
+  --color-header-bg:   var(--header-background,    var(--header_background,    #8f0f29));
+  --color-header-text: var(--header-text,          var(--header_text,          #ffffff));
+  --header-height-val: var(--header-height,        80);
+
+  /* ── Sidebar (DB color_settings) ────────────────────────────── */
+  --color-sidebar-bg:        var(--sidebar-background,      var(--sidebar_background,      #3f363f));
+  --color-sidebar-card-bg:   var(--sidebar-card-background, var(--sidebar_card_background, #3f363f));
+  --color-sidebar-text:      var(--sidebar-text,            var(--sidebar_text,            #e8e8e8));
+  --color-sidebar-card-text: var(--sidebar-card-text,       var(--sidebar_card_text,       #de1717));
+  --color-sidebar-toggle:    var(--sidebar-toggle-bg,       var(--sidebar_toggle_bg,       #633b3b));
+  --color-sidebar-toggle-hover: var(--sidebar-toggle-bg-hover, var(--sidebar_toggle_bg_hover, #c49121));
+
+  /* ── Footer (DB color_settings + design_settings) ───────────── */
+  --color-footer-bg:   var(--footer-background,    var(--footer_background,    #424343));
+  --color-footer-text: var(--footer-text,          var(--footer_text,          #B0B0B0));
+
+  /* ── Form / Input (DB color_settings) ───────────────────────── */
+  --color-input-text:        var(--input-text,        var(--input_text,        #494646));
+  --color-input-placeholder: var(--input-placeholder, var(--input_placeholder, #6B7280));
+
+  /* ── Semantic / gradient ─────────────────────────────────────── */
+  --brand-gradient: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+
+  /* ── Spacing scale ───────────────────────────────────────────── */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  var(--default-padding, 16px);
+  --space-5:  24px;
+  --space-6:  32px;
+  --space-7:  40px;
+  --space-8:  64px;
+
+  /* ── Typography (DB font_settings) ──────────────────────────── */
+  /* Body / base */
+  --font-family-sans:    "Cairo", "Segoe UI", Roboto, Arial, sans-serif;
+  --font-family-heading: var(--font-family-sans);
+  --font-size-base:      16px;
+  --font-size-sm:        14px;
+  --font-size-lg:        18px;
+  --line-height-base:    1.5;
+
+  /* Card font — card_font row (Roboto, 16px, 400) */
+  --font-family-card:    var(--card-font-family,       var(--card_font_family,      "Roboto, sans-serif"));
+  --font-size-card:      var(--card-font-size,         var(--card_font_size,        16px));
+  --font-weight-card:    var(--card-font-weight,       var(--card_font_weight,      400));
+
+  /* Promo font — promo_font row (Poppins, 18px, 500) */
+  --font-family-promo:   var(--promo-font-family,      var(--promo_font_family,     "Poppins, sans-serif"));
+  --font-size-promo:     var(--promo-font-size,        var(--promo_font_size,       18px));
+  --font-weight-promo:   var(--promo-font-weight,      var(--promo_font_weight,     500));
+
+  /* Form font — form_font row (Open Sans, 16px, 400) */
+  --font-family-form:    var(--form-font-family,       var(--form_font_family,      "Open Sans, sans-serif"));
+  --font-size-form:      var(--form-font-size,         var(--form_font_size,        16px));
+  --font-weight-form:    var(--form-font-weight,       var(--form_font_weight,      400));
+
+  /* Footer font — footer_font row (Open Sans, 14px, 400) */
+  --font-family-footer:  var(--footer-font-family,     var(--footer_font_family,    "Open Sans, sans-serif"));
+  --font-size-footer:    var(--footer-font-size,       var(--footer_font_size,      14px));
+  --font-weight-footer:  var(--footer-font-weight,     var(--footer_font_weight,    400));
+
+  /* Alert font — alert_font row (Open Sans, 16px, 600) */
+  --font-family-alert:   var(--alert-font-family,      var(--alert_font_family,     "Open Sans, sans-serif"));
+  --font-size-alert:     var(--alert-font-size,        var(--alert_font_size,       16px));
+  --font-weight-alert:   var(--alert-font-weight,      var(--alert_font_weight,     600));
+
+  /* Small text — small_text_font row (Open Sans, 12px, 400) */
+  --font-family-small:   var(--small-text-font-family, var(--small_text_font_family,"Open Sans, sans-serif"));
+  --font-size-small:     var(--small-text-font-size,   var(--small_text_font_size,  12px));
+  --font-weight-small:   var(--small-text-font-weight, var(--small_text_font_weight,400));
+
+  /* Code font — code_font row (Courier New, 14px, 400) */
+  --font-family-code:    var(--code-font-family,       var(--code_font_family,      "Courier New, monospace"));
+  --font-size-code:      var(--code-font-size,         var(--code_font_size,        14px));
+  --font-weight-code:    var(--code-font-weight,       var(--code_font_weight,      400));
+
+  /* Heading scale */
+  --fs-h1: 2rem;
+  --fs-h2: 1.625rem;
+  --fs-h3: 1.25rem;
+  --fs-h4: 1rem;
+
+  /* ── Layout (DB design_settings) ────────────────────────────── */
+  --container-width:   var(--container-max-width, 1280px);
+  --sidebar-width:     var(--sidebar-width,        300px);
+
+  /* ── Border radius (DB: border_radius from card_styles = 6–20px) */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --border-width: 1px;
+
+  /* ── Elevation / shadows ─────────────────────────────────────── */
+  --shadow-1: 0 1px 3px var(--color-shadow);
+  --shadow-2: 0 6px 18px rgba(0, 0, 0, 0.18);
+  --shadow-3: 0 12px 36px rgba(0, 0, 0, 0.25);
+
+  /* ── Button tokens (DB button_styles — primary slug) ─────────── */
+  --btn-primary-bg:          var(--btn-primary-bg,          #457d65);
+  --btn-primary-color:       var(--btn-primary-color,       #ffffff);
+  --btn-primary-border:      var(--btn-primary-border,      #888a5e);
+  --btn-primary-radius:      var(--btn-primary-radius,      6px);
+  --btn-primary-padding:     var(--btn-primary-padding,     12px 24px);
+  --btn-primary-hover-bg:    var(--btn-primary-hover-bg,    #382626);
+  --btn-primary-hover-color: var(--btn-primary-hover-color, #ffffff);
+  --btn-primary-hover-border:var(--btn-primary-hover-border,#00ffff);
+
+  /* Secondary button (DB: secondary slug) */
+  --btn-secondary-bg:          var(--btn-secondary-bg,          #10B981);
+  --btn-secondary-color:       var(--btn-secondary-color,       #ffffff);
+  --btn-secondary-border:      var(--btn-secondary-border,      #10B981);
+  --btn-secondary-radius:      var(--btn-secondary-radius,      6px);
+  --btn-secondary-padding:     var(--btn-secondary-padding,     12px 24px);
+  --btn-secondary-hover-bg:    var(--btn-secondary-hover-bg,    #059669);
+  --btn-secondary-hover-color: var(--btn-secondary-hover-color, #ffffff);
+  --btn-secondary-hover-border:var(--btn-secondary-hover-border,#059669);
+
+  /* Danger button (DB: danger slug) */
+  --btn-danger-bg:          var(--btn-danger-bg,          #EF4444);
+  --btn-danger-color:       var(--btn-danger-color,       #ffffff);
+  --btn-danger-border:      var(--btn-danger-border,      #EF4444);
+  --btn-danger-radius:      var(--btn-danger-radius,      6px);
+  --btn-danger-padding:     var(--btn-danger-padding,     12px 24px);
+  --btn-danger-hover-bg:    var(--btn-danger-hover-bg,    #DC2626);
+  --btn-danger-hover-color: var(--btn-danger-hover-color, #ffffff);
+  --btn-danger-hover-border:var(--btn-danger-hover-border,#DC2626);
+
+  /* Warning button (DB: warning slug) */
+  --btn-warning-bg:          var(--btn-warning-bg,          #f5740a);
+  --btn-warning-color:       var(--btn-warning-color,       #ffffff);
+  --btn-warning-border:      var(--btn-warning-border,      #f5870a);
+  --btn-warning-radius:      var(--btn-warning-radius,      6px);
+  --btn-warning-padding:     var(--btn-warning-padding,     12px 24px);
+  --btn-warning-hover-bg:    var(--btn-warning-hover-bg,    #d97706);
+  --btn-warning-hover-color: var(--btn-warning-hover-color, #ffffff);
+
+  /* Info button (DB: info slug) */
+  --btn-info-bg:          var(--btn-info-bg,          #3B82F6);
+  --btn-info-color:       var(--btn-info-color,       #ffffff);
+  --btn-info-border:      var(--btn-info-border,      #3B82F6);
+  --btn-info-radius:      var(--btn-info-radius,      6px);
+  --btn-info-padding:     var(--btn-info-padding,     12px 24px);
+  --btn-info-hover-bg:    var(--btn-info-hover-bg,    #2563eb);
+  --btn-info-hover-color: var(--btn-info-hover-color, #ffffff);
+
+  /* Success button (DB: success slug) */
+  --btn-success-bg:          var(--btn-success-bg,          #10B981);
+  --btn-success-color:       var(--btn-success-color,       #ffffff);
+  --btn-success-border:      var(--btn-success-border,      #10B981);
+  --btn-success-radius:      var(--btn-success-radius,      6px);
+  --btn-success-padding:     var(--btn-success-padding,     12px 24px);
+  --btn-success-hover-bg:    var(--btn-success-hover-bg,    #059669);
+  --btn-success-hover-color: var(--btn-success-hover-color, #ffffff);
+
+  /* ── Breakpoints ─────────────────────────────────────────────── */
+  --breakpoint-sm: 576px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 992px;
+  --breakpoint-xl: 1200px;
+}
+
+/* ── RTL / LTR logical direction helpers ─────────────────────── */
+[dir="rtl"] {
+  --flow-start: right;
+  --flow-end:   left;
+}
+[dir="ltr"] {
+  --flow-start: left;
+  --flow-end:   right;
+}
+
+/* ============================================================
+   DB → pub-* Bridge
+   Maps all DB-injected CSS variables to the --pub-* tokens
+   consumed by public.css.
+   header.php injects the raw DB vars; this file wires them up.
+   ============================================================ */
+:root {
+  /* Core palette */
+  --pub-primary:    var(--color-primary);
+  --pub-secondary:  var(--color-secondary);
+  --pub-accent:     var(--color-accent);
+
+  /* Page backgrounds */
+  --pub-bg:         var(--color-bg);
+  --pub-surface:    var(--color-surface);
+
+  /* Text */
+  --pub-text:       var(--color-text);
+  --pub-muted:      var(--color-muted);
+
+  /* Border */
+  --pub-border:     var(--color-border);
+
+  /* Radii / shadows / transitions */
+  --pub-radius:     var(--radius-md);
+  --pub-radius-sm:  var(--radius-sm);
+  --pub-shadow:     var(--shadow-1);
+  --pub-shadow-hover: var(--shadow-2);
+  --pub-transition: 0.2s ease;
+
+  /* Header */
+  --pub-header-h:   calc(var(--header-height, 80) * 1px);
+  --pub-header-bg:  var(--color-header-bg);
+  --pub-header-text:var(--color-header-text);
+
+  /* Sidebar */
+  --pub-sidebar-bg:          var(--color-sidebar-bg);
+  --pub-sidebar-text:        var(--color-sidebar-text);
+  --pub-sidebar-hover:       var(--color-sidebar-toggle-hover);
+  --pub-sidebar-active:      var(--color-primary);
+  --pub-sidebar-card-bg:     var(--color-sidebar-card-bg);
+  --pub-sidebar-card-text:   var(--color-sidebar-card-text);
+  --pub-sidebar-toggle-bg:   var(--color-sidebar-toggle);
+  --pub-sidebar-toggle-hover:var(--color-sidebar-toggle-hover);
+
+  /* Footer */
+  --pub-footer-bg:   var(--color-footer-bg);
+  --pub-footer-text: var(--color-footer-text);
+
+  /* Slider overlay / arrows / dots (referenced in slider.php) — DB-driven */
+  --pub-slider-overlay:    linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 100%);
+  --pub-slider-text:       var(--text-primary, var(--text_primary, #ffffff));
+  --pub-slider-arrow-bg:   rgba(0,0,0,0.45);
+  --pub-slider-arrow-hover:rgba(0,0,0,0.72);
+  --pub-slider-dot-bg:     rgba(255,255,255,0.45);
+  --pub-slider-dot-active: var(--primary-color, var(--primary_color, #03874e));
+
+  /* Status */
+  --pub-success: var(--color-success);
+  --pub-warning: var(--color-warning);
+  --pub-danger:  var(--color-danger);
+  --pub-error:   var(--color-error);
+  --pub-info:    var(--color-info);
+
+  /* Container */
+  --pub-container-width: var(--container-width);
+  --pub-sidebar-width:   var(--sidebar-width);
+
+  /* Input */
+  --pub-input-text:        var(--color-input-text);
+  --pub-input-placeholder: var(--color-input-placeholder);
+  --pub-input-bg:          var(--color-surface);
+
+  /* Card defaults from DB card_styles */
+  --pub-card-product-bg:     var(--card-product-default-bg,     #ff470a);
+  --pub-card-product-border: var(--card-product-default-border, #27ec3e);
+  --pub-card-product-radius: var(--card-product-default-radius, 12px);
+  --pub-card-product-shadow: var(--card-product-default-shadow, 0 4px 20px rgba(255,99,71,0.2));
+
+  --pub-card-category-bg:     var(--card-category-default-bg,     #e3a0b7);
+  --pub-card-category-border: var(--card-category-default-border, #ba55d3);
+  --pub-card-category-radius: var(--card-category-default-radius, 20px);
+  --pub-card-category-shadow: var(--card-category-default-shadow, 0 4px 20px rgba(186,85,211,0.2));
+
+  --pub-card-entity-bg:     var(--card-entities-default-bg,     #24ebf9);
+  --pub-card-entity-border: var(--card-entities-default-border, #7c030f);
+  --pub-card-entity-radius: var(--card-entities-default-radius, 8px);
+  --pub-card-entity-shadow: var(--card-entities-default-shadow, 0 4px 20px rgba(30,144,255,0.2));
+
+  --pub-card-job-bg:     var(--card-jobs-default-bg,     #eef6ff);
+  --pub-card-job-border: var(--card-jobs-default-border, #3b82f6);
+  --pub-card-job-radius: var(--card-jobs-default-radius, 12px);
+  --pub-card-job-shadow: var(--card-jobs-default-shadow, 0 4px 20px rgba(59,130,246,0.2));
+
+  --pub-card-promo-bg:     var(--card-promo-default-bg,     #fff0f5);
+  --pub-card-promo-border: var(--card-promo-default-border, #d5e21d);
+  --pub-card-promo-radius: var(--card-promo-default-radius, 8px);
+
+  --pub-card-feature-bg:     var(--card-feature-default-bg,     #6fb2ec);
+  --pub-card-feature-border: var(--card-feature-default-border, #53a1f3);
+  --pub-card-feature-radius: var(--card-feature-default-radius, 8px);
+
+  --pub-card-banner-bg:     var(--card-banner-default-bg,     #f94383);
+  --pub-card-banner-border: var(--card-banner-default-border, #e21dad);
+  --pub-card-banner-radius: var(--card-banner-default-radius, 8px);
+
+  --pub-card-tenants-bg:     var(--card-tenants-default-bg,     #e3a0b7);
+  --pub-card-tenants-border: var(--card-tenants-default-border, #dddddd);
+  --pub-card-tenants-radius: var(--card-tenants-default-radius, 8px);
+
+  --pub-card-discount-bg:     var(--card-discount-default-bg,     #fff7ed);
+  --pub-card-discount-border: var(--card-discount-default-border, #f97316);
+  --pub-card-discount-radius: var(--card-discount-default-radius, 12px);
+  --pub-card-discount-shadow: var(--card-discount-default-shadow, 0 4px 20px rgba(249,115,22,0.25));
+
+  --pub-card-auction-bg:     var(--card-auction-default-bg,     #5ef37c);
+  --pub-card-auction-border: var(--card-auction-default-border, #acf37c);
+  --pub-card-auction-radius: var(--card-auction-default-radius, 12px);
+  --pub-card-auction-shadow: var(--card-auction-default-shadow, 0 6px 24px rgba(14,165,233,0.25));
+
+  --pub-card-notification-bg:     var(--card-notification-default-bg,     #fffbe6);
+  --pub-card-notification-border: var(--card-notification-default-border, #f59e0b);
+  --pub-card-notification-radius: var(--card-notification-default-radius, 10px);
+  --pub-card-notification-shadow: var(--card-notification-default-shadow, 0 2px 10px rgba(245,158,11,0.2));
+}
