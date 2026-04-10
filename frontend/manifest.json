@@ -1,0 +1,22 @@
+{
+  "name": "Qooqz Store",
+  "short_name": "Qooqz",
+  "description": "Online shopping store",
+  "start_url": "/frontend/public/index.php",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#242323",
+  "theme_color": "#03874e",
+  "scope": "/frontend/",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/images/default-image.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["shopping", "business"],
+  "prefer_related_applications": false
+}
