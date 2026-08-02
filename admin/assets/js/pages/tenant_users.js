@@ -366,7 +366,7 @@
         }
 
         // Previous
-        html += `<button class="btn btn-sm btn-outline ${page === 1 ? 'disabled' : ''}" 
+        html += `<button class="btn btn-sm btn-secondary ${page === 1 ? 'disabled' : ''}" data-btn-slug="secondary" 
                         ${page > 1 ? `onclick="TenantUsers.load(${page - 1})"` : ''}>
                     &laquo; ${t('pagination.previous', 'Previous')}
                  </button>`;
@@ -382,22 +382,22 @@
         }
 
         if (startPage > 1) {
-            html += `<button class="btn btn-sm btn-outline" onclick="TenantUsers.load(1)">1</button>`;
+            html += `<button class="btn btn-sm btn-secondary" data-btn-slug="secondary" onclick="TenantUsers.load(1)">1</button>`;
             if (startPage > 2) html += `<span class="page-ellipsis">...</span>`;
         }
 
         for (let i = startPage; i <= endPage; i++) {
-            html += `<button class="btn btn-sm ${i === page ? 'btn-primary' : 'btn-outline'}" 
+            html += `<button class="btn btn-sm ${i === page ? 'btn-primary' : 'btn-secondary'}" ${i !== page ? 'data-btn-slug="secondary"' : 'data-btn-slug="primary"'} 
                             onclick="TenantUsers.load(${i})">${i}</button>`;
         }
 
         if (endPage < pages) {
             if (endPage < pages - 1) html += `<span class="page-ellipsis">...</span>`;
-            html += `<button class="btn btn-sm btn-outline" onclick="TenantUsers.load(${pages})">${pages}</button>`;
+            html += `<button class="btn btn-sm btn-secondary" data-btn-slug="secondary" onclick="TenantUsers.load(${pages})">${pages}</button>`;
         }
 
         // Next
-        html += `<button class="btn btn-sm btn-outline ${page === pages ? 'disabled' : ''}" 
+        html += `<button class="btn btn-sm btn-secondary ${page === pages ? 'disabled' : ''}" data-btn-slug="secondary" 
                         ${page < pages ? `onclick="TenantUsers.load(${page + 1})"` : ''}>
                     ${t('pagination.next', 'Next')} &raquo;
                  </button>`;
@@ -468,7 +468,7 @@
                     </td>
                     <td>
                         <div class="table-actions">
-                            ${state.permissions.canEdit ? `<button class="btn btn-sm btn-outline" onclick="TenantUsers.edit(${item.id})">${t('table.actions.edit')}</button>` : ''}
+                            ${state.permissions.canEdit ? `<button class="btn btn-sm btn-icon btn-secondary" data-btn-slug="secondary" onclick="TenantUsers.edit(${item.id})" title="${t('table.actions.edit')}" aria-label="${t('table.actions.edit')}"><i class="fas fa-edit" aria-hidden="true"></i></button>` : ''}
                             ${state.permissions.canDelete ? `<button class="btn btn-sm btn-danger" onclick="TenantUsers.remove(${item.id})">${t('table.actions.delete')}</button>` : ''}
                         </div>
                     </td>
@@ -477,6 +477,9 @@
         }
 
         el.tbody.innerHTML = html;
+        if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
+            Admin.buttons.applyHoverEffects(el.tbody);
+        }
         if (el.container) el.container.style.display = 'block';
         if (el.empty) el.empty.style.display = 'none';
         if (el.error) el.error.style.display = 'none';
@@ -1082,6 +1085,9 @@
 
         // Load initial data
         load();
+        if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
+            Admin.buttons.applyHoverEffects(document.querySelector('#tenantUsersPageContainer, .page-container'));
+        }
         console.log('[TenantUsers] Initialized successfully!');
     }
 

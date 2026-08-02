@@ -79,8 +79,8 @@ function loadFlashSales(page) {
                         '<td>' + esc(String(item.total_products || 0)) + '</td>' +
                         '<td>' + esc(String(item.total_sales || 0)) + '</td>' +
                         '<td class="actions-cell">' +
-                            '<button class="btn btn-sm btn-info btn-products" data-id="' + item.id + '">' + t('products.title', 'Products') + '</button> ' +
-                            '<button class="btn btn-sm btn-secondary btn-translations" data-id="' + item.id + '">' + t('translations.title', 'Translations') + '</button> ' +
+                            '<button class="btn btn-sm btn-secondary btn-products" data-btn-slug="secondary" data-id="' + item.id + '">' + t('products.title', 'Products') + '</button> ' +
+                            '<button class="btn btn-sm btn-secondary btn-translations" data-btn-slug="secondary" data-id="' + item.id + '">' + t('translations.title', 'Translations') + '</button> ' +
                             '<button class="btn btn-sm btn-primary btn-edit" data-id="' + item.id + '">' + t('edit', 'Edit') + '</button> ' +
                             '<button class="btn btn-sm btn-danger btn-delete" data-id="' + item.id + '">' + t('delete', 'Delete') + '</button>' +
                         '</td>';

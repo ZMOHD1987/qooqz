@@ -31,7 +31,8 @@
     "notes": "Notes",
     "date": "Date",
     "actions": "Actions",
-    "no_records": "No movements found"
+    "no_records": "No movements found",
+    "loading": "Loading..."
   },
   "form": {
     "product_id": "Product ID",
@@ -52,7 +53,9 @@
     "adjustment": "Adjustment"
   },
   "filter": {
-    "search": "Search...",
+    "search": "Search",
+    "search_placeholder": "Search by product name or SKU...",
+    "type": "Type",
     "all_types": "All Types",
     "date_from": "From Date",
     "date_to": "To Date",

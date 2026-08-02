@@ -211,8 +211,8 @@
                 .map(d => d.slice(0, 10))
                 .join(' → ') || '—';
 
-            const editBtn   = CAN_EDIT   ? `<button class="btn btn-sm btn-outline btn-edit"   data-id="${banner.id}"><i class="fas fa-edit"></i></button>`   : '';
-            const deleteBtn = CAN_DELETE ? `<button class="btn btn-sm btn-danger btn-delete"  data-id="${banner.id}"><i class="fas fa-trash"></i></button>` : '';
+            const editBtn   = CAN_EDIT   ? `<button class="btn btn-sm btn-icon btn-primary btn-edit" data-btn-slug="primary" data-id="${banner.id}" title="${esc(t('table.actions.edit', 'Edit'))}" aria-label="${esc(t('table.actions.edit', 'Edit'))}"><i class="fas fa-edit" aria-hidden="true"></i></button>` : '';
+            const deleteBtn = CAN_DELETE ? `<button class="btn btn-sm btn-icon btn-danger btn-delete" data-btn-slug="danger" data-id="${banner.id}" title="${esc(t('table.actions.delete', 'Delete'))}" aria-label="${esc(t('table.actions.delete', 'Delete'))}"><i class="fas fa-trash" aria-hidden="true"></i></button>` : '';
 
             return `<tr data-id="${banner.id}">
                 <td style="padding:10px 12px;">${esc(banner.id)}</td>
@@ -236,6 +236,9 @@
 
         tbody.innerHTML = rows.join('');
         bindTableActions();
+        if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
+            Admin.buttons.applyHoverEffects(tbody);
+        }
     }
 
     function bindTableActions() {
@@ -260,6 +263,9 @@
         if (formContainer) {
             formContainer.style.display = 'block';
             formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
+                Admin.buttons.applyHoverEffects(formContainer);
+            }
         }
     }
 
@@ -269,7 +275,12 @@
         const titleEl = $('bannerFormTitle');
         if (titleEl) titleEl.textContent = t('form.edit_title', 'Edit Banner');
         const formContainer = $('bannerFormContainer');
-        if (formContainer) formContainer.style.display = 'block';
+        if (formContainer) {
+            formContainer.style.display = 'block';
+            if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
+                Admin.buttons.applyHoverEffects(formContainer);
+            }
+        }
 
         try {
             const data = await apiGet(`${API_URL}/${id}?all_translations=1`);
@@ -638,7 +649,7 @@
             <div class="translation-panel-header">
                 <span class="lang-badge">${esc(langCode.toUpperCase())}</span>
                 <span>${esc(langName)}</span>
-                <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('.banner-translation-panel').remove()">
+                <button type="button" class="btn btn-sm btn-danger" data-btn-slug="danger" onclick="this.closest('.banner-translation-panel').remove()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -765,6 +776,9 @@
             loadLanguages(),
             loadButtonStyles()
         ]);
+        if (window.Admin && Admin.buttons && Admin.buttons.applyHoverEffects) {
+            Admin.buttons.applyHoverEffects(document.querySelector('#bannersPageContainer'));
+        }
         console.log('[Banners] ✓ Initialized');
     }
 

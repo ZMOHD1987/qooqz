@@ -108,19 +108,16 @@ $imageTypeId = 9; // banner image type (from image_types table)
       data-i18n-files="/languages/Banners/<?= rawurlencode($lang) ?>.json">
 
 <!-- Page Container -->
-<div class="page-container" id="bannersPageContainer" dir="<?= htmlspecialchars($dir) ?>">
+<div class="page-container full-page-admin" id="bannersPageContainer" dir="<?= htmlspecialchars($dir) ?>">
 
-    <!-- Page Header -->
+    <!-- Page Header (single line: title + action button) -->
     <div class="page-header">
-        <div class="page-header-content">
-            <h1 class="page-title" data-i18n="banners.title"><?= __t('banners.title', 'Banners') ?></h1>
-            <p class="page-subtitle" data-i18n="banners.subtitle"><?= __t('banners.subtitle', 'Manage banners and their translations') ?></p>
-        </div>
+        <h1 class="page-title" data-i18n="banners.title"><?= __t('banners.title', 'Banners') ?></h1>
         <div class="page-header-actions">
             <?php if ($canCreate): ?>
-            <button id="btnAddBanner" class="btn btn-primary">
-                <i class="fas fa-plus"></i>
-                <span data-i18n="banners.add_new"><?= __t('banners.add_new', 'Add Banner') ?></span>
+            <button id="btnAddBanner" class="btn btn-sm btn-icon btn-primary" data-btn-slug="primary"
+                    title="<?= __t('banners.add_new', 'Add Banner') ?>" aria-label="<?= __t('banners.add_new', 'Add Banner') ?>">
+                <i class="fas fa-plus" aria-hidden="true"></i>
             </button>
             <?php endif; ?>
         </div>
@@ -130,8 +127,9 @@ $imageTypeId = 9; // banner image type (from image_types table)
     <div id="bannerFormContainer" class="card form-card" style="display:none">
         <div class="card-header">
             <h3 class="card-title" id="bannerFormTitle" data-i18n="form.add_title"><?= __t('form.add_title', 'Add Banner') ?></h3>
-            <button type="button" class="btn btn-sm btn-outline" id="btnCloseForm" aria-label="<?= __t('accessibility.close', 'Close') ?>">
-                <i class="fas fa-times"></i>
+            <button type="button" class="btn btn-sm btn-icon btn-secondary" id="btnCloseForm" data-btn-slug="secondary"
+                    title="<?= __t('accessibility.close', 'Close') ?>" aria-label="<?= __t('accessibility.close', 'Close') ?>">
+                <i class="fas fa-times" aria-hidden="true"></i>
             </button>
         </div>
         <div class="card-body">
@@ -299,12 +297,12 @@ $imageTypeId = 9; // banner image type (from image_types table)
                                  alt=""
                                  style="display:none; max-width:200px; max-height:80px; object-fit:cover; border-radius:6px; border:1px solid var(--border-color,#263044);">
                             <div style="display:flex; flex-direction:column; gap:8px; min-width:140px;">
-                                <button type="button" id="bannerSelectImageBtn" class="btn btn-secondary" data-i18n="common.select_image">
-                                    <i class="fas fa-images"></i>
+                                <button type="button" id="bannerSelectImageBtn" class="btn btn-sm btn-secondary" data-btn-slug="secondary" data-i18n="common.select_image">
+                                    <i class="fas fa-images" aria-hidden="true"></i>
                                     <?= __t('common.select_image', 'Select Image') ?>
                                 </button>
-                                <button type="button" id="bannerRemoveImageBtn" class="btn btn-outline-danger" data-i18n="common.remove_image">
-                                    <i class="fas fa-times"></i>
+                                <button type="button" id="bannerRemoveImageBtn" class="btn btn-sm btn-danger" data-btn-slug="danger" data-i18n="common.remove_image">
+                                    <i class="fas fa-times" aria-hidden="true"></i>
                                     <?= __t('common.remove_image', 'Remove Image') ?>
                                 </button>
                             </div>
@@ -381,8 +379,8 @@ $imageTypeId = 9; // banner image type (from image_types table)
                             <select id="bannerLangSelect" class="form-control" style="flex:1;">
                                 <option value=""><?= __t('form.translations.choose_language', 'Choose language') ?></option>
                             </select>
-                            <button type="button" id="bannerAddLangBtn" class="btn btn-primary">
-                                <i class="fas fa-plus"></i>
+                            <button type="button" id="bannerAddLangBtn" class="btn btn-sm btn-primary" data-btn-slug="primary">
+                                <i class="fas fa-plus" aria-hidden="true"></i>
                                 <?= __t('form.translations.add_translation', 'Add Translation') ?>
                             </button>
                         </div>
@@ -392,10 +390,10 @@ $imageTypeId = 9; // banner image type (from image_types table)
 
                 <!-- Form Actions -->
                 <div class="form-actions">
-                    <button type="button" class="btn btn-outline" id="btnCancelForm" data-i18n="form.buttons.cancel">
+                    <button type="button" class="btn btn-secondary" id="btnCancelForm" data-btn-slug="secondary" data-i18n="form.buttons.cancel">
                         <?= __t('form.buttons.cancel', 'Cancel') ?>
                     </button>
-                    <button type="submit" id="bannerSaveBtn" class="btn btn-primary">
+                    <button type="submit" id="bannerSaveBtn" class="btn btn-primary" data-btn-slug="primary">
                         <span id="bannerSaveBtnText" data-i18n="form.buttons.save">
                             <?= __t('form.buttons.save', 'Save') ?>
                         </span>
@@ -433,8 +431,9 @@ $imageTypeId = 9; // banner image type (from image_types table)
                     <option value="0" data-i18n="filters.status_options.inactive"><?= __t('filters.status_options.inactive', 'Inactive') ?></option>
                 </select>
 
-                <button id="btnRefresh" class="btn btn-outline" title="<?= __t('banners.retry', 'Retry') ?>">
-                    <i class="fas fa-sync-alt"></i>
+                <button id="btnRefresh" class="btn btn-sm btn-icon btn-secondary" data-btn-slug="secondary"
+                       title="<?= __t('banners.retry', 'Retry') ?>" aria-label="<?= __t('banners.retry', 'Retry') ?>">
+                    <i class="fas fa-sync-alt" aria-hidden="true"></i>
                 </button>
             </div>
         </div>
@@ -477,8 +476,9 @@ $imageTypeId = 9; // banner image type (from image_types table)
     <div class="media-studio-container">
         <div class="media-studio-header">
             <h4><i class="fas fa-images" style="margin-inline-end:8px;color:var(--primary-color,#3b82f6);"></i><?= __t('common.select_image', 'Select Image') ?></h4>
-            <button type="button" id="bannerMediaStudioClose" class="btn btn-outline btn-sm" aria-label="<?= __t('accessibility.close', 'Close') ?>">
-                <i class="fas fa-times"></i>
+            <button type="button" id="bannerMediaStudioClose" class="btn btn-sm btn-icon btn-secondary" data-btn-slug="secondary"
+                    title="<?= __t('accessibility.close', 'Close') ?>" aria-label="<?= __t('accessibility.close', 'Close') ?>">
+                <i class="fas fa-times" aria-hidden="true"></i>
             </button>
         </div>
         <iframe id="bannerMediaStudioFrame"

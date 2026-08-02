@@ -305,10 +305,10 @@
                     <td><small>${esc(endDate)}</small></td>
                     <td>
                         <div class="table-actions">
-                            ${canEdit ? `<button class="btn btn-sm btn-primary" onclick="Auctions.edit(${a.id})" title="Edit">
+                            ${canEdit ? `<button class="btn btn-sm btn-primary" onclick="Auctions.edit(${a.id})" title="${t('table.actions.edit', 'Edit')}">
                                 <i class="fas fa-edit"></i>
                             </button>` : ''}
-                            ${canDelete ? `<button class="btn btn-sm btn-danger" onclick="Auctions.remove(${a.id})" title="Delete">
+                            ${canDelete ? `<button class="btn btn-sm btn-danger" onclick="Auctions.remove(${a.id})" title="${t('table.actions.delete', 'Delete')}">
                                 <i class="fas fa-trash"></i>
                             </button>` : ''}
                         </div>

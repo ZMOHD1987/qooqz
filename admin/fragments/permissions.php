@@ -117,47 +117,6 @@ if (!function_exists('__tr')) {
 }
 
 // ════════════════════════════════════════════════════════════
-// DB-DRIVEN CSS VARS HELPER (Permissions)
-// ════════════════════════════════════════════════════════════
-if (!function_exists('renderFragmentThemeVars')) {
-    function renderFragmentThemeVars(array $theme): void {
-        echo ':root {' . PHP_EOL;
-        foreach ($theme['color_settings'] ?? [] as $c) {
-            if (empty($c['setting_key']) || !isset($c['color_value'])) continue;
-            $k = htmlspecialchars($c['setting_key'], ENT_QUOTES);
-            $h = htmlspecialchars(str_replace('_', '-', $c['setting_key']), ENT_QUOTES);
-            $v = htmlspecialchars($c['color_value'], ENT_QUOTES);
-            echo "    --{$k}: {$v};" . PHP_EOL;
-            if ($h !== $k) echo "    --{$h}: {$v};" . PHP_EOL;
-        }
-        foreach ($theme['font_settings'] ?? [] as $f) {
-            if (empty($f['setting_key'])) continue;
-            $sk = htmlspecialchars($f['setting_key'], ENT_QUOTES);
-            $sh = htmlspecialchars(str_replace('_', '-', $f['setting_key']), ENT_QUOTES);
-            if (!empty($f['font_family'])) {
-                $ff = htmlspecialchars($f['font_family'], ENT_QUOTES);
-                echo "    --{$sk}-family: {$ff};" . PHP_EOL;
-                if ($sh !== $sk) echo "    --{$sh}-family: {$ff};" . PHP_EOL;
-            }
-            if (!empty($f['font_size'])) {
-                $fs = htmlspecialchars($f['font_size'], ENT_QUOTES);
-                echo "    --{$sk}-size: {$fs};" . PHP_EOL;
-                if ($sh !== $sk) echo "    --{$sh}-size: {$fs};" . PHP_EOL;
-            }
-        }
-        foreach ($theme['design_settings'] ?? [] as $d) {
-            if (empty($d['setting_key']) || !isset($d['setting_value'])) continue;
-            $dk = htmlspecialchars($d['setting_key'], ENT_QUOTES);
-            $dh = htmlspecialchars(str_replace('_', '-', $d['setting_key']), ENT_QUOTES);
-            $dv = htmlspecialchars($d['setting_value'], ENT_QUOTES);
-            echo "    --{$dk}: {$dv};" . PHP_EOL;
-            if ($dh !== $dk) echo "    --{$dh}: {$dv};" . PHP_EOL;
-        }
-        echo '}' . PHP_EOL;
-    }
-}
-
-// ════════════════════════════════════════════════════════════
 // GET TENANTS FOR SUPER ADMIN
 // ════════════════════════════════════════════════════════════
 $allTenants = [];
@@ -172,22 +131,14 @@ if ($isSuperAdmin && $pdo instanceof PDO) {
 $apiBase = '/api';
 
 ?>
-<!-- DB-driven CSS vars (all settings, colors, fonts from database) -->
-<style id="db-theme-vars-permissions">
-<?php renderFragmentThemeVars($GLOBALS['ADMIN_UI']['theme'] ?? []); ?>
-<?php if (!empty($GLOBALS['ADMIN_UI']['theme']['generated_css'])): ?>
-<?= $GLOBALS['ADMIN_UI']['theme']['generated_css'] ?>
-<?php endif; ?>
-</style>
-
 <!-- Force load CSS if embedded -->
 <?php if ($isFragment): ?>
-<link rel="stylesheet" href="/admin/assets/css/permissions-system.css">
+<link rel="stylesheet" href="/admin/assets/css/pages/permissions.css?v=<?= assetVer('/admin/assets/css/pages/permissions.css') ?>">
 <?php endif; ?>
 
 <!-- Page Meta -->
 <meta data-page="permissions"
-      data-assets-css="/admin/assets/css/permissions-system.css"
+      data-assets-css="/admin/assets/css/pages/permissions.css"
       data-i18n-files="/languages/Permissions/<?= rawurlencode($lang) ?>.json">
 
 <!-- Page Container -->
@@ -218,7 +169,7 @@ $apiBase = '/api';
                 <?= $tenantId === null ? '<strong data-i18n="permissions.global">'.  __t('permissions.global', 'Global') .'</strong>' : 'ID ' . (int)$tenantId ?>
             </div>
             <?php endif; ?>
-            <button class="btn btn-secondary btn-sm" onclick="PermissionsApp.refreshAll()">
+            <button class="btn btn-secondary btn-sm" onclick="PermissionsApp.refreshAll()" data-btn-slug="secondary">
                 <i class="fas fa-sync"></i> <span data-i18n="permissions.btn_refresh"><?= __t('permissions.btn_refresh', 'Refresh') ?></span>
             </button>
         </div>
@@ -250,7 +201,7 @@ $apiBase = '/api';
                 <div class="actions">
                     <input type="text" id="rolesSearch" class="form-control" data-i18n-placeholder="permissions.search_roles" placeholder="<?= __t('permissions.search_roles', 'Search roles...') ?>" style="width:250px;">
                     <?php if ($canCreate): ?>
-                    <button class="btn btn-primary" onclick="PermissionsApp.openRoleModal()">
+                    <button class="btn btn-primary" onclick="PermissionsApp.openRoleModal()" data-btn-slug="primary">
                         <i class="fas fa-plus"></i> <span data-i18n="permissions.add_role"><?= __t('permissions.add_role', 'Add Role') ?></span>
                     </button>
                     <?php endif; ?>
@@ -281,7 +232,7 @@ $apiBase = '/api';
                     <i class="fas fa-users-cog"></i>
                     <h3 data-i18n="permissions.no_roles"><?= __t('permissions.no_roles', 'No Roles') ?></h3>
                     <?php if ($canCreate): ?>
-                    <button class="btn btn-primary" onclick="PermissionsApp.openRoleModal()">
+                    <button class="btn btn-primary" onclick="PermissionsApp.openRoleModal()" data-btn-slug="primary">
                         <i class="fas fa-plus"></i> <span data-i18n="permissions.add_first_role"><?= __t('permissions.add_first_role', 'Add First Role') ?></span>
                     </button>
                     <?php endif; ?>
@@ -300,7 +251,7 @@ $apiBase = '/api';
                 <div class="actions">
                     <input type="text" id="permissionsSearch" class="form-control" data-i18n-placeholder="permissions.search_permissions" placeholder="<?= __t('permissions.search_permissions', 'Search permissions...') ?>" style="width:250px;">
                     <?php if ($canCreate): ?>
-                    <button class="btn btn-primary" onclick="PermissionsApp.openPermissionModal()">
+                    <button class="btn btn-primary" onclick="PermissionsApp.openPermissionModal()" data-btn-slug="primary">
                         <i class="fas fa-plus"></i> <span data-i18n="permissions.add_permission"><?= __t('permissions.add_permission', 'Add Permission') ?></span>
                     </button>
                     <?php endif; ?>
@@ -331,7 +282,7 @@ $apiBase = '/api';
                     <i class="fas fa-key"></i>
                     <h3 data-i18n="permissions.no_permissions"><?= __t('permissions.no_permissions', 'No Permissions') ?></h3>
                     <?php if ($canCreate): ?>
-                    <button class="btn btn-primary" onclick="PermissionsApp.openPermissionModal()">
+                    <button class="btn btn-primary" onclick="PermissionsApp.openPermissionModal()" data-btn-slug="primary">
                         <i class="fas fa-plus"></i> <span data-i18n="permissions.add_first_permission"><?= __t('permissions.add_first_permission', 'Add First Permission') ?></span>
                     </button>
                     <?php endif; ?>
@@ -358,14 +309,14 @@ $apiBase = '/api';
                 </h3>
                 <div class="actions">
                     <input type="text" id="assignPermSearch" class="form-control" data-i18n-placeholder="permissions.search" placeholder="<?= __t('permissions.search', 'Search...') ?>" style="width:200px;">
-                    <button class="btn btn-primary btn-sm" onclick="PermissionsApp.selectAllAssign()">
+                    <button class="btn btn-primary btn-sm" onclick="PermissionsApp.selectAllAssign()" data-btn-slug="primary">
                         <i class="fas fa-check-double"></i> <span data-i18n="permissions.select_all"><?= __t('permissions.select_all', 'Select All') ?></span>
                     </button>
-                    <button class="btn btn-secondary btn-sm" onclick="PermissionsApp.deselectAllAssign()">
+                    <button class="btn btn-secondary btn-sm" onclick="PermissionsApp.deselectAllAssign()" data-btn-slug="secondary">
                         <i class="fas fa-times"></i> <span data-i18n="permissions.clear"><?= __t('permissions.clear', 'Clear') ?></span>
                     </button>
                     <?php if ($canEdit): ?>
-                    <button class="btn btn-success" id="btnSaveAssign">
+                    <button class="btn btn-success" id="btnSaveAssign" data-btn-slug="success">
                         <i class="fas fa-save"></i> <span data-i18n="permissions.save"><?= __t('permissions.save', 'Save') ?></span>
                     </button>
                     <?php endif; ?>
@@ -394,12 +345,12 @@ $apiBase = '/api';
                 <div class="actions">
                     <input type="text" id="resourcesSearch" class="form-control" data-i18n-placeholder="permissions.search" placeholder="<?= __t('permissions.search', 'Search...') ?>" style="width:200px;">
                     <?php if ($canCreate): ?>
-                    <button class="btn btn-primary btn-sm" onclick="PermissionsApp.openResourcePermModal()">
+                    <button class="btn btn-primary btn-sm" onclick="PermissionsApp.openResourcePermModal()" data-btn-slug="primary">
                         <i class="fas fa-plus"></i> <span data-i18n="permissions.add_resource_permission"><?= __t('permissions.add_resource_permission', 'Add Resource Permission') ?></span>
                     </button>
                     <?php endif; ?>
                     <?php if ($canEdit): ?>
-                    <button class="btn btn-success" id="btnSaveResource">
+                    <button class="btn btn-success" id="btnSaveResource" data-btn-slug="success">
                         <i class="fas fa-save"></i> <span data-i18n="permissions.save_changes"><?= __t('permissions.save_changes', 'Save Changes') ?></span>
                     </button>
                     <?php endif; ?>
@@ -439,8 +390,6 @@ $apiBase = '/api';
         </div>
     </div>
 
-</div>
-
 <!-- MODALS -->
 <div class="modal" id="roleModal">
     <div class="modal-dialog">
@@ -463,8 +412,8 @@ $apiBase = '/api';
             </form>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="PermissionsApp.closeRoleModal()" data-i18n="permissions.cancel"><?= __t('permissions.cancel', 'Cancel') ?></button>
-            <button class="btn btn-primary" id="btnSaveRole">
+            <button class="btn btn-secondary" onclick="PermissionsApp.closeRoleModal()" data-btn-slug="secondary" data-i18n="permissions.cancel"><?= __t('permissions.cancel', 'Cancel') ?></button>
+            <button class="btn btn-primary" id="btnSaveRole" data-btn-slug="primary">
                 <i class="fas fa-save"></i> <span data-i18n="permissions.save"><?= __t('permissions.save', 'Save') ?></span>
             </button>
         </div>
@@ -496,8 +445,8 @@ $apiBase = '/api';
             </form>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="PermissionsApp.closePermissionModal()" data-i18n="permissions.cancel"><?= __t('permissions.cancel', 'Cancel') ?></button>
-            <button class="btn btn-primary" id="btnSavePermission">
+            <button class="btn btn-secondary" onclick="PermissionsApp.closePermissionModal()" data-btn-slug="secondary" data-i18n="permissions.cancel"><?= __t('permissions.cancel', 'Cancel') ?></button>
+            <button class="btn btn-primary" id="btnSavePermission" data-btn-slug="primary">
                 <i class="fas fa-save"></i> <span data-i18n="permissions.save"><?= __t('permissions.save', 'Save') ?></span>
             </button>
         </div>
@@ -556,12 +505,13 @@ $apiBase = '/api';
             </form>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="PermissionsApp.closeResourcePermModal()" data-i18n="permissions.cancel"><?= __t('permissions.cancel', 'Cancel') ?></button>
-            <button class="btn btn-primary" id="btnSaveResourcePerm">
+            <button class="btn btn-secondary" onclick="PermissionsApp.closeResourcePermModal()" data-btn-slug="secondary" data-i18n="permissions.cancel"><?= __t('permissions.cancel', 'Cancel') ?></button>
+            <button class="btn btn-primary" id="btnSaveResourcePerm" data-btn-slug="primary">
                 <i class="fas fa-save"></i> <span data-i18n="permissions.save"><?= __t('permissions.save', 'Save') ?></span>
             </button>
         </div>
     </div>
+</div>
 </div>
 
 <script>
@@ -588,7 +538,7 @@ window.PAGE_PERMISSIONS = <?= json_encode([
 ], JSON_UNESCAPED_UNICODE) ?>;
 </script>
 
-<script src="/admin/assets/js/permissions-system.js?v=<?= time() ?>"></script>
+<script src="/admin/assets/js/pages/permissions.js?v=<?= assetVer('/admin/assets/js/pages/permissions.js') ?>"></script>
 
 <?php
 // Load footer if standalone

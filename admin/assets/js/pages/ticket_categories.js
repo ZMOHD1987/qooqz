@@ -204,7 +204,7 @@
         el.pagination.innerHTML = '';
         for (let i = 1; i <= pages; i++) {
             const btn = document.createElement('button');
-            btn.className  = `btn btn-sm ${i === state.page ? 'btn-primary' : 'btn-outline'}`;
+            btn.className  = `btn btn-sm ${i === state.page ? 'btn-primary' : 'btn-secondary'}`;
             btn.textContent = String(i);
             btn.addEventListener('click', () => loadCategories(i));
             el.pagination.appendChild(btn);
